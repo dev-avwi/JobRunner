@@ -26,7 +26,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { useTheme } from '../../lib/theme';
-import { radius, spacing, typography } from '../../lib/design-tokens';
+import { radius, spacing, shadows, typography } from '../../lib/design-tokens';
 
 export interface AppBottomSheetRef {
   present: () => void;
@@ -36,169 +36,180 @@ export interface AppBottomSheetRef {
 export interface AppBottomSheetProps {
   children: ReactNode;
   /** Legacy gorhom prop — accepted but ignored. */
-  snapPoints?: (string | number)[];
-  /** Legacy gorhom prop — accepted but ignored. */
   enableDynamicSizing?: boolean;
   /** Legacy gorhom prop — accepted but ignored. */
   enablePanDownToClose?: boolean;
+  /** Legacy gorhom prop — accepted but ignored. */
+  keyboardBehavior?: 'interactive' | 'extend' | 'fillParent';
+  /** Legacy autoHeight prop — accepted but ignored. The sheet always uses the
+   * snap point as a fixed height (or 90% default). */
+  autoHeight?: boolean;
+  /**
+   * Snap point — accepts gorhom-style "%" strings or pixel numbers.
+   * We use the LAST (largest) snap point as the fixed sheet height.
+   * Defaults to 90% of screen when omitted; hard-capped at 92%.
+   */
+  snapPoints?: (string | number)[];
   onDismiss?: () => void;
   title?: string;
   showCloseButton?: boolean;
-  /** Legacy gorhom prop — accepted but ignored. */
-  keyboardBehavior?: 'interactive' | 'extend' | 'fillParent';
   /** Wrap children in a ScrollView when true (default). */
   scrollable?: boolean;
   contentPadding?: number;
-  /** Declarative visibility. */
+  /** Declarative visibility. When provided, drives open/close. */
   visible?: boolean;
   /**
-   * Controls whether the sheet hugs its content or reserves the full
-   * snapPoint height. Defaults are inferred from `scrollable`:
-   *   - `scrollable === true`  → autoHeight defaults to TRUE  (ScrollView
-   *     hugs short content with snapPoint as a max cap)
-   *   - `scrollable === false` → autoHeight defaults to FALSE (non-scroll
-   *     callers usually wrap children in `flex: 1` and need a real height)
-   * Pass an explicit boolean to override the inferred default.
-   */
-  autoHeight?: boolean;
-  /**
-   * Optional sticky footer that always sits at the bottom of the sheet,
-   * above the safe-area inset. Use this for primary actions (Cancel /
-   * Confirm) so the content area can hug naturally and the buttons never
-   * sit on top of the home indicator.
+   * Optional sticky footer pinned to the bottom of the sheet, above the
+   * safe-area inset. Use for primary actions (Cancel / Confirm).
    */
   footer?: ReactNode;
 }
 
-function parseSnapPoint(point: string | number, screenHeight: number): number {
-  if (typeof point === 'number') return point;
-  const pct = /^(\d+(?:\.\d+)?)%$/.exec(point);
-  if (pct) return screenHeight * (parseFloat(pct[1]) / 100);
-  const num = parseFloat(point);
-  return isNaN(num) ? 0 : num;
+/**
+ * Resolve a snap-points array into a fixed sheet height in pixels.
+ * Always picks the LAST (largest) entry — matches gorhom open-to-largest.
+ */
+function resolveSheetHeight(
+  snapPoints: (string | number)[] | undefined,
+  screenHeight: number,
+): number {
+  if (snapPoints && snapPoints.length > 0) {
+    const sp = snapPoints[snapPoints.length - 1];
+    if (typeof sp === 'number') {
+      return sp <= 1 ? Math.round(screenHeight * sp) : sp;
+    }
+    const trimmed = sp.trim();
+    if (trimmed.endsWith('%')) {
+      const pct = parseFloat(trimmed) / 100;
+      return Math.round(screenHeight * pct);
+    }
+    const n = parseFloat(trimmed);
+    if (!Number.isNaN(n)) return n;
+  }
+  return Math.round(screenHeight * 0.9);
 }
 
 const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
   (
     {
       children,
+      snapPoints,
       onDismiss,
       title,
       showCloseButton = false,
       scrollable = true,
       contentPadding = spacing.lg,
-      visible,
-      snapPoints,
-      autoHeight,
+      visible: visibleProp,
       footer,
     },
-    ref
+    ref,
   ) => {
-    // autoHeight default is INFERRED from `scrollable`:
-    //   • scrollable=true (the default)  → autoHeight=true  → sheet hugs
-    //     content using AppBottomSheet's built-in ScrollView. Snap point
-    //     acts as a max cap; the ScrollView scrolls internally if content
-    //     exceeds it.
-    //   • scrollable=false                → autoHeight=false → sheet uses
-    //     a fixed height (snap point or 90% default) so children that use
-    //     `flex: 1` (custom internal ScrollViews, forms, maps) have a real
-    //     height to fill. Without this, those sheets collapse to nothing.
-    // Pass an explicit boolean to override.
-    const resolvedAutoHeight = autoHeight ?? scrollable;
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
     const insets = useSafeAreaInsets();
 
-    // Track whether the modal is open. When the parent supplies `visible`,
-    // it's the source of truth. Otherwise present()/dismiss() drive it.
-    const [internalVisible, setInternalVisible] = useState(false);
-    const isControlled = visible !== undefined;
-    const open = isControlled ? !!visible : internalVisible;
+    const screenHeight = Dimensions.get('window').height;
+    const requestedHeight = resolveSheetHeight(snapPoints, screenHeight);
+    // Hard cap at 92% so the status bar is never covered.
+    const sheetHeight = Math.min(requestedHeight, screenHeight * 0.92);
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        present: () => {
-          if (!isControlled) setInternalVisible(true);
-        },
-        dismiss: () => {
-          if (!isControlled) setInternalVisible(false);
-          onDismiss?.();
-        },
-      }),
-      [isControlled, onDismiss]
-    );
+    // The Modal stays mounted across the close animation so the slide-down
+    // plays before unmount. `mounted` mirrors that lifecycle; `isVisible`
+    // is the user-facing open/close intent.
+    const [internalVisible, setInternalVisible] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const isVisible = visibleProp !== undefined ? visibleProp : internalVisible;
+
+    // Animations: manual translateY for the sheet, separate fade for the
+    // backdrop. NOT using Modal's animationType="slide" — that fought the
+    // translateY transform and produced jank on drag-dismiss.
+    const translateY = useRef(new Animated.Value(screenHeight)).current;
+    const backdropOpacity = useRef(new Animated.Value(0)).current;
+
+    const present = useCallback(() => {
+      if (visibleProp === undefined) setInternalVisible(true);
+    }, [visibleProp]);
+
+    const dismiss = useCallback(() => {
+      if (visibleProp === undefined) setInternalVisible(false);
+      else onDismiss?.();
+    }, [visibleProp, onDismiss]);
+
+    useImperativeHandle(ref, () => ({ present, dismiss }), [present, dismiss]);
+
+    // Open / close animation driver.
+    useEffect(() => {
+      if (isVisible) {
+        setMounted(true);
+        translateY.setValue(screenHeight);
+        backdropOpacity.setValue(0);
+        Animated.parallel([
+          Animated.timing(backdropOpacity, {
+            toValue: 1,
+            duration: 220,
+            useNativeDriver: true,
+          }),
+          Animated.spring(translateY, {
+            toValue: 0,
+            damping: 22,
+            stiffness: 220,
+            mass: 0.9,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else if (mounted) {
+        Animated.parallel([
+          Animated.timing(backdropOpacity, {
+            toValue: 0,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: screenHeight,
+            duration: 220,
+            useNativeDriver: true,
+          }),
+        ]).start(({ finished }) => {
+          if (finished) setMounted(false);
+        });
+      }
+    }, [isVisible, screenHeight, translateY, backdropOpacity, mounted]);
+
+    const handleBackdropPress = useCallback(() => {
+      if (visibleProp === undefined) setInternalVisible(false);
+      onDismiss?.();
+    }, [visibleProp, onDismiss]);
 
     const handleRequestClose = useCallback(() => {
-      if (!isControlled) setInternalVisible(false);
+      // Hardware back on Android.
+      if (visibleProp === undefined) setInternalVisible(false);
       onDismiss?.();
-    }, [isControlled, onDismiss]);
+    }, [visibleProp, onDismiss]);
 
-    // Drag-to-dismiss. PanResponder is built into React Native and works
-    // reliably inside <Modal> on both iOS and Android — unlike
-    // react-native-gesture-handler, which requires a GestureHandlerRootView
-    // inside the modal's native window and was firing inconsistently.
-    const translateY = useRef(new Animated.Value(0)).current;
+    // Drag-to-dismiss — attached ONLY to the drag handle at the top of the
+    // sheet, NOT the whole sheet. Whole-sheet pan responders compete with
+    // inner ScrollViews/FlatLists and cause "lists feel stuck" + "content
+    // clipped"-style symptoms. Restricting to the handle gives a clear,
+    // dedicated drag target and keeps body interactions untouched.
+    const closeRef = useRef(handleBackdropPress);
     useEffect(() => {
-      if (open) translateY.setValue(0);
-    }, [open, translateY]);
+      closeRef.current = handleBackdropPress;
+    }, [handleBackdropPress]);
 
-    // Keep handleRequestClose accessible to the long-lived PanResponder
-    // without re-creating the responder on every render (which would lose
-    // gesture state mid-drag).
-    const closeRef = useRef(handleRequestClose);
-    useEffect(() => {
-      closeRef.current = handleRequestClose;
-    }, [handleRequestClose]);
-
-    // This responder is attached to the WHOLE sheet (Animated.View). It only
-    // claims a gesture when the user clearly swipes DOWNWARD by more than
-    // ~8px and the motion is mostly vertical. That means:
-    //   • Taps still fire (we never claim on touch start).
-    //   • Upward swipes inside the body ScrollView still scroll normally
-    //     (g.dy is negative, so we don't capture).
-    //   • A deliberate drag-down from anywhere on the sheet — header, title,
-    //     list rows, footer — dismisses the sheet, matching native iOS feel.
     const panResponder = useMemo(
       () =>
         PanResponder.create({
-          onStartShouldSetPanResponder: () => false,
-          onStartShouldSetPanResponderCapture: () => false,
-          onMoveShouldSetPanResponder: (e, g) => {
-            // On Android, ignore gestures that started near the screen
-            // edges so the system back-swipe still wins. iOS doesn't have
-            // edge-back, so we keep the full sheet draggable there.
-            if (Platform.OS === 'android') {
-              const x = e.nativeEvent.pageX;
-              const w = Dimensions.get('window').width;
-              if (x < 24 || x > w - 24) return false;
-            }
-            return g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5;
-          },
-          // Capture is the key bit — without it the inner ScrollView would
-          // win the gesture and the sheet would feel undraggable from the
-          // list area. We only capture on a clear downward swipe so the
-          // ScrollView can still scroll up freely.
-          onMoveShouldSetPanResponderCapture: (e, g) => {
-            if (Platform.OS === 'android') {
-              const x = e.nativeEvent.pageX;
-              const w = Dimensions.get('window').width;
-              if (x < 24 || x > w - 24) return false;
-            }
-            return g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5;
-          },
+          onStartShouldSetPanResponder: () => true,
+          onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dy) > 4,
           onPanResponderMove: (_e, g) => {
-            // Clamp upward drag to 0 so the sheet never lifts off the
-            // bottom of the screen (which would expose anything behind it).
             translateY.setValue(g.dy > 0 ? g.dy : 0);
           },
           onPanResponderRelease: (_e, g) => {
-            if (g.dy > 100 || g.vy > 1.0) {
+            if (g.dy > 80 || g.vy > 0.8) {
               Animated.timing(translateY, {
-                toValue: 800,
-                duration: 180,
+                toValue: screenHeight,
+                duration: 200,
                 useNativeDriver: true,
               }).start(() => {
-                translateY.setValue(0);
                 closeRef.current();
               });
             } else {
@@ -219,141 +230,143 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
             }).start();
           },
         }),
-      [translateY]
+      [translateY, screenHeight],
     );
+
+    if (!mounted) return null;
 
     // When a sticky footer is present, the footer handles bottom safe-area
     // padding itself; don't double-pad inside the scrollable content.
-    const innerStyle = {
+    const innerContentStyle = {
       paddingHorizontal: contentPadding,
       paddingBottom: footer
         ? contentPadding
         : contentPadding + Math.max(insets.bottom, 0),
     };
 
-    const Header = title || showCloseButton ? (
-      <View
-        style={[
-          styles.header,
-          { borderBottomColor: colors.border, backgroundColor: colors.background },
-        ]}
-      >
-        <Text
-          style={[
-            typography.cardTitle,
-            { color: colors.foreground, flex: 1 },
-          ]}
-          numberOfLines={1}
-        >
-          {title || ''}
-        </Text>
-        {showCloseButton ? (
-          <Pressable
-            onPress={handleRequestClose}
-            hitSlop={8}
-            style={styles.closeBtn}
-          >
-            <X size={20} color={colors.mutedForeground} />
-          </Pressable>
-        ) : null}
-      </View>
-    ) : null;
-
-    const screenHeight = Dimensions.get('window').height;
-    // Honor the call-site snapPoint as the SHEET HEIGHT (or max, in auto
-    // mode). When the caller doesn't specify, autoHeight sheets default to
-    // a 75% cap (so long lists scroll internally and leave context behind
-    // the sheet visible) and fixed-height sheets default to 90%. Hard cap
-    // at 92% either way so the status bar is never covered.
-    const defaultCap = resolvedAutoHeight ? 0.65 : 0.9;
-    const requestedHeight = snapPoints && snapPoints.length
-      ? Math.max(...snapPoints.map(p => parseSnapPoint(p, screenHeight)))
-      : screenHeight * defaultCap;
-    const sheetHeight = Math.min(requestedHeight, screenHeight * 0.92);
-
-    // autoHeight=true → maxHeight only (sheet hugs short content); false →
-    // fixed height (children with flex:1 lay out correctly).
-    const useFixedHeight = !resolvedAutoHeight;
-    const sheetSizeStyle = useFixedHeight
-      ? { height: sheetHeight }
-      : { maxHeight: sheetHeight };
-
-    // Body fills the sheet only when the sheet has a defined height. In the
-    // autoHeight + scrollable path we let the ScrollView shrink so it hugs
-    // its content; otherwise it would expand to fill the cap and defeat
-    // autoHeight. The ScrollView still scrolls when content exceeds the
-    // wrapper's maxHeight because it inherits the cap from its parent.
-    const fillStyle = useFixedHeight ? { flex: 1 } : { flexShrink: 1 };
-
-    const body = scrollable ? (
-      <ScrollView
-        style={[{ backgroundColor: colors.background }, fillStyle]}
-        contentContainerStyle={innerStyle}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
-    ) : (
-      <View style={[innerStyle, { backgroundColor: colors.background }, fillStyle]}>
-        {children}
-      </View>
-    );
-
-    const Footer = footer ? (
-      <View
-        style={{
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: colors.border,
-          backgroundColor: colors.background,
-          paddingTop: spacing.md,
-          paddingHorizontal: spacing.lg,
-          paddingBottom: Math.max(insets.bottom, spacing.md),
-        }}
-      >
-        {footer}
-      </View>
-    ) : null;
-
     return (
       <Modal
-        visible={open}
-        animationType="slide"
+        visible={mounted}
         transparent
-        onRequestClose={handleRequestClose}
+        animationType="none"
         statusBarTranslucent
+        onRequestClose={handleRequestClose}
+        presentationStyle="overFullScreen"
+        hardwareAccelerated
       >
-        <KeyboardAvoidingView
-          style={styles.root}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <Pressable
-            style={styles.backdropFill}
-            onPress={handleRequestClose}
-          />
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          {/* Backdrop */}
           <Animated.View
-            collapsable={false}
-            {...panResponder.panHandlers}
             style={[
-              styles.sheetOuter,
-              sheetSizeStyle,
-              { transform: [{ translateY }] },
+              StyleSheet.absoluteFill,
+              { backgroundColor: 'rgba(0,0,0,0.5)', opacity: backdropOpacity },
             ]}
           >
-            {/* Outer view owns the elevation/shadow (no overflow:hidden
-                so the Android elevation shadow isn't clipped). Inner view
-                owns the rounded top corners + clipping for content. */}
-            <View style={[styles.sheetInner, { backgroundColor: colors.background }]}>
-              <View style={styles.dragZone} />
-              {Header}
-              {body}
-              {Footer}
-            </View>
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={handleBackdropPress}
+            />
           </Animated.View>
-        </KeyboardAvoidingView>
+
+          {/* Sheet */}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.kbWrapper}
+            pointerEvents="box-none"
+          >
+            <Animated.View
+              style={[
+                styles.sheet,
+                {
+                  height: sheetHeight,
+                  backgroundColor: colors.card,
+                  transform: [{ translateY }],
+                },
+                shadows.lg as object,
+              ]}
+            >
+              {/* Drag handle — the ONLY pan target. */}
+              <View style={styles.handleArea} {...panResponder.panHandlers}>
+                <View
+                  style={[
+                    styles.handle,
+                    {
+                      backgroundColor: isDark
+                        ? colors.borderLight
+                        : colors.mutedForeground,
+                    },
+                  ]}
+                />
+              </View>
+
+              {(title || showCloseButton) && (
+                <View
+                  style={[
+                    styles.header,
+                    { borderBottomColor: colors.border },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      typography.cardTitle,
+                      { color: colors.foreground, flex: 1 },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {title || ''}
+                  </Text>
+                  {showCloseButton ? (
+                    <Pressable
+                      onPress={handleBackdropPress}
+                      hitSlop={8}
+                      style={styles.closeBtn}
+                    >
+                      <X size={20} color={colors.mutedForeground} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              )}
+
+              {scrollable ? (
+                <ScrollView
+                  style={{ flex: 1, backgroundColor: colors.card }}
+                  contentContainerStyle={innerContentStyle}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  {children}
+                </ScrollView>
+              ) : (
+                <View
+                  style={[
+                    innerContentStyle,
+                    { backgroundColor: colors.card, flex: 1 },
+                  ]}
+                >
+                  {children}
+                </View>
+              )}
+
+              {footer ? (
+                <View
+                  style={{
+                    borderTopWidth: StyleSheet.hairlineWidth,
+                    borderTopColor: colors.border,
+                    backgroundColor: colors.card,
+                    paddingTop: spacing.md,
+                    paddingHorizontal: spacing.lg,
+                    paddingBottom: Math.max(insets.bottom, spacing.md),
+                  }}
+                >
+                  {footer}
+                </View>
+              ) : null}
+            </Animated.View>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
     );
-  }
+  },
 );
 
 AppBottomSheet.displayName = 'AppBottomSheet';
@@ -366,55 +379,32 @@ export function useAppBottomSheet() {
 }
 
 const styles = StyleSheet.create({
-  root: {
+  kbWrapper: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.55)',
   },
-  backdropFill: {
-    flex: 1,
-  },
-  // Outer: owns the shadow/elevation. NO overflow:hidden — that would clip
-  // the Android elevation shadow. iOS shadow is intentionally omitted (a
-  // bottom sheet sliding up from the screen edge shouldn't have a halo
-  // above it on iOS; the backdrop provides the depth).
-  sheetOuter: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    ...Platform.select({
-      android: { elevation: 16 },
-      default: {},
-    }),
-  },
-  // Inner: owns the rounded corners + clipping so child content (lists,
-  // images, headers) stays inside the rounded top.
-  sheetInner: {
-    flex: 1,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  sheet: {
+    width: '100%',
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     overflow: 'hidden',
-    elevation: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
   },
-  // Invisible drag strip at the top of every sheet. Most sheets use the
-  // built-in Header (in which case the whole sheet is also a drag target),
-  // but ~95 sheets render their OWN custom header inside the body using
-  // TouchableOpacity buttons that trap touches and block PanResponder
-  // capture. For those, this strip is the only reliable place to grab —
-  // so it's deliberately large enough to be an easy thumb target even
-  // though it's visually empty.
-  dragZone: {
-    height: 22,
-    alignSelf: 'stretch',
+  handleArea: {
+    paddingTop: 10,
+    paddingBottom: 6,
+    alignItems: 'center',
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.5,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: spacing.sm,
@@ -429,14 +419,12 @@ const styles = StyleSheet.create({
 });
 
 export { AppBottomSheet };
+export default AppBottomSheet;
 
 // Back-compat re-exports so existing call-sites that imported these from
-// AppBottomSheet keep working. They now resolve to plain react-native
-// primitives instead of the gorhom variants.
-export const BottomSheetScrollView = (
-  props: ScrollViewProps,
-) => <ScrollView {...props} />;
+// AppBottomSheet keep working. They resolve to plain react-native primitives.
+export const BottomSheetScrollView = (props: ScrollViewProps) => (
+  <ScrollView {...props} keyboardShouldPersistTaps="handled" />
+);
 export const BottomSheetView = View;
 export const BottomSheetFlatList = FlatList;
-
-export default AppBottomSheet;
