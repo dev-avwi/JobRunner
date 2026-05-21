@@ -11012,46 +11012,32 @@ export default function JobDetailScreen() {
       <AppBottomSheet
         visible={showNotesModal}
         onDismiss={() => setShowNotesModal(false)}
-        snapPoints={['90%']}
-        scrollable={false}
-        contentPadding={0}
+        title="Job Notes"
+        showCloseButton
+        footer={(
+          <Button
+            size="lg"
+            variant="default"
+            fullWidth
+            loading={isSavingNotes}
+            disabled={isSavingNotes}
+            onPress={handleSaveNotes}
+          >
+            Save Notes
+          </Button>
+        )}
       >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-        >
-          <View style={{ flex: 1 }}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Job Notes</Text>
-                <TouchableOpacity onPress={() => setShowNotesModal(false)}>
-                  <Feather name="x" size={24} color={colors.foreground} />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.modalContent}>
-                <TextInput
-                  style={styles.notesInput}
-                  value={editedNotes}
-                  onChangeText={setEditedNotes}
-                  placeholder="Add notes about this job..."
-                  placeholderTextColor={colors.mutedForeground}
-                  multiline
-                  autoFocus
-                />
-                <Button
-                  size="lg"
-                  variant="default"
-                  fullWidth
-                  loading={isSavingNotes}
-                  disabled={isSavingNotes}
-                  onPress={handleSaveNotes}
-                >
-                  Save Notes
-                </Button>
-              </View>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
+        <View>
+          <TextInput
+            style={styles.notesInput}
+            value={editedNotes}
+            onChangeText={setEditedNotes}
+            placeholder="Add notes about this job..."
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+            autoFocus
+          />
+        </View>
       </AppBottomSheet>
 
       {/* Site Update Modal */}
@@ -11480,18 +11466,31 @@ export default function JobDetailScreen() {
         <AppBottomSheet
         visible={showCompletionModal}
         onDismiss={() => setShowCompletionModal(false)}
-        snapPoints={['90%']}
-        scrollable={false}
-        contentPadding={0}>
-          <View style={[styles.completionModal, { paddingTop: insets.top }]}>
-            <View style={styles.completionHeader}>
-              <Text style={styles.completionTitle}>Complete Job</Text>
-              <TouchableOpacity onPress={() => setShowCompletionModal(false)}>
-                <Feather name="x" size={24} color={colors.foreground} />
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView contentContainerStyle={styles.completionScrollContent}>
+        title="Complete Job"
+        showCloseButton
+        snapPoints={['88%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <TouchableOpacity 
+              style={[styles.completionButton, styles.completionButtonSecondary, { flex: 1 }]} 
+              onPress={() => setShowCompletionModal(false)}
+            >
+              <Text style={[styles.completionButtonText, styles.completionButtonTextSecondary]}>Go Back</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.completionButton, styles.completionButtonPrimary, { flex: 1 }]} 
+              onPress={handleConfirmComplete}
+              disabled={isCompletingJob}
+            >
+              {isCompletingJob ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <Text style={styles.completionButtonText}>Complete Job</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}>
+          <View>
               {/* Job Title */}
               <View style={[styles.completionSection, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
                 <Text style={[styles.completionSectionTitle, { color: colors.primary }]}>{job.title}</Text>
@@ -11706,28 +11705,6 @@ export default function JobDetailScreen() {
                   </Text>
                 </View>
               )}
-            </ScrollView>
-            
-            {/* Footer Buttons */}
-            <View style={styles.completionFooter}>
-              <TouchableOpacity 
-                style={[styles.completionButton, styles.completionButtonSecondary]} 
-                onPress={() => setShowCompletionModal(false)}
-              >
-                <Text style={[styles.completionButtonText, styles.completionButtonTextSecondary]}>Go Back</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.completionButton, styles.completionButtonPrimary]} 
-                onPress={handleConfirmComplete}
-                disabled={isCompletingJob}
-              >
-                {isCompletingJob ? (
-                  <ActivityIndicator size="small" color={colors.white} />
-                ) : (
-                  <Text style={styles.completionButtonText}>Complete Job</Text>
-                )}
-              </TouchableOpacity>
-            </View>
           </View>
         </AppBottomSheet>
       )}

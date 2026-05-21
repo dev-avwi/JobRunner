@@ -566,14 +566,10 @@ export default function ExpensesScreen() {
             setShowExpenseModal(false);
             resetForm();
           }}
-          snapPoints={['92%']}
-          scrollable={false}
+          snapPoints={['88%']}
           contentPadding={0}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={[styles.modalContainer, { backgroundColor: colors.background }]}
-          >
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
+          <View style={{ backgroundColor: colors.background }}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <PressableRow onPress={() => { setShowExpenseModal(false); resetForm(); }} >
                 <Text style={[styles.modalCancel, { color: colors.primary }]}>Cancel</Text>
               </PressableRow>
@@ -585,7 +581,7 @@ export default function ExpensesScreen() {
               </PressableRow>
             </View>
 
-            <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+            <View style={styles.modalScrollContent}>
               {isScanning && (
                 <View style={[styles.scanningBanner, { backgroundColor: colors.primaryLight, borderColor: colors.promoBorder }]}>
                   <ActivityIndicator size="small" color={colors.primary} />
@@ -715,8 +711,8 @@ export default function ExpensesScreen() {
                   </Text>
                 </PressableRow>
               )}
-            </ScrollView>
-          </KeyboardAvoidingView>
+            </View>
+          </View>
         </AppBottomSheet>
 
         <AppBottomSheet
