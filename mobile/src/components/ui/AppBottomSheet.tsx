@@ -14,7 +14,6 @@ import {
   Text,
   Pressable,
   Modal,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
   ScrollViewProps,
@@ -22,6 +21,8 @@ import {
   Dimensions,
   Animated,
   PanResponder,
+  Keyboard,
+  KeyboardEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -132,6 +133,30 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
     // translateY transform and produced jank on drag-dismiss.
     const translateY = useRef(new Animated.Value(screenHeight)).current;
     const backdropOpacity = useRef(new Animated.Value(0)).current;
+
+    // Keyboard tracking — we don't use KeyboardAvoidingView because it lifts
+    // the entire sheet off the bottom edge, leaving a visible gap between
+    // the sheet and the keyboard with the dimmed backdrop showing through.
+    // Instead we extend the footer (or a spacer) downward by the keyboard
+    // height. The sheet stays anchored at screen bottom; its bottom edge
+    // hides behind the keyboard with no visible gap, while content and
+    // footer ride up above the keyboard.
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+    useEffect(() => {
+      const showEv = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+      const hideEv = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+      const onShow = (e: KeyboardEvent) => {
+        const h = e?.endCoordinates?.height ?? 0;
+        setKeyboardHeight(h);
+      };
+      const onHide = () => setKeyboardHeight(0);
+      const s = Keyboard.addListener(showEv, onShow);
+      const h = Keyboard.addListener(hideEv, onHide);
+      return () => {
+        s.remove();
+        h.remove();
+      };
+    }, []);
 
     const present = useCallback(() => {
       if (visibleProp === undefined) setInternalVisible(true);
@@ -286,8 +311,7 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
           </Animated.View>
 
           {/* Sheet */}
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          <View
             style={styles.kbWrapper}
             pointerEvents="box-none"
           >
@@ -361,14 +385,27 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
                     backgroundColor: colors.card,
                     paddingTop: spacing.md,
                     paddingHorizontal: spacing.lg,
-                    paddingBottom: Math.max(insets.bottom, spacing.md),
+                    paddingBottom:
+                      keyboardHeight > 0
+                        ? keyboardHeight + spacing.md
+                        : Math.max(insets.bottom, spacing.md),
                   }}
                 >
                   {footer}
                 </View>
+              ) : keyboardHeight > 0 ? (
+                // No footer + keyboard open → push content above the keyboard
+                // with a card-colored spacer so the sheet visually extends
+                // down behind the keyboard with no gap.
+                <View
+                  style={{
+                    height: keyboardHeight,
+                    backgroundColor: colors.card,
+                  }}
+                />
               ) : null}
             </Animated.View>
-          </KeyboardAvoidingView>
+          </View>
         </View>
       </Modal>
     );

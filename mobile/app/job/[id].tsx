@@ -10475,25 +10475,21 @@ export default function JobDetailScreen() {
       {/* Add/Edit Material Modal */}
       <AppBottomSheet
         visible={showAddMaterialModal}
-        onDismiss={() => setShowAddMaterialModal(false)}
-        snapPoints={['90%']}
-        scrollable={false}
-        contentPadding={0}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={{ flex: 1 }}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
-                    <Feather name="package" size={18} color={colors.primary} />
-                  </View>
-                  <Text style={styles.modalTitle}>{editingMaterial ? 'Edit Material' : 'Add Material'}</Text>
-                </View>
-                <TouchableOpacity onPress={() => { setShowAddMaterialModal(false); setEditingMaterial(null); }} style={{ padding: spacing.xs }}>
-                  <Feather name="x" size={22} color={colors.mutedForeground} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
+        onDismiss={() => { setShowAddMaterialModal(false); setEditingMaterial(null); }}
+        title={editingMaterial ? 'Edit Material' : 'Add Material'}
+        showCloseButton
+        snapPoints={['85%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Button variant="outline" onPress={() => { setShowAddMaterialModal(false); setEditingMaterial(null); }} style={{ flex: 1 }}>
+              Cancel
+            </Button>
+            <Button onPress={handleSaveMaterial} disabled={isSavingMaterial || !materialForm.name.trim()} style={{ flex: 1 }}>
+              {isSavingMaterial ? 'Saving...' : editingMaterial ? 'Update' : 'Add Material'}
+            </Button>
+          </View>
+        )}>
+        <View>
                 <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Name *</Text>
                 <TextInput
                   style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
@@ -10604,18 +10600,7 @@ export default function JobDetailScreen() {
                     </View>
                   </View>
                 )}
-              </ScrollView>
-              <View style={styles.modalFooter}>
-                <Button variant="outline" onPress={() => { setShowAddMaterialModal(false); setEditingMaterial(null); }} style={{ flex: 1, marginRight: 8 }}>
-                  Cancel
-                </Button>
-                <Button onPress={handleSaveMaterial} disabled={isSavingMaterial || !materialForm.name.trim()} style={{ flex: 1 }}>
-                  {isSavingMaterial ? 'Saving...' : editingMaterial ? 'Update' : 'Add Material'}
-                </Button>
-              </View>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
+        </View>
       </AppBottomSheet>
 
       {/* Cost Prompt Modal */}
