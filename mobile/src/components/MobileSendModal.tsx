@@ -3,18 +3,16 @@ import {
   View,
   Text,
   StyleSheet,
-  Modal,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   Alert,
   Linking,
   Image,
 } from 'react-native';
 import { PressableRow } from './ui/PressableRow';
+import AppBottomSheet from './ui/AppBottomSheet';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -288,29 +286,54 @@ export function MobileSendModal({
     setSmsMessage(message);
   };
 
+  const isEmail = activeTab === 'email';
+  const sendDisabled = isEmail
+    ? (isSendingEmail || !emailSubject.trim() || !emailBody.trim())
+    : (isSendingSms || isUploadingPhoto || !smsMessage.trim());
+  const sendBusy = isEmail ? isSendingEmail : (isSendingSms || isUploadingPhoto);
+  const sendLabel = isEmail
+    ? (isSendingEmail ? 'Sending...' : 'Send Email')
+    : (isUploadingPhoto ? 'Uploading photo...' : isSendingSms ? 'Sending...' : attachedPhoto ? 'Send MMS' : 'Send SMS');
+  const sendBg = isEmail ? colors.primary : '#16a34a';
+
   return (
-    <Modal
+    <AppBottomSheet
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onDismiss={onClose}
+      title={`Send ${typeLabel}`}
+      showCloseButton
+      snapPoints={['90%']}
+      contentPadding={0}
+      footer={(
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.sm,
+            paddingVertical: spacing.md,
+            borderRadius: radius.md,
+            backgroundColor: sendBg,
+            opacity: sendDisabled ? 0.5 : 1,
+            minHeight: 48,
+          }}
+          onPress={isEmail ? handleSendEmail : handleSendSms}
+          disabled={sendDisabled}
+          activeOpacity={0.8}
+        >
+          {sendBusy ? (
+            <ActivityIndicator size="small" color={colors.primaryForeground} />
+          ) : (
+            <Feather name="send" size={18} color={colors.primaryForeground} />
+          )}
+          <Text style={[typography.button, { color: colors.primaryForeground }]}>{sendLabel}</Text>
+        </TouchableOpacity>
+      )}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
-        <View style={styles.header}>
-          <PressableRow onPress={onClose} style={styles.closeButton}>
-            <Feather name="x" size={24} color={colors.foreground} />
-          </PressableRow>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Send {typeLabel}</Text>
-            <Text style={styles.headerSubtitle}>
-              {documentTitle ? `"${documentTitle}"` : `this ${documentType}`} to {recipientName}
-            </Text>
-          </View>
-          <View style={{ width: 40 }} />
-        </View>
+      <View>
+        <Text style={[styles.headerSubtitle, { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }]}>
+          {documentTitle ? `"${documentTitle}"` : `this ${documentType}`} to {recipientName}
+        </Text>
 
         <View style={styles.tabsContainer}>
           <PressableRow style={[styles.tab, activeTab === 'email' && styles.tabActive, !hasEmail && styles.tabDisabled]} onPress={() => hasEmail && setActiveTab('email')} disabled={!hasEmail} >
@@ -344,11 +367,7 @@ export function MobileSendModal({
           </PressableRow>
         </View>
 
-        <ScrollView
-          style={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+        <View>
           {activeTab === 'email' && (
             <View style={styles.tabContent}>
               <View style={styles.fieldGroup}>
@@ -391,17 +410,6 @@ export function MobileSendModal({
                    'Document will be attached as PDF'}
                 </Text>
               </View>
-
-              <PressableRow style={[styles.sendButton, styles.emailSendButton, (isSendingEmail || !emailSubject.trim() || !emailBody.trim()) && styles.sendButtonDisabled]} onPress={handleSendEmail} disabled={isSendingEmail || !emailSubject.trim() || !emailBody.trim()} >
-                {isSendingEmail ? (
-                  <ActivityIndicator size="small" color={colors.primaryForeground} />
-                ) : (
-                  <Feather name="send" size={18} color={colors.primaryForeground} />
-                )}
-                <Text style={styles.sendButtonText}>
-                  {isSendingEmail ? 'Sending...' : 'Send Email'}
-                </Text>
-              </PressableRow>
             </View>
           )}
 
@@ -474,22 +482,11 @@ export function MobileSendModal({
                   </View>
                 )}
               </View>
-
-              <PressableRow style={[styles.sendButton, styles.smsSendButton, (isSendingSms || isUploadingPhoto || !smsMessage.trim()) && styles.sendButtonDisabled]} onPress={handleSendSms} disabled={isSendingSms || isUploadingPhoto || !smsMessage.trim()} >
-                {(isSendingSms || isUploadingPhoto) ? (
-                  <ActivityIndicator size="small" color={colors.white} />
-                ) : (
-                  <Feather name="send" size={18} color={colors.white} />
-                )}
-                <Text style={[styles.sendButtonText, { color: colors.white }]}>
-                  {isUploadingPhoto ? 'Uploading photo...' : isSendingSms ? 'Sending...' : attachedPhoto ? 'Send MMS' : 'Send SMS'}
-                </Text>
-              </PressableRow>
             </View>
           )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Modal>
+        </View>
+      </View>
+    </AppBottomSheet>
   );
 }
 

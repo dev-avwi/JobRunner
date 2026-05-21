@@ -12615,7 +12615,7 @@ export default function JobDetailScreen() {
             <TouchableOpacity
               onPress={() => {
                 setShowProofPackPreview(false);
-                setShowProofPackModal(true);
+                setTimeout(() => setShowProofPackModal(true), 300);
               }}
               style={{
                 paddingVertical: spacing.md,

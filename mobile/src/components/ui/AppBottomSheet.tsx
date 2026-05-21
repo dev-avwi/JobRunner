@@ -380,8 +380,6 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
               {footer ? (
                 <View
                   style={{
-                    borderTopWidth: StyleSheet.hairlineWidth,
-                    borderTopColor: colors.border,
                     backgroundColor: colors.card,
                     paddingTop: spacing.md,
                     paddingHorizontal: spacing.lg,
