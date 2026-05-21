@@ -1,23 +1,11 @@
-import { useEffect, useRef, useCallback } from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  Animated,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  Platform,
-  Dimensions,
-} from 'react-native';
+import { useCallback } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { PressableRow } from './ui/PressableRow';
+import AppBottomSheet from './ui/AppBottomSheet';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme, ThemeColors } from '../lib/theme';
-import { BottomInsetSpacer } from './ui/BottomInsetSpacer';
-import { spacing, radius, typography, shadows } from '../lib/design-tokens';
-
-const SCREEN_HEIGHT = Dimensions.get('window').height;
+import { spacing, radius, typography } from '../lib/design-tokens';
 
 export interface QuickAction {
   icon: keyof typeof Feather.glyphMap;
@@ -43,167 +31,94 @@ export function QuickActionSheet({
   actions,
 }: QuickActionSheetProps) {
   const { colors } = useTheme();
-  const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-
-  const open = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    Animated.parallel([
-      Animated.spring(translateY, {
-        toValue: 0,
-        damping: 26,
-        stiffness: 280,
-        mass: 0.8,
-        useNativeDriver: true,
-      }),
-      Animated.timing(backdropOpacity, {
-        toValue: 1,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [translateY, backdropOpacity]);
-
-  const close = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: SCREEN_HEIGHT,
-        duration: 260,
-        useNativeDriver: true,
-      }),
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-    ]).start(() => onClose());
-  }, [translateY, backdropOpacity, onClose]);
-
-  useEffect(() => {
-    if (visible) {
-      open();
-    }
-  }, [visible, open]);
+  const styles = createStyles(colors);
 
   const handleAction = useCallback((action: QuickAction) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    // Fire the action FIRST, then close. Previously we ran close() and a
-    // setTimeout(280ms) before action.onPress(); on iOS the modal-close
-    // animation occasionally swallowed the subsequent navigation/Alert,
-    // so the user felt the haptic but nothing happened. Calling onPress
-    // synchronously guarantees the navigation happens; close() then
-    // animates the sheet down underneath the new screen / alert.
+    // Fire the action FIRST, then close. On iOS the modal-close animation
+    // occasionally swallowed deferred navigation/Alert calls.
     try {
       action.onPress();
     } finally {
-      close();
+      onClose();
     }
-  }, [close]);
-
-  const styles = createStyles(colors);
+  }, [onClose]);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      onRequestClose={close}
-    >
-      <TouchableWithoutFeedback onPress={close}>
-        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
-      </TouchableWithoutFeedback>
-
-      <Animated.View
-        style={[styles.sheet, { transform: [{ translateY }] }]}
-      >
-        <View style={styles.handle} />
-
-        <View style={styles.header}>
-          <View style={styles.headerText}>
-            <Text style={styles.title} numberOfLines={1}>{title}</Text>
-            {subtitle ? (
-              <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
-            ) : null}
-          </View>
-          <PressableRow onPress={close} style={styles.closeButton} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} >
-            <Feather name="x" size={20} color={colors.mutedForeground} />
-          </PressableRow>
+    <AppBottomSheet visible={visible} onDismiss={onClose} scrollable={false}>
+      <View style={styles.header}>
+        <View style={styles.headerText}>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          {subtitle ? (
+            <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+          ) : null}
         </View>
-
-        <View style={styles.actions}>
-          {actions.map((action, index) => (
-            <PressableRow key={index} style={[ styles.actionRow, action.primary && styles.actionRowPrimary, action.destructive && styles.actionRowDestructive, index < actions.length - 1 && styles.actionRowBorder, ]} onPress={() => handleAction(action)} >
-              <View style={[
-                styles.actionIcon,
-                action.primary && { backgroundColor: `${colors.primary}18` },
-                action.destructive && { backgroundColor: `${colors.destructive}12` },
-              ]}>
-                <Feather
-                  name={action.icon}
-                  size={18}
-                  color={
-                    action.destructive
-                      ? colors.destructive
-                      : action.primary
-                        ? colors.primary
-                        : colors.foreground
-                  }
-                />
-              </View>
-              <Text style={[
-                styles.actionLabel,
-                action.primary && { color: colors.primary, fontWeight: '600', fontFamily: 'Inter_600SemiBold' },
-                action.destructive && { color: colors.destructive },
-              ]}>
-                {action.label}
-              </Text>
-              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-            </PressableRow>
-          ))}
-        </View>
-
-        <PressableRow style={styles.cancelButton} onPress={close} >
-          <Text style={styles.cancelText}>Cancel</Text>
+        <PressableRow
+          onPress={onClose}
+          style={styles.closeButton}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Feather name="x" size={20} color={colors.mutedForeground} />
         </PressableRow>
+      </View>
 
-        <BottomInsetSpacer />
-      </Animated.View>
-    </Modal>
+      <View style={styles.actions}>
+        {actions.map((action, index) => (
+          <PressableRow
+            key={index}
+            style={[
+              styles.actionRow,
+              action.primary && styles.actionRowPrimary,
+              action.destructive && styles.actionRowDestructive,
+              index < actions.length - 1 && styles.actionRowBorder,
+            ]}
+            onPress={() => handleAction(action)}
+          >
+            <View style={[
+              styles.actionIcon,
+              action.primary && { backgroundColor: `${colors.primary}18` },
+              action.destructive && { backgroundColor: `${colors.destructive}12` },
+            ]}>
+              <Feather
+                name={action.icon}
+                size={18}
+                color={
+                  action.destructive
+                    ? colors.destructive
+                    : action.primary
+                      ? colors.primary
+                      : colors.foreground
+                }
+              />
+            </View>
+            <Text style={[
+              styles.actionLabel,
+              action.primary && { color: colors.primary, fontWeight: '600' },
+              action.destructive && { color: colors.destructive },
+            ]}>
+              {action.label}
+            </Text>
+            <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+          </PressableRow>
+        ))}
+      </View>
+
+      <PressableRow style={styles.cancelButton} onPress={onClose}>
+        <Text style={styles.cancelText}>Cancel</Text>
+      </PressableRow>
+    </AppBottomSheet>
   );
 }
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    backdrop: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.52)',
-    },
-    sheet: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: colors.card,
-      borderTopLeftRadius: radius['2xl'],
-      borderTopRightRadius: radius['2xl'],
-      ...shadows.lg,
-    },
-    handle: {
-      width: 40,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: colors.border,
-      alignSelf: 'center',
-      marginTop: spacing.sm,
-      marginBottom: spacing.xs,
-    },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      borderBottomWidth: 1,
+      paddingTop: spacing.xs,
+      paddingBottom: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
     headerText: {
@@ -226,7 +141,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     actions: {
       marginHorizontal: spacing.md,
-      marginTop: spacing.sm,
+      marginTop: spacing.md,
       borderRadius: radius.lg,
       overflow: 'hidden',
       backgroundColor: colors.background,
@@ -266,6 +181,7 @@ const createStyles = (colors: ThemeColors) =>
     cancelButton: {
       marginHorizontal: spacing.md,
       marginTop: spacing.sm,
+      marginBottom: spacing.sm,
       paddingVertical: spacing.md,
       borderRadius: radius.lg,
       backgroundColor: colors.muted,
@@ -274,8 +190,5 @@ const createStyles = (colors: ThemeColors) =>
     cancelText: {
       ...typography.bodySemibold,
       color: colors.foreground,
-    },
-    safeAreaBottom: {
-      height: 20,
     },
   });

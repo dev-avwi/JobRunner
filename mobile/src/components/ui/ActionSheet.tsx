@@ -61,9 +61,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
         ref={sheetRef}
         visible={visible}
         onDismiss={dismiss}
-        enableDynamicSizing
         scrollable={false}
-        autoHeight
         contentPadding={0}
       >
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.sm }}>
