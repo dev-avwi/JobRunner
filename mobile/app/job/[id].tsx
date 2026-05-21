@@ -10682,6 +10682,7 @@ export default function JobDetailScreen() {
         onDismiss={() => { setShowAssignModal(false); setShowMagicLinkInAssign(false); }}
         title="Assign Workers"
         showCloseButton
+        snapPoints={['78%']}
         contentPadding={0}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -11057,22 +11058,22 @@ export default function JobDetailScreen() {
       <AppBottomSheet
         visible={showSiteUpdateModal}
         onDismiss={() => setShowSiteUpdateModal(false)}
-        snapPoints={['90%']}
-        scrollable={false}
-        contentPadding={0}>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-        >
-          <View style={{ flex: 1 }}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Post Site Update</Text>
-                <TouchableOpacity onPress={() => setShowSiteUpdateModal(false)}>
-                  <Feather name="x" size={24} color={colors.foreground} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
+        title="Post Site Update"
+        showCloseButton
+        footer={(
+          <Button
+            size="lg"
+            variant="default"
+            fullWidth
+            loading={isSendingSiteUpdate}
+            disabled={isSendingSiteUpdate}
+            onPress={handleSubmitSiteUpdate}
+          >
+            Post Update
+          </Button>
+        )}>
+        <View>
+              <View>
                 <TextInput
                   style={styles.notesInput}
                   value={siteUpdateNote}
@@ -11149,20 +11150,8 @@ export default function JobDetailScreen() {
                     </View>
                   )}
                 </View>
-                <Button
-                  size="lg"
-                  variant="default"
-                  fullWidth
-                  loading={isSendingSiteUpdate}
-                  disabled={isSendingSiteUpdate}
-                  onPress={handleSubmitSiteUpdate}
-                >
-                  Post Update
-                </Button>
-              </ScrollView>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
+              </View>
+        </View>
       </AppBottomSheet>
 
       {/* Photos Modal */}
