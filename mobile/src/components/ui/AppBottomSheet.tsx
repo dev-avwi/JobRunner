@@ -41,13 +41,16 @@ export interface AppBottomSheetProps {
   enablePanDownToClose?: boolean;
   /** Legacy gorhom prop — accepted but ignored. */
   keyboardBehavior?: 'interactive' | 'extend' | 'fillParent';
-  /** Legacy autoHeight prop — accepted but ignored. The sheet always uses the
-   * snap point as a fixed height (or 90% default). */
+  /**
+   * When true (default when no snapPoints provided), the sheet sizes to its
+   * content with a 92% screen-height cap. When false (or when snapPoints is
+   * provided), the sheet uses a fixed height from snapPoints (last entry).
+   */
   autoHeight?: boolean;
   /**
    * Snap point — accepts gorhom-style "%" strings or pixel numbers.
    * We use the LAST (largest) snap point as the fixed sheet height.
-   * Defaults to 90% of screen when omitted; hard-capped at 92%.
+   * Providing snapPoints implies autoHeight=false.
    */
   snapPoints?: (string | number)[];
   onDismiss?: () => void;
@@ -94,6 +97,7 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
     {
       children,
       snapPoints,
+      autoHeight,
       onDismiss,
       title,
       showCloseButton = false,
@@ -104,13 +108,17 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
     },
     ref,
   ) => {
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
     const insets = useSafeAreaInsets();
 
     const screenHeight = Dimensions.get('window').height;
-    const requestedHeight = resolveSheetHeight(snapPoints, screenHeight);
-    // Hard cap at 92% so the status bar is never covered.
-    const sheetHeight = Math.min(requestedHeight, screenHeight * 0.92);
+    const maxSheetHeight = screenHeight * 0.92;
+    // autoHeight defaults to true UNLESS snapPoints is provided.
+    const useAutoHeight = autoHeight ?? !snapPoints;
+    const fixedSheetHeight = Math.min(
+      resolveSheetHeight(snapPoints, screenHeight),
+      maxSheetHeight,
+    );
 
     // The Modal stays mounted across the close animation so the slide-down
     // plays before unmount. `mounted` mirrors that lifecycle; `isVisible`
@@ -185,11 +193,11 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
       onDismiss?.();
     }, [visibleProp, onDismiss]);
 
-    // Drag-to-dismiss — attached ONLY to the drag handle at the top of the
-    // sheet, NOT the whole sheet. Whole-sheet pan responders compete with
-    // inner ScrollViews/FlatLists and cause "lists feel stuck" + "content
-    // clipped"-style symptoms. Restricting to the handle gives a clear,
-    // dedicated drag target and keeps body interactions untouched.
+    // Drag-to-dismiss — attached to the WHOLE sheet, but only steals the
+    // gesture when it's clearly a downward, vertical-dominant drag. This
+    // lets inner ScrollViews/FlatLists keep handling upward scrolls and
+    // horizontal gestures (taps, swipes). The threshold avoids stealing
+    // taps on buttons inside the sheet.
     const closeRef = useRef(handleBackdropPress);
     useEffect(() => {
       closeRef.current = handleBackdropPress;
@@ -198,8 +206,9 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
     const panResponder = useMemo(
       () =>
         PanResponder.create({
-          onStartShouldSetPanResponder: () => true,
-          onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dy) > 4,
+          onStartShouldSetPanResponder: () => false,
+          onMoveShouldSetPanResponder: (_e, g) =>
+            g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
           onPanResponderMove: (_e, g) => {
             translateY.setValue(g.dy > 0 ? g.dy : 0);
           },
@@ -239,10 +248,18 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
     // padding itself; don't double-pad inside the scrollable content.
     const innerContentStyle = {
       paddingHorizontal: contentPadding,
+      paddingTop: spacing.sm,
       paddingBottom: footer
         ? contentPadding
         : contentPadding + Math.max(insets.bottom, 0),
     };
+
+    // Sheet sizing:
+    //   autoHeight → maxHeight only, content drives size
+    //   fixed     → explicit height
+    const sheetSizingStyle = useAutoHeight
+      ? { maxHeight: maxSheetHeight }
+      : { height: fixedSheetHeight };
 
     return (
       <Modal
@@ -275,30 +292,17 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
             pointerEvents="box-none"
           >
             <Animated.View
+              {...panResponder.panHandlers}
               style={[
                 styles.sheet,
+                sheetSizingStyle,
                 {
-                  height: sheetHeight,
                   backgroundColor: colors.card,
                   transform: [{ translateY }],
                 },
                 shadows.lg as object,
               ]}
             >
-              {/* Drag handle — the ONLY pan target. */}
-              <View style={styles.handleArea} {...panResponder.panHandlers}>
-                <View
-                  style={[
-                    styles.handle,
-                    {
-                      backgroundColor: isDark
-                        ? colors.borderLight
-                        : colors.mutedForeground,
-                    },
-                  ]}
-                />
-              </View>
-
               {(title || showCloseButton) && (
                 <View
                   style={[
@@ -329,10 +333,11 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
 
               {scrollable ? (
                 <ScrollView
-                  style={{ flex: 1, backgroundColor: colors.card }}
+                  style={useAutoHeight ? undefined : { flex: 1, backgroundColor: colors.card }}
                   contentContainerStyle={innerContentStyle}
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
+                  bounces={false}
                 >
                   {children}
                 </ScrollView>
@@ -340,7 +345,8 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
                 <View
                   style={[
                     innerContentStyle,
-                    { backgroundColor: colors.card, flex: 1 },
+                    { backgroundColor: colors.card },
+                    !useAutoHeight && { flex: 1 },
                   ]}
                 >
                   {children}
@@ -389,22 +395,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.xl,
     overflow: 'hidden',
   },
-  handleArea: {
-    paddingTop: 10,
-    paddingBottom: 6,
-    alignItems: 'center',
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    opacity: 0.5,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xs,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: spacing.sm,
