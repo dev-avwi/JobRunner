@@ -10604,62 +10604,55 @@ export default function JobDetailScreen() {
       </AppBottomSheet>
 
       {/* Cost Prompt Modal */}
-      <Modal
-      onRequestClose={() => setShowCostPromptModal(false)} visible={showCostPromptModal} animationType="fade" transparent>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContainer, { maxHeight: 320 }]}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Enter Material Cost</Text>
-                <TouchableOpacity onPress={() => { setShowCostPromptModal(false); setCostPromptMaterial(null); setCostPromptValue(''); }}>
-                  <Feather name="x" size={24} color={colors.foreground} />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.modalContent}>
-                <Text style={{ ...typography.body, color: colors.mutedForeground, marginBottom: spacing.md }}>
-                  How much did <Text style={{ fontWeight: '600', color: colors.foreground }}>{costPromptMaterial?.name}</Text> cost you?
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
-                  <Text style={{ fontSize: 18, color: colors.mutedForeground }}>$</Text>
-                  <TextInput
-                    style={[styles.singleLineInput, { flex: 1 }]}
-                    value={costPromptValue}
-                    onChangeText={setCostPromptValue}
-                    keyboardType="decimal-pad"
-                    placeholder="Unit cost"
-                    placeholderTextColor={colors.mutedForeground}
-                    autoFocus
-                  />
-                </View>
-                <Text style={{ ...typography.caption, color: colors.mutedForeground, marginBottom: spacing.md }}>
-                  Tracking costs helps you see your real profit on each job.
-                </Text>
-              </View>
-              <View style={[styles.modalFooter, { gap: spacing.sm }]}>
-                <TouchableOpacity
-                  onPress={() => { setShowCostPromptModal(false); setCostPromptMaterial(null); setCostPromptValue(''); }}
-                  style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
-                >
-                  <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleCostPromptSkip}
-                  style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
-                >
-                  <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>Skip</Text>
-                </TouchableOpacity>
-                <Button
-                  onPress={handleCostPromptSubmit}
-                  disabled={!costPromptValue || parseFloat(costPromptValue) <= 0}
-                  style={{ flex: 1 }}
-                >
-                  Save & Mark {costPromptMaterial?.status === 'installed' ? 'Installed' : 'Received'}
-                </Button>
-              </View>
-            </View>
+      <AppBottomSheet
+        visible={showCostPromptModal}
+        onDismiss={() => { setShowCostPromptModal(false); setCostPromptMaterial(null); setCostPromptValue(''); }}
+        title="Enter Material Cost"
+        showCloseButton
+        footer={(
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <TouchableOpacity
+              onPress={() => { setShowCostPromptModal(false); setCostPromptMaterial(null); setCostPromptValue(''); }}
+              style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
+            >
+              <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleCostPromptSkip}
+              style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
+            >
+              <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>Skip</Text>
+            </TouchableOpacity>
+            <Button
+              onPress={handleCostPromptSubmit}
+              disabled={!costPromptValue || parseFloat(costPromptValue) <= 0}
+              style={{ flex: 1 }}
+            >
+              Save & Mark {costPromptMaterial?.status === 'installed' ? 'Installed' : 'Received'}
+            </Button>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        )}>
+        <View>
+          <Text style={{ ...typography.body, color: colors.mutedForeground, marginBottom: spacing.md }}>
+            How much did <Text style={{ fontWeight: '600', color: colors.foreground }}>{costPromptMaterial?.name}</Text> cost you?
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+            <Text style={{ fontSize: 18, color: colors.mutedForeground }}>$</Text>
+            <TextInput
+              style={[styles.singleLineInput, { flex: 1 }]}
+              value={costPromptValue}
+              onChangeText={setCostPromptValue}
+              keyboardType="decimal-pad"
+              placeholder="Unit cost"
+              placeholderTextColor={colors.mutedForeground}
+              autoFocus
+            />
+          </View>
+          <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
+            Tracking costs helps you see your real profit on each job.
+          </Text>
+        </View>
+      </AppBottomSheet>
 
       {/* Assign Workers Modal - Multi-select with availability */}
       <AppBottomSheet
@@ -10948,50 +10941,32 @@ export default function JobDetailScreen() {
       </AppBottomSheet>
 
       {/* Rename Job Modal */}
-      <Modal
-      onRequestClose={() => setShowRenameModal(false)} visible={showRenameModal} animationType="fade" transparent>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContainer, { maxHeight: 280 }]}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Rename Job</Text>
-                <TouchableOpacity onPress={() => setShowRenameModal(false)}>
-                  <Feather name="x" size={24} color={colors.foreground} />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.modalContent}>
-                <TextInput
-                  style={styles.singleLineInput}
-                  value={newJobTitle}
-                  onChangeText={setNewJobTitle}
-                  placeholder="Enter job title..."
-                  placeholderTextColor={colors.mutedForeground}
-                  autoFocus
-                />
-              </View>
-              <View style={styles.modalFooter}>
-                <Button
-                  variant="outline"
-                  onPress={() => setShowRenameModal(false)}
-                  style={{ flex: 1, marginRight: 8 }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onPress={handleRenameJob}
-                  disabled={isSavingTitle || !newJobTitle.trim()}
-                  style={{ flex: 1 }}
-                >
-                  {isSavingTitle ? 'Saving...' : 'Save'}
-                </Button>
-              </View>
-            </View>
+      <AppBottomSheet
+        visible={showRenameModal}
+        onDismiss={() => setShowRenameModal(false)}
+        title="Rename Job"
+        showCloseButton
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Button variant="outline" onPress={() => setShowRenameModal(false)} style={{ flex: 1 }}>
+              Cancel
+            </Button>
+            <Button onPress={handleRenameJob} disabled={isSavingTitle || !newJobTitle.trim()} style={{ flex: 1 }}>
+              {isSavingTitle ? 'Saving...' : 'Save'}
+            </Button>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        )}>
+        <View>
+          <TextInput
+            style={styles.singleLineInput}
+            value={newJobTitle}
+            onChangeText={setNewJobTitle}
+            placeholder="Enter job title..."
+            placeholderTextColor={colors.mutedForeground}
+            autoFocus
+          />
+        </View>
+      </AppBottomSheet>
 
       {/* Notes Modal */}
       <AppBottomSheet
@@ -11698,21 +11673,17 @@ export default function JobDetailScreen() {
       <AppBottomSheet
         visible={showNextJobModal}
         onDismiss={() => setShowNextJobModal(false)}
-        snapPoints={['90%']}
-        scrollable={false}
-        contentPadding={0}
-      >
-        <View style={{ flex: 1 }}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {nextJob ? 'Next Job' : 'All Done!'}
-              </Text>
-              <TouchableOpacity onPress={() => setShowNextJobModal(false)}>
-                <Feather name="x" size={24} color={colors.mutedForeground} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalContent}>
+        title={nextJob ? 'Next Job' : 'All Done!'}
+        showCloseButton
+        footer={(
+          <TouchableOpacity
+            style={{ backgroundColor: colors.muted, paddingVertical: spacing.md, borderRadius: 8, alignItems: 'center' }}
+            onPress={() => setShowNextJobModal(false)}
+          >
+            <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>Dismiss</Text>
+          </TouchableOpacity>
+        )}>
+        <View>
               {nextJob ? (
                 <View style={{ gap: spacing.md }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
@@ -11808,17 +11779,7 @@ export default function JobDetailScreen() {
                     No more scheduled jobs remaining. Great work!
                   </Text>
                 </View>
-              )}
-            </View>
-            <View style={{ padding: spacing.md }}>
-              <TouchableOpacity
-                style={{ backgroundColor: colors.muted, paddingVertical: spacing.sm, borderRadius: 8, alignItems: 'center' }}
-                onPress={() => setShowNextJobModal(false)}
-              >
-                <Text style={{ color: colors.foreground, fontWeight: '500' }}>Dismiss</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          )}
         </View>
       </AppBottomSheet>
 
@@ -12837,19 +12798,41 @@ export default function JobDetailScreen() {
       <AppBottomSheet
         visible={showAddVariationModal}
         onDismiss={() => setShowAddVariationModal(false)}
-        snapPoints={['90%']}
-        scrollable={false}
-        contentPadding={0}>
-        <View style={{ flex: 1 }}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ justifyContent: 'flex-end' }}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Add Variation</Text>
-                <TouchableOpacity onPress={() => setShowAddVariationModal(false)}>
-                  <Feather name="x" size={24} color={colors.foreground} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
+        title="Add Variation"
+        showCloseButton
+        snapPoints={['85%']}
+        footer={(
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <TouchableOpacity
+              onPress={() => setShowAddVariationModal(false)}
+              style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
+            >
+              <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.primary,
+                paddingVertical: spacing.md,
+                borderRadius: radius.md,
+                opacity: (!variationForm.title.trim() || !variationForm.amount.trim() || isSavingVariation) ? 0.5 : 1,
+                minHeight: 44,
+              }}
+              onPress={handleCreateVariation}
+              activeOpacity={0.8}
+              disabled={!variationForm.title.trim() || !variationForm.amount.trim() || isSavingVariation}
+            >
+              {isSavingVariation ? (
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
+              ) : (
+                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Create Variation</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}>
+        <View>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Title *</Text>
                 <TextInput
                   style={styles.singleLineInput}
@@ -12894,38 +12877,6 @@ export default function JobDetailScreen() {
                     </Text>
                   </View>
                 ) : null}
-              </ScrollView>
-              <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  onPress={() => setShowAddVariationModal(false)}
-                  style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
-                >
-                  <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: colors.primary,
-                    paddingVertical: spacing.md,
-                    borderRadius: radius.md,
-                    opacity: (!variationForm.title.trim() || !variationForm.amount.trim() || isSavingVariation) ? 0.5 : 1,
-                    minHeight: 44,
-                  }}
-                  onPress={handleCreateVariation}
-                  activeOpacity={0.8}
-                  disabled={!variationForm.title.trim() || !variationForm.amount.trim() || isSavingVariation}
-                >
-                  {isSavingVariation ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  ) : (
-                    <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Create Variation</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
         </View>
       </AppBottomSheet>
 
@@ -12933,66 +12884,56 @@ export default function JobDetailScreen() {
       <AppBottomSheet
         visible={!!showApproveVariationModal}
         onDismiss={() => setShowApproveVariationModal(null)}
-        snapPoints={['90%']}
-        scrollable={false}
-        contentPadding={0}>
-        <View style={{ flex: 1 }}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ justifyContent: 'flex-end' }}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Approve Variation</Text>
-                <TouchableOpacity onPress={() => setShowApproveVariationModal(null)}>
-                  <Feather name="x" size={24} color={colors.foreground} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Approver Name *</Text>
-                <TextInput
-                  style={styles.singleLineInput}
-                  value={approveVariationName}
-                  onChangeText={setApproveVariationName}
-                  placeholder="Enter name of person approving"
-                  placeholderTextColor={colors.mutedForeground}
-                />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Signature</Text>
-                <View style={{ borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
-                  <SignaturePad
-                    onSave={(data) => setApproveVariationSignature(data)}
-                    height={200}
-                  />
-                </View>
-              </ScrollView>
-              <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  onPress={() => setShowApproveVariationModal(null)}
-                  style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
-                >
-                  <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: colors.success,
-                    paddingVertical: spacing.md,
-                    borderRadius: radius.md,
-                    opacity: (!approveVariationName.trim() || isApprovingVariation) ? 0.5 : 1,
-                    minHeight: 44,
-                  }}
-                  onPress={handleApproveVariation}
-                  activeOpacity={0.8}
-                  disabled={!approveVariationName.trim() || isApprovingVariation}
-                >
-                  {isApprovingVariation ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  ) : (
-                    <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Approve</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
+        title="Approve Variation"
+        showCloseButton
+        snapPoints={['85%']}
+        footer={(
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <TouchableOpacity
+              onPress={() => setShowApproveVariationModal(null)}
+              style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
+            >
+              <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.success,
+                paddingVertical: spacing.md,
+                borderRadius: radius.md,
+                opacity: (!approveVariationName.trim() || isApprovingVariation) ? 0.5 : 1,
+                minHeight: 44,
+              }}
+              onPress={handleApproveVariation}
+              activeOpacity={0.8}
+              disabled={!approveVariationName.trim() || isApprovingVariation}
+            >
+              {isApprovingVariation ? (
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
+              ) : (
+                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Approve</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}>
+        <View>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Approver Name *</Text>
+          <TextInput
+            style={styles.singleLineInput}
+            value={approveVariationName}
+            onChangeText={setApproveVariationName}
+            placeholder="Enter name of person approving"
+            placeholderTextColor={colors.mutedForeground}
+          />
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Signature</Text>
+          <View style={{ borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
+            <SignaturePad
+              onSave={(data) => setApproveVariationSignature(data)}
+              height={200}
+            />
+          </View>
         </View>
       </AppBottomSheet>
 
@@ -13000,60 +12941,49 @@ export default function JobDetailScreen() {
       <AppBottomSheet
         visible={!!showRejectVariationModal}
         onDismiss={() => setShowRejectVariationModal(null)}
-        snapPoints={['90%']}
-        scrollable={false}
-        contentPadding={0}>
-        <View style={{ flex: 1 }}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ justifyContent: 'flex-end' }}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Reject Variation</Text>
-                <TouchableOpacity onPress={() => setShowRejectVariationModal(null)}>
-                  <Feather name="x" size={24} color={colors.foreground} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Reason for Rejection</Text>
-                <TextInput
-                  style={[styles.notesInput, { minHeight: 100 }]}
-                  value={rejectVariationReason}
-                  onChangeText={setRejectVariationReason}
-                  placeholder="Explain why this variation is rejected..."
-                  placeholderTextColor={colors.mutedForeground}
-                  multiline
-                />
-              </ScrollView>
-              <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  onPress={() => setShowRejectVariationModal(null)}
-                  style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
-                >
-                  <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: colors.destructive,
-                    paddingVertical: spacing.md,
-                    borderRadius: radius.md,
-                    opacity: isRejectingVariation ? 0.5 : 1,
-                    minHeight: 44,
-                  }}
-                  onPress={handleRejectVariation}
-                  activeOpacity={0.8}
-                  disabled={isRejectingVariation}
-                >
-                  {isRejectingVariation ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  ) : (
-                    <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Reject</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
+        title="Reject Variation"
+        showCloseButton
+        footer={(
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <TouchableOpacity
+              onPress={() => setShowRejectVariationModal(null)}
+              style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
+            >
+              <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.destructive,
+                paddingVertical: spacing.md,
+                borderRadius: radius.md,
+                opacity: isRejectingVariation ? 0.5 : 1,
+                minHeight: 44,
+              }}
+              onPress={handleRejectVariation}
+              activeOpacity={0.8}
+              disabled={isRejectingVariation}
+            >
+              {isRejectingVariation ? (
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
+              ) : (
+                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Reject</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}>
+        <View>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Reason for Rejection</Text>
+          <TextInput
+            style={[styles.notesInput, { minHeight: 100 }]}
+            value={rejectVariationReason}
+            onChangeText={setRejectVariationReason}
+            placeholder="Explain why this variation is rejected..."
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+          />
         </View>
       </AppBottomSheet>
     </>
