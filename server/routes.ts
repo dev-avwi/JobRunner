@@ -33395,14 +33395,75 @@ Respond with JSON in this format:
 
   // ============ INVITE CODE SYSTEM ============
 
+  // Unambiguous chars: no 0/O, 1/I/L. 8-char codes from a 32-char set ≈ 10^12
+  // combinations, which combined with the rate limiters below makes brute-force
+  // guessing impractical.
   const INVITE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const INVITE_CODE_LENGTH = 8;
   function generateInviteCode(): string {
     let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += INVITE_CODE_CHARS.charAt(Math.floor(Math.random() * INVITE_CODE_CHARS.length));
+    for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
+      code += INVITE_CODE_CHARS.charAt(randomInt(0, INVITE_CODE_CHARS.length));
     }
     return code;
   }
+
+  // In-memory brute-force guards for invite-code endpoints. Per-IP for the
+  // public validate endpoint, per-user for the authed redeem endpoint. Both
+  // count failures only; a successful hit resets the bucket.
+  const inviteCodeValidateBuckets = new Map<string, { count: number; resetAt: number }>();
+  const inviteCodeRedeemBuckets = new Map<string, { count: number; resetAt: number }>();
+  const INVITE_VALIDATE_WINDOW_MS = 10 * 60 * 1000; // 10 min
+  const INVITE_VALIDATE_MAX = 20;
+  const INVITE_REDEEM_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+  const INVITE_REDEEM_MAX = 10;
+
+  function checkInviteBucket(
+    bucket: Map<string, { count: number; resetAt: number }>,
+    key: string,
+    windowMs: number,
+    max: number,
+  ): { allowed: boolean; retryAfterSec: number } {
+    const now = Date.now();
+    const entry = bucket.get(key);
+    if (!entry || now >= entry.resetAt) {
+      bucket.set(key, { count: 0, resetAt: now + windowMs });
+      return { allowed: true, retryAfterSec: 0 };
+    }
+    if (entry.count >= max) {
+      return { allowed: false, retryAfterSec: Math.ceil((entry.resetAt - now) / 1000) };
+    }
+    return { allowed: true, retryAfterSec: 0 };
+  }
+  function recordInviteFailure(
+    bucket: Map<string, { count: number; resetAt: number }>,
+    key: string,
+    windowMs: number,
+  ) {
+    const now = Date.now();
+    const entry = bucket.get(key);
+    if (!entry || now >= entry.resetAt) {
+      bucket.set(key, { count: 1, resetAt: now + windowMs });
+    } else {
+      entry.count++;
+    }
+  }
+  function resetInviteBucket(
+    bucket: Map<string, { count: number; resetAt: number }>,
+    key: string,
+  ) {
+    bucket.delete(key);
+  }
+  // Periodic cleanup to keep maps bounded.
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of inviteCodeValidateBuckets) {
+      if (now >= v.resetAt) inviteCodeValidateBuckets.delete(k);
+    }
+    for (const [k, v] of inviteCodeRedeemBuckets) {
+      if (now >= v.resetAt) inviteCodeRedeemBuckets.delete(k);
+    }
+  }, 10 * 60 * 1000).unref();
 
   app.post("/api/team/invite-codes", requireAuth, ownerOnly(), requireTeamPlan(), async (req: any, res) => {
     try {
@@ -33480,10 +33541,35 @@ Respond with JSON in this format:
 
   app.get("/api/team/invite-code/validate/:code", async (req: any, res) => {
     try {
-      const code = req.params.code.toUpperCase().trim();
+      const ip = (req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').toString();
+      const bucketKey = `ip:${ip}`;
+      const gate = checkInviteBucket(
+        inviteCodeValidateBuckets,
+        bucketKey,
+        INVITE_VALIDATE_WINDOW_MS,
+        INVITE_VALIDATE_MAX,
+      );
+      if (!gate.allowed) {
+        res.setHeader('Retry-After', String(gate.retryAfterSec));
+        console.warn(`[invite-code] validate rate-limited ip=${ip} retryAfter=${gate.retryAfterSec}s`);
+        return res.status(429).json({
+          valid: false,
+          error: 'Too many attempts. Please wait a few minutes and try again.',
+          retryAfterSec: gate.retryAfterSec,
+        });
+      }
 
-      if (!code || code.length !== 6) {
-        return res.json({ valid: false, error: 'Code must be 6 characters' });
+      const code = (req.params.code || '').toUpperCase().trim();
+
+      // Accept legacy 6-char codes alongside new 8-char codes during the
+      // transition window so existing codes in the wild keep working.
+      if (!code || (code.length !== INVITE_CODE_LENGTH && code.length !== 6)) {
+        recordInviteFailure(inviteCodeValidateBuckets, bucketKey, INVITE_VALIDATE_WINDOW_MS);
+        return res.json({ valid: false, error: `Code must be ${INVITE_CODE_LENGTH} characters` });
+      }
+      if (!/^[A-Z0-9]+$/.test(code)) {
+        recordInviteFailure(inviteCodeValidateBuckets, bucketKey, INVITE_VALIDATE_WINDOW_MS);
+        return res.json({ valid: false, error: 'Invalid invite code' });
       }
 
       const [inviteCode] = await db.select().from(inviteCodes)
@@ -33494,16 +33580,23 @@ Respond with JSON in this format:
         .limit(1);
 
       if (!inviteCode) {
+        recordInviteFailure(inviteCodeValidateBuckets, bucketKey, INVITE_VALIDATE_WINDOW_MS);
         return res.json({ valid: false, error: 'Invalid invite code' });
       }
 
       if (new Date() > new Date(inviteCode.expiresAt)) {
+        recordInviteFailure(inviteCodeValidateBuckets, bucketKey, INVITE_VALIDATE_WINDOW_MS);
         return res.json({ valid: false, error: 'This invite code has expired' });
       }
 
       if (inviteCode.usedCount >= inviteCode.maxUses) {
+        recordInviteFailure(inviteCodeValidateBuckets, bucketKey, INVITE_VALIDATE_WINDOW_MS);
         return res.json({ valid: false, error: 'This invite code has reached its usage limit' });
       }
+
+      // Successful validation — reset the IP's failure bucket so honest typo
+      // attempts that finally succeeded don't carry residual penalty.
+      resetInviteBucket(inviteCodeValidateBuckets, bucketKey);
 
       const owner = await storage.getUser(inviteCode.businessOwnerId);
       const businessSettingsData = await storage.getBusinessSettings(inviteCode.businessOwnerId);
@@ -33525,11 +33618,39 @@ Respond with JSON in this format:
       const userId = req.userId!;
       const { code, phone } = req.body;
 
+      const ip = (req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').toString();
+      const bucketKey = `user:${userId}`;
+      const gate = checkInviteBucket(
+        inviteCodeRedeemBuckets,
+        bucketKey,
+        INVITE_REDEEM_WINDOW_MS,
+        INVITE_REDEEM_MAX,
+      );
+      if (!gate.allowed) {
+        res.setHeader('Retry-After', String(gate.retryAfterSec));
+        console.warn(`[invite-code] redeem rate-limited userId=${userId} ip=${ip} retryAfter=${gate.retryAfterSec}s`);
+        return res.status(429).json({
+          error: 'Too many invite-code attempts. Please wait an hour and try again.',
+          retryAfterSec: gate.retryAfterSec,
+        });
+      }
+
       if (!code || typeof code !== 'string') {
         return res.status(400).json({ error: 'Invite code is required' });
       }
 
       const normalizedCode = code.toUpperCase().trim();
+
+      // Cheap shape check before hitting the DB. Accept legacy 6-char codes
+      // alongside the new 8-char default.
+      if (
+        (normalizedCode.length !== INVITE_CODE_LENGTH && normalizedCode.length !== 6) ||
+        !/^[A-Z0-9]+$/.test(normalizedCode)
+      ) {
+        recordInviteFailure(inviteCodeRedeemBuckets, bucketKey, INVITE_REDEEM_WINDOW_MS);
+        console.warn(`[invite-code] redeem invalid-shape userId=${userId} ip=${ip}`);
+        return res.status(400).json({ error: 'Invalid invite code' });
+      }
 
       const [inviteCode] = await db.select().from(inviteCodes)
         .where(and(
@@ -33539,16 +33660,25 @@ Respond with JSON in this format:
         .limit(1);
 
       if (!inviteCode) {
+        recordInviteFailure(inviteCodeRedeemBuckets, bucketKey, INVITE_REDEEM_WINDOW_MS);
+        console.warn(`[invite-code] redeem unknown-code userId=${userId} ip=${ip}`);
         return res.status(400).json({ error: 'Invalid invite code' });
       }
 
       if (new Date() > new Date(inviteCode.expiresAt)) {
+        recordInviteFailure(inviteCodeRedeemBuckets, bucketKey, INVITE_REDEEM_WINDOW_MS);
         return res.status(400).json({ error: 'This invite code has expired' });
       }
 
       if (inviteCode.usedCount >= inviteCode.maxUses) {
+        recordInviteFailure(inviteCodeRedeemBuckets, bucketKey, INVITE_REDEEM_WINDOW_MS);
         return res.status(400).json({ error: 'This invite code has reached its usage limit' });
       }
+
+      // Successful match — clear the user's failure bucket. The remainder of
+      // this handler runs with a clean slate; later failures (plan gate, etc.)
+      // are not brute-force candidates.
+      resetInviteBucket(inviteCodeRedeemBuckets, bucketKey);
 
       // Verify the inviting business owner currently has an active Team /
       // Business plan. Without this check a worker could redeem a code from
