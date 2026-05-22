@@ -2161,6 +2161,7 @@ function OwnerDashboardScreen() {
   const { colors } = useTheme();
   const responsiveShell = usePageShell();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { activeTimer } = useTimeTrackingStore();
   const scrollRef = useRef<ScrollView | null>(null);
   const { scrollToTopTrigger } = useScrollToTop();
   
@@ -2913,25 +2914,17 @@ function OwnerDashboardScreen() {
   };
 
   const handleCompleteJob = async (jobId: string) => {
-    // Show confirmation then navigate to job for final review
+    // Open the job detail page with the completion sheet auto-opened so the
+    // user can review photos/notes/signature before the status flips to done.
     Alert.alert(
       'Complete Job?',
-      'This will mark the job as done. You can add final notes or photos before completing.',
+      'This will open the wrap-up sheet so you can add final notes or photos before completing.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Review & Complete',
-          onPress: async () => {
-            setIsUpdating(true);
-            try {
-              await updateJobStatus(jobId, 'done');
-              // Navigate to job detail page for final review
-              router.push(`/job/${jobId}`);
-            } catch (error) {
-              showToast({ type: 'error', message: 'Error', description: 'Failed to complete job' });
-            } finally {
-              setIsUpdating(false);
-            }
+          onPress: () => {
+            router.push(`/job/${jobId}?action=complete`);
           }
         }
       ]
@@ -3003,7 +2996,7 @@ function OwnerDashboardScreen() {
                   {isSubcontractorUser ? 'Subcontractor' : isOwner() ? 'Owner' : roleInfo?.roleName === 'OWNER' ? 'Owner' : roleInfo?.roleName || 'Staff'}
                 </Text>
               </View>
-              {workerState.state !== 'available' && (
+              {workerState.state !== 'available' && !(workerState.state === 'on_job' && !activeTimer) && (
                 <View style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -3930,13 +3923,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
     overflow: 'hidden',
-    ...shadows.sm,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
     ...shadows.sm,
   },
   gettingStartedHeader: {

@@ -2326,6 +2326,8 @@ export default function JobDetailScreen() {
         setShowAssignModal(true);
       } else if (navAction === 'invoice') {
         router.replace(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`);
+      } else if (navAction === 'complete') {
+        setShowCompletionModal(true);
       }
     });
     return () => handle.cancel();
