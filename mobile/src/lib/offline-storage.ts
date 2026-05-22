@@ -259,6 +259,39 @@ class OfflineStorageService {
   private db: SQLite.SQLiteDatabase | null = null;
   private networkUnsubscribe: (() => void) | null = null;
   private syncInProgress = false;
+  // Serializes write transactions so overlapping callers (e.g. two
+  // fullSync() invocations triggered by auth + tab focus) can't race
+  // each other's BEGIN/COMMIT/ROLLBACK. See runInTransaction().
+  private transactionMutex: Promise<void> = Promise.resolve();
+
+  /**
+   * Run `fn` inside a serialized SQLite transaction. Each call awaits the
+   * previously-queued transaction before starting, so the underlying
+   * `withTransactionAsync` (which manages BEGIN/COMMIT/ROLLBACK safely)
+   * never sees a nested-transaction collision.
+   *
+   * Any expo-sqlite write that previously hand-rolled
+   * `BEGIN TRANSACTION` / `COMMIT` / `ROLLBACK` should use this helper.
+   */
+  private async runInTransaction(fn: () => Promise<void>): Promise<void> {
+    if (!this.db) return;
+    const db = this.db;
+    const previous = this.transactionMutex;
+    let release: () => void = () => {};
+    this.transactionMutex = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    try {
+      await previous;
+    } catch {
+      // Previous transaction's failure must not prevent this one from running.
+    }
+    try {
+      await db.withTransactionAsync(fn);
+    } finally {
+      release();
+    }
+  }
 
   /**
    * Initialize the SQLite database and create tables
@@ -585,6 +618,9 @@ class OfflineStorageService {
       
       if (quoteNumberCol && quoteNumberCol.notnull === 1) {
         if (__DEV__) console.log('[OfflineStorage] Migrating quotes table to allow NULL quote_number...');
+        // Schema migration runs once during initialize() before any other caller
+        // can race the DB, so hand-rolled BEGIN/COMMIT inside this multi-statement
+        // execAsync is safe and does not need runInTransaction().
         await this.db.execAsync(`
           BEGIN TRANSACTION;
           
@@ -630,6 +666,8 @@ class OfflineStorageService {
       
       if (invoiceNumberCol && invoiceNumberCol.notnull === 1) {
         if (__DEV__) console.log('[OfflineStorage] Migrating invoices table to allow NULL invoice_number...');
+        // Schema migration runs once during initialize() before any other caller
+        // can race the DB — safe to keep hand-rolled BEGIN/COMMIT here.
         await this.db.execAsync(`
           BEGIN TRANSACTION;
           
@@ -678,6 +716,8 @@ class OfflineStorageService {
       
       if (localUriCol && localUriCol.notnull === 1) {
         if (__DEV__) console.log('[OfflineStorage] Migrating attachments table to allow NULL local_uri...');
+        // Schema migration runs once during initialize() before any other caller
+        // can race the DB — safe to keep hand-rolled BEGIN/COMMIT here.
         await this.db.execAsync(`
           BEGIN TRANSACTION;
           
@@ -3826,28 +3866,28 @@ class OfflineStorageService {
 
   async cacheSafetyFormTemplates(templates: any[]): Promise<void> {
     if (!this.db || !Array.isArray(templates)) return;
+    const db = this.db;
     const now = Date.now();
     try {
-      await this.db.execAsync('BEGIN TRANSACTION');
-      await this.db.runAsync('DELETE FROM safety_form_templates');
-      for (const t of templates) {
-        await this.db.runAsync(
-          `INSERT OR REPLACE INTO safety_form_templates (id, name, form_type, fields_json, template_data, cached_at)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            t.id,
-            t.name || t.title || null,
-            t.formType || t.type || 'custom',
-            JSON.stringify(t.fields || t.formFields || []),
-            JSON.stringify(t),
-            now,
-          ]
-        );
-      }
-      await this.db.execAsync('COMMIT');
+      await this.runInTransaction(async () => {
+        await db.runAsync('DELETE FROM safety_form_templates');
+        for (const t of templates) {
+          await db.runAsync(
+            `INSERT OR REPLACE INTO safety_form_templates (id, name, form_type, fields_json, template_data, cached_at)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+              t.id,
+              t.name || t.title || null,
+              t.formType || t.type || 'custom',
+              JSON.stringify(t.fields || t.formFields || []),
+              JSON.stringify(t),
+              now,
+            ]
+          );
+        }
+      });
       if (__DEV__) console.log(`[OfflineStorage] Cached ${templates.length} safety form templates`);
     } catch (err) {
-      try { await this.db.execAsync('ROLLBACK'); } catch {}
       if (__DEV__) console.error('[OfflineStorage] cacheSafetyFormTemplates failed:', err);
     }
   }
@@ -3941,33 +3981,33 @@ class OfflineStorageService {
 
   async cacheChatMessages(channelType: string, channelId: string, messages: any[]): Promise<void> {
     if (!this.db || !Array.isArray(messages)) return;
+    const db = this.db;
     const now = Date.now();
     try {
-      await this.db.execAsync('BEGIN TRANSACTION');
-      for (const m of messages) {
-        // Don't overwrite an in-flight pending_sync row by id collision.
-        await this.db.runAsync(
-          `INSERT OR REPLACE INTO chat_messages
-            (id, local_id, channel_type, channel_id, sender_id, sender_name, message,
-             message_type, attachment_url, created_at, read_locally, pending_sync, sync_action, cached_at)
-           VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, ?)`,
-          [
-            m.id,
-            channelType,
-            channelId,
-            m.senderId || m.userId || null,
-            m.senderName || m.userName || null,
-            m.message || m.body || m.content || '',
-            m.messageType || m.type || 'text',
-            m.attachmentUrl || null,
-            m.createdAt || new Date().toISOString(),
-            now,
-          ]
-        );
-      }
-      await this.db.execAsync('COMMIT');
+      await this.runInTransaction(async () => {
+        for (const m of messages) {
+          // Don't overwrite an in-flight pending_sync row by id collision.
+          await db.runAsync(
+            `INSERT OR REPLACE INTO chat_messages
+              (id, local_id, channel_type, channel_id, sender_id, sender_name, message,
+               message_type, attachment_url, created_at, read_locally, pending_sync, sync_action, cached_at)
+             VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, ?)`,
+            [
+              m.id,
+              channelType,
+              channelId,
+              m.senderId || m.userId || null,
+              m.senderName || m.userName || null,
+              m.message || m.body || m.content || '',
+              m.messageType || m.type || 'text',
+              m.attachmentUrl || null,
+              m.createdAt || new Date().toISOString(),
+              now,
+            ]
+          );
+        }
+      });
     } catch (err) {
-      try { await this.db.execAsync('ROLLBACK'); } catch {}
       if (__DEV__) console.error('[OfflineStorage] cacheChatMessages failed:', err);
     }
   }
