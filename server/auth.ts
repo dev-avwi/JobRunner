@@ -139,7 +139,8 @@ export class AuthService {
     lastName?: string;
     tradeType?: string;
     intendedTier?: string;
-  }): Promise<{ success: true; user: SafeUser } | { success: false; error: string; code?: string }> {
+    inviteToken?: string;
+  }): Promise<{ success: true; user: SafeUser; preVerified?: boolean } | { success: false; error: string; code?: string }> {
     try {
       // Normalize email
       const normalizedEmail = userData.email.toLowerCase().trim();
@@ -198,18 +199,39 @@ export class AuthService {
       // Hash password
       const hashedPassword = await this.hashPassword(validatedData.password);
 
+      // If a valid inviteToken is supplied AND it matches a pending team_member
+      // with the same email, we can mark the new account as already email-verified
+      // (delivery of the invite link to that inbox is proof of email ownership).
+      let preVerified = false;
+      if (userData.inviteToken) {
+        try {
+          const teamMember = await storage.getTeamMemberByInviteToken(userData.inviteToken);
+          if (
+            teamMember &&
+            teamMember.inviteStatus === 'pending' &&
+            teamMember.email &&
+            teamMember.email.toLowerCase().trim() === validatedData.email
+          ) {
+            preVerified = true;
+          }
+        } catch (e) {
+          console.error('[auth.register] inviteToken lookup failed:', e);
+        }
+      }
+
       // Create user
       const user = await storage.createUser({
         ...validatedData,
         password: hashedPassword,
-      });
+        ...(preVerified ? { emailVerified: true } : {}),
+      } as any);
 
       // Note: Welcome email is sent AFTER email verification, not at registration
       // This prevents duplicate emails (verification + welcome at signup)
 
       // Return user without password
       const { password, ...safeUser } = user;
-      return { success: true, user: safeUser };
+      return { success: true, user: safeUser, preVerified };
     } catch (error) {
       console.error('Registration error:', error);
       return { success: false, error: 'Registration failed. Please try again.' };

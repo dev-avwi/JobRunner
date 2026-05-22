@@ -3178,6 +3178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rawBody.username = `${emailLocal}_${Math.random().toString(36).substring(2, 8)}`;
       }
       const userData = insertUserSchema.parse(rawBody);
+      const inviteTokenRaw = typeof rawBody.inviteToken === 'string' ? rawBody.inviteToken.trim() : '';
       const cleanUserData = {
         email: userData.email,
         username: userData.username,
@@ -3186,6 +3187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName: userData.lastName || undefined,
         tradeType: userData.tradeType || undefined,
         intendedTier: userData.intendedTier || 'free',
+        inviteToken: inviteTokenRaw || undefined,
       };
       const result = await AuthService.register(cleanUserData);
       
@@ -3201,6 +3203,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.seedDefaultSafetyForms(result.user.id);
         } catch (templateError) {
           console.error('Failed to seed default templates:', templateError);
+        }
+
+        // If the signup was via a valid team invite, the email is already
+        // proven by the invite link delivery — skip verification email and
+        // auto-login so the invited worker lands straight on the dashboard.
+        if (result.preVerified) {
+          req.session.userId = result.user.id;
+          req.session.user = result.user;
+          delete req.session.isDemo;
+          delete req.session.demoDataUserId;
+          return req.session.save((err: any) => {
+            if (err) {
+              console.error("Session save error (invited signup):", err);
+              return res.status(500).json({ error: "Failed to create session" });
+            }
+            res.json({
+              success: true,
+              user: result.user,
+              sessionToken: req.sessionID,
+              preVerified: true,
+              message: 'Account created — welcome aboard!',
+            });
+          });
         }
 
         // Generate and send email verification token (non-blocking)
@@ -3717,6 +3742,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Accept invite error:", error);
       res.status(500).json({ error: "Failed to accept invite" });
+    }
+  });
+
+  // Dismiss the pending-invite banner for a single team_member id. The banner
+  // re-appears for new invites; this only snoozes the currently surfaced one.
+  app.post("/api/auth/dismiss-invite-banner", async (req: any, res) => {
+    const effectiveUserId = req.userId || req.session?.userId;
+    if (!effectiveUserId) return res.status(401).json({ error: "Not authenticated" });
+    const bodySchema = z.object({ teamMemberId: z.string().min(1) });
+    const parsed = bodySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "teamMemberId is required" });
+    try {
+      const key = `invite_banner_dismissed:${effectiveUserId}:${parsed.data.teamMemberId}`;
+      // Snooze for 7 days using the user_preferences storage helper if available,
+      // otherwise no-op (the client also caches dismissal locally).
+      if (typeof (storage as any).setUserPreference === 'function') {
+        await (storage as any).setUserPreference(effectiveUserId, key, String(Date.now()));
+      }
+      res.json({ success: true });
+    } catch (e) {
+      console.error("Dismiss invite banner error:", e);
+      res.json({ success: true });
+    }
+  });
+
+  // Passwordless invite accept — used by the mobile one-tap "Join team" flow.
+  // The invite link itself proves email ownership (it was delivered to the
+  // invited inbox or SMS), so we skip password creation and email verification
+  // entirely. If the email already has an account we simply link; otherwise
+  // we create a verified user with a random server-side password.
+  app.post("/api/team/invite/accept-passwordless/:token", async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      if (!token) return res.status(400).json({ success: false, error: 'No token provided' });
+
+      const teamMember = await storage.getTeamMemberByInviteToken(token);
+      if (!teamMember) return res.status(404).json({ success: false, error: 'Invalid or expired invitation' });
+      if (teamMember.inviteStatus !== 'pending') {
+        return res.status(400).json({ success: false, error: 'This invitation has already been used' });
+      }
+
+      const inviteOwner = await storage.getUser(teamMember.businessOwnerId);
+      const inviteOwnerSettings = await storage.getBusinessSettings(teamMember.businessOwnerId);
+      if (!ownerHasTeamCapability(inviteOwner, inviteOwnerSettings)) {
+        return res.status(403).json({
+          success: false,
+          error: "This business doesn't currently have an active Team subscription.",
+          code: 'team_plan_required',
+        });
+      }
+
+      const bodyFirst = typeof req.body?.firstName === 'string' ? req.body.firstName.trim() : '';
+      const bodyLast = typeof req.body?.lastName === 'string' ? req.body.lastName.trim() : '';
+      const bodyPhone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
+
+      let user: any;
+      let isNewUser = false;
+
+      const sessionUserId = req.userId || req.session?.userId;
+      if (sessionUserId) {
+        user = await AuthService.getUserById(sessionUserId);
+        if (!user) return res.status(401).json({ success: false, error: 'Session expired. Please sign in again.' });
+        if (user.email && teamMember.email && user.email.toLowerCase() !== teamMember.email.toLowerCase()) {
+          return res.status(400).json({ success: false, error: 'This invite was sent to a different email address.' });
+        }
+        const existing = await storage.getTeamMemberByUserIdAndBusiness(user.id, teamMember.businessOwnerId);
+        if (existing && existing.id !== teamMember.id) {
+          return res.status(400).json({ success: false, error: 'You are already a member of this team' });
+        }
+      } else {
+        const existingUser = await storage.getUserByEmail(teamMember.email);
+        if (existingUser) {
+          // Existing account with no session — they should log in first to link.
+          return res.status(409).json({
+            success: false,
+            error: 'An account with this email exists. Please sign in to accept this invitation.',
+            code: 'login_required',
+          });
+        }
+
+        const randomPassword = `Inv_${Math.random().toString(36).slice(2, 10)}${Math.random().toString(36).slice(2, 6).toUpperCase()}9`;
+        const emailLocal = teamMember.email.toLowerCase().split('@')[0].replace(/[^a-z0-9_]/g, '_').slice(0, 20) || 'user';
+        const registerResult = await AuthService.register({
+          email: teamMember.email,
+          password: randomPassword,
+          username: `${emailLocal}_${Math.random().toString(36).slice(2, 8)}`,
+          firstName: bodyFirst || teamMember.firstName || undefined,
+          lastName: bodyLast || teamMember.lastName || undefined,
+          inviteToken: token,
+        });
+        if (!registerResult.success) {
+          return res.status(400).json({ success: false, error: registerResult.error });
+        }
+        user = registerResult.user;
+        isNewUser = true;
+        // Belt-and-braces: ensure verified flag is set even if storage layer ignored it.
+        try { await storage.updateUser(user.id, { emailVerified: true }); } catch {}
+      }
+
+      const seatCheck = await checkTeamSeatLimit(teamMember.businessOwnerId, inviteOwner, inviteOwnerSettings);
+      if (!seatCheck.allowed) {
+        return res.status(403).json({
+          success: false,
+          error: seatCheck.error,
+          code: seatCheck.code,
+        });
+      }
+
+      await storage.updateTeamMember(teamMember.id, teamMember.businessOwnerId, {
+        memberId: user.id,
+        inviteStatus: 'accepted',
+        inviteAcceptedAt: new Date(),
+        inviteToken: null,
+      } as any);
+
+      // Backfill profile name/phone if invited user is brand new and supplied them.
+      if (isNewUser && (bodyFirst || bodyLast || bodyPhone)) {
+        try {
+          await storage.updateUser(user.id, {
+            firstName: bodyFirst || user.firstName || undefined,
+            lastName: bodyLast || user.lastName || undefined,
+            phone: bodyPhone || user.phone || undefined,
+          } as any);
+        } catch (e) { console.error('Backfill user profile failed:', e); }
+      }
+
+      // Auto-complete onboarding so the worker lands straight on the dashboard.
+      try {
+        const settings = await storage.getBusinessSettings(user.id);
+        if (settings && !settings.onboardingCompleted) {
+          await storage.updateBusinessSettings(user.id, { onboardingCompleted: true });
+        } else if (!settings) {
+          await storage.createBusinessSettings({
+            userId: user.id,
+            businessName: '',
+            onboardingCompleted: true,
+          });
+        }
+      } catch (e) { console.error('Onboarding auto-complete failed:', e); }
+
+      // Auto-login
+      req.session.userId = user.id;
+      req.session.user = user;
+      delete req.session.isDemo;
+      delete req.session.demoDataUserId;
+
+      req.session.save((err: any) => {
+        if (err) {
+          console.error("Session save error (invite accept):", err);
+          return res.status(500).json({ success: false, error: "Failed to create session" });
+        }
+        res.json({
+          success: true,
+          user,
+          sessionToken: req.sessionID,
+          isNewUser,
+          businessName: inviteOwnerSettings?.businessName || null,
+        });
+      });
+    } catch (error) {
+      console.error('Passwordless invite accept error:', error);
+      res.status(500).json({ success: false, error: 'Failed to accept invitation' });
     }
   });
 

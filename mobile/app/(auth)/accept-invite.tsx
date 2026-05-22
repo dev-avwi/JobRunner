@@ -39,129 +39,121 @@ export default function AcceptInviteScreen() {
   const { colors } = useTheme();
   const bottomInset = useBottomInset(24);
   const styles = createStyles(colors);
-  
+
   const [inviteData, setInviteData] = useState<InviteDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<'register' | 'login'>('register');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
+  // Profile fields are pre-filled from the invite; users can edit before tap.
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+
+  // Password fallback (only shown if user opts in OR server says login required).
+  const [usePassword, setUsePassword] = useState(false);
   const [password, setPassword] = useState('');
-  
+  const [loginRequired, setLoginRequired] = useState(false);
+
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const user = useAuthStore((state) => state.user);
-  
+
   useEffect(() => {
-    if (token) {
-      validateInvite();
-    }
+    if (token) validateInvite();
   }, [token]);
-  
+
   useEffect(() => {
     if (inviteData?.invite) {
-      setEmail(inviteData.invite.email || '');
       setFirstName(inviteData.invite.firstName || '');
       setLastName(inviteData.invite.lastName || '');
     }
   }, [inviteData]);
-  
+
   const validateInvite = async () => {
     try {
       setLoading(true);
       const response = await api.get<InviteDetails>(`/api/team/invite/validate/${token}`);
-      if (response.data) {
-        setInviteData(response.data);
-      }
+      if (response.data) setInviteData(response.data);
     } catch (err: any) {
       setError(err.message || 'Failed to validate invite');
     } finally {
       setLoading(false);
     }
   };
-  
-  const acceptInvite = async () => {
-    try {
-      const response = await api.post<{ success: boolean; message?: string; error?: string }>(`/api/team/invite/accept/${token}`, {});
-      if (response.data?.success) {
-        await checkAuth();
-        Alert.alert(
-          'Welcome!',
-          `You've joined ${inviteData?.invite?.businessName} as a ${inviteData?.invite?.roleName}.`,
-          [{ text: 'Get Started', onPress: () => router.replace('/') }]
-        );
-      } else {
-        throw new Error(response.data?.error || 'Failed to accept invite');
-      }
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to accept invite');
-    }
-  };
-  
-  const handleRegister = async () => {
-    if (!firstName.trim() || !lastName.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+
+  const handleJoin = async () => {
+    if (!firstName.trim()) {
+      Alert.alert('Missing info', 'Please enter your first name');
       return;
     }
-    
-    if (password.length < 8 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-      Alert.alert('Error', 'Password must be at least 8 characters with uppercase, lowercase, and a number');
-      return;
-    }
-    
     setSubmitting(true);
     setError(null);
-    
     try {
-      const response = await api.register({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-        password,
-        businessName: inviteData?.invite?.businessName || 'My Business',
-        inviteToken: token,
-      });
-      
+      const response = await api.post<{ success?: boolean; sessionToken?: string; error?: string; code?: string }>(
+        `/api/team/invite/accept-passwordless/${token}`,
+        {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phone: phone.trim() || undefined,
+        }
+      );
+
       if (response.data?.success) {
+        if (response.data.sessionToken) {
+          await api.setToken(response.data.sessionToken);
+        }
         await checkAuth();
-        await acceptInvite();
+        router.replace('/(tabs)' as const);
+        return;
+      }
+
+      // Existing account — fall back to login.
+      if (response.data?.code === 'login_required' || (response.error || '').toLowerCase().includes('sign in')) {
+        setLoginRequired(true);
+        setUsePassword(true);
+        setError('You already have an account. Enter your password to join.');
       } else {
-        setError(response.error || 'Registration failed');
+        setError(response.error || response.data?.error || 'Could not accept invitation');
       }
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || 'Could not accept invitation');
     } finally {
       setSubmitting(false);
     }
   };
-  
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter email and password');
+
+  const handleLoginAndJoin = async () => {
+    if (!password.trim()) {
+      Alert.alert('Missing info', 'Please enter your password');
       return;
     }
-    
     setSubmitting(true);
     setError(null);
-    
     try {
-      const response = await api.login(email.trim(), password);
-      
-      if (response.data?.success) {
+      const loginRes = await api.login(inviteData?.invite?.email || '', password);
+      if (loginRes.error || !loginRes.data?.success) {
+        setError(loginRes.error || 'Sign in failed');
+        return;
+      }
+      // Now retry passwordless accept — session will link.
+      const accept = await api.post<{ success?: boolean; sessionToken?: string; error?: string }>(
+        `/api/team/invite/accept-passwordless/${token}`,
+        { firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim() || undefined }
+      );
+      if (accept.data?.success) {
+        if (accept.data.sessionToken) await api.setToken(accept.data.sessionToken);
         await checkAuth();
-        await acceptInvite();
+        router.replace('/(tabs)' as const);
       } else {
-        setError(response.error || 'Login failed');
+        setError(accept.error || 'Could not join team');
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Could not join team');
     } finally {
       setSubmitting(false);
     }
   };
-  
+
   if (loading) {
     return (
       <>
@@ -173,7 +165,7 @@ export default function AcceptInviteScreen() {
       </>
     );
   }
-  
+
   if (!inviteData?.valid || !inviteData?.invite) {
     return (
       <>
@@ -181,32 +173,32 @@ export default function AcceptInviteScreen() {
         <View style={styles.container}>
           <View style={styles.errorCard}>
             <Feather name="alert-circle" size={48} color={colors.destructive} />
-            <Text style={styles.errorTitle}>Invalid Invitation</Text>
+            <Text style={styles.errorTitle}>Invitation expired</Text>
             <Text style={styles.errorText}>
-              {inviteData?.error || 'This invitation link is invalid or has expired.'}
+              {inviteData?.error || "This invite link is no longer valid. Ask the business owner to resend it."}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.backButton}
               onPress={() => router.replace('/(auth)/login')}
             >
-              <Text style={styles.backButtonText}>Go to Login</Text>
+              <Text style={styles.backButtonText}>Go to sign in</Text>
             </TouchableOpacity>
           </View>
         </View>
       </>
     );
   }
-  
+
   const invite = inviteData.invite;
-  
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomInset }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -215,12 +207,12 @@ export default function AcceptInviteScreen() {
             <View style={styles.iconContainer}>
               <Feather name="users" size={32} color={colors.primary} />
             </View>
-            <Text style={styles.title}>You're Invited!</Text>
+            <Text style={styles.title}>You've been invited</Text>
             <Text style={styles.subtitle}>
-              <Text style={styles.inviterName}>{invite.inviterName}</Text> has invited you to join
+              <Text style={styles.inviterName}>{invite.inviterName}</Text> wants you to join
             </Text>
           </View>
-          
+
           <View style={styles.businessCard}>
             <View style={styles.businessIcon}>
               <Feather name="briefcase" size={24} color={colors.primary} />
@@ -231,106 +223,99 @@ export default function AcceptInviteScreen() {
                 <Feather name="shield" size={12} color={colors.success} />
                 <Text style={styles.roleText}>{invite.roleName}</Text>
               </View>
+              <Text style={styles.emailLine}>{invite.email}</Text>
             </View>
           </View>
-          
-          <View style={styles.modeSelector}>
-            <TouchableOpacity 
-              style={[styles.modeButton, mode === 'register' && styles.modeButtonActive]}
-              onPress={() => setMode('register')}
-            >
-              <Text style={[styles.modeButtonText, mode === 'register' && styles.modeButtonTextActive]}>
-                Create Account
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.modeButton, mode === 'login' && styles.modeButtonActive]}
-              onPress={() => setMode('login')}
-            >
-              <Text style={[styles.modeButtonText, mode === 'login' && styles.modeButtonTextActive]}>
-                I Have an Account
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
+
           {error && (
             <View style={styles.errorBanner}>
               <Feather name="alert-circle" size={16} color={colors.destructive} />
               <Text style={styles.errorBannerText}>{error}</Text>
             </View>
           )}
-          
+
           <View style={styles.form}>
-            {mode === 'register' && (
-              <>
-                <View style={styles.inputRow}>
-                  <View style={styles.inputHalf}>
-                    <Text style={styles.label}>First Name</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      placeholder="John"
-                      placeholderTextColor={colors.mutedForeground}
-                      autoCapitalize="words"
-                    />
-                  </View>
-                  <View style={styles.inputHalf}>
-                    <Text style={styles.label}>Last Name</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={lastName}
-                      onChangeText={setLastName}
-                      placeholder="Smith"
-                      placeholderTextColor={colors.mutedForeground}
-                      autoCapitalize="words"
-                    />
-                  </View>
-                </View>
-              </>
-            )}
-            
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[styles.input, mode === 'register' && styles.inputDisabled]}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={mode === 'login'}
-            />
-            {mode === 'register' && (
-              <Text style={styles.emailNote}>Email is pre-filled from your invitation</Text>
-            )}
-            
-            <Text style={styles.label}>Password</Text>
+            <View style={styles.inputRow}>
+              <View style={styles.inputHalf}>
+                <Text style={styles.label}>First name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="John"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="words"
+                />
+              </View>
+              <View style={styles.inputHalf}>
+                <Text style={styles.label}>Last name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Smith"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            <Text style={styles.label}>Phone (optional)</Text>
             <TextInput
               style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={mode === 'register' ? 'Create a password' : 'Enter your password'}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="0412 345 678"
               placeholderTextColor={colors.mutedForeground}
-              secureTextEntry
+              keyboardType="phone-pad"
             />
-            
-            <TouchableOpacity 
+
+            {usePassword && (
+              <>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter your password"
+                  placeholderTextColor={colors.mutedForeground}
+                  secureTextEntry
+                />
+              </>
+            )}
+
+            <TouchableOpacity
               style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-              onPress={mode === 'register' ? handleRegister : handleLogin}
+              onPress={usePassword ? handleLoginAndJoin : handleJoin}
               disabled={submitting}
+              testID="button-join-team"
             >
               {submitting ? (
                 <ActivityIndicator color={colors.primaryForeground} />
               ) : (
                 <>
                   <Text style={styles.submitButtonText}>
-                    {mode === 'register' ? 'Create Account & Join' : 'Login & Join'}
+                    {usePassword ? 'Sign in & join' : 'Join team'}
                   </Text>
                   <Feather name="arrow-right" size={18} color={colors.primaryForeground} />
                 </>
               )}
             </TouchableOpacity>
+
+            {!loginRequired && (
+              <TouchableOpacity
+                style={styles.altLink}
+                onPress={() => setUsePassword((v) => !v)}
+              >
+                <Text style={styles.altLinkText}>
+                  {usePassword ? 'Cancel password sign in' : 'I already have an account'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <Text style={styles.privacyNote}>
+              No password needed for new accounts — your invite link proves it's you.
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -352,6 +337,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: colors.mutedForeground,
+    textAlign: 'center',
   },
   errorCard: {
     alignItems: 'center',
@@ -399,6 +385,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
     color: colors.foreground,
     marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
@@ -415,7 +402,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.card,
     padding: 16,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -435,41 +422,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: colors.foreground,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    marginBottom: 6,
   },
   roleText: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.success,
     fontWeight: '500',
   },
-  modeSelector: {
-    flexDirection: 'row',
-    backgroundColor: colors.muted,
-    borderRadius: 10,
-    padding: 4,
-    marginBottom: 20,
-  },
-  modeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  modeButtonActive: {
-    backgroundColor: colors.card,
-  },
-  modeButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+  emailLine: {
+    fontSize: 12,
     color: colors.mutedForeground,
-  },
-  modeButtonTextActive: {
-    color: colors.foreground,
   },
   errorBanner: {
     flexDirection: 'row',
@@ -511,15 +479,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 16,
     color: colors.foreground,
   },
-  inputDisabled: {
-    backgroundColor: colors.muted,
-    color: colors.mutedForeground,
-  },
-  emailNote: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    marginTop: -4,
-  },
   submitButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -537,5 +496,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.primaryForeground,
     fontSize: 16,
     fontWeight: '600',
+  },
+  altLink: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  altLinkText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  privacyNote: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    marginTop: 4,
   },
 });

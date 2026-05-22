@@ -401,8 +401,11 @@ export default function OnboardingSetupScreen() {
       });
 
       const existingSettings = useAuthStore.getState().businessSettings;
+      // Subcontractors don't have a "business" — they work under other
+      // businesses. Leave businessName empty so the subcontractor dashboard
+      // shows its proper empty state instead of a fake "X's Services".
       const settingsPayload = {
-        businessName: `${subName.trim()}'s Services`,
+        businessName: existingSettings?.businessName || '',
         tradeType: subTradeType || 'other',
         phone: subPhone || null,
         abn: subAbn || null,
@@ -557,8 +560,8 @@ export default function OnboardingSetupScreen() {
           testID="role-worker"
         >
           <View style={styles.roleCardInner}>
-            <View style={[styles.roleIconCircle, { backgroundColor: '#f59e0b14' }]}>
-              <Ionicons name="people" size={22} color="#e8862e" />
+            <View style={[styles.roleIconCircle, { backgroundColor: colors.warning + '14' }]}>
+              <Ionicons name="people" size={22} color={colors.warning} />
             </View>
             <View style={styles.roleTextWrap}>
               <Text style={styles.roleTitle}>I was invited to a team</Text>
@@ -577,8 +580,8 @@ export default function OnboardingSetupScreen() {
           testID="role-subcontractor"
         >
           <View style={styles.roleCardInner}>
-            <View style={[styles.roleIconCircle, { backgroundColor: '#22c55e14' }]}>
-              <Ionicons name="construct" size={22} color="#22c55e" />
+            <View style={[styles.roleIconCircle, { backgroundColor: colors.success + '14' }]}>
+              <Ionicons name="construct" size={22} color={colors.success} />
             </View>
             <View style={styles.roleTextWrap}>
               <Text style={styles.roleTitle}>I'm a subcontractor</Text>
@@ -1075,8 +1078,8 @@ export default function OnboardingSetupScreen() {
 
       <View style={styles.privacyList}>
         <View style={styles.privacyRow}>
-          <View style={[styles.privacyDot, { backgroundColor: '#22c55e18' }]}>
-            <Ionicons name="location" size={18} color="#22c55e" />
+          <View style={[styles.privacyDot, { backgroundColor: colors.success + '18' }]}>
+            <Ionicons name="location" size={18} color={colors.success} />
           </View>
           <View style={styles.privacyTextWrap}>
             <Text style={styles.privacyTitle}>Active jobs only</Text>
@@ -1095,8 +1098,8 @@ export default function OnboardingSetupScreen() {
         </View>
 
         <View style={styles.privacyRow}>
-          <View style={[styles.privacyDot, { backgroundColor: '#8b5cf618' }]}>
-            <Ionicons name="eye-off" size={18} color="#8b5cf6" />
+          <View style={[styles.privacyDot, { backgroundColor: colors.accent + '18' }]}>
+            <Ionicons name="eye-off" size={18} color={colors.accent} />
           </View>
           <View style={styles.privacyTextWrap}>
             <Text style={styles.privacyTitle}>Private between jobs</Text>

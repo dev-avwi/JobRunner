@@ -50,15 +50,8 @@ export default function VerifyEmailScreen() {
         }
         
         await checkAuth();
-        
-        setTimeout(() => {
-          const { businessSettings } = useAuthStore.getState();
-          if (!businessSettings?.onboardingCompleted) {
-            router.replace('/(onboarding)/setup' as const);
-          } else {
-            router.replace('/(tabs)' as const);
-          }
-        }, 2000);
+        // No auto-redirect — show the success state with a Continue button so
+        // users get clear confirmation and control over the next step.
       }
     } catch (err: any) {
       console.error('Verification error:', err);
@@ -89,10 +82,24 @@ export default function VerifyEmailScreen() {
             <View style={styles.iconContainer}>
               <CheckCircle size={64} color={colors.success} strokeWidth={1.5} />
             </View>
-            <Text style={styles.title}>Email Verified!</Text>
+            <Text style={styles.title}>Email verified</Text>
             <Text style={styles.description}>
-              Your email has been verified successfully. Redirecting you to the app...
+              You're all set. Tap continue to start using JobRunner.
             </Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => {
+                const { businessSettings } = useAuthStore.getState();
+                if (!businessSettings?.onboardingCompleted) {
+                  router.replace('/(onboarding)/setup' as const);
+                } else {
+                  router.replace('/(tabs)' as const);
+                }
+              }}
+              testID="button-continue-verified"
+            >
+              <Text style={styles.retryText}>Continue</Text>
+            </TouchableOpacity>
           </>
         ) : (
           <>

@@ -2146,6 +2146,135 @@ function GettingStartedChecklist() {
   );
 }
 
+interface PendingInvite {
+  id: string;
+  businessOwnerId: string;
+  businessName: string;
+  roleName: string;
+  inviterName?: string;
+  invitedAt?: string;
+}
+
+function PendingInvitesBanner() {
+  const { colors } = useTheme();
+  const [invites, setInvites] = useState<PendingInvite[]>([]);
+  const [dismissed, setDismissed] = useState<Record<string, number>>({});
+  const [accepting, setAccepting] = useState<string | null>(null);
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('invite_banner_dismissed');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const now = Date.now();
+          const fresh: Record<string, number> = {};
+          for (const [k, v] of Object.entries(parsed || {})) {
+            if (typeof v === 'number' && now - v < 7 * 24 * 60 * 60 * 1000) fresh[k] = v;
+          }
+          if (!cancelled) setDismissed(fresh);
+        }
+      } catch {}
+      try {
+        const res = await api.get<{ invites: PendingInvite[] }>('/api/auth/pending-invites');
+        if (!cancelled && res.data?.invites) setInvites(res.data.invites);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const visible = invites.filter((i) => !dismissed[i.id]);
+  if (visible.length === 0) return null;
+
+  const handleAccept = async (invite: PendingInvite) => {
+    setAccepting(invite.id);
+    try {
+      const res = await api.post('/api/auth/accept-invite', { teamMemberId: invite.id });
+      if (res.error) {
+        showToast({ type: 'error', message: res.error });
+      } else {
+        showToast({ type: 'success', message: `Joined ${invite.businessName}` });
+        setInvites((prev) => prev.filter((p) => p.id !== invite.id));
+      }
+    } catch (e: any) {
+      showToast({ type: 'error', message: e?.message || 'Could not accept invite' });
+    } finally {
+      setAccepting(null);
+    }
+  };
+
+  const handleDismiss = async (invite: PendingInvite) => {
+    const next = { ...dismissed, [invite.id]: Date.now() };
+    setDismissed(next);
+    try { await AsyncStorage.setItem('invite_banner_dismissed', JSON.stringify(next)); } catch {}
+    try { await api.post('/api/auth/dismiss-invite-banner', { teamMemberId: invite.id }); } catch {}
+  };
+
+  return (
+    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.sm }}>
+      {visible.map((invite) => (
+        <View
+          key={invite.id}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colorWithOpacity(colors.primary, 0.10),
+            borderColor: colorWithOpacity(colors.primary, 0.30),
+            borderWidth: 1,
+            borderRadius: radius.lg,
+            padding: spacing.md,
+            gap: spacing.sm,
+          }}
+        >
+          <View
+            style={{
+              width: 38, height: 38, borderRadius: 19,
+              backgroundColor: colorWithOpacity(colors.primary, 0.18),
+              alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Feather name="users" size={18} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...typography.body, color: colors.foreground, fontWeight: '600' }} numberOfLines={1}>
+              Join {invite.businessName}
+            </Text>
+            <Text style={{ ...typography.caption, color: colors.mutedForeground }} numberOfLines={1}>
+              {invite.inviterName ? `${invite.inviterName} • ` : ''}{invite.roleName}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => handleAccept(invite)}
+            disabled={accepting === invite.id}
+            style={{
+              backgroundColor: colors.primary,
+              paddingVertical: 8,
+              paddingHorizontal: 14,
+              borderRadius: radius.md,
+            }}
+            testID={`button-accept-invite-${invite.id}`}
+          >
+            {accepting === invite.id ? (
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
+            ) : (
+              <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 13 }}>Accept</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleDismiss(invite)}
+            style={{ padding: 6 }}
+            testID={`button-dismiss-invite-${invite.id}`}
+          >
+            <Feather name="x" size={18} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function DashboardScreen() {
   const { roleInfo } = useAuthStore();
   
@@ -3119,6 +3248,9 @@ function OwnerDashboardScreen() {
           </View>
         </View>
       )}
+
+      {/* Pending team invites — surfaced as a dashboard banner for one-tap accept */}
+      <PendingInvitesBanner />
 
       {/* Onboarding skip reminder - shown until owner finishes business profile */}
       <OnboardingReminderBanner />
