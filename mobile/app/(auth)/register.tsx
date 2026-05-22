@@ -37,7 +37,6 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [businessName, setBusinessName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -88,7 +87,7 @@ export default function RegisterScreen() {
   }, []);
 
   const handleRegister = async () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !businessName.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -106,7 +105,6 @@ export default function RegisterScreen() {
       lastName: lastName.trim(),
       email: email.trim(),
       password,
-      businessName: businessName.trim(),
       tradeType: 'general',
     });
 
@@ -382,26 +380,6 @@ export default function RegisterScreen() {
                     testID="input-lastname"
                   />
                 </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Business Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Smith Electrical"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={businessName}
-                  onChangeText={(text) => {
-                    setBusinessName(text);
-                    setError(null);
-                  }}
-                  autoCapitalize="words"
-                  textContentType="organizationName"
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  enablesReturnKeyAutomatically={false}
-                  testID="input-business"
-                />
               </View>
 
               <View style={styles.inputGroup}>

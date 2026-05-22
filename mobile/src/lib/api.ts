@@ -336,7 +336,7 @@ class ApiClient {
     password: string;
     firstName: string;
     lastName: string;
-    businessName: string;
+    businessName?: string;
     tradeType?: string;
     phone?: string;
     inviteToken?: string;

@@ -194,7 +194,17 @@ export default function OnboardingSetupScreen() {
           } else if (settings.businessName) {
             setSelectedRole('owner');
             setOwnerStep('trade');
+          } else {
+            // Brand new owner signup: skip the role chooser and go
+            // straight to the business setup step. Worker/sub joiners
+            // can switch from the business step via the link there.
+            setSelectedRole('owner');
+            setOwnerStep('business');
           }
+        } else {
+          // No settings record yet — fresh email signup.
+          setSelectedRole('owner');
+          setOwnerStep('business');
         }
       } catch (error) {
         console.error('Error checking onboarding status:', error);
@@ -660,6 +670,16 @@ export default function OnboardingSetupScreen() {
         }} activeOpacity={0.8}>
           <Text style={styles.ctaText}>Continue</Text>
           <Ionicons name="arrow-forward" size={18} color={colors.primaryForeground} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8 }}
+          onPress={() => { setSelectedRole(null); setOwnerStep('role'); }}
+          activeOpacity={0.7}
+        >
+          <Text style={{ fontSize: 14, color: colors.mutedForeground }}>
+            Joining a crew? <Text style={{ color: colors.primary, fontWeight: '600' }}>Use invite code</Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
