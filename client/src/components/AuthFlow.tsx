@@ -184,9 +184,6 @@ export default function AuthFlow({ onLoginSuccess, onNeedOnboarding }: AuthFlowP
   const getPasswordRequirements = (password: string) => {
     return [
       { label: 'At least 8 characters', met: password.length >= 8 },
-      { label: 'Contains a number', met: /\d/.test(password) },
-      { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
-      { label: 'Contains lowercase letter', met: /[a-z]/.test(password) },
     ];
   };
 
@@ -327,7 +324,7 @@ export default function AuthFlow({ onLoginSuccess, onNeedOnboarding }: AuthFlowP
     }
 
     if (!allRequirementsMet) {
-      setError('Please meet all password requirements');
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -804,7 +801,7 @@ export default function AuthFlow({ onLoginSuccess, onNeedOnboarding }: AuthFlowP
                           </Button>
                         </div>
                         {registerData.password.length > 0 && (
-                          <div className="grid grid-cols-2 gap-1 pt-1" data-testid="password-requirements">
+                          <div className="flex flex-col gap-1 pt-1" data-testid="password-requirements">
                             {passwordRequirements.map((req, index) => (
                               <div 
                                 key={index} 
