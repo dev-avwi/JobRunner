@@ -263,23 +263,22 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     fontWeight: '600',
   },
   monthJobIndicator: {
-    width: '100%',
-    gap: isTabletDevice ? 2 : 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    marginTop: 2,
   },
-  monthJobText: {
-    fontSize: isTabletDevice ? 10 : 8,
-    color: colors.primary,
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: isTabletDevice ? 4 : 2,
-    paddingVertical: isTabletDevice ? 1 : 0,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    maxWidth: '100%',
+  monthJobDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.primary,
   },
   monthJobMore: {
-    fontSize: isTabletDevice ? 10 : 8,
+    fontSize: isTabletDevice ? 10 : 9,
     color: colors.mutedForeground,
+    marginLeft: 2,
   },
   selectedDayContainer: {
     marginBottom: spacing.xl,
@@ -910,13 +909,11 @@ export default function CalendarScreen() {
                       </Text>
                       {dateJobs.length > 0 && (
                         <View style={styles.monthJobIndicator}>
-                          {dateJobs.slice(0, 2).map((job, i) => (
-                            <Text key={i} style={styles.monthJobText} numberOfLines={1}>
-                              {job.title.slice(0, 6)}...
-                            </Text>
+                          {dateJobs.slice(0, 3).map((_, i) => (
+                            <View key={i} style={styles.monthJobDot} />
                           ))}
-                          {dateJobs.length > 2 && (
-                            <Text style={styles.monthJobMore}>+{dateJobs.length - 2} more</Text>
+                          {dateJobs.length > 3 && (
+                            <Text style={styles.monthJobMore} numberOfLines={1}>+{dateJobs.length - 3}</Text>
                           )}
                         </View>
                       )}
