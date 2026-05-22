@@ -1085,10 +1085,10 @@ function TimeTrackingWidget() {
           data-testid="button-save-timer"
         >
           {isStopping ? (
-            <ActivityIndicator size="small" color={colors.primaryForeground} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <>
-              <Feather name="check-circle" size={16} color={colors.primaryForeground} />
+              <Feather name="check-circle" size={16} color={colors.primary} />
               <Text style={styles.saveButtonText}>Save</Text>
             </>
           )}
@@ -5211,13 +5211,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   saveButton: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: `${colors.primary}15`,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: `${colors.primary}40`,
   },
   saveButtonText: {
     ...typography.button,
-    color: colors.primaryForeground,
+    color: colors.primary,
     fontWeight: '600',
   },
   cancelButton: {
