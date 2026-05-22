@@ -3986,25 +3986,95 @@ function OwnerDashboardScreen() {
       )}
 
       {/* Recent Activity */}
-      {<View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionTitleIcon}>
-              <Feather name="activity" size={iconSizes.md} color={colors.primary} />
+      {(() => {
+        const hasAnyWork =
+          (Array.isArray(activities) && activities.length > 0) ||
+          (todaysJobs && todaysJobs.length > 0) ||
+          (stats.pendingQuotes || 0) > 0 ||
+          (stats.unpaidInvoices || 0) > 0 ||
+          (stats.thisMonthJobsCompleted || 0) > 0 ||
+          (stats.lastMonthJobsCompleted || 0) > 0 ||
+          (stats.thisMonthQuotesSent || 0) > 0 ||
+          (stats.lastMonthQuotesSent || 0) > 0;
+        const showFirstQuoteCta = !activitiesLoading && !hasAnyWork;
+        return (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <View style={styles.sectionTitleIcon}>
+                  <Feather name="activity" size={iconSizes.md} color={colors.primary} />
+                </View>
+                <Text style={styles.sectionTitle}>Recent Activity</Text>
+              </View>
             </View>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            {showFirstQuoteCta ? (
+              <View
+                style={{
+                  backgroundColor: colors.card,
+                  borderRadius: radius.lg,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  padding: spacing.lg,
+                  alignItems: 'center',
+                }}
+                testID="card-first-quote-cta"
+              >
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: colorWithOpacity(colors.primary, 0.12),
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: spacing.sm,
+                  }}
+                >
+                  <Feather name="file-plus" size={24} color={colors.primary} />
+                </View>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: colors.foreground,
+                    marginBottom: 4,
+                    textAlign: 'center',
+                  }}
+                >
+                  Create your first quote
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.mutedForeground,
+                    textAlign: 'center',
+                    marginBottom: spacing.md,
+                  }}
+                >
+                  Send a polished quote to a client in under a minute.
+                </Text>
+                <Button
+                  variant="default"
+                  onPress={() => router.push(asHref('/more/quote/new'))}
+                  icon={<Feather name="plus" size={16} color={colors.primaryForeground} />}
+                >
+                  New Quote
+                </Button>
+              </View>
+            ) : (
+              <ActivityFeed
+                activities={activities}
+                isLoading={activitiesLoading}
+                onActivityPress={(activity) => {
+                  if (activity.entityType && activity.entityId) {
+                    handleNavigateToItem(activity.entityType, activity.entityId);
+                  }
+                }}
+              />
+            )}
           </View>
-        </View>
-        <ActivityFeed 
-          activities={activities}
-          isLoading={activitiesLoading}
-          onActivityPress={(activity) => {
-            if (activity.entityType && activity.entityId) {
-              handleNavigateToItem(activity.entityType, activity.entityId);
-            }
-          }}
-        />
-      </View>}
+        );
+      })()}
 
       {/* Bottom Spacing */}
       <View style={{ height: spacing.md }} />

@@ -291,14 +291,9 @@ export default function OnboardingSetupScreen() {
         await api.post('/api/business-settings', settingsPayload);
       }
       await fetchBusinessSettings();
-      // Soft warning: ABN entered but invalid — saved without it.
-      if (businessData.abn && cleanedAbn === null) {
-        Alert.alert(
-          'ABN saved as blank',
-          "We couldn't validate that ABN, so we've left it empty for now. You can add or fix it later in Settings → Business.",
-          [{ text: 'OK' }]
-        );
-      }
+      // ABN is optional. If entered but invalid (or skipped entirely) we just
+      // save without it and move on — no popup. Inline field hint already
+      // shows a soft warning while typing.
       return true;
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to save settings');

@@ -821,6 +821,41 @@ export default function NewQuoteScreen() {
 
   const selectedClient = clients.find(c => c.id === form.clientId);
 
+  // Auto-fill the quote title when a client is picked. Pattern:
+  // "Quote for {client.name} – {DD Mon YYYY}". We remember the last
+  // auto-generated string so we only overwrite it if the user hasn't typed
+  // a custom title. If they switch clients and the title still matches the
+  // previous auto value, refresh it; otherwise leave their text alone.
+  const lastAutoTitleRef = useRef<string>('');
+  useEffect(() => {
+    if (!selectedClient?.name) return;
+    const tz = (businessSettings as any)?.timezone || 'Australia/Sydney';
+    let dateStr: string;
+    try {
+      dateStr = new Intl.DateTimeFormat('en-AU', {
+        timeZone: tz,
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date()).replace(/,/g, '');
+    } catch {
+      dateStr = new Intl.DateTimeFormat('en-AU', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date()).replace(/,/g, '');
+    }
+    const nextTitle = `Quote for ${selectedClient.name} \u2013 ${dateStr}`;
+    setForm(prev => {
+      const current = prev.title.trim();
+      if (current === '' || current === lastAutoTitleRef.current) {
+        lastAutoTitleRef.current = nextTitle;
+        return { ...prev, title: nextTitle };
+      }
+      return prev;
+    });
+  }, [selectedClient?.id, selectedClient?.name, businessSettings]);
+
   const handleSave = async () => {
     if (!form.clientId) {
       Alert.alert('Please select a client');

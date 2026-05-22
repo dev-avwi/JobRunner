@@ -9,9 +9,10 @@ import {
   Platform,
   Animated,
   Easing,
+  Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Mail, RefreshCw, ArrowLeft, CheckCircle, Edit3, ExternalLink } from 'lucide-react-native';
+import { Mail, RefreshCw, ArrowLeft, CheckCircle, Edit3, ExternalLink, LifeBuoy } from 'lucide-react-native';
 import api from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -84,6 +85,30 @@ export default function VerifyEmailPendingScreen() {
     router.replace('/(auth)/login');
   };
 
+  const handleContactSupport = async () => {
+    const subject = encodeURIComponent('Verification email not arriving');
+    const body = encodeURIComponent(
+      `Hi JobRunner team,\n\nI signed up with ${email || ''} but the verification email hasn't arrived.\n\n`,
+    );
+    const url = `mailto:support@jobrunner.com.au?subject=${subject}&body=${body}`;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(
+          'No mail app found',
+          'Please email support@jobrunner.com.au directly and we\'ll help you get verified.',
+        );
+      }
+    } catch (e) {
+      Alert.alert(
+        'No mail app found',
+        'Please email support@jobrunner.com.au directly and we\'ll help you get verified.',
+      );
+    }
+  };
+
   const iconScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
 
   return (
@@ -139,6 +164,15 @@ export default function VerifyEmailPendingScreen() {
               </Text>
             </>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.supportLink}
+          onPress={handleContactSupport}
+          testID="button-contact-support"
+        >
+          <LifeBuoy size={14} color={colors.mutedForeground} />
+          <Text style={styles.supportText}>Still no email? Contact support</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -270,6 +304,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 15,
     color: colors.primary,
     fontWeight: '500',
+  },
+  supportLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  supportText: {
+    fontSize: 13,
+    color: colors.mutedForeground,
+    textDecorationLine: 'underline',
   },
   backButton: {
     flexDirection: 'row',

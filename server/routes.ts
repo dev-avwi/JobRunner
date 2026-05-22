@@ -3165,9 +3165,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!password || typeof password !== 'string' || password.length < 8) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
       }
-      if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-        return res.status(400).json({ error: "Password must contain uppercase, lowercase, and a number" });
-      }
       // Auto-generate username from email if not provided (web signup no longer
       // collects username — see AuthForm.tsx). Mirrors the OAuth flow in auth.ts.
       const rawBody = req.body || {};

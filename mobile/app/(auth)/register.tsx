@@ -92,7 +92,7 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 8 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+    if (password.length < 8) {
       Alert.alert('Error', 'Password must be at least 8 characters');
       return;
     }
@@ -409,7 +409,7 @@ export default function RegisterScreen() {
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={styles.passwordInput}
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
                     placeholderTextColor={colors.mutedForeground}
                     value={password}
                     onChangeText={(text) => {
