@@ -210,21 +210,23 @@ private struct TimerColumn: View {
 // MARK: - Brand badge
 
 // The actual JobRunner runner-figure logo, presented as a 48pt squircle.
-// Several defenses against iOS 17+ lock-screen vibrancy desaturation —
-// the bug that previously rendered the logo as a flat gray square:
 //
-//   1. Brand-blue squircle background (not white). Vibrancy desaturates
-//      everything uniformly; starting from a tinted backing means the
-//      worst case is a muted-blue badge, not a gray void.
-//   2. .compositingGroup() flattens all sub-layers (background + image)
-//      into a single composite pass before the vibrancy filter runs,
-//      which often defeats per-layer tinting.
-//   3. .renderingMode(.original) opts the image out of template mode.
-//   4. Asset catalog Contents.json sets "template-rendering-intent":
-//      "original" — belt-and-braces with #3.
+// The reason previous attempts rendered as a flat gray square:
+// in iOS 18+ (Liquid Glass era), Live Activities default to *accented*
+// rendering, which treats images as templates and tints them to the
+// system accent colour. The per-image opt-out is
+// `.widgetAccentedRenderingMode(.fullColor)` — applied via the
+// `fullColorLogo` helper below. With that in place, the runner figure
+// renders in its source colours regardless of lock-screen treatment.
+// `.renderingMode(.original)` + the asset catalog's
+// `"template-rendering-intent": "original"` cover the older paths.
 //
-// Fallback if UIImage(named:) returns nil: a brand-blue squircle with
-// a heavy white "JR" monogram. Reads as deliberate brand mark, never as
+// Note: shape fills (`shape.fill(Color.white)`) still get accented to a
+// single colour in accented mode — that's expected. The white squircle
+// becomes a white squircle either way; only the image needs the opt-out.
+//
+// Fallback if UIImage(named:) returns nil: a brand-blue squircle with a
+// heavy white "JR" monogram. Reads as deliberate brand mark, never as
 // broken UI.
 private struct BrandBadge: View {
     var body: some View {
@@ -234,12 +236,8 @@ private struct BrandBadge: View {
                 let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
 
                 if let uiImage = UIImage(named: "JobRunnerLogo") {
-                    shape.fill(Color.brandBlue)
-                    Image(uiImage: uiImage)
-                        .renderingMode(.original)
-                        .interpolation(.high)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
+                    shape.fill(Color.white)
+                    fullColorLogo(uiImage)
                         .clipShape(shape)
                 } else {
                     shape.fill(Color.brandBlue)
@@ -248,8 +246,28 @@ private struct BrandBadge: View {
                         .foregroundStyle(.white)
                 }
             }
-            .compositingGroup()
         }
+    }
+}
+
+// Image wrapper that forces the logo to render in full colour on iOS 18+
+// Live Activities. `widgetAccentedRenderingMode(_:)` is an instance method
+// on `Image`, not on `View` — so it must be applied BEFORE `.aspectRatio()`
+// (which returns `some View`). Older iOS versions fall back to
+// `.renderingMode(.original)` alone.
+@ViewBuilder
+private func fullColorLogo(_ uiImage: UIImage) -> some View {
+    if #available(iOS 18.0, *) {
+        Image(uiImage: uiImage)
+            .renderingMode(.original)
+            .resizable()
+            .widgetAccentedRenderingMode(.fullColor)
+            .aspectRatio(contentMode: .fit)
+    } else {
+        Image(uiImage: uiImage)
+            .renderingMode(.original)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
     }
 }
 
