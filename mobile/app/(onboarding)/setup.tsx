@@ -236,11 +236,11 @@ export default function OnboardingSetupScreen() {
   };
 
   const handleInviteCodeChange = (text: string, isSub = false) => {
-    const clean = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    const clean = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
     if (isSub) {
       setSubInviteCode(clean);
       if (subValidateTimer.current) clearTimeout(subValidateTimer.current);
-      if (clean.length === 8) {
+      if (clean.length === 6) {
         subValidateTimer.current = setTimeout(() => validateInviteCode(clean, true), 300);
       } else {
         setSubInviteValidation(null);
@@ -248,7 +248,7 @@ export default function OnboardingSetupScreen() {
     } else {
       setInviteCode(clean);
       if (validateTimer.current) clearTimeout(validateTimer.current);
-      if (clean.length === 8) {
+      if (clean.length === 6) {
         validateTimer.current = setTimeout(() => validateInviteCode(clean, false), 300);
       } else {
         setInviteValidation(null);
@@ -787,18 +787,18 @@ export default function OnboardingSetupScreen() {
     <ScrollView style={styles.stepContainer} contentContainerStyle={styles.centeredContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>Enter your invite code</Text>
-        <Text style={styles.stepSubtitle}>Your employer will have given you an 8-character code</Text>
+        <Text style={styles.stepSubtitle}>Your employer will have given you a 6-character code</Text>
       </View>
 
       <View style={styles.codeInputWrap}>
         <TextInput
           style={styles.codeInput}
-          placeholder="e.g. MIKE42K9"
+          placeholder="e.g. MIKE42"
           placeholderTextColor={colors.mutedForeground + '60'}
           value={inviteCode}
           onChangeText={(text) => handleInviteCodeChange(text)}
           autoCapitalize="characters"
-          maxLength={8}
+          maxLength={6}
           testID="input-invite-code"
         />
         {isValidatingCode && (
@@ -1014,12 +1014,12 @@ export default function OnboardingSetupScreen() {
       <View style={styles.codeInputWrap}>
         <TextInput
           style={styles.codeInput}
-          placeholder="e.g. MIKE42K9"
+          placeholder="e.g. MIKE42"
           placeholderTextColor={colors.mutedForeground + '60'}
           value={subInviteCode}
           onChangeText={(text) => handleInviteCodeChange(text, true)}
           autoCapitalize="characters"
-          maxLength={8}
+          maxLength={6}
           testID="input-sub-invite-code"
         />
         {isValidatingSubCode && (

@@ -200,10 +200,10 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
   };
 
   const handleInviteCodeChange = (text: string) => {
-    const clean = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    const clean = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
     setInviteCode(clean);
     if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
-    if (clean.length === 8) {
+    if (clean.length === 6) {
       validateTimerRef.current = setTimeout(() => validateInviteCodeWeb(clean), 300);
     } else {
       setInviteValidation(null);
@@ -212,7 +212,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
 
   const handleWorkerRedeem = async () => {
     if (!inviteValidation?.valid) {
-      toast({ title: 'Invalid Code', description: 'Please enter a valid 8-character invite code', variant: 'destructive' });
+      toast({ title: 'Invalid Code', description: 'Please enter a valid 6-character invite code', variant: 'destructive' });
       return;
     }
     if (!workerName.trim()) {
@@ -1829,9 +1829,9 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
                   <Input
                     value={inviteCode}
                     onChange={(e) => handleInviteCodeChange(e.target.value)}
-                    placeholder="e.g. MIKE42K9"
+                    placeholder="e.g. MIKE42"
                     className="text-center text-lg tracking-widest font-mono uppercase mt-1"
-                    maxLength={8}
+                    maxLength={6}
                   />
                   {isValidatingCode && <p className="text-sm text-muted-foreground mt-1">Checking...</p>}
                   {inviteValidation?.valid && (

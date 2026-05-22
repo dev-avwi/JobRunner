@@ -33395,11 +33395,11 @@ Respond with JSON in this format:
 
   // ============ INVITE CODE SYSTEM ============
 
-  // Unambiguous chars: no 0/O, 1/I/L. 8-char codes from a 32-char set ≈ 10^12
+  // Unambiguous chars: no 0/O, 1/I/L. 6-char codes from a 32-char set ≈ 10^9
   // combinations, which combined with the rate limiters below makes brute-force
-  // guessing impractical.
+  // guessing impractical (~25,000 years average at 20 attempts / 10 min).
   const INVITE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const INVITE_CODE_LENGTH = 8;
+  const INVITE_CODE_LENGTH = 6;
   function generateInviteCode(): string {
     let code = '';
     for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
@@ -33561,9 +33561,7 @@ Respond with JSON in this format:
 
       const code = (req.params.code || '').toUpperCase().trim();
 
-      // Accept legacy 6-char codes alongside new 8-char codes during the
-      // transition window so existing codes in the wild keep working.
-      if (!code || (code.length !== INVITE_CODE_LENGTH && code.length !== 6)) {
+      if (!code || code.length !== INVITE_CODE_LENGTH) {
         recordInviteFailure(inviteCodeValidateBuckets, bucketKey, INVITE_VALIDATE_WINDOW_MS);
         return res.json({ valid: false, error: `Code must be ${INVITE_CODE_LENGTH} characters` });
       }
@@ -33641,10 +33639,8 @@ Respond with JSON in this format:
 
       const normalizedCode = code.toUpperCase().trim();
 
-      // Cheap shape check before hitting the DB. Accept legacy 6-char codes
-      // alongside the new 8-char default.
       if (
-        (normalizedCode.length !== INVITE_CODE_LENGTH && normalizedCode.length !== 6) ||
+        normalizedCode.length !== INVITE_CODE_LENGTH ||
         !/^[A-Z0-9]+$/.test(normalizedCode)
       ) {
         recordInviteFailure(inviteCodeRedeemBuckets, bucketKey, INVITE_REDEEM_WINDOW_MS);
