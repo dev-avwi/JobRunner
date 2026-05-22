@@ -25,6 +25,8 @@ import {
 import notificationService, { NotificationPayload } from '../lib/notifications';
 import offlineStorage, { useOfflineStore, CachedJob, CachedClient, CachedQuote, CachedInvoice } from '../lib/offline-storage';
 import locationTracking, { TrackingStatus, LocationUpdate, GeofenceEvent } from '../lib/location-tracking';
+import { useAuthStore } from '../lib/store';
+import { isStripeTerminalSDKAvailable } from '../providers/StripeTerminalProvider';
 import api from '../lib/api';
 
 let useStripeTerminalSDK: any = null;
@@ -53,8 +55,24 @@ export function useStripeTerminal() {
   const [isInitialized, setIsInitialized] = useState(false);
   const locationIdRef = useRef<string | null>(null);
 
-  // Get SDK hook if available
-  const sdkHook = useStripeTerminalSDK ? useStripeTerminalSDK() : null;
+  // Auth gate: the real StripeTerminalProvider only mounts the SDK provider
+  // once the user is authenticated (see StripeTerminalProvider.tsx). Before
+  // that, the SDK hook returns a context with no provider behind it and
+  // `initialize()` throws "...provider is not found...". We always call the
+  // SDK hook (to keep React hook ordering stable) but treat it as a no-op
+  // until the provider is ready.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const providerReady = isStripeTerminalSDKAvailable() && isAuthenticated && !!user;
+  let sdkHookValue: any = null;
+  if (useStripeTerminalSDK) {
+    try {
+      sdkHookValue = useStripeTerminalSDK();
+    } catch {
+      sdkHookValue = null;
+    }
+  }
+  const sdkHook = providerReady ? sdkHookValue : null;
 
   // Setup simulator status listener
   useEffect(() => {
@@ -71,7 +89,14 @@ export function useStripeTerminal() {
         setStatus('error');
         return false;
       }
-      
+
+      // SDK is loaded but the StripeTerminalProvider isn't mounted yet
+      // (user not authenticated). Silently no-op — the call site in
+      // _layout.tsx warms Terminal pre-auth and will retry after sign-in.
+      if (useStripeTerminalSDK && isStripeTerminalSDKAvailable() && !sdkHook) {
+        return false;
+      }
+
       setError(null);
       setStatus('initializing');
 

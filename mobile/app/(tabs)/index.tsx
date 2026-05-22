@@ -1077,19 +1077,22 @@ function TimeTrackingWidget() {
           </TouchableOpacity>
         )}
         
-        <View style={{ flex: 1 }}>
-          <Button
-            size="default"
-            variant="default"
-            fullWidth
-            loading={isStopping}
-            disabled={isStopping}
-            onPress={handleStopTimer}
-            icon={!isStopping ? <Feather name="check-circle" size={16} color={colors.primaryForeground} /> : undefined}
-          >
-            Save
-          </Button>
-        </View>
+        <TouchableOpacity
+          style={[styles.timerControlButton, styles.saveButton]}
+          onPress={handleStopTimer}
+          disabled={isStopping}
+          activeOpacity={0.8}
+          data-testid="button-save-timer"
+        >
+          {isStopping ? (
+            <ActivityIndicator size="small" color={colors.primaryForeground} />
+          ) : (
+            <>
+              <Feather name="check-circle" size={16} color={colors.primaryForeground} />
+              <Text style={styles.saveButtonText}>Save</Text>
+            </>
+          )}
+        </TouchableOpacity>
         
         <TouchableOpacity
           style={[styles.timerControlButton, styles.cancelButton]}
@@ -5205,6 +5208,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   stopButtonText: {
     ...typography.button,
     color: colors.white,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  saveButtonText: {
+    ...typography.button,
+    color: colors.primaryForeground,
+    fontWeight: '600',
   },
   cancelButton: {
     backgroundColor: `${colors.destructive}10`,
