@@ -364,6 +364,50 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
     }
   }, [urlClientId, clients, form]);
 
+  // Track the last auto-generated title so we never overwrite a user's custom edit.
+  const lastAutoTitleRef = useRef<string>("");
+
+  const formatAutoQuoteTitle = useCallback((clientName: string): string => {
+    const tz = businessSettings?.timezone || "Australia/Sydney";
+    let datePart: string;
+    try {
+      datePart = new Intl.DateTimeFormat("en-AU", {
+        timeZone: tz,
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date());
+    } catch {
+      datePart = new Intl.DateTimeFormat("en-AU", {
+        timeZone: "Australia/Sydney",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date());
+    }
+    // Normalise to "DD Mon YYYY" (strip stray commas some locales add)
+    datePart = datePart.replace(/,/g, "").trim();
+    return `Quote for ${clientName} – ${datePart}`;
+  }, [businessSettings?.timezone]);
+
+  // Auto-fill the title when a client is selected (or changed via quick-add).
+  // Never clobber a custom title the user has typed.
+  const watchedClientId = watchedValues.clientId;
+  useEffect(() => {
+    if (isEditMode) return; // Don't touch titles on existing quotes
+    if (!watchedClientId) return;
+    const client = (clients as any[]).find(c => c.id === watchedClientId);
+    if (!client?.name) return;
+    const nextAuto = formatAutoQuoteTitle(client.name);
+    const currentTitle = form.getValues("title") || "";
+    if (currentTitle === "" || currentTitle === lastAutoTitleRef.current) {
+      if (currentTitle !== nextAuto) {
+        form.setValue("title", nextAuto, { shouldDirty: false });
+      }
+      lastAutoTitleRef.current = nextAuto;
+    }
+  }, [watchedClientId, clients, isEditMode, form, formatAutoQuoteTitle]);
+
   const handleApplyTemplate = (template: DocumentTemplate) => {
     // Update scalar form values using setValue
     if (template.defaults?.title) {

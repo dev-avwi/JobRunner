@@ -7,6 +7,7 @@ import GettingStartedChecklist from "./GettingStartedChecklist";
 import TodayScheduleCard from "./TodayScheduleCard";
 import TrustBanner from "./TrustBanner";
 import ActivityFeed from "./ActivityFeed";
+import FirstQuoteCta, { useIsBrandNewOwner } from "./FirstQuoteCta";
 import FloatingActionButton from "./FloatingActionButton";
 import DashboardUpgradeCard from "./DashboardUpgradeCard";
 import { useDashboardKPIs, useTodaysJobs } from "@/hooks/use-dashboard-data";
@@ -93,6 +94,7 @@ export default function OwnerManagerDashboard({
   const { data: todaysJobs = [] } = useTodaysJobs();
   const updateJob = useUpdateJob();
   const { toast } = useToast();
+  const { isBrandNew } = useIsBrandNewOwner();
 
   interface CashflowData {
     overdueTotal: number;
@@ -649,11 +651,15 @@ export default function OwnerManagerDashboard({
             </Button>
           </CardHeader>
           <CardContent className="pt-0 px-4 pb-4 flex-1">
-            <ActivityFeed 
-              limit={4}
-              onViewAll={() => onNavigate?.('/communications')}
-              compact
-            />
+            {isBrandNew ? (
+              <FirstQuoteCta onCreateQuote={onCreateQuote} />
+            ) : (
+              <ActivityFeed 
+                limit={4}
+                onViewAll={() => onNavigate?.('/communications')}
+                compact
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -736,10 +742,14 @@ export default function OwnerManagerDashboard({
       </div>
 
       <div className="xl:hidden">
-        <ActivityFeed 
-          limit={5}
-          onViewAll={() => onNavigate?.('/communications')}
-        />
+        {isBrandNew ? (
+          <FirstQuoteCta onCreateQuote={onCreateQuote} />
+        ) : (
+          <ActivityFeed 
+            limit={5}
+            onViewAll={() => onNavigate?.('/communications')}
+          />
+        )}
       </div>
 
       <GettingStartedChecklist 

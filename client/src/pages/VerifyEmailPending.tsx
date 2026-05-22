@@ -128,7 +128,7 @@ export default function VerifyEmailPending() {
               </Button>
             </div>
             
-            <div className="text-center pt-2">
+            <div className="text-center pt-2 space-y-2">
               <Button 
                 variant="ghost" 
                 onClick={() => setLocation('/')}
@@ -137,6 +137,19 @@ export default function VerifyEmailPending() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Login
               </Button>
+              <div>
+                <a
+                  href={`mailto:support@jobrunner.com.au?subject=${encodeURIComponent(
+                    'Verification email not arriving'
+                  )}&body=${encodeURIComponent(
+                    `Hi JobRunner support,\n\nI'm not receiving the verification email for: ${resendEmail || '(pending email)'}\n\nCan you help?`
+                  )}`}
+                  className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                  data-testid="link-contact-support"
+                >
+                  Still no email? Contact support
+                </a>
+              </div>
             </div>
           </CardContent>
         </Card>

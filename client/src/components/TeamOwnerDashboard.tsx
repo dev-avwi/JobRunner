@@ -8,6 +8,7 @@ import GettingStartedChecklist from "./GettingStartedChecklist";
 import TodayScheduleCard from "./TodayScheduleCard";
 import TrustBanner from "./TrustBanner";
 import ActivityFeed from "./ActivityFeed";
+import FirstQuoteCta, { useIsBrandNewOwner } from "./FirstQuoteCta";
 import FloatingActionButton from "./FloatingActionButton";
 import AIScheduleOptimizer from "./AIScheduleOptimizer";
 import { useFeatureAccess } from "@/hooks/use-subscription";
@@ -128,6 +129,7 @@ export default function TeamOwnerDashboard({
   const updateJob = useUpdateJob();
   const { toast } = useToast();
   const { canUseAIFeatures } = useFeatureAccess();
+  const { isBrandNew } = useIsBrandNewOwner();
 
   
   // Fetch team presence for status indicators
@@ -922,11 +924,15 @@ export default function TeamOwnerDashboard({
           )}
         />
 
-        {/* RECENT ACTIVITY - in right column */}
-        <ActivityFeed 
-          limit={5}
-          onViewAll={() => onNavigate?.('/communications')}
-        />
+        {/* RECENT ACTIVITY - in right column (or first-quote CTA for brand-new owners) */}
+        {isBrandNew ? (
+          <FirstQuoteCta onCreateQuote={onCreateQuote} />
+        ) : (
+          <ActivityFeed 
+            limit={5}
+            onViewAll={() => onNavigate?.('/communications')}
+          />
+        )}
         </div>
       </div>
 
