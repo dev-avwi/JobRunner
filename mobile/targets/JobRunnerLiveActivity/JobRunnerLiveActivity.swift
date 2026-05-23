@@ -23,33 +23,47 @@ struct JobRunnerLiveActivity: Widget {
                 .activityBackgroundTint(Color.cardBackground)
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
-            // Dynamic Island uses monochrome rendering throughout (Apple's
-            // own apps never put a coloured logo here — Maps shows a white
-            // arrow, Music shows a waveform, etc.). So the leading slot
-            // gets the same StatusDot as compact/minimal — no logo. The
-            // colourful brand mark lives only on the lock-screen card,
-            // where `widgetAccentedRenderingMode(.fullColor)` actually
-            // takes effect.
+            // Expanded view (long-press): full card-like layout with the
+            // brand logo on the leading edge, address stack in the centre,
+            // elapsed timer on the trailing edge, and the status+customer
+            // line spanning the bottom. The `.leading` brand badge uses
+            // the same `fullColorLogo` helper as the lock screen so iOS 18+
+            // can render it in colour where the system allows it.
+            //
+            // Compact (always-visible) + minimal: just the live state —
+            // status-coloured dot on the left, monospaced timer on the
+            // right. Apple's own compact islands match this pattern.
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    HStack(spacing: 8) {
-                        StatusDot(status: context.state.status, size: 12)
-                        Text(AddressParts(address: context.attributes.address).street)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                    }
+                    BrandBadge()
+                        .frame(width: 40, height: 40)
+                        .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     TimerColumn(startedAt: context.attributes.startedAt, size: 18)
+                        .padding(.trailing, 4)
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(AddressParts(address: context.attributes.address).street)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        Text(AddressParts(address: context.attributes.address).suburbOrFallback)
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.secondaryText)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     StatusLine(
                         status: context.state.status,
                         customerName: context.attributes.customerName,
-                        size: 12
+                        size: 13
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
                 }
             } compactLeading: {
                 StatusDot(status: context.state.status, size: 14)
@@ -57,7 +71,7 @@ struct JobRunnerLiveActivity: Widget {
             } compactTrailing: {
                 Text(context.attributes.startedAt, style: .timer)
                     .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(Color.onBreak) // orange-amber as the "live counter" colour
+                    .foregroundStyle(Color.onBreak)
                     .frame(maxWidth: 56)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
