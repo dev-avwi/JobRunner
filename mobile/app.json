@@ -292,7 +292,24 @@
         "origin": false
       },
       "eas": {
-        "projectId": "78e88ca7-014e-438b-8170-1ccae4cd9386"
+        "projectId": "78e88ca7-014e-438b-8170-1ccae4cd9386",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "JobRunnerLiveActivity",
+                  "bundleIdentifier": "com.jobrunner.app.liveactivity",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.jobrunner.app"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       },
       "apiUrl": "https://jobrunner.com.au"
     },
