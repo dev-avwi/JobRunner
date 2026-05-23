@@ -44,7 +44,6 @@ struct JobRunnerLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     BrandBadge()
                         .frame(width: 38, height: 38)
-                        .shadow(color: Color.brandBlue.opacity(0.45), radius: 8, x: 0, y: 0)
                         .padding(.leading, 6)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -144,7 +143,6 @@ private struct LockScreenView: View {
             // container shape (per Apple HIG).
             BrandBadge()
                 .frame(width: 46, height: 46)
-                .shadow(color: Color.brandBlue.opacity(0.45), radius: 10, x: 0, y: 0)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(AddressParts(address: attributes.address).street)
@@ -189,20 +187,6 @@ private struct LockScreenView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
-        // Subtle radial highlight in the top-left, behind the logo —
-        // implies depth and reinforces brand presence without competing
-        // with the .activityBackgroundTint system colour.
-        .background(
-            RadialGradient(
-                colors: [
-                    Color.brandBlue.opacity(0.10),
-                    Color.clear
-                ],
-                center: .topLeading,
-                startRadius: 0,
-                endRadius: 160
-            )
-        )
     }
 }
 
@@ -444,9 +428,9 @@ private struct LiquidTimerColumn: View {
                 .foregroundStyle(Color.tertiaryText)
                 .lineLimit(1)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(width: 110, alignment: .trailing)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(width: 96, alignment: .trailing)
         .modifier(TimerGlassBackground())
     }
 }
