@@ -44,18 +44,20 @@ struct JobRunnerLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     BrandBadge()
                         .frame(width: 38, height: 38)
+                        .shadow(color: Color.brandBlue.opacity(0.45), radius: 8, x: 0, y: 0)
                         .padding(.leading, 6)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 1) {
+                    VStack(alignment: .trailing, spacing: 2) {
                         Text(context.attributes.startedAt, style: .timer)
                             .font(.system(size: 20, weight: .bold, design: .rounded).monospacedDigit())
                             .foregroundStyle(Color.onBreak)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                             .multilineTextAlignment(.trailing)
-                        Text("elapsed")
-                            .font(.system(size: 10, weight: .medium))
+                        Text("ELAPSED")
+                            .font(.system(size: 9, weight: .heavy))
+                            .tracking(1.4)
                             .foregroundStyle(Color.tertiaryText)
                             .lineLimit(1)
                     }
@@ -71,26 +73,33 @@ struct JobRunnerLiveActivity: Widget {
                             .font(.system(size: 12))
                             .foregroundStyle(Color.secondaryText)
                             .lineLimit(1)
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(statusColor(context.state.status))
-                                .frame(width: 6, height: 6)
-                            Text(statusLabel(context.state.status))
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(statusColor(context.state.status))
-                                .lineLimit(1)
+                        // Match the lock-screen status pill treatment.
+                        HStack(spacing: 8) {
+                            HStack(spacing: 5) {
+                                Circle()
+                                    .fill(statusColor(context.state.status))
+                                    .frame(width: 6, height: 6)
+                                Text(statusLabel(context.state.status).uppercased())
+                                    .font(.system(size: 10, weight: .heavy))
+                                    .tracking(0.8)
+                                    .foregroundStyle(statusColor(context.state.status))
+                                    .lineLimit(1)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(
+                                Capsule()
+                                    .fill(statusColor(context.state.status).opacity(0.15))
+                            )
                             if !context.attributes.customerName.isEmpty {
-                                Text("·")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(Color.tertiaryText)
                                 Text(context.attributes.customerName)
-                                    .font(.system(size: 12))
+                                    .font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(Color.secondaryText)
                                     .lineLimit(1)
                                     .truncationMode(.tail)
                             }
                         }
-                        .padding(.top, 3)
+                        .padding(.top, 4)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 6)
@@ -155,8 +164,9 @@ private struct LockScreenView: View {
                 Text(AddressParts(address: attributes.address).street)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .minimumScaleFactor(0.85)
 
                 Text(AddressParts(address: attributes.address).suburbOrFallback)
                     .font(.system(size: 13))
