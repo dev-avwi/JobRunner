@@ -47,8 +47,21 @@ struct JobRunnerLiveActivity: Widget {
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    TimerColumn(startedAt: context.attributes.startedAt, size: 18)
-                        .padding(.trailing, 4)
+                    // Inlined timer — wrapper struct was failing to
+                    // render in this slot. The minimal/compact slots
+                    // already prove the same expression works.
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Text(context.attributes.startedAt, style: .timer)
+                            .font(.system(size: 18, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(Color.onBreak)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.trailing)
+                        Text("elapsed")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.tertiaryText)
+                            .lineLimit(1)
+                    }
+                    .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -60,11 +73,27 @@ struct JobRunnerLiveActivity: Widget {
                             .font(.system(size: 11))
                             .foregroundStyle(Color.secondaryText)
                             .lineLimit(1)
-                        StatusLine(
-                            status: context.state.status,
-                            customerName: context.attributes.customerName,
-                            size: 12
-                        )
+                        // Inlined status row — wrapper struct wasn't
+                        // rendering here either.
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(statusColor(context.state.status))
+                                .frame(width: 6, height: 6)
+                            Text(statusLabel(context.state.status))
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(statusColor(context.state.status))
+                                .lineLimit(1)
+                            if !context.attributes.customerName.isEmpty {
+                                Text("·")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(Color.tertiaryText)
+                                Text(context.attributes.customerName)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.secondaryText)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                            }
+                        }
                         .padding(.top, 2)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -126,9 +155,8 @@ private struct LockScreenView: View {
                 Text(AddressParts(address: attributes.address).street)
                     .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .minimumScaleFactor(0.85)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
 
                 Text(AddressParts(address: attributes.address).suburbOrFallback)
                     .font(.system(size: 13))
@@ -136,20 +164,67 @@ private struct LockScreenView: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
 
-                StatusLine(
-                    status: state.status,
-                    customerName: attributes.customerName,
-                    size: 13
-                )
+                // Inlined status row — the StatusLine wrapper struct
+                // was failing to render inside the lock-screen card.
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(statusColor(state.status))
+                        .frame(width: 6, height: 6)
+                    Text(statusLabel(state.status))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(statusColor(state.status))
+                        .lineLimit(1)
+                    if !attributes.customerName.isEmpty {
+                        Text("·")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.tertiaryText)
+                        Text(attributes.customerName)
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.secondaryText)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                }
                 .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            TimerColumn(startedAt: attributes.startedAt, size: 22)
-                .frame(width: 72, alignment: .trailing)
+            // Inlined timer column — wrapper struct was failing to
+            // render here too (compact slot uses the same expression
+            // inlined and renders fine).
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(attributes.startedAt, style: .timer)
+                    .font(.system(size: 22, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(Color.onBreak)
+                    .lineLimit(1)
+                    .multilineTextAlignment(.trailing)
+                Text("elapsed")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Color.tertiaryText)
+                    .lineLimit(1)
+            }
+            .frame(width: 72, alignment: .trailing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+    }
+}
+
+// Status helpers — pulled out of the deleted StatusLine wrapper so they
+// can be reused inline from the lock-screen and Dynamic Island views.
+private func statusColor(_ status: JobStatus) -> Color {
+    switch status {
+    case .inProgress: return .inProgress
+    case .onBreak:    return .onBreak
+    case .completed:  return .completed
+    }
+}
+
+private func statusLabel(_ status: JobStatus) -> String {
+    switch status {
+    case .inProgress: return "In progress"
+    case .onBreak:    return "On break"
+    case .completed:  return "Completed"
     }
 }
 
