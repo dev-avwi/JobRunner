@@ -327,25 +327,26 @@ private struct TimerColumn: View {
 
 // MARK: - Brand badge
 
-// The JobRunner runner-figure logo, rendered without a container per
-// Apple's Live Activity HIG: "If you include a logo mark, display it
-// without a container. This better integrates the logo mark with your
-// Live Activity layout." Wrapping the image in a brand-blue squircle
-// was what produced the "flat gray tile" on the lock screen — both
-// the colour fill *and* the raster image got vibrancy-desaturated to
-// the same grey, collapsing the badge into a single flat shape.
+// The JobRunner runner-figure logo. The shipped PNG (icon.png /
+// logo.png) bakes a white background INTO the image, so even with
+// the container removed per Apple HIG, the lock-screen vibrancy
+// pipeline desaturates that white surround to grey — producing the
+// "flat grey tile" symptom regardless of any modifier ordering.
 //
-// Without the squircle, iOS vibrancy still desaturates the runner
-// figure on the lock screen, but the figure's transparent surround
-// blends with the dark card surface and the silhouette of the mark
-// remains visible. On the Dynamic Island and unlocked surfaces the
-// system typically preserves the original colours.
+// `.luminanceToAlpha()` solves this without a designer: it remaps
+// bright pixels (the white surround → high luminance) to fully
+// transparent, and darker pixels (the blue runner figure + orange
+// hard hat / motion lines → lower luminance) to fully opaque. The
+// result on a dark card surface: the white surround drops out, and
+// the runner-figure silhouette stays visible as a recognisable
+// brand mark in its actual colours where iOS preserves them.
 private struct BrandBadge: View {
     var body: some View {
         Image("JobRunnerLogo")
             .renderingMode(.original)
             .resizable()
             .aspectRatio(contentMode: .fit)
+            .luminanceToAlpha()
     }
 }
 
