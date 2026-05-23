@@ -23,26 +23,32 @@ struct JobRunnerLiveActivity: Widget {
                 .activityBackgroundTint(Color.cardBackground)
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
+            // Dynamic Island uses monochrome rendering throughout (Apple's
+            // own apps never put a coloured logo here — Maps shows a white
+            // arrow, Music shows a waveform, etc.). So the leading slot
+            // gets the same StatusDot as compact/minimal — no logo. The
+            // colourful brand mark lives only on the lock-screen card,
+            // where `widgetAccentedRenderingMode(.fullColor)` actually
+            // takes effect.
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    BrandBadge()
-                        .frame(width: 40, height: 40)
-                }
-                DynamicIslandExpandedRegion(.trailing) {
-                    TimerColumn(startedAt: context.attributes.startedAt, size: 18)
-                }
-                DynamicIslandExpandedRegion(.center) {
-                    VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        StatusDot(status: context.state.status, size: 12)
                         Text(AddressParts(address: context.attributes.address).street)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
-                        StatusLine(
-                            status: context.state.status,
-                            customerName: context.attributes.customerName,
-                            size: 11
-                        )
                     }
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    TimerColumn(startedAt: context.attributes.startedAt, size: 18)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    StatusLine(
+                        status: context.state.status,
+                        customerName: context.attributes.customerName,
+                        size: 12
+                    )
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } compactLeading: {
