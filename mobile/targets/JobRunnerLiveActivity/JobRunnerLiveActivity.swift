@@ -102,11 +102,11 @@ private struct LockScreenView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(AddressParts(address: attributes.address).street)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(2)
-                    .minimumScaleFactor(0.75)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+                    .minimumScaleFactor(0.85)
 
                 Text(AddressParts(address: attributes.address).suburbOrFallback)
                     .font(.system(size: 13))
@@ -121,12 +121,10 @@ private struct LockScreenView: View {
                 )
                 .padding(.top, 1)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer(minLength: 8)
-
-            TimerColumn(startedAt: attributes.startedAt, size: 24)
-                .frame(minWidth: 78, alignment: .trailing)
-                .layoutPriority(1)
+            TimerColumn(startedAt: attributes.startedAt, size: 22)
+                .frame(width: 72, alignment: .trailing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
@@ -232,20 +230,14 @@ private struct TimerColumn: View {
 
 // MARK: - Brand badge
 
-// JobRunner brand mark — a stylised runner figure on a brand-blue
-// squircle. After five attempts to render the raster runner-figure
-// PNG in colour on the iOS 26 Live Activity lock screen (template
-// rendering intent, .renderingMode(.original), .compositingGroup(),
-// brand-blue backing, widgetAccentedRenderingMode(.fullColor)), all
-// approaches still got vibrancy-desaturated to grey. The lock-screen
-// rendering pipeline does not honour widgetAccentedRenderingMode for
-// Live Activity images — only Home Screen widgets do.
-//
-// Switching to an SF Symbol (`figure.run`) bypasses the desaturation
-// pipeline entirely: SF Symbols render with explicit foregroundStyle
-// across every Live Activity surface and every device. The runner
-// figure concept survives — JobRunner *is* a runner — and the brand
-// blue + white treatment is unambiguous as an app mark.
+// The actual JobRunner runner-figure logo, presented on a brand-blue
+// squircle. iOS 26 Live Activity lock-screen vibrancy may render the
+// raster image as a monochrome silhouette — that's accepted: the
+// authentic brand mark is more important than colour fidelity. On the
+// Dynamic Island expanded view the image typically renders in full
+// colour. .renderingMode(.original) and the asset catalog's
+// "template-rendering-intent": "original" keep template-mode tinting
+// at bay everywhere the system *does* honour them.
 private struct BrandBadge: View {
     var body: some View {
         GeometryReader { geo in
@@ -253,10 +245,11 @@ private struct BrandBadge: View {
                 let cornerRadius = geo.size.width * 0.225 // iOS squircle ratio
                 let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 shape.fill(Color.brandBlue)
-                Image(systemName: "figure.run")
-                    .font(.system(size: geo.size.width * 0.58, weight: .bold))
-                    .foregroundStyle(.white)
-                    .offset(x: geo.size.width * 0.02) // optical centring — figure.run tilts left
+                Image("JobRunnerLogo")
+                    .renderingMode(.original)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(shape)
             }
         }
     }
