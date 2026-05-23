@@ -66,7 +66,11 @@ struct JobRunnerLiveActivity: Widget {
                     .padding(.horizontal, 4)
                 }
             } compactLeading: {
-                StatusDot(status: context.state.status, size: 14)
+                // Logo on the left of the notch — small but recognisable
+                // as the JobRunner mark. The raster may render monochrome
+                // here too; that's accepted.
+                BrandBadge()
+                    .frame(width: 22, height: 22)
                     .padding(.leading, 2)
             } compactTrailing: {
                 Text(context.attributes.startedAt, style: .timer)
@@ -77,7 +81,14 @@ struct JobRunnerLiveActivity: Widget {
                     .minimumScaleFactor(0.7)
                     .padding(.trailing, 2)
             } minimal: {
-                StatusDot(status: context.state.status)
+                // Minimal slot is ~36pt — no logo fits legibly. Show just
+                // the live timer in brand amber so the user reads the
+                // elapsed time at a glance.
+                Text(context.attributes.startedAt, style: .timer)
+                    .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(Color.onBreak)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
             .keylineTint(Color.brandBlue)
         }
@@ -86,48 +97,57 @@ struct JobRunnerLiveActivity: Widget {
 
 // MARK: - Lock-screen view
 
-// Two columns: 48pt brand badge anchors the left, three text rows
-// (address / suburb / status·customer) flex in the middle, oversized
-// elapsed timer pinned right. One font family (system), two weights
-// (regular + semibold/bold), three sizes (19 / 13 / 26). Uniform
-// 14pt vertical and 16pt horizontal padding — no padding zoo.
+// Two-section card. Top row: 44pt brand badge | address+suburb stack |
+// 72pt elapsed-timer column. Hairline divider. Bottom row: status pill
+// + customer name. Address VStack greedily fills via maxWidth: .infinity
+// so the timer (fixed width) can't squeeze it down to "1...". Single
+// font family, two weights (regular + bold), three sizes (17 / 13 / 22).
 private struct LockScreenView: View {
     let attributes: JobRunnerLiveActivityAttributes
     let state: JobRunnerLiveActivityAttributes.ContentState
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            BrandBadge()
-                .frame(width: 48, height: 48)
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                BrandBadge()
+                    .frame(width: 44, height: 44)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(AddressParts(address: attributes.address).street)
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .minimumScaleFactor(0.85)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(AddressParts(address: attributes.address).street)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .minimumScaleFactor(0.85)
 
-                Text(AddressParts(address: attributes.address).suburbOrFallback)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.secondaryText)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                    Text(AddressParts(address: attributes.address).suburbOrFallback)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.secondaryText)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                StatusLine(
-                    status: state.status,
-                    customerName: attributes.customerName,
-                    size: 13
-                )
-                .padding(.top, 1)
+                TimerColumn(startedAt: attributes.startedAt, size: 22)
+                    .frame(width: 72, alignment: .trailing)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
 
-            TimerColumn(startedAt: attributes.startedAt, size: 22)
-                .frame(width: 72, alignment: .trailing)
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 0.5)
+
+            StatusLine(
+                status: state.status,
+                customerName: attributes.customerName,
+                size: 13
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
     }
 }
 
