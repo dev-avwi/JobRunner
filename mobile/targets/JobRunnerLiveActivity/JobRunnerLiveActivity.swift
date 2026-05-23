@@ -34,17 +34,24 @@ struct JobRunnerLiveActivity: Widget {
             // status-coloured dot on the left, monospaced timer on the
             // right. Apple's own compact islands match this pattern.
             DynamicIsland {
+                // Three regions only — leading, trailing, bottom.
+                // Apple's reference Live Activities never combine
+                // .center with .leading + .trailing; doing so makes
+                // the layout collapse and the regions don't render
+                // (the "blank pill" symptom). Address + suburb +
+                // status all live in the .bottom region as a single
+                // vertical stack instead.
                 DynamicIslandExpandedRegion(.leading) {
                     BrandBadge()
-                        .frame(width: 40, height: 40)
+                        .frame(width: 36, height: 36)
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     TimerColumn(startedAt: context.attributes.startedAt, size: 18)
                         .padding(.trailing, 4)
                 }
-                DynamicIslandExpandedRegion(.center) {
-                    VStack(alignment: .leading, spacing: 2) {
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(AddressParts(address: context.attributes.address).street)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(.white)
@@ -53,17 +60,16 @@ struct JobRunnerLiveActivity: Widget {
                             .font(.system(size: 11))
                             .foregroundStyle(Color.secondaryText)
                             .lineLimit(1)
+                        StatusLine(
+                            status: context.state.status,
+                            customerName: context.attributes.customerName,
+                            size: 12
+                        )
+                        .padding(.top, 2)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                DynamicIslandExpandedRegion(.bottom) {
-                    StatusLine(
-                        status: context.state.status,
-                        customerName: context.attributes.customerName,
-                        size: 13
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 4)
+                    .padding(.top, 4)
                 }
             } compactLeading: {
                 // Logo on the left of the notch — small but recognisable
@@ -97,57 +103,53 @@ struct JobRunnerLiveActivity: Widget {
 
 // MARK: - Lock-screen view
 
-// Two-section card. Top row: 44pt brand badge | address+suburb stack |
-// 72pt elapsed-timer column. Hairline divider. Bottom row: status pill
-// + customer name. Address VStack greedily fills via maxWidth: .infinity
-// so the timer (fixed width) can't squeeze it down to "1...". Single
-// font family, two weights (regular + bold), three sizes (17 / 13 / 22).
+// Single-section card. Two-section + divider variant got clipped by
+// the iOS Live Activity height ceiling on the lock screen (~120pt),
+// which made the bottom row + timer disappear. Folding the status
+// line back inside the centre VStack keeps every piece inside the
+// allowed envelope.
+//
+// Three columns: 44pt brand badge anchors the left, address + suburb
+// + status stack flexes in the middle (.frame(maxWidth: .infinity)
+// so it greedily claims the remaining width), 72pt elapsed-timer
+// column pinned right (fixed width so it never squeezes the centre).
 private struct LockScreenView: View {
     let attributes: JobRunnerLiveActivityAttributes
     let state: JobRunnerLiveActivityAttributes.ContentState
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
-                BrandBadge()
-                    .frame(width: 44, height: 44)
+        HStack(alignment: .top, spacing: 12) {
+            BrandBadge()
+                .frame(width: 44, height: 44)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(AddressParts(address: attributes.address).street)
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .minimumScaleFactor(0.85)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(AddressParts(address: attributes.address).street)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .minimumScaleFactor(0.85)
 
-                    Text(AddressParts(address: attributes.address).suburbOrFallback)
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.secondaryText)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                Text(AddressParts(address: attributes.address).suburbOrFallback)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.secondaryText)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
 
-                TimerColumn(startedAt: attributes.startedAt, size: 22)
-                    .frame(width: 72, alignment: .trailing)
+                StatusLine(
+                    status: state.status,
+                    customerName: attributes.customerName,
+                    size: 13
+                )
+                .padding(.top, 2)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 10)
-
-            Rectangle()
-                .fill(Color.white.opacity(0.08))
-                .frame(height: 0.5)
-
-            StatusLine(
-                status: state.status,
-                customerName: attributes.customerName,
-                size: 13
-            )
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+
+            TimerColumn(startedAt: attributes.startedAt, size: 22)
+                .frame(width: 72, alignment: .trailing)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
 
