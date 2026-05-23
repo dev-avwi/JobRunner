@@ -327,28 +327,25 @@ private struct TimerColumn: View {
 
 // MARK: - Brand badge
 
-// The actual JobRunner runner-figure logo, presented on a brand-blue
-// squircle. iOS 26 Live Activity lock-screen vibrancy may render the
-// raster image as a monochrome silhouette — that's accepted: the
-// authentic brand mark is more important than colour fidelity. On the
-// Dynamic Island expanded view the image typically renders in full
-// colour. .renderingMode(.original) and the asset catalog's
-// "template-rendering-intent": "original" keep template-mode tinting
-// at bay everywhere the system *does* honour them.
+// The JobRunner runner-figure logo, rendered without a container per
+// Apple's Live Activity HIG: "If you include a logo mark, display it
+// without a container. This better integrates the logo mark with your
+// Live Activity layout." Wrapping the image in a brand-blue squircle
+// was what produced the "flat gray tile" on the lock screen — both
+// the colour fill *and* the raster image got vibrancy-desaturated to
+// the same grey, collapsing the badge into a single flat shape.
+//
+// Without the squircle, iOS vibrancy still desaturates the runner
+// figure on the lock screen, but the figure's transparent surround
+// blends with the dark card surface and the silhouette of the mark
+// remains visible. On the Dynamic Island and unlocked surfaces the
+// system typically preserves the original colours.
 private struct BrandBadge: View {
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                let cornerRadius = geo.size.width * 0.225 // iOS squircle ratio
-                let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                shape.fill(Color.brandBlue)
-                Image("JobRunnerLogo")
-                    .renderingMode(.original)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .clipShape(shape)
-            }
-        }
+        Image("JobRunnerLogo")
+            .renderingMode(.original)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
     }
 }
 
