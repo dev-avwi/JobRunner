@@ -43,25 +43,23 @@ struct JobRunnerLiveActivity: Widget {
                 // vertical stack instead.
                 DynamicIslandExpandedRegion(.leading) {
                     BrandBadge()
-                        .frame(width: 36, height: 36)
-                        .padding(.leading, 4)
+                        .frame(width: 38, height: 38)
+                        .padding(.leading, 6)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    // Inlined timer — wrapper struct was failing to
-                    // render in this slot. The minimal/compact slots
-                    // already prove the same expression works.
-                    VStack(alignment: .trailing, spacing: 0) {
+                    VStack(alignment: .trailing, spacing: 1) {
                         Text(context.attributes.startedAt, style: .timer)
-                            .font(.system(size: 18, weight: .bold, design: .rounded).monospacedDigit())
+                            .font(.system(size: 20, weight: .bold, design: .rounded).monospacedDigit())
                             .foregroundStyle(Color.onBreak)
                             .lineLimit(1)
+                            .minimumScaleFactor(0.6)
                             .multilineTextAlignment(.trailing)
                         Text("elapsed")
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(Color.tertiaryText)
                             .lineLimit(1)
                     }
-                    .padding(.trailing, 4)
+                    .padding(.trailing, 6)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -70,11 +68,9 @@ struct JobRunnerLiveActivity: Widget {
                             .foregroundStyle(.white)
                             .lineLimit(1)
                         Text(AddressParts(address: context.attributes.address).suburbOrFallback)
-                            .font(.system(size: 11))
+                            .font(.system(size: 12))
                             .foregroundStyle(Color.secondaryText)
                             .lineLimit(1)
-                        // Inlined status row — wrapper struct wasn't
-                        // rendering here either.
                         HStack(spacing: 6) {
                             Circle()
                                 .fill(statusColor(context.state.status))
@@ -94,11 +90,11 @@ struct JobRunnerLiveActivity: Widget {
                                     .truncationMode(.tail)
                             }
                         }
-                        .padding(.top, 2)
+                        .padding(.top, 3)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 4)
-                    .padding(.top, 4)
+                    .padding(.horizontal, 6)
+                    .padding(.top, 6)
                 }
             } compactLeading: {
                 // Logo on the left of the notch — small but recognisable
@@ -147,13 +143,13 @@ private struct LockScreenView: View {
     let state: JobRunnerLiveActivityAttributes.ContentState
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 14) {
             BrandBadge()
-                .frame(width: 44, height: 44)
+                .frame(width: 46, height: 46)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(AddressParts(address: attributes.address).street)
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -164,8 +160,6 @@ private struct LockScreenView: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
 
-                // Inlined status row — the StatusLine wrapper struct
-                // was failing to render inside the lock-screen card.
                 HStack(spacing: 6) {
                     Circle()
                         .fill(statusColor(state.status))
@@ -185,28 +179,28 @@ private struct LockScreenView: View {
                             .truncationMode(.tail)
                     }
                 }
-                .padding(.top, 2)
+                .padding(.top, 3)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Inlined timer column — wrapper struct was failing to
-            // render here too (compact slot uses the same expression
-            // inlined and renders fine).
-            VStack(alignment: .trailing, spacing: 0) {
+            VStack(alignment: .trailing, spacing: 1) {
                 Text(attributes.startedAt, style: .timer)
                     .font(.system(size: 22, weight: .bold, design: .rounded).monospacedDigit())
                     .foregroundStyle(Color.onBreak)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .multilineTextAlignment(.trailing)
                 Text("elapsed")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Color.tertiaryText)
                     .lineLimit(1)
             }
-            .frame(width: 72, alignment: .trailing)
+            // Wide enough for HH:MM:SS (e.g. "1:36:52") without
+            // truncating; minimumScaleFactor handles longer durations.
+            .frame(width: 92, alignment: .trailing)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
     }
 }
 
