@@ -394,14 +394,14 @@ private struct LiquidStatusPill: View {
 private struct StatusPillBackground: ViewModifier {
     let color: Color
 
+    // .glassEffect was unreliable inside the Live Activity render
+    // context — caused the pill to drop out entirely on the lock
+    // screen and expanded Dynamic Island. Falling back to a flat
+    // tinted capsule which renders consistently.
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content.glassEffect(.regular.tint(color), in: .capsule)
-        } else {
-            content.background(
-                Capsule().fill(color.opacity(0.15))
-            )
-        }
+        content.background(
+            Capsule().fill(color.opacity(0.15))
+        )
     }
 }
 
@@ -414,6 +414,9 @@ private struct StatusPillBackground: ViewModifier {
 private struct LiquidTimerColumn: View {
     let startedAt: Date
 
+    // Name retained for backwards compatibility — Liquid Glass backing
+    // was removed because .glassEffect was unreliable inside the Live
+    // Activity render context. Now just a plain elapsed-timer column.
     var body: some View {
         VStack(alignment: .trailing, spacing: 2) {
             Text(startedAt, style: .timer)
@@ -428,22 +431,6 @@ private struct LiquidTimerColumn: View {
                 .foregroundStyle(Color.tertiaryText)
                 .lineLimit(1)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .frame(width: 96, alignment: .trailing)
-        .modifier(TimerGlassBackground())
-    }
-}
-
-private struct TimerGlassBackground: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content.glassEffect(.regular, in: .rect(cornerRadius: 14))
-        } else {
-            content.background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.05))
-            )
-        }
+        .frame(width: 92, alignment: .trailing)
     }
 }
