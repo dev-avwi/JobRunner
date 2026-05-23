@@ -144,8 +144,12 @@ private struct LockScreenView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
+            // Brand badge with a soft halo — gives the mark presence
+            // against the dark card surface without adding a hard
+            // container shape (per Apple HIG).
             BrandBadge()
                 .frame(width: 46, height: 46)
+                .shadow(color: Color.brandBlue.opacity(0.45), radius: 10, x: 0, y: 0)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(AddressParts(address: attributes.address).street)
@@ -160,47 +164,79 @@ private struct LockScreenView: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
 
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(statusColor(state.status))
-                        .frame(width: 6, height: 6)
-                    Text(statusLabel(state.status))
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(statusColor(state.status))
-                        .lineLimit(1)
+                // Status pill — coloured dot + uppercase label with
+                // small-caps tracking, wrapped in a translucent capsule
+                // tinted with the status colour. Customer name sits
+                // beside the pill as a separate piece of metadata.
+                HStack(spacing: 8) {
+                    HStack(spacing: 5) {
+                        Circle()
+                            .fill(statusColor(state.status))
+                            .frame(width: 6, height: 6)
+                        Text(statusLabel(state.status).uppercased())
+                            .font(.system(size: 10, weight: .heavy))
+                            .tracking(0.8)
+                            .foregroundStyle(statusColor(state.status))
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule()
+                            .fill(statusColor(state.status).opacity(0.15))
+                    )
+
                     if !attributes.customerName.isEmpty {
-                        Text("·")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.tertiaryText)
                         Text(attributes.customerName)
-                            .font(.system(size: 13))
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(Color.secondaryText)
                             .lineLimit(1)
                             .truncationMode(.tail)
                     }
                 }
-                .padding(.top, 3)
+                .padding(.top, 4)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            VStack(alignment: .trailing, spacing: 1) {
+            // Hairline separator that anchors the timer as its own zone
+            // without taking real horizontal space.
+            Rectangle()
+                .fill(Color.white.opacity(0.06))
+                .frame(width: 0.5, height: 40)
+
+            VStack(alignment: .trailing, spacing: 2) {
                 Text(attributes.startedAt, style: .timer)
-                    .font(.system(size: 22, weight: .bold, design: .rounded).monospacedDigit())
+                    .font(.system(size: 24, weight: .bold, design: .rounded).monospacedDigit())
                     .foregroundStyle(Color.onBreak)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                     .multilineTextAlignment(.trailing)
-                Text("elapsed")
-                    .font(.system(size: 11, weight: .medium))
+                Text("ELAPSED")
+                    .font(.system(size: 9, weight: .heavy))
+                    .tracking(1.4)
                     .foregroundStyle(Color.tertiaryText)
                     .lineLimit(1)
             }
             // Wide enough for HH:MM:SS (e.g. "1:36:52") without
             // truncating; minimumScaleFactor handles longer durations.
-            .frame(width: 92, alignment: .trailing)
+            .frame(width: 90, alignment: .trailing)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
+        // Subtle radial highlight in the top-left, behind the logo —
+        // implies depth and reinforces brand presence without competing
+        // with the .activityBackgroundTint system colour.
+        .background(
+            RadialGradient(
+                colors: [
+                    Color.brandBlue.opacity(0.10),
+                    Color.clear
+                ],
+                center: .topLeading,
+                startRadius: 0,
+                endRadius: 160
+            )
+        )
     }
 }
 
