@@ -327,26 +327,21 @@ private struct TimerColumn: View {
 
 // MARK: - Brand badge
 
-// The JobRunner runner-figure logo. The shipped PNG (icon.png /
-// logo.png) bakes a white background INTO the image, so even with
-// the container removed per Apple HIG, the lock-screen vibrancy
-// pipeline desaturates that white surround to grey — producing the
-// "flat grey tile" symptom regardless of any modifier ordering.
+// The JobRunner runner-figure logo, rendered without a container per
+// Apple's Live Activity HIG. The asset catalog's PNG (now sourced
+// from mobile/assets/logo.png, which has a genuinely transparent
+// surround — RGBA(0,0,0,0) at the corners) lets the figure sit
+// directly on the dark card surface with no white tile around it.
 //
-// `.luminanceToAlpha()` solves this without a designer: it remaps
-// bright pixels (the white surround → high luminance) to fully
-// transparent, and darker pixels (the blue runner figure + orange
-// hard hat / motion lines → lower luminance) to fully opaque. The
-// result on a dark card surface: the white surround drops out, and
-// the runner-figure silhouette stays visible as a recognisable
-// brand mark in its actual colours where iOS preserves them.
+// Earlier passes used mobile/assets/icon.png by mistake — that file
+// has a baked-in white background which was the actual source of
+// the "grey tile" symptom on the lock screen.
 private struct BrandBadge: View {
     var body: some View {
         Image("JobRunnerLogo")
             .renderingMode(.original)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .luminanceToAlpha()
     }
 }
 
