@@ -191,5 +191,13 @@ function applyExtensionBuildSettings(proj, target) {
     s.PRODUCT_NAME = `"$(TARGET_NAME)"`;
     s.SKIP_INSTALL = "NO";
     s.ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = "NO";
+    // The host app's Podfile sets CC/CXX/LD/LDPLUSPLUS to a ccache wrapper
+    // rooted at $(PODS_ROOT). The extension target is NOT a Pods target, so
+    // $(PODS_ROOT) is unset and the path resolves to "/../../node_modules/..."
+    // which doesn't exist. Clear these to use Xcode's default toolchain.
+    s.CC = '""';
+    s.CXX = '""';
+    s.LD = '""';
+    s.LDPLUSPLUS = '""';
   }
 }
