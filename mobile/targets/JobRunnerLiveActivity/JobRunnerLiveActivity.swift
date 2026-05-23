@@ -73,24 +73,10 @@ struct JobRunnerLiveActivity: Widget {
                             .font(.system(size: 12))
                             .foregroundStyle(Color.secondaryText)
                             .lineLimit(1)
-                        // Match the lock-screen status pill treatment.
+                        // Match the lock-screen status pill treatment —
+                        // Liquid Glass on iOS 26+, capsule fallback below.
                         HStack(spacing: 8) {
-                            HStack(spacing: 5) {
-                                Circle()
-                                    .fill(statusColor(context.state.status))
-                                    .frame(width: 6, height: 6)
-                                Text(statusLabel(context.state.status).uppercased())
-                                    .font(.system(size: 10, weight: .heavy))
-                                    .tracking(0.8)
-                                    .foregroundStyle(statusColor(context.state.status))
-                                    .lineLimit(1)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(
-                                Capsule()
-                                    .fill(statusColor(context.state.status).opacity(0.15))
-                            )
+                            LiquidStatusPill(status: context.state.status)
                             if !context.attributes.customerName.isEmpty {
                                 Text(context.attributes.customerName)
                                     .font(.system(size: 12, weight: .medium))
@@ -179,22 +165,7 @@ private struct LockScreenView: View {
                 // tinted with the status colour. Customer name sits
                 // beside the pill as a separate piece of metadata.
                 HStack(spacing: 8) {
-                    HStack(spacing: 5) {
-                        Circle()
-                            .fill(statusColor(state.status))
-                            .frame(width: 6, height: 6)
-                        Text(statusLabel(state.status).uppercased())
-                            .font(.system(size: 10, weight: .heavy))
-                            .tracking(0.8)
-                            .foregroundStyle(statusColor(state.status))
-                            .lineLimit(1)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(
-                        Capsule()
-                            .fill(statusColor(state.status).opacity(0.15))
-                    )
+                    LiquidStatusPill(status: state.status)
 
                     if !attributes.customerName.isEmpty {
                         Text(attributes.customerName)
@@ -214,22 +185,7 @@ private struct LockScreenView: View {
                 .fill(Color.white.opacity(0.06))
                 .frame(width: 0.5, height: 40)
 
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(attributes.startedAt, style: .timer)
-                    .font(.system(size: 24, weight: .bold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(Color.onBreak)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .multilineTextAlignment(.trailing)
-                Text("ELAPSED")
-                    .font(.system(size: 9, weight: .heavy))
-                    .tracking(1.4)
-                    .foregroundStyle(Color.tertiaryText)
-                    .lineLimit(1)
-            }
-            // Wide enough for HH:MM:SS (e.g. "1:36:52") without
-            // truncating; minimumScaleFactor handles longer durations.
-            .frame(width: 90, alignment: .trailing)
+            LiquidTimerColumn(startedAt: attributes.startedAt)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
@@ -421,6 +377,89 @@ private struct StatusDot: View {
         case .inProgress: return .inProgress
         case .onBreak:    return .onBreak
         case .completed:  return .completed
+        }
+    }
+}
+
+// MARK: - Liquid Glass status pill (iOS 26+)
+//
+// On iOS 26 the pill uses the real `.glassEffect` Liquid Glass material
+// — a tinted, light-bending capsule that reacts to the underlying card
+// surface. Pre-iOS-26 falls back to a flat translucent capsule fill so
+// the design degrades gracefully on older devices.
+private struct LiquidStatusPill: View {
+    let status: JobStatus
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(statusColor(status))
+                .frame(width: 6, height: 6)
+            Text(statusLabel(status).uppercased())
+                .font(.system(size: 10, weight: .heavy))
+                .tracking(0.8)
+                .foregroundStyle(statusColor(status))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .modifier(StatusPillBackground(color: statusColor(status)))
+    }
+}
+
+private struct StatusPillBackground: ViewModifier {
+    let color: Color
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular.tint(color), in: .capsule)
+        } else {
+            content.background(
+                Capsule().fill(color.opacity(0.15))
+            )
+        }
+    }
+}
+
+// MARK: - Liquid Glass timer column (iOS 26+)
+//
+// Wraps the elapsed timer + ELAPSED caption inside a Liquid Glass card
+// on iOS 26+, so the right-hand "live data" zone reads as a distinct
+// glass panel. The 14pt rounded-rect shape matches the card's outer
+// corner radius at a smaller scale.
+private struct LiquidTimerColumn: View {
+    let startedAt: Date
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Text(startedAt, style: .timer)
+                .font(.system(size: 24, weight: .bold, design: .rounded).monospacedDigit())
+                .foregroundStyle(Color.onBreak)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .multilineTextAlignment(.trailing)
+            Text("ELAPSED")
+                .font(.system(size: 9, weight: .heavy))
+                .tracking(1.4)
+                .foregroundStyle(Color.tertiaryText)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(width: 110, alignment: .trailing)
+        .modifier(TimerGlassBackground())
+    }
+}
+
+private struct TimerGlassBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular, in: .rect(cornerRadius: 14))
+        } else {
+            content.background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(0.05))
+            )
         }
     }
 }
