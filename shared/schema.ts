@@ -371,7 +371,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   tradeType: true,
   intendedTier: true,
 }).extend({
-  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  password: z.string().min(8, "Password must be at least 8 characters").regex(/[A-Z]/, "Password must include an uppercase letter").regex(/[^A-Za-z0-9]/, "Password must include a special character").optional(),
   email: z.string().email("Invalid email address").optional(),
   intendedTier: z.enum(['free', 'pro', 'team']).optional(),
 });

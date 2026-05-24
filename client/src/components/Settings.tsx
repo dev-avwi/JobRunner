@@ -896,12 +896,8 @@ export default function Settings({
       toast({ title: 'Passwords do not match', variant: 'destructive' });
       return;
     }
-    if (passwordForm.newPassword.length < 8) {
-      toast({ title: 'Password must be at least 8 characters', variant: 'destructive' });
-      return;
-    }
-    if (!/[A-Z]/.test(passwordForm.newPassword) || !/[0-9]/.test(passwordForm.newPassword)) {
-      toast({ title: 'Password must include at least one uppercase letter and one number', variant: 'destructive' });
+    if (passwordForm.newPassword.length < 8 || !/[A-Z]/.test(passwordForm.newPassword) || !/[^A-Za-z0-9]/.test(passwordForm.newPassword)) {
+      toast({ title: 'Password must be at least 8 characters with one uppercase letter and one special character', variant: 'destructive' });
       return;
     }
     changePasswordMutation.mutate({

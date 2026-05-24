@@ -41,9 +41,8 @@ export default function ResetPasswordScreen() {
   const getPasswordRequirements = (pwd: string) => {
     return [
       { label: 'At least 8 characters', met: pwd.length >= 8 },
-      { label: 'Contains a number', met: /\d/.test(pwd) },
       { label: 'Contains uppercase letter', met: /[A-Z]/.test(pwd) },
-      { label: 'Contains lowercase letter', met: /[a-z]/.test(pwd) },
+      { label: 'Contains special character', met: /[^A-Za-z0-9]/.test(pwd) },
     ];
   };
 

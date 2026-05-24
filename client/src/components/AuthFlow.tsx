@@ -184,6 +184,8 @@ export default function AuthFlow({ onLoginSuccess, onNeedOnboarding }: AuthFlowP
   const getPasswordRequirements = (password: string) => {
     return [
       { label: 'At least 8 characters', met: password.length >= 8 },
+      { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+      { label: 'Contains special character', met: /[^A-Za-z0-9]/.test(password) },
     ];
   };
 

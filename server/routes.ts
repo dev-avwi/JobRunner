@@ -3162,8 +3162,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", authRateLimiter, async (req: any, res) => {
     try {
       const { password } = req.body;
-      if (!password || typeof password !== 'string' || password.length < 8) {
-        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      if (!password || typeof password !== 'string' || password.length < 8 || !/[A-Z]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+        return res.status(400).json({ error: "Password must be at least 8 characters with one uppercase letter and one special character" });
       }
       // Auto-generate username from email if not provided (web signup no longer
       // collects username — see AuthForm.tsx). Mirrors the OAuth flow in auth.ts.
@@ -4858,11 +4858,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!currentPassword || !newPassword) {
         return res.status(400).json({ error: "Current and new password are required" });
       }
-      if (newPassword.length < 8) {
-        return res.status(400).json({ error: "New password must be at least 8 characters" });
-      }
-      if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
-        return res.status(400).json({ error: "Password must include at least one uppercase letter and one number" });
+      if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+        return res.status(400).json({ error: "New password must be at least 8 characters with one uppercase letter and one special character" });
       }
 
       const user = await storage.getUser(req.user.id);

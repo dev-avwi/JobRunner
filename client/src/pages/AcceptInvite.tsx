@@ -200,15 +200,15 @@ export default function AcceptInvite() {
     if (formData.password.length < 8) {
       toast({
         title: "Password too short",
-        description: "Password must be at least 8 characters",
+        description: "Password must be at least 8 characters with one uppercase letter and one special character",
         variant: "destructive",
       });
       return;
     }
-    if (!/[A-Z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+    if (!/[A-Z]/.test(formData.password) || !/[^A-Za-z0-9]/.test(formData.password)) {
       toast({
         title: "Weak password",
-        description: "Password must include at least one uppercase letter and one number",
+        description: "Password must include at least one uppercase letter and one special character",
         variant: "destructive",
       });
       return;

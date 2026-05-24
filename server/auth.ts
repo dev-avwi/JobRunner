@@ -161,8 +161,8 @@ export class AuthService {
         return { success: false, error: 'Email and password are required' };
       }
 
-      if (validatedData.password.length < 8) {
-        return { success: false, error: 'Password must be at least 8 characters' };
+      if (validatedData.password.length < 8 || !/[A-Z]/.test(validatedData.password) || !/[^A-Za-z0-9]/.test(validatedData.password)) {
+        return { success: false, error: 'Password must be at least 8 characters with one uppercase letter and one special character' };
       }
 
       // Check if email collides with any existing identity (user, team
@@ -386,11 +386,8 @@ export class AuthService {
 
   static async resetPassword(token: string, newPassword: string): Promise<{ success: true } | { success: false; error: string }> {
     try {
-      if (newPassword.length < 8) {
-        return { success: false, error: 'Password must be at least 8 characters' };
-      }
-      if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
-        return { success: false, error: 'Password must include at least one uppercase letter and one number' };
+      if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+        return { success: false, error: 'Password must be at least 8 characters with one uppercase letter and one special character' };
       }
 
       const user = await storage.getUserByPasswordResetToken(token);

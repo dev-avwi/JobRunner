@@ -93,8 +93,8 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 8 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      Alert.alert('Error', 'Password must be at least 8 characters with one uppercase letter and one special character');
       return;
     }
 
