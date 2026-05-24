@@ -1948,11 +1948,13 @@ export default function CollectScreen() {
     
     setShowInvoicePickerModal(false);
     
-    // Proceed to the selected payment method
-    if (pendingPaymentMethod) {
-      proceedToPaymentMethod(pendingPaymentMethod);
-    }
+    // Wait for picker modal to fully dismiss before opening next modal
+    // (iOS pageSheet drops back-to-back modal presentations otherwise)
+    const method = pendingPaymentMethod;
     setPendingPaymentMethod(null);
+    if (method) {
+      setTimeout(() => proceedToPaymentMethod(method), 400);
+    }
   };
 
   const handleSelectJobFromPicker = (job: typeof collectibleJobs[0]) => {
@@ -1961,10 +1963,11 @@ export default function CollectScreen() {
       setDescription(`Payment for ${job.title}`);
       setShowInvoicePickerModal(false);
       setPickerSearch('');
-      if (pendingPaymentMethod) {
-        proceedToPaymentMethod(pendingPaymentMethod);
-      }
+      const method = pendingPaymentMethod;
       setPendingPaymentMethod(null);
+      if (method) {
+        setTimeout(() => proceedToPaymentMethod(method), 400);
+      }
     } else {
       setShowInvoicePickerModal(false);
       setPickerSearch('');
@@ -2019,10 +2022,10 @@ export default function CollectScreen() {
             break;
         }
         setPendingPaymentMethod(null);
-      }, 100);
+      }, 400);
     }
   };
-  
+
   const handleQRCodeDirectWithAmount = async (amountDollars: number) => {
     const amountCents = Math.round(amountDollars * 100);
     
