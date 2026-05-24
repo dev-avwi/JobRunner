@@ -18,6 +18,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useAuthStore } from '../../src/lib/store';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import api, { API_URL } from '../../src/lib/api';
 
@@ -311,24 +312,25 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[styles.content, { paddingBottom: bottomInset }]}>
-          <View style={styles.brandRow}>
+        <LinearGradient
+          colors={['#2563eb', '#7c3bbf', '#E8862E']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.brandBadge}>
             <Image 
               source={require('../../assets/jobrunner-logo.png')}
-              style={styles.logo}
+              style={styles.brandLogo}
               resizeMode="contain"
             />
-            <View style={styles.appNameContainer}>
-              <Text style={styles.appNameBlue}>Job</Text>
-              <Text style={styles.appNameOrange}>Runner</Text>
-            </View>
           </View>
+          <Text style={styles.brandName}>JobRunner</Text>
+          <Text style={styles.heroTitle}>Welcome back</Text>
+          <Text style={styles.heroSubtitle}>Sign in to keep the jobs moving</Text>
+        </LinearGradient>
 
-          <View style={styles.hero}>
-            <Text style={styles.heroTitle}>Welcome back</Text>
-            <Text style={styles.heroSubtitle}>Sign in to manage your trade business</Text>
-          </View>
-
+        <View style={[styles.card, { paddingBottom: bottomInset + 24 }]}>
           <View style={styles.form}>
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Email</Text>
@@ -437,44 +439,46 @@ export default function LoginScreen() {
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
+              <Text style={styles.dividerText}>Or sign in with</Text>
               <View style={styles.dividerLine} />
             </View>
 
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={handleGoogleSignIn}
-              disabled={googleLoading}
-              testID="button-google-signin"
-              activeOpacity={0.75}
-            >
-              {googleLoading ? (
-                <ActivityIndicator size="small" color={colors.foreground} />
-              ) : (
-                <>
-                  <GoogleLogo size={20} />
-                  <Text style={styles.socialButtonText}>Google</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {appleAuthAvailable && AppleAuthentication && (
-              <View style={styles.appleButtonContainer}>
-                {appleLoading ? (
-                  <View style={styles.appleLoadingContainer}>
-                    <ActivityIndicator size="small" color={colors.white} />
-                  </View>
+            <View style={styles.socialRow}>
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={handleGoogleSignIn}
+                disabled={googleLoading}
+                testID="button-google-signin"
+                activeOpacity={0.75}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator size="small" color={colors.foreground} />
                 ) : (
-                  <AppleAuthentication.AppleAuthenticationButton
-                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                    cornerRadius={14}
-                    style={styles.appleButton}
-                    onPress={handleAppleSignIn}
-                  />
+                  <>
+                    <GoogleLogo size={18} />
+                    <Text style={styles.socialButtonText}>Google</Text>
+                  </>
                 )}
-              </View>
-            )}
+              </TouchableOpacity>
+
+              {appleAuthAvailable && AppleAuthentication && (
+                <View style={styles.appleButtonContainer}>
+                  {appleLoading ? (
+                    <View style={styles.appleLoadingContainer}>
+                      <ActivityIndicator size="small" color={colors.white} />
+                    </View>
+                  ) : (
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                      cornerRadius={12}
+                      style={styles.appleButton}
+                      onPress={handleAppleSignIn}
+                    />
+                  )}
+                </View>
+              )}
+            </View>
 
             <TouchableOpacity
               style={styles.demoLink}
@@ -503,8 +507,6 @@ export default function LoginScreen() {
             </Text>
           </Text>
 
-          <View style={styles.spacer} />
-
           <View style={styles.signUpContainer}>
             <Text style={styles.signUpText}>Don't have an account? </Text>
             <Link href="/(auth)/register" asChild>
@@ -528,53 +530,59 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 56,
-    paddingBottom: 40,
+  hero: {
+    paddingTop: 72,
+    paddingHorizontal: 28,
+    paddingBottom: 56,
+    alignItems: 'center',
   },
-  brandRow: {
-    flexDirection: 'row',
+  brandBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 36,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  logo: {
-    width: 36,
-    height: 36,
-    marginRight: 8,
+  brandLogo: {
+    width: 40,
+    height: 40,
   },
-  appNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  appNameBlue: {
-    fontSize: 22,
+  brandName: {
+    color: '#ffffff',
+    fontSize: 24,
     fontWeight: '700',
-    color: '#2563eb',
     letterSpacing: -0.5,
-  },
-  appNameOrange: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#E8862E',
-    letterSpacing: -0.5,
-  },
-  hero: {
     marginBottom: 28,
   },
   heroTitle: {
+    color: '#ffffff',
     fontSize: 32,
     fontWeight: '700',
-    color: colors.foreground,
     letterSpacing: -0.8,
-    marginBottom: 6,
+    textAlign: 'center',
+    marginBottom: 8,
   },
   heroSubtitle: {
-    fontSize: 16,
-    color: colors.mutedForeground,
-    lineHeight: 22,
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 15,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: colors.background,
+    marginTop: -28,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 24,
   },
   form: {},
   inputGroup: {
@@ -591,6 +599,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     color: colors.foreground,
     letterSpacing: 0.2,
+    marginBottom: 8,
   },
   linkSmall: {
     fontSize: 13,
@@ -598,29 +607,33 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    height: 56,
-    paddingHorizontal: 18,
-    backgroundColor: colors.muted,
-    borderRadius: 14,
+    height: 54,
+    paddingHorizontal: 16,
+    backgroundColor: colors.background,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorder,
+    borderRadius: 12,
     color: colors.foreground,
     fontSize: 16,
   },
   passwordContainer: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    backgroundColor: colors.muted,
-    borderRadius: 14,
+    backgroundColor: colors.background,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorder,
+    borderRadius: 12,
   },
   passwordInput: {
     flex: 1,
-    height: 56,
-    paddingHorizontal: 18,
+    height: 54,
+    paddingHorizontal: 16,
     fontSize: 16,
     color: colors.foreground,
   },
   eyeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
   errorContainer: {
     padding: 14,
@@ -654,6 +667,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    elevation: 6,
   },
   primaryButtonText: {
     color: colors.primaryForeground,
@@ -675,37 +693,45 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   dividerText: {
     marginHorizontal: 12,
     color: colors.mutedForeground,
-    fontSize: 13,
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: 10,
   },
   socialButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    borderRadius: 14,
-    height: 56,
-    gap: 10,
+    borderRadius: 12,
+    height: 50,
+    gap: 8,
   },
   socialButtonText: {
     color: colors.foreground,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   appleButtonContainer: {
-    marginTop: 12,
-    width: '100%',
+    flex: 1,
+    height: 50,
   },
   appleButton: {
     width: '100%',
-    height: 56,
+    height: 50,
   },
   appleLoadingContainer: {
     width: '100%',
-    height: 56,
+    height: 50,
     backgroundColor: '#000000',
-    borderRadius: 14,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -722,13 +748,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-  spacer: {
-    height: 16,
-  },
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 16,
   },
   signUpText: {
     color: colors.mutedForeground,
@@ -743,8 +766,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 12,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginTop: 24,
-    paddingHorizontal: 20,
+    marginTop: 20,
+    paddingHorizontal: 12,
     lineHeight: 18,
   },
   termsLink: {

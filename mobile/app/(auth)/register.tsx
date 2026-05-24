@@ -19,6 +19,7 @@ import api, { API_URL } from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useAuthStore } from '../../src/lib/store';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 
 // Conditionally import Apple Authentication - only available in dev/production builds, not Expo Go
@@ -278,66 +279,26 @@ export default function RegisterScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[styles.content, { paddingBottom: bottomInset }]}>
-          <View style={styles.brandRow}>
+        <LinearGradient
+          colors={['#2563eb', '#7c3bbf', '#E8862E']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.brandBadge}>
             <Image 
               source={require('../../assets/jobrunner-logo.png')}
-              style={styles.logo}
+              style={styles.brandLogo}
               resizeMode="contain"
             />
-            <View style={styles.appNameContainer}>
-              <Text style={styles.appNameBlue}>Job</Text>
-              <Text style={styles.appNameOrange}>Runner</Text>
-            </View>
           </View>
+          <Text style={styles.brandName}>JobRunner</Text>
+          <Text style={styles.heroTitle}>Create your account</Text>
+          <Text style={styles.heroSubtitle}>Get started in under 2 minutes</Text>
+        </LinearGradient>
 
-          <View style={styles.hero}>
-            <Text style={styles.heroTitle}>Create your account</Text>
-            <Text style={styles.heroSubtitle}>Get started in under 2 minutes</Text>
-          </View>
-
+        <View style={[styles.card, { paddingBottom: bottomInset + 24 }]}>
           <View style={styles.form}>
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={handleGoogleSignIn}
-              disabled={googleLoading}
-              testID="button-google-signup"
-              activeOpacity={0.75}
-            >
-              {googleLoading ? (
-                <ActivityIndicator size="small" color={colors.foreground} />
-              ) : (
-                <>
-                  <GoogleLogo size={20} />
-                  <Text style={styles.socialButtonText}>Sign up with Google</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {appleAuthAvailable && AppleAuthentication && (
-              <View style={styles.appleButtonContainer}>
-                {appleLoading ? (
-                  <View style={styles.appleLoadingContainer}>
-                    <ActivityIndicator size="small" color={colors.white} />
-                  </View>
-                ) : (
-                  <AppleAuthentication.AppleAuthenticationButton
-                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
-                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                    cornerRadius={14}
-                    style={styles.appleButton}
-                    onPress={handleAppleSignUp}
-                  />
-                )}
-              </View>
-            )}
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or use email</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
             <View style={styles.nameRow}>
               <View style={[styles.nameField, { marginRight: 8 }]}>
                 <Text style={styles.inputLabel}>First name</Text>
@@ -482,6 +443,49 @@ export default function RegisterScreen() {
                 <Text style={styles.primaryButtonText}>Create account</Text>
               )}
             </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>Or sign up with</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={styles.socialRow}>
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={handleGoogleSignIn}
+                disabled={googleLoading}
+                testID="button-google-signup"
+                activeOpacity={0.75}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator size="small" color={colors.foreground} />
+                ) : (
+                  <>
+                    <GoogleLogo size={18} />
+                    <Text style={styles.socialButtonText}>Google</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {appleAuthAvailable && AppleAuthentication && (
+                <View style={styles.appleButtonContainer}>
+                  {appleLoading ? (
+                    <View style={styles.appleLoadingContainer}>
+                      <ActivityIndicator size="small" color={colors.white} />
+                    </View>
+                  ) : (
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+                      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                      cornerRadius={12}
+                      style={styles.appleButton}
+                      onPress={handleAppleSignUp}
+                    />
+                  )}
+                </View>
+              )}
+            </View>
           </View>
 
           <Text style={styles.termsNotice}>
@@ -493,8 +497,6 @@ export default function RegisterScreen() {
               Privacy Policy
             </Text>
           </Text>
-
-          <View style={styles.spacer} />
 
           <View style={styles.signInContainer}>
             <Text style={styles.signInText}>Already have an account? </Text>
@@ -518,103 +520,61 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 56,
-    paddingBottom: 40,
+  hero: {
+    paddingTop: 72,
+    paddingHorizontal: 28,
+    paddingBottom: 56,
+    alignItems: 'center',
   },
-  brandRow: {
-    flexDirection: 'row',
+  brandBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  brandLogo: {
+    width: 40,
+    height: 40,
+  },
+  brandName: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: -0.5,
     marginBottom: 28,
   },
-  logo: {
-    width: 36,
-    height: 36,
-    marginRight: 8,
-  },
-  appNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  appNameBlue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#2563eb',
-    letterSpacing: -0.5,
-  },
-  appNameOrange: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#E8862E',
-    letterSpacing: -0.5,
-  },
-  hero: {
-    marginBottom: 24,
-  },
   heroTitle: {
+    color: '#ffffff',
     fontSize: 32,
     fontWeight: '700',
-    color: colors.foreground,
     letterSpacing: -0.8,
-    marginBottom: 6,
+    textAlign: 'center',
+    marginBottom: 8,
   },
   heroSubtitle: {
-    fontSize: 16,
-    color: colors.mutedForeground,
-    lineHeight: 22,
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 15,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: colors.background,
+    marginTop: -28,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 24,
   },
   form: {},
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 14,
-    height: 56,
-    gap: 10,
-  },
-  socialButtonText: {
-    color: colors.foreground,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  appleButtonContainer: {
-    marginTop: 12,
-    width: '100%',
-  },
-  appleButton: {
-    width: '100%',
-    height: 56,
-  },
-  appleLoadingContainer: {
-    width: '100%',
-    height: 56,
-    backgroundColor: '#000000',
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.cardBorder,
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: colors.mutedForeground,
-    fontSize: 13,
-  },
   nameRow: {
     flexDirection: 'row',
     marginBottom: 16,
@@ -633,29 +593,33 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    height: 56,
-    paddingHorizontal: 18,
-    backgroundColor: colors.muted,
-    borderRadius: 14,
+    height: 54,
+    paddingHorizontal: 16,
+    backgroundColor: colors.background,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorder,
+    borderRadius: 12,
     color: colors.foreground,
     fontSize: 16,
   },
   passwordContainer: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    backgroundColor: colors.muted,
-    borderRadius: 14,
+    backgroundColor: colors.background,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorder,
+    borderRadius: 12,
   },
   passwordInput: {
     flex: 1,
-    height: 56,
-    paddingHorizontal: 18,
+    height: 54,
+    paddingHorizontal: 16,
     fontSize: 16,
     color: colors.foreground,
   },
   eyeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
   passwordHint: {
     fontSize: 12,
@@ -702,6 +666,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    elevation: 6,
   },
   primaryButtonText: {
     color: colors.primaryForeground,
@@ -709,14 +678,66 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.2,
   },
-  spacer: {
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 28,
+    marginBottom: 16,
+  },
+  dividerLine: {
     flex: 1,
-    minHeight: 16,
+    height: 1,
+    backgroundColor: colors.cardBorder,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: colors.mutedForeground,
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  socialButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: 12,
+    height: 50,
+    gap: 8,
+  },
+  socialButtonText: {
+    color: colors.foreground,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  appleButtonContainer: {
+    flex: 1,
+    height: 50,
+  },
+  appleButton: {
+    width: '100%',
+    height: 50,
+  },
+  appleLoadingContainer: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   signInContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 16,
   },
   signInText: {
     color: colors.mutedForeground,
@@ -731,8 +752,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 12,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginTop: 24,
-    paddingHorizontal: 20,
+    marginTop: 20,
+    paddingHorizontal: 12,
     lineHeight: 18,
   },
   termsLink: {
