@@ -17,6 +17,8 @@ import { Link, router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useAuthStore } from '../../src/lib/store';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/Card';
+import { Button } from '../../src/components/ui/Button';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import api, { API_URL } from '../../src/lib/api';
@@ -152,13 +154,23 @@ export default function LoginScreen() {
       }
       await api.setToken(response.data.sessionToken);
       await checkAuth();
-      // Server-side demo-login already guarantees businessSettings.onboardingCompleted=true
-      // for the visitor user. Best-effort secondary call + refresh, but never block on it.
-      try { await api.post('/api/onboarding/complete', {}); } catch {}
-      try {
-        const { fetchBusinessSettings: fetchBs } = useAuthStore.getState();
-        await fetchBs();
-      } catch {}
+      // Explicitly mark onboarding complete (transactional) so demo users
+      // never get bounced into the wizard on cold start, deep-link, or token
+      // refresh. Endpoint is idempotent. If it fails we surface the error
+      // and abort navigation rather than landing in a broken state.
+      const completeRes = await api.post('/api/onboarding/complete', {});
+      if (completeRes.error) {
+        Alert.alert('Demo unavailable', completeRes.error || 'Could not finalise the demo session. Please try again.');
+        return;
+      }
+      const { fetchBusinessSettings: fetchBs } = useAuthStore.getState();
+      const refreshed = await fetchBs();
+      const bsState = useAuthStore.getState().businessSettings;
+      if (!bsState?.onboardingCompleted) {
+        Alert.alert('Demo unavailable', 'Could not finalise the demo session. Please try again.');
+        return;
+      }
+      void refreshed;
       router.replace('/(tabs)');
     } catch (err: any) {
       Alert.alert('Demo unavailable', err?.message || 'Could not start the demo right now.');
@@ -311,149 +323,170 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.hero}>
-          <View style={styles.brandRow}>
-            <Image 
-              source={require('../../assets/jobrunner-logo.png')}
-              style={styles.brandLogo}
-              resizeMode="contain"
-            />
-            <Text style={styles.brandName}>
-              <Text style={styles.brandJob}>Job</Text>
-              <Text style={styles.brandRunner}>Runner</Text>
-            </Text>
-          </View>
-          <Text style={styles.heroTitle}>Welcome back</Text>
-          <Text style={styles.heroSubtitle}>Sign in to keep the jobs moving</Text>
-        </View>
-
-        <View style={[styles.card, { paddingBottom: bottomInset + 24 }]}>
-          <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="you@example.com"
-                placeholderTextColor={colors.mutedForeground}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  clearError();
-                }}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="email"
-                textContentType="emailAddress"
-                returnKeyType="next"
-                blurOnSubmit={false}
-                enablesReturnKeyAutomatically={false}
-                testID="input-email"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.inputLabel}>Password</Text>
-                <TouchableOpacity
-                  onPress={() => router.push('/(auth)/forgot-password')}
-                  testID="link-forgot-password"
-                  hitSlop={8}
-                >
-                  <Text style={styles.linkSmall}>Forgot?</Text>
-                </TouchableOpacity>
+        <View style={[styles.content, { paddingBottom: bottomInset }]}>
+          <View style={styles.header}>
+            <View style={styles.logoGradientContainer}>
+              <View style={styles.logoInner}>
+                <Image 
+                  source={require('../../assets/jobrunner-logo.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </View>
-              <View style={styles.passwordContainer}>
+            </View>
+            <View style={styles.appNameContainer}>
+              <Text style={styles.appNameBlue}>Job</Text>
+              <Text style={styles.appNameOrange}>Runner</Text>
+            </View>
+            <Text style={styles.tagline}>Welcome back!</Text>
+            <Text style={styles.taglineSubtext}>Sign in to manage your trade business</Text>
+          </View>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Sign In</CardTitle>
+              <CardDescription>Enter your email and password to continue</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email</Text>
                 <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Enter your password"
+                  style={styles.input}
+                  placeholder="Enter your email"
                   placeholderTextColor={colors.mutedForeground}
-                  value={password}
+                  value={email}
                   onChangeText={(text) => {
-                    setPassword(text);
+                    setEmail(text);
                     clearError();
                   }}
-                  secureTextEntry={!showPassword}
-                  textContentType="oneTimeCode"
-                  autoComplete="off"
-                  autoCorrect={false}
                   autoCapitalize="none"
-                  spellCheck={false}
-                  returnKeyType="done"
-                  blurOnSubmit={true}
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
                   enablesReturnKeyAutomatically={false}
-                  onSubmitEditing={handleLogin}
-                  testID="input-password"
+                  testID="input-email"
                 />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeButton}
-                  accessibilityRole="button"
-                  accessibilityLabel={showPassword ? "Hide password" : "Show password"}
-                  accessibilityState={{ selected: showPassword }}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={20}
-                    color={colors.mutedForeground}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Enter your password"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={password}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      clearError();
+                    }}
+                    secureTextEntry={!showPassword}
+                    textContentType="oneTimeCode"
+                    autoComplete="off"
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
+                    enablesReturnKeyAutomatically={false}
+                    onSubmitEditing={handleLogin}
+                    testID="input-password"
                   />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {error ? (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-                {isVerificationError && (
                   <TouchableOpacity
-                    style={styles.resendButton}
-                    onPress={handleResendVerification}
-                    disabled={resendingVerification || verificationSent}
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeButton}
                   >
-                    {resendingVerification ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
-                      <Text style={styles.resendButtonText}>
-                        {verificationSent ? 'Email Sent!' : 'Resend Verification'}
-                      </Text>
-                    )}
+                    <Ionicons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color={colors.mutedForeground}
+                    />
                   </TouchableOpacity>
-                )}
+                </View>
               </View>
-            ) : null}
 
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleLogin}
-              disabled={isLoading}
-              activeOpacity={0.85}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={colors.primaryForeground} />
-              ) : (
-                <Text style={styles.primaryButtonText}>Sign in</Text>
-              )}
-            </TouchableOpacity>
+              {error ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                  {isVerificationError && (
+                    <TouchableOpacity
+                      style={styles.resendButton}
+                      onPress={handleResendVerification}
+                      disabled={resendingVerification || verificationSent}
+                    >
+                      {resendingVerification ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <Text style={styles.resendButtonText}>
+                          {verificationSent ? 'Email Sent!' : 'Resend Verification'}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : null}
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Or sign in with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.socialRow}>
               <TouchableOpacity
-                style={styles.socialButton}
+                style={styles.primaryButton}
+                onPress={handleLogin}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={colors.primaryForeground} />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Sign In</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.forgotPassword}
+                onPress={() => router.push('/(auth)/forgot-password')}
+                testID="link-forgot-password"
+              >
+                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              </TouchableOpacity>
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.googleButton}
                 onPress={handleGoogleSignIn}
                 disabled={googleLoading}
                 testID="button-google-signin"
-                activeOpacity={0.75}
+                activeOpacity={0.7}
               >
                 {googleLoading ? (
                   <ActivityIndicator size="small" color={colors.foreground} />
                 ) : (
                   <>
-                    <GoogleLogo size={18} />
-                    <Text style={styles.socialButtonText}>Google</Text>
+                    <View style={styles.googleIconContainer}>
+                      <GoogleLogo size={20} />
+                    </View>
+                    <Text style={styles.googleButtonText}>Continue with Google</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.demoButton}
+                onPress={handleDemoLogin}
+                disabled={demoLoading}
+                testID="button-demo-login"
+                activeOpacity={0.7}
+              >
+                {demoLoading ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Ionicons name="sparkles-outline" size={18} color={colors.primary} style={{ marginRight: 8 }} />
+                    <Text style={styles.demoButtonText}>Use demo account</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -468,31 +501,15 @@ export default function LoginScreen() {
                     <AppleAuthentication.AppleAuthenticationButton
                       buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
                       buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                      cornerRadius={12}
+                      cornerRadius={8}
                       style={styles.appleButton}
                       onPress={handleAppleSignIn}
                     />
                   )}
                 </View>
               )}
-            </View>
-
-            <TouchableOpacity
-              style={styles.demoLink}
-              onPress={handleDemoLogin}
-              disabled={demoLoading}
-              testID="button-demo-login"
-              activeOpacity={0.7}
-            >
-              {demoLoading ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Text style={styles.demoLinkText}>
-                  Just browsing? <Text style={styles.demoLinkAction}>Try the demo</Text>
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
+            </CardContent>
+          </Card>
 
           <Text style={styles.termsNotice}>
             By signing in, you agree to our{' '}
@@ -503,6 +520,8 @@ export default function LoginScreen() {
               Privacy Policy
             </Text>
           </Text>
+
+          <View style={styles.spacer} />
 
           <View style={styles.signUpContainer}>
             <Text style={styles.signUpText}>Don't have an account? </Text>
@@ -526,86 +545,83 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    justifyContent: 'center',
   },
-  hero: {
-    backgroundColor: '#0f172a',
-    paddingTop: 72,
+  content: {
+    flex: 1,
     paddingHorizontal: 24,
-    paddingBottom: 44,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
-  brandRow: {
-    flexDirection: 'row',
+  header: {
     alignItems: 'center',
-    gap: 8,
     marginBottom: 32,
   },
-  brandLogo: {
-    width: 32,
-    height: 32,
+  logoGradientContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    padding: 3,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    backgroundColor: '#E8862E',
   },
-  brandName: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+  logoInner: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  brandJob: {
-    color: '#ffffff',
-    fontSize: 22,
-    fontWeight: '700',
+  logo: {
+    width: 100,
+    height: 100,
   },
-  brandRunner: {
-    color: '#E8862E',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  heroTitle: {
-    color: '#ffffff',
-    fontSize: 30,
-    fontWeight: '700',
-    letterSpacing: -0.8,
+  appNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  heroSubtitle: {
-    color: 'rgba(255,255,255,0.72)',
+  appNameBlue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+  appNameOrange: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#E8862E',
+  },
+  tagline: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: colors.foreground,
+    marginBottom: 4,
+  },
+  taglineSubtext: {
     fontSize: 15,
-    lineHeight: 21,
+    color: colors.mutedForeground,
+    textAlign: 'center',
   },
-  card: {
-    backgroundColor: colors.background,
-    marginTop: -20,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 24,
-  },
-  form: {},
   inputGroup: {
     marginBottom: 16,
   },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: colors.foreground,
-    letterSpacing: 0.2,
     marginBottom: 8,
-  },
-  linkSmall: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '600',
   },
   input: {
-    height: 54,
+    height: 52,
     paddingHorizontal: 16,
     backgroundColor: colors.background,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.cardBorder,
     borderRadius: 12,
     color: colors.foreground,
@@ -615,13 +631,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     backgroundColor: colors.background,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.cardBorder,
     borderRadius: 12,
   },
   passwordInput: {
     flex: 1,
-    height: 54,
+    height: 52,
     paddingHorizontal: 16,
     fontSize: 16,
     color: colors.foreground,
@@ -631,23 +647,30 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 14,
   },
   errorContainer: {
-    padding: 14,
+    padding: 12,
     marginBottom: 16,
     backgroundColor: colors.destructiveLight,
-    borderRadius: 12,
-    flexDirection: 'column',
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.destructive,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
   },
   errorText: {
+    flex: 1,
     color: colors.destructive,
     fontSize: 14,
     fontWeight: '500',
   },
   resendButton: {
+    marginTop: 10,
     paddingVertical: 8,
     paddingHorizontal: 12,
     backgroundColor: colors.primary + '15',
-    borderRadius: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.primary,
     alignSelf: 'flex-start',
   },
   resendButtonText: {
@@ -655,30 +678,36 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    height: 56,
-    borderRadius: 14,
+  successContainer: {
+    padding: 12,
+    backgroundColor: colors.successLight,
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.success,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    elevation: 6,
+    gap: 10,
   },
-  primaryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+  successText: {
+    flex: 1,
+    color: colors.success,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  forgotPassword: {
+    alignItems: 'center',
+    marginTop: 16,
+    paddingVertical: 8,
+  },
+  forgotPasswordText: {
+    color: colors.primary,
+    fontSize: 15,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 28,
-    marginBottom: 16,
+    marginTop: 20,
+    marginBottom: 20,
   },
   dividerLine: {
     flex: 1,
@@ -686,19 +715,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.cardBorder,
   },
   dividerText: {
-    marginHorizontal: 12,
+    marginHorizontal: 16,
     color: colors.mutedForeground,
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    fontSize: 14,
   },
-  socialRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  socialButton: {
-    flex: 1,
+  googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -706,47 +727,70 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
     borderRadius: 12,
-    height: 50,
-    gap: 8,
+    height: 56,
+    paddingHorizontal: 24,
   },
-  socialButtonText: {
+  googleIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  googleIconText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4285F4',
+  },
+  googleButtonText: {
     color: colors.foreground,
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  demoButton: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary + '12',
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
+    borderRadius: 12,
+    height: 52,
+    paddingHorizontal: 24,
+  },
+  demoButtonText: {
+    color: colors.primary,
+    fontSize: 15,
     fontWeight: '600',
   },
   appleButtonContainer: {
-    flex: 1,
-    height: 50,
+    marginTop: 12,
+    width: '100%',
   },
   appleButton: {
     width: '100%',
-    height: 50,
+    height: 48,
   },
   appleLoadingContainer: {
     width: '100%',
-    height: 50,
+    height: 48,
     backgroundColor: '#000000',
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  demoLink: {
-    marginTop: 20,
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  demoLinkText: {
-    color: colors.mutedForeground,
-    fontSize: 14,
-  },
-  demoLinkAction: {
-    color: colors.primary,
-    fontWeight: '600',
+  spacer: {
+    height: 16,
   },
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: 24,
   },
   signUpText: {
     color: colors.mutedForeground,
@@ -757,12 +801,26 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
   },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  primaryButtonText: {
+    color: colors.primaryForeground,
+    fontSize: 16,
+    fontWeight: '600',
+  },
   termsNotice: {
     fontSize: 12,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginTop: 20,
-    paddingHorizontal: 12,
+    marginTop: 16,
+    paddingHorizontal: 20,
     lineHeight: 18,
   },
   termsLink: {

@@ -18,6 +18,8 @@ import * as WebBrowser from 'expo-web-browser';
 import api, { API_URL } from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useAuthStore } from '../../src/lib/store';
+import { Card, CardContent } from '../../src/components/ui/Card';
+import { Button } from '../../src/components/ui/Button';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 
@@ -35,6 +37,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [businessName, setBusinessName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -45,20 +48,6 @@ export default function RegisterScreen() {
   const { colors } = useTheme();
   const bottomInset = useBottomInset(40);
   const styles = createStyles(colors);
-
-  // Password strength: 0 empty, 1 weak (<8), 2 ok (8+), 3 strong (12+ with mix)
-  const passwordStrength = (() => {
-    if (!password) return 0;
-    if (password.length < 8) return 1;
-    const hasMix = /[A-Z]/.test(password) && /[0-9!@#$%^&*]/.test(password);
-    if (password.length >= 12 && hasMix) return 3;
-    return 2;
-  })();
-  const strengthLabel = ['', 'Too short', 'Good', 'Strong'][passwordStrength];
-  const strengthColor =
-    passwordStrength === 1 ? colors.destructive :
-    passwordStrength === 2 ? '#E8862E' :
-    passwordStrength === 3 ? '#16a34a' : colors.mutedForeground;
 
   const resolvePostAuthRedirect = async () => {
     const { user: currentUser, businessSettings: bs, fetchBusinessSettings: fetchBs } = useAuthStore.getState();
@@ -99,12 +88,12 @@ export default function RegisterScreen() {
   }, []);
 
   const handleRegister = async () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !businessName.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
-    if (password.length < 8) {
+    if (password.length < 8 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
       Alert.alert('Error', 'Password must be at least 8 characters');
       return;
     }
@@ -117,6 +106,7 @@ export default function RegisterScreen() {
       lastName: lastName.trim(),
       email: email.trim(),
       password,
+      businessName: businessName.trim(),
       tradeType: 'general',
     });
 
@@ -278,189 +268,53 @@ export default function RegisterScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.hero}>
-          <View style={styles.brandRow}>
-            <Image 
-              source={require('../../assets/jobrunner-logo.png')}
-              style={styles.brandLogo}
-              resizeMode="contain"
-            />
-            <Text style={styles.brandName}>
-              <Text style={styles.brandJob}>Job</Text>
-              <Text style={styles.brandRunner}>Runner</Text>
+        <View style={[styles.content, { paddingBottom: bottomInset }]}>
+          <View style={styles.header}>
+            <View style={styles.logoGradientContainer}>
+              <View style={styles.logoInner}>
+                <Image 
+                  source={require('../../assets/jobrunner-logo.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
+            <View style={styles.appNameContainer}>
+              <Text style={styles.appNameBlue}>Job</Text>
+              <Text style={styles.appNameOrange}>Runner</Text>
+            </View>
+            <Text style={styles.title}>Set Up Your Business</Text>
+            <Text style={styles.subtitle}>Manage your trade business from your pocket</Text>
+          </View>
+
+          <View style={styles.trialInfoCard}>
+            <Text style={styles.trialInfoTitle}>Built for Aussie Tradies</Text>
+            <Text style={styles.trialInfoText}>
+              Jobs, quotes, invoices, and team management in one app.
+            </Text>
+            <Text style={styles.trialInfoSubtext}>
+              Get started in under 2 minutes
             </Text>
           </View>
-          <Text style={styles.heroTitle}>Create your account</Text>
-          <Text style={styles.heroSubtitle}>Get started in under 2 minutes</Text>
-        </View>
 
-        <View style={[styles.card, { paddingBottom: bottomInset + 24 }]}>
-          <View style={styles.form}>
-            <View style={styles.nameRow}>
-              <View style={[styles.nameField, { marginRight: 8 }]}>
-                <Text style={styles.inputLabel}>First name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="John"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={firstName}
-                  onChangeText={(text) => {
-                    setFirstName(text);
-                    setError(null);
-                  }}
-                  autoCapitalize="words"
-                  textContentType="givenName"
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  enablesReturnKeyAutomatically={false}
-                  testID="input-firstname"
-                />
-              </View>
-              <View style={[styles.nameField, { marginLeft: 8 }]}>
-                <Text style={styles.inputLabel}>Last name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Smith"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={lastName}
-                  onChangeText={(text) => {
-                    setLastName(text);
-                    setError(null);
-                  }}
-                  autoCapitalize="words"
-                  textContentType="familyName"
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  enablesReturnKeyAutomatically={false}
-                  testID="input-lastname"
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="you@example.com"
-                placeholderTextColor={colors.mutedForeground}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  setError(null);
-                }}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                textContentType="emailAddress"
-                returnKeyType="next"
-                blurOnSubmit={false}
-                enablesReturnKeyAutomatically={false}
-                testID="input-email"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Create a password"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setError(null);
-                  }}
-                  secureTextEntry={!showPassword}
-                  textContentType="oneTimeCode"
-                  autoComplete="off"
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  returnKeyType="done"
-                  blurOnSubmit={true}
-                  enablesReturnKeyAutomatically={false}
-                  onSubmitEditing={handleRegister}
-                  testID="input-password"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeButton}
-                  accessibilityRole="button"
-                  accessibilityLabel={showPassword ? "Hide password" : "Show password"}
-                  accessibilityState={{ selected: showPassword }}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={20}
-                    color={colors.mutedForeground}
-                  />
-                </TouchableOpacity>
-              </View>
-              {password.length > 0 ? (
-                <View style={styles.strengthRow}>
-                  <View style={styles.strengthBars}>
-                    <View style={[
-                      styles.strengthBar,
-                      { backgroundColor: passwordStrength >= 1 ? strengthColor : colors.cardBorder },
-                    ]} />
-                    <View style={[
-                      styles.strengthBar,
-                      { backgroundColor: passwordStrength >= 2 ? strengthColor : colors.cardBorder },
-                    ]} />
-                    <View style={[
-                      styles.strengthBar,
-                      { backgroundColor: passwordStrength >= 3 ? strengthColor : colors.cardBorder },
-                    ]} />
-                  </View>
-                  <Text style={[styles.strengthLabel, { color: strengthColor }]}>
-                    {strengthLabel}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.passwordHint}>At least 8 characters</Text>
-              )}
-            </View>
-
-            {error ? (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            ) : null}
-
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleRegister}
-              disabled={isLoading}
-              activeOpacity={0.85}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={colors.primaryForeground} />
-              ) : (
-                <Text style={styles.primaryButtonText}>Create account</Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Or sign up with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.socialRow}>
+          <Card>
+            <CardContent style={styles.cardContent}>
+              {/* Google Sign-Up Button First */}
               <TouchableOpacity
-                style={styles.socialButton}
+                style={styles.googleButton}
                 onPress={handleGoogleSignIn}
                 disabled={googleLoading}
                 testID="button-google-signup"
-                activeOpacity={0.75}
+                activeOpacity={0.7}
               >
                 {googleLoading ? (
                   <ActivityIndicator size="small" color={colors.foreground} />
                 ) : (
                   <>
-                    <GoogleLogo size={18} />
-                    <Text style={styles.socialButtonText}>Google</Text>
+                    <View style={styles.googleIconContainer}>
+                      <GoogleLogo size={20} />
+                    </View>
+                    <Text style={styles.googleButtonText}>Sign up with Google</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -475,15 +329,162 @@ export default function RegisterScreen() {
                     <AppleAuthentication.AppleAuthenticationButton
                       buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
                       buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                      cornerRadius={12}
+                      cornerRadius={8}
                       style={styles.appleButton}
                       onPress={handleAppleSignUp}
                     />
                   )}
                 </View>
               )}
-            </View>
-          </View>
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or sign up with email</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <View style={styles.nameRow}>
+                <View style={[styles.nameField, { marginRight: 8 }]}>
+                  <Text style={styles.inputLabel}>First Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="John"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={firstName}
+                    onChangeText={(text) => {
+                      setFirstName(text);
+                      setError(null);
+                    }}
+                    autoCapitalize="words"
+                    textContentType="givenName"
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    enablesReturnKeyAutomatically={false}
+                    testID="input-firstname"
+                  />
+                </View>
+                <View style={[styles.nameField, { marginLeft: 8 }]}>
+                  <Text style={styles.inputLabel}>Last Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Smith"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={lastName}
+                    onChangeText={(text) => {
+                      setLastName(text);
+                      setError(null);
+                    }}
+                    autoCapitalize="words"
+                    textContentType="familyName"
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    enablesReturnKeyAutomatically={false}
+                    testID="input-lastname"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Business Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Smith Electrical"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={businessName}
+                  onChangeText={(text) => {
+                    setBusinessName(text);
+                    setError(null);
+                  }}
+                  autoCapitalize="words"
+                  textContentType="organizationName"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  enablesReturnKeyAutomatically={false}
+                  testID="input-business"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="john@smithelectrical.com.au"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    setError(null);
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  enablesReturnKeyAutomatically={false}
+                  testID="input-email"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="At least 6 characters"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={password}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      setError(null);
+                    }}
+                    secureTextEntry={!showPassword}
+                    textContentType="oneTimeCode"
+                    autoComplete="off"
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
+                    enablesReturnKeyAutomatically={false}
+                    onSubmitEditing={handleRegister}
+                    testID="input-password"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeButton}
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color={colors.mutedForeground}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.messageContainer}>
+                {error ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={handleRegister}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={colors.primaryForeground} />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Create Account</Text>
+                )}
+              </TouchableOpacity>
+            </CardContent>
+          </Card>
 
           <Text style={styles.termsNotice}>
             By creating an account, you agree to our{' '}
@@ -494,6 +495,8 @@ export default function RegisterScreen() {
               Privacy Policy
             </Text>
           </Text>
+
+          <View style={styles.spacer} />
 
           <View style={styles.signInContainer}>
             <Text style={styles.signInText}>Already have an account? </Text>
@@ -517,59 +520,136 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  hero: {
-    backgroundColor: '#0f172a',
-    paddingTop: 72,
+  content: {
+    flex: 1,
     paddingHorizontal: 24,
-    paddingBottom: 44,
+    paddingTop: 48,
+    paddingBottom: 40,
   },
-  brandRow: {
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoGradientContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    padding: 3,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    backgroundColor: '#E8862E',
+    borderWidth: 2,
+    borderColor: '#2563eb',
+  },
+  logoInner: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  logo: {
+    width: 100,
+    height: 100,
+  },
+  appNameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 32,
-  },
-  brandLogo: {
-    width: 32,
-    height: 32,
-  },
-  brandName: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  brandJob: {
-    color: '#ffffff',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  brandRunner: {
-    color: '#E8862E',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  heroTitle: {
-    color: '#ffffff',
-    fontSize: 30,
-    fontWeight: '700',
-    letterSpacing: -0.8,
     marginBottom: 8,
   },
-  heroSubtitle: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 15,
-    lineHeight: 21,
+  appNameBlue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#2563eb',
   },
-  card: {
-    backgroundColor: colors.background,
-    marginTop: -20,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  appNameOrange: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#E8862E',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.mutedForeground,
+    marginTop: 4,
+  },
+  cardContent: {
+    paddingTop: 20,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: 12,
+    height: 56,
     paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 24,
+    marginBottom: 4,
   },
-  form: {},
+  googleIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  googleIconText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4285F4',
+  },
+  googleButtonText: {
+    color: colors.foreground,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  appleButtonContainer: {
+    marginTop: 12,
+    width: '100%',
+  },
+  appleButton: {
+    width: '100%',
+    height: 48,
+  },
+  appleLoadingContainer: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#000000',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.cardBorder,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: colors.mutedForeground,
+    fontSize: 13,
+  },
   nameRow: {
     flexDirection: 'row',
     marginBottom: 16,
@@ -581,17 +661,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: colors.foreground,
-    letterSpacing: 0.2,
     marginBottom: 8,
   },
   input: {
-    height: 54,
+    height: 52,
     paddingHorizontal: 16,
     backgroundColor: colors.background,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.cardBorder,
     borderRadius: 12,
     color: colors.foreground,
@@ -601,13 +680,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     backgroundColor: colors.background,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.cardBorder,
     borderRadius: 12,
   },
   passwordInput: {
     flex: 1,
-    height: 54,
+    height: 52,
     paddingHorizontal: 16,
     fontSize: 16,
     color: colors.foreground,
@@ -616,123 +695,34 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
-  passwordHint: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    marginTop: 8,
-    marginLeft: 2,
-  },
-  strengthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-    marginLeft: 2,
-    gap: 8,
-  },
-  strengthBars: {
-    flexDirection: 'row',
-    gap: 4,
-    flex: 1,
-  },
-  strengthBar: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-  },
-  strengthLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+  messageContainer: {
+    minHeight: 52,
+    marginBottom: 16,
   },
   errorContainer: {
-    padding: 14,
-    marginBottom: 16,
+    padding: 12,
     backgroundColor: colors.destructiveLight,
-    borderRadius: 12,
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.destructive,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   errorText: {
+    flex: 1,
     color: colors.destructive,
     fontSize: 14,
     fontWeight: '500',
   },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    height: 56,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  primaryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 28,
-    marginBottom: 16,
-  },
-  dividerLine: {
+  spacer: {
     flex: 1,
-    height: 1,
-    backgroundColor: colors.cardBorder,
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: colors.mutedForeground,
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 12,
-    height: 50,
-    gap: 8,
-  },
-  socialButtonText: {
-    color: colors.foreground,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  appleButtonContainer: {
-    flex: 1,
-    height: 50,
-  },
-  appleButton: {
-    width: '100%',
-    height: 50,
-  },
-  appleLoadingContainer: {
-    width: '100%',
-    height: 50,
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    minHeight: 16,
   },
   signInContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: 24,
   },
   signInText: {
     color: colors.mutedForeground,
@@ -743,12 +733,52 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
   },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  primaryButtonText: {
+    color: colors.primaryForeground,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  trialInfoCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  trialInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.foreground,
+    marginBottom: 4,
+  },
+  trialInfoText: {
+    fontSize: 14,
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  trialInfoSubtext: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+  },
   termsNotice: {
     fontSize: 12,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginTop: 20,
-    paddingHorizontal: 12,
+    marginTop: 16,
+    paddingHorizontal: 20,
     lineHeight: 18,
   },
   termsLink: {
