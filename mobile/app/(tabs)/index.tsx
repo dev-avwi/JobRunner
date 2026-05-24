@@ -2392,15 +2392,6 @@ function OwnerDashboardScreen() {
       longitude: number | null;
     }> | null;
     tomorrowJobCount: number;
-    tomorrowJobs?: Array<{
-      id: string;
-      title: string;
-      address: string | null;
-      scheduledAt: string;
-      clientName: string | null;
-      latitude: number | null;
-      longitude: number | null;
-    }>;
     allJobsDone: boolean;
   } | null>(null);
   

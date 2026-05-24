@@ -48,6 +48,20 @@ export default function RegisterScreen() {
   const bottomInset = useBottomInset(40);
   const styles = createStyles(colors);
 
+  // Password strength: 0 empty, 1 weak (<8), 2 ok (8+), 3 strong (12+ with mix)
+  const passwordStrength = (() => {
+    if (!password) return 0;
+    if (password.length < 8) return 1;
+    const hasMix = /[A-Z]/.test(password) && /[0-9!@#$%^&*]/.test(password);
+    if (password.length >= 12 && hasMix) return 3;
+    return 2;
+  })();
+  const strengthLabel = ['', 'Too short', 'Good', 'Strong'][passwordStrength];
+  const strengthColor =
+    passwordStrength === 1 ? colors.destructive :
+    passwordStrength === 2 ? '#E8862E' :
+    passwordStrength === 3 ? '#16a34a' : colors.mutedForeground;
+
   const resolvePostAuthRedirect = async () => {
     const { user: currentUser, businessSettings: bs, fetchBusinessSettings: fetchBs } = useAuthStore.getState();
     if (currentUser?.isPlatformAdmin === true) {
@@ -268,31 +282,17 @@ export default function RegisterScreen() {
       >
         <View style={[styles.content, { paddingBottom: bottomInset }]}>
           <View style={styles.header}>
-            <View style={styles.logoGradientContainer}>
-              <View style={styles.logoInner}>
-                <Image 
-                  source={require('../../assets/jobrunner-logo.png')}
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
+            <Image 
+              source={require('../../assets/jobrunner-logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <View style={styles.appNameContainer}>
               <Text style={styles.appNameBlue}>Job</Text>
               <Text style={styles.appNameOrange}>Runner</Text>
             </View>
-            <Text style={styles.title}>Set Up Your Business</Text>
-            <Text style={styles.subtitle}>Manage your trade business from your pocket</Text>
-          </View>
-
-          <View style={styles.trialInfoCard}>
-            <Text style={styles.trialInfoTitle}>Built for Aussie Tradies</Text>
-            <Text style={styles.trialInfoText}>
-              Jobs, quotes, invoices, and team management in one app.
-            </Text>
-            <Text style={styles.trialInfoSubtext}>
-              Get started in under 2 minutes
-            </Text>
+            <Text style={styles.title}>Create your account</Text>
+            <Text style={styles.subtitle}>Get started in under 2 minutes</Text>
           </View>
 
           <Card>
@@ -409,7 +409,7 @@ export default function RegisterScreen() {
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={styles.passwordInput}
-                    placeholder="At least 8 characters"
+                    placeholder="Create a password"
                     placeholderTextColor={colors.mutedForeground}
                     value={password}
                     onChangeText={(text) => {
@@ -439,6 +439,29 @@ export default function RegisterScreen() {
                     />
                   </TouchableOpacity>
                 </View>
+                {password.length > 0 ? (
+                  <View style={styles.strengthRow}>
+                    <View style={styles.strengthBars}>
+                      <View style={[
+                        styles.strengthBar,
+                        { backgroundColor: passwordStrength >= 1 ? strengthColor : colors.cardBorder },
+                      ]} />
+                      <View style={[
+                        styles.strengthBar,
+                        { backgroundColor: passwordStrength >= 2 ? strengthColor : colors.cardBorder },
+                      ]} />
+                      <View style={[
+                        styles.strengthBar,
+                        { backgroundColor: passwordStrength >= 3 ? strengthColor : colors.cardBorder },
+                      ]} />
+                    </View>
+                    <Text style={[styles.strengthLabel, { color: strengthColor }]}>
+                      {strengthLabel}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.passwordHint}>At least 8 characters</Text>
+                )}
               </View>
 
               <View style={styles.messageContainer}>
@@ -508,32 +531,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  logoGradientContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    padding: 3,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    backgroundColor: '#E8862E',
-    borderWidth: 2,
-    borderColor: '#2563eb',
-  },
-  logoInner: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
   logo: {
-    width: 100,
-    height: 100,
+    width: 72,
+    height: 72,
+    marginBottom: 12,
   },
   appNameContainer: {
     flexDirection: 'row',
@@ -673,6 +674,33 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
+  passwordHint: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    marginTop: 6,
+    marginLeft: 4,
+  },
+  strengthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginLeft: 4,
+    gap: 8,
+  },
+  strengthBars: {
+    flexDirection: 'row',
+    gap: 4,
+    flex: 1,
+  },
+  strengthBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+  },
+  strengthLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
   messageContainer: {
     minHeight: 52,
     marginBottom: 16,
@@ -724,32 +752,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.primaryForeground,
     fontSize: 16,
     fontWeight: '600',
-  },
-  trialInfoCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  trialInfoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.foreground,
-    marginBottom: 4,
-  },
-  trialInfoText: {
-    fontSize: 14,
-    color: colors.primary,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  trialInfoSubtext: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    textAlign: 'center',
   },
   termsNotice: {
     fontSize: 12,

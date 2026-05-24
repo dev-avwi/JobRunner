@@ -17,7 +17,7 @@ import { Link, router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useAuthStore } from '../../src/lib/store';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/Card';
+import { Card, CardContent } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -315,29 +315,21 @@ export default function LoginScreen() {
       >
         <View style={[styles.content, { paddingBottom: bottomInset }]}>
           <View style={styles.header}>
-            <View style={styles.logoGradientContainer}>
-              <View style={styles.logoInner}>
-                <Image 
-                  source={require('../../assets/jobrunner-logo.png')}
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
+            <Image 
+              source={require('../../assets/jobrunner-logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <View style={styles.appNameContainer}>
               <Text style={styles.appNameBlue}>Job</Text>
               <Text style={styles.appNameOrange}>Runner</Text>
             </View>
-            <Text style={styles.tagline}>Welcome back!</Text>
+            <Text style={styles.tagline}>Welcome back</Text>
             <Text style={styles.taglineSubtext}>Sign in to manage your trade business</Text>
           </View>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Sign In</CardTitle>
-              <CardDescription>Enter your email and password to continue</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <CardContent style={{ paddingTop: 20 }}>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
                 <TextInput
@@ -464,23 +456,6 @@ export default function LoginScreen() {
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.demoButton}
-                onPress={handleDemoLogin}
-                disabled={demoLoading}
-                testID="button-demo-login"
-                activeOpacity={0.7}
-              >
-                {demoLoading ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles-outline" size={18} color={colors.primary} style={{ marginRight: 8 }} />
-                    <Text style={styles.demoButtonText}>Use demo account</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
               {appleAuthAvailable && AppleAuthentication && (
                 <View style={styles.appleButtonContainer}>
                   {appleLoading ? (
@@ -498,6 +473,22 @@ export default function LoginScreen() {
                   )}
                 </View>
               )}
+
+              <TouchableOpacity
+                style={styles.demoLink}
+                onPress={handleDemoLogin}
+                disabled={demoLoading}
+                testID="button-demo-login"
+                activeOpacity={0.7}
+              >
+                {demoLoading ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={styles.demoLinkText}>
+                    Just browsing? <Text style={styles.demoLinkAction}>Try the demo</Text>
+                  </Text>
+                )}
+              </TouchableOpacity>
             </CardContent>
           </Card>
 
@@ -547,30 +538,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  logoGradientContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    padding: 3,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    backgroundColor: '#E8862E',
-  },
-  logoInner: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
   logo: {
-    width: 100,
-    height: 100,
+    width: 72,
+    height: 72,
+    marginBottom: 12,
   },
   appNameContainer: {
     flexDirection: 'row',
@@ -741,21 +712,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  demoButton: {
-    marginTop: 12,
-    flexDirection: 'row',
+  demoLink: {
+    marginTop: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary + '12',
-    borderWidth: 1,
-    borderColor: colors.primary + '40',
-    borderRadius: 12,
-    height: 52,
-    paddingHorizontal: 24,
+    paddingVertical: 8,
   },
-  demoButtonText: {
+  demoLinkText: {
+    color: colors.mutedForeground,
+    fontSize: 14,
+  },
+  demoLinkAction: {
     color: colors.primary,
-    fontSize: 15,
     fontWeight: '600',
   },
   appleButtonContainer: {

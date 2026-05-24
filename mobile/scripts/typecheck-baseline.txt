@@ -12,9 +12,6 @@ app/job/[id].tsx(91,3): error TS2300: Duplicate identifier 'isRecurring'.
 app/job/[id].tsx(92,3): error TS2300: Duplicate identifier 'recurrencePattern'.
 app/job/[id].tsx(93,3): error TS2300: Duplicate identifier 'nextRecurrenceDate'.
 app/job/[id].tsx(94,3): error TS2300: Duplicate identifier 'recurrenceEndDate'.
-app/(tabs)/index.tsx(2382,5): error TS2300: Duplicate identifier 'tomorrowJobs'.
-app/(tabs)/index.tsx(2392,5): error TS2300: Duplicate identifier 'tomorrowJobs'.
-app/(tabs)/index.tsx(2392,5): error TS2717: Subsequent property declarations must have the same type.  Property 'tomorrowJobs' must be of type '{ id: string; title: string; address: string | null; scheduledAt: string; clientName: string | null; latitude: number | null; longitude: number | null; }[] | null | undefined', but here has type '{ id: string; title: string; address: string | null; scheduledAt: string; clientName: string | null; latitude: number | null; longitude: number | null; }[] | undefined'.
 src/lib/store.ts(16,3): error TS2300: Duplicate identifier 'name'.
 src/lib/store.ts(20,3): error TS2300: Duplicate identifier 'name'.
 src/lib/store.ts(61,3): error TS2300: Duplicate identifier 'simpleMode'.
