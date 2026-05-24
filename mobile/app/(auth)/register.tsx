@@ -463,17 +463,20 @@ export default function RegisterScreen() {
                 </View>
                 <View style={styles.pwReqs}>
                   {[
-                    { label: 'At least 8 characters', met: password.length >= 8 },
-                    { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
-                    { label: 'One special character', met: /[^A-Za-z0-9]/.test(password) },
+                    { label: '8 characters', met: password.length >= 8 },
+                    { label: 'Uppercase', met: /[A-Z]/.test(password) },
+                    { label: 'Special char', met: /[^A-Za-z0-9]/.test(password) },
                   ].map((r) => (
-                    <View key={r.label} style={styles.pwReqRow}>
+                    <View
+                      key={r.label}
+                      style={[styles.pwChip, r.met ? styles.pwChipMet : styles.pwChipUnmet]}
+                    >
                       <Ionicons
-                        name={r.met ? 'checkmark-circle' : 'ellipse-outline'}
-                        size={14}
-                        color={r.met ? '#16a34a' : colors.mutedForeground}
+                        name={r.met ? 'checkmark' : 'ellipse-outline'}
+                        size={12}
+                        color={r.met ? '#15803d' : colors.mutedForeground}
                       />
-                      <Text style={[styles.pwReqText, r.met && styles.pwReqTextMet]}>{r.label}</Text>
+                      <Text style={[styles.pwChipText, r.met && styles.pwChipTextMet]}>{r.label}</Text>
                     </View>
                   ))}
                 </View>
@@ -712,20 +715,36 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 14,
   },
   pwReqs: {
-    marginTop: 8,
-    gap: 4,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 10,
   },
-  pwReqRow: {
+  pwChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
   },
-  pwReqText: {
+  pwChipUnmet: {
+    backgroundColor: colors.muted,
+    borderColor: colors.border,
+  },
+  pwChipMet: {
+    backgroundColor: '#dcfce7',
+    borderColor: '#86efac',
+  },
+  pwChipText: {
     fontSize: 12,
+    fontWeight: '500',
     color: colors.mutedForeground,
   },
-  pwReqTextMet: {
-    color: '#16a34a',
+  pwChipTextMet: {
+    color: '#15803d',
+    fontWeight: '600',
   },
   messageContainer: {
     minHeight: 52,
