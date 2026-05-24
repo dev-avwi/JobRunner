@@ -18,8 +18,6 @@ import * as WebBrowser from 'expo-web-browser';
 import api, { API_URL } from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useAuthStore } from '../../src/lib/store';
-import { Card, CardContent } from '../../src/components/ui/Card';
-import { Button } from '../../src/components/ui/Button';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 
@@ -281,7 +279,7 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.content, { paddingBottom: bottomInset }]}>
-          <View style={styles.header}>
+          <View style={styles.brandRow}>
             <Image 
               source={require('../../assets/jobrunner-logo.png')}
               style={styles.logo}
@@ -291,201 +289,200 @@ export default function RegisterScreen() {
               <Text style={styles.appNameBlue}>Job</Text>
               <Text style={styles.appNameOrange}>Runner</Text>
             </View>
-            <Text style={styles.title}>Create your account</Text>
-            <Text style={styles.subtitle}>Get started in under 2 minutes</Text>
           </View>
 
-          <Card>
-            <CardContent style={styles.cardContent}>
-              {/* Google Sign-Up Button First */}
-              <TouchableOpacity
-                style={styles.googleButton}
-                onPress={handleGoogleSignIn}
-                disabled={googleLoading}
-                testID="button-google-signup"
-                activeOpacity={0.7}
-              >
-                {googleLoading ? (
-                  <ActivityIndicator size="small" color={colors.foreground} />
-                ) : (
-                  <>
-                    <View style={styles.googleIconContainer}>
-                      <GoogleLogo size={20} />
-                    </View>
-                    <Text style={styles.googleButtonText}>Sign up with Google</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+          <View style={styles.hero}>
+            <Text style={styles.heroTitle}>Create your account</Text>
+            <Text style={styles.heroSubtitle}>Get started in under 2 minutes</Text>
+          </View>
 
-              {appleAuthAvailable && AppleAuthentication && (
-                <View style={styles.appleButtonContainer}>
-                  {appleLoading ? (
-                    <View style={styles.appleLoadingContainer}>
-                      <ActivityIndicator size="small" color={colors.white} />
-                    </View>
-                  ) : (
-                    <AppleAuthentication.AppleAuthenticationButton
-                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
-                      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                      cornerRadius={8}
-                      style={styles.appleButton}
-                      onPress={handleAppleSignUp}
-                    />
-                  )}
-                </View>
+          <View style={styles.form}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleGoogleSignIn}
+              disabled={googleLoading}
+              testID="button-google-signup"
+              activeOpacity={0.75}
+            >
+              {googleLoading ? (
+                <ActivityIndicator size="small" color={colors.foreground} />
+              ) : (
+                <>
+                  <GoogleLogo size={20} />
+                  <Text style={styles.socialButtonText}>Sign up with Google</Text>
+                </>
               )}
+            </TouchableOpacity>
 
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or sign up with email</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <View style={styles.nameRow}>
-                <View style={[styles.nameField, { marginRight: 8 }]}>
-                  <Text style={styles.inputLabel}>First Name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="John"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={firstName}
-                    onChangeText={(text) => {
-                      setFirstName(text);
-                      setError(null);
-                    }}
-                    autoCapitalize="words"
-                    textContentType="givenName"
-                    returnKeyType="next"
-                    blurOnSubmit={false}
-                    enablesReturnKeyAutomatically={false}
-                    testID="input-firstname"
+            {appleAuthAvailable && AppleAuthentication && (
+              <View style={styles.appleButtonContainer}>
+                {appleLoading ? (
+                  <View style={styles.appleLoadingContainer}>
+                    <ActivityIndicator size="small" color={colors.white} />
+                  </View>
+                ) : (
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                    cornerRadius={14}
+                    style={styles.appleButton}
+                    onPress={handleAppleSignUp}
                   />
-                </View>
-                <View style={[styles.nameField, { marginLeft: 8 }]}>
-                  <Text style={styles.inputLabel}>Last Name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Smith"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={lastName}
-                    onChangeText={(text) => {
-                      setLastName(text);
-                      setError(null);
-                    }}
-                    autoCapitalize="words"
-                    textContentType="familyName"
-                    returnKeyType="next"
-                    blurOnSubmit={false}
-                    enablesReturnKeyAutomatically={false}
-                    testID="input-lastname"
-                  />
-                </View>
+                )}
               </View>
+            )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email</Text>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or use email</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={styles.nameRow}>
+              <View style={[styles.nameField, { marginRight: 8 }]}>
+                <Text style={styles.inputLabel}>First name</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="john@smithelectrical.com.au"
+                  placeholder="John"
                   placeholderTextColor={colors.mutedForeground}
-                  value={email}
+                  value={firstName}
                   onChangeText={(text) => {
-                    setEmail(text);
+                    setFirstName(text);
                     setError(null);
                   }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  textContentType="emailAddress"
+                  autoCapitalize="words"
+                  textContentType="givenName"
                   returnKeyType="next"
                   blurOnSubmit={false}
                   enablesReturnKeyAutomatically={false}
-                  testID="input-email"
+                  testID="input-firstname"
                 />
               </View>
+              <View style={[styles.nameField, { marginLeft: 8 }]}>
+                <Text style={styles.inputLabel}>Last name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Smith"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={lastName}
+                  onChangeText={(text) => {
+                    setLastName(text);
+                    setError(null);
+                  }}
+                  autoCapitalize="words"
+                  textContentType="familyName"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  enablesReturnKeyAutomatically={false}
+                  testID="input-lastname"
+                />
+              </View>
+            </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Password</Text>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={styles.passwordInput}
-                    placeholder="Create a password"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={password}
-                    onChangeText={(text) => {
-                      setPassword(text);
-                      setError(null);
-                    }}
-                    secureTextEntry={!showPassword}
-                    textContentType="oneTimeCode"
-                    autoComplete="off"
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    returnKeyType="done"
-                    blurOnSubmit={true}
-                    enablesReturnKeyAutomatically={false}
-                    onSubmitEditing={handleRegister}
-                    testID="input-password"
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor={colors.mutedForeground}
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setError(null);
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                textContentType="emailAddress"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                enablesReturnKeyAutomatically={false}
+                testID="input-email"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Create a password"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setError(null);
+                  }}
+                  secureTextEntry={!showPassword}
+                  textContentType="oneTimeCode"
+                  autoComplete="off"
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  returnKeyType="done"
+                  blurOnSubmit={true}
+                  enablesReturnKeyAutomatically={false}
+                  onSubmitEditing={handleRegister}
+                  testID="input-password"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                  accessibilityState={{ selected: showPassword }}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={colors.mutedForeground}
                   />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeButton}
-                  >
-                    <Ionicons
-                      name={showPassword ? "eye-off-outline" : "eye-outline"}
-                      size={20}
-                      color={colors.mutedForeground}
-                    />
-                  </TouchableOpacity>
+                </TouchableOpacity>
+              </View>
+              {password.length > 0 ? (
+                <View style={styles.strengthRow}>
+                  <View style={styles.strengthBars}>
+                    <View style={[
+                      styles.strengthBar,
+                      { backgroundColor: passwordStrength >= 1 ? strengthColor : colors.cardBorder },
+                    ]} />
+                    <View style={[
+                      styles.strengthBar,
+                      { backgroundColor: passwordStrength >= 2 ? strengthColor : colors.cardBorder },
+                    ]} />
+                    <View style={[
+                      styles.strengthBar,
+                      { backgroundColor: passwordStrength >= 3 ? strengthColor : colors.cardBorder },
+                    ]} />
+                  </View>
+                  <Text style={[styles.strengthLabel, { color: strengthColor }]}>
+                    {strengthLabel}
+                  </Text>
                 </View>
-                {password.length > 0 ? (
-                  <View style={styles.strengthRow}>
-                    <View style={styles.strengthBars}>
-                      <View style={[
-                        styles.strengthBar,
-                        { backgroundColor: passwordStrength >= 1 ? strengthColor : colors.cardBorder },
-                      ]} />
-                      <View style={[
-                        styles.strengthBar,
-                        { backgroundColor: passwordStrength >= 2 ? strengthColor : colors.cardBorder },
-                      ]} />
-                      <View style={[
-                        styles.strengthBar,
-                        { backgroundColor: passwordStrength >= 3 ? strengthColor : colors.cardBorder },
-                      ]} />
-                    </View>
-                    <Text style={[styles.strengthLabel, { color: strengthColor }]}>
-                      {strengthLabel}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text style={styles.passwordHint}>At least 8 characters</Text>
-                )}
-              </View>
+              ) : (
+                <Text style={styles.passwordHint}>At least 8 characters</Text>
+              )}
+            </View>
 
-              <View style={styles.messageContainer}>
-                {error ? (
-                  <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>{error}</Text>
-                  </View>
-                ) : null}
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
               </View>
+            ) : null}
 
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={handleRegister}
-                disabled={isLoading}
-                activeOpacity={0.8}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color={colors.primaryForeground} />
-                ) : (
-                  <Text style={styles.primaryButtonText}>Create Account</Text>
-                )}
-              </TouchableOpacity>
-            </CardContent>
-          </Card>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleRegister}
+              disabled={isLoading}
+              activeOpacity={0.85}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={colors.primaryForeground} />
+              ) : (
+                <Text style={styles.primaryButtonText}>Create account</Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
           <Text style={styles.termsNotice}>
             By creating an account, you agree to our{' '}
@@ -524,78 +521,67 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 48,
+    paddingTop: 56,
     paddingBottom: 40,
   },
-  header: {
+  brandRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    justifyContent: 'center',
+    marginBottom: 28,
   },
   logo: {
-    width: 72,
-    height: 72,
-    marginBottom: 12,
+    width: 36,
+    height: 36,
+    marginRight: 8,
   },
   appNameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
   },
   appNameBlue: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#2563eb',
+    letterSpacing: -0.5,
   },
   appNameOrange: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#E8862E',
-  },
-  title: {
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#E8862E',
+    letterSpacing: -0.5,
+  },
+  hero: {
+    marginBottom: 24,
+  },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '700',
     color: colors.foreground,
+    letterSpacing: -0.8,
+    marginBottom: 6,
   },
-  subtitle: {
-    fontSize: 14,
+  heroSubtitle: {
+    fontSize: 16,
     color: colors.mutedForeground,
-    marginTop: 4,
+    lineHeight: 22,
   },
-  cardContent: {
-    paddingTop: 20,
-  },
-  googleButton: {
+  form: {},
+  socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    borderRadius: 12,
+    borderRadius: 14,
     height: 56,
-    paddingHorizontal: 24,
-    marginBottom: 4,
+    gap: 10,
   },
-  googleIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  googleIconText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4285F4',
-  },
-  googleButtonText: {
+  socialButtonText: {
     color: colors.foreground,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   appleButtonContainer: {
     marginTop: 12,
@@ -603,20 +589,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   appleButton: {
     width: '100%',
-    height: 48,
+    height: 56,
   },
   appleLoadingContainer: {
     width: '100%',
-    height: 48,
+    height: 56,
     backgroundColor: '#000000',
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 24,
     marginBottom: 20,
   },
   dividerLine: {
@@ -640,51 +626,48 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     color: colors.foreground,
+    letterSpacing: 0.2,
     marginBottom: 8,
   },
   input: {
-    height: 52,
-    paddingHorizontal: 16,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 12,
+    height: 56,
+    paddingHorizontal: 18,
+    backgroundColor: colors.muted,
+    borderRadius: 14,
     color: colors.foreground,
     fontSize: 16,
   },
   passwordContainer: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 12,
+    backgroundColor: colors.muted,
+    borderRadius: 14,
   },
   passwordInput: {
     flex: 1,
-    height: 52,
-    paddingHorizontal: 16,
+    height: 56,
+    paddingHorizontal: 18,
     fontSize: 16,
     color: colors.foreground,
   },
   eyeButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   passwordHint: {
     fontSize: 12,
     color: colors.mutedForeground,
-    marginTop: 6,
-    marginLeft: 4,
+    marginTop: 8,
+    marginLeft: 2,
   },
   strengthRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    marginLeft: 4,
+    marginTop: 10,
+    marginLeft: 2,
     gap: 8,
   },
   strengthBars: {
@@ -699,27 +682,32 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   strengthLabel: {
     fontSize: 12,
-    fontWeight: '500',
-  },
-  messageContainer: {
-    minHeight: 52,
-    marginBottom: 16,
+    fontWeight: '600',
   },
   errorContainer: {
-    padding: 12,
+    padding: 14,
+    marginBottom: 16,
     backgroundColor: colors.destructiveLight,
-    borderRadius: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.destructive,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    borderRadius: 12,
   },
   errorText: {
-    flex: 1,
     color: colors.destructive,
     fontSize: 14,
     fontWeight: '500',
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    height: 56,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  primaryButtonText: {
+    color: colors.primaryForeground,
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   spacer: {
     flex: 1,
@@ -739,25 +727,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
   },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  primaryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 16,
-    fontWeight: '600',
-  },
   termsNotice: {
     fontSize: 12,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 24,
     paddingHorizontal: 20,
     lineHeight: 18,
   },
