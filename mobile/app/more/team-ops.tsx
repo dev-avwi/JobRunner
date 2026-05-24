@@ -37,6 +37,7 @@ import { format, isToday, parseISO, isBefore, startOfDay } from 'date-fns';
 import { getAvatarColor } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { Swipeable } from 'react-native-gesture-handler';
+import { hapticFeedback } from '../../src/lib/haptics';
 
 type ViewMode = 'liveops' | 'schedule' | 'performance' | 'kanban' | 'map';
 type PerfPeriod = 'today' | 'week' | 'month';
@@ -80,7 +81,11 @@ interface JobData {
   priority?: string;
   latitude?: string | number | null;
   longitude?: string | number | null;
+  isRecurring?: boolean;
+  parentJobId?: string;
 }
+
+type QuickFilter = 'all' | 'unassigned' | 'overdue' | 'urgent';
 
 interface GeocodedJob {
   job: JobData;
@@ -147,9 +152,29 @@ export default function DispatchBoardScreen() {
   const [selectedMapJob, setSelectedMapJob] = useState<JobData | null>(null);
   const [pickup, setPickup] = useState<JobData | null>(null);
   const [kanbanCol, setKanbanCol] = useState<string>('unassigned');
+  const [now, setNow] = useState(new Date());
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
+  const [selectedQueue, setSelectedQueue] = useState<Set<string>>(new Set());
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(t);
+  }, []);
   const mapRef = useRef<any>(null);
   const kanbanScrollRef = useRef<ScrollView>(null);
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
+  const longPressFiredRef = useRef<boolean>(false);
+
+  const handleLongPress = (fn: () => void) => () => {
+    longPressFiredRef.current = true;
+    fn();
+    setTimeout(() => { longPressFiredRef.current = false; }, 400);
+  };
+  const handlePressGuarded = (fn: () => void) => () => {
+    if (longPressFiredRef.current) return;
+    fn();
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -159,6 +184,7 @@ export default function DispatchBoardScreen() {
       ]);
       if (membersRes.data) setTeamMembers(membersRes.data.filter(m => m.inviteStatus === 'accepted'));
       if (jobsRes.data) setJobs(jobsRes.data);
+      setLastSyncedAt(new Date());
     } catch (error) {
       console.error('Error fetching dispatch data:', error);
     } finally {
@@ -475,6 +501,72 @@ export default function DispatchBoardScreen() {
     return format(parseISO(dateStr), 'h:mm a');
   };
 
+  const formatRelativeAgo = (d: Date) => {
+    const s = Math.floor((now.getTime() - d.getTime()) / 1000);
+    if (s < 5) return 'just now';
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    return `${h}h ago`;
+  };
+
+  const availabilityByMember = useMemo(() => {
+    const m = new Map<string, 'on_job' | 'en_route' | 'available'>();
+    liveOpsData.list.forEach(l => m.set(l.member.userId, l.status));
+    return m;
+  }, [liveOpsData]);
+
+  const handleAutoAssign = async () => {
+    const jobIds = Array.from(selectedQueue);
+    if (jobIds.length === 0) return;
+    if (teamMembers.length === 0) {
+      Alert.alert('No workers', 'Add team members before auto-assigning.');
+      return;
+    }
+    const load = new Map<string, number>();
+    teamMembers.forEach(m => load.set(m.userId, 0));
+    jobs.forEach(j => {
+      if (j.assignedTo && load.has(j.assignedTo)) {
+        load.set(j.assignedTo, (load.get(j.assignedTo) || 0) + 1);
+      }
+    });
+    const picks: { jobId: string; memberId: string }[] = [];
+    for (const jid of jobIds) {
+      let best: string | null = null;
+      let bestLoad = Infinity;
+      load.forEach((l, mid) => { if (l < bestLoad) { bestLoad = l; best = mid; } });
+      if (best) {
+        picks.push({ jobId: jid, memberId: best });
+        load.set(best, bestLoad + 1);
+      }
+    }
+    try {
+      await Promise.all(picks.map(p =>
+        api.patch(`/api/jobs/${p.jobId}`, { assignedTo: p.memberId })
+      ));
+      setJobs(prev => prev.map(j => {
+        const p = picks.find(x => x.jobId === j.id);
+        return p ? { ...j, assignedTo: p.memberId, status: j.status === 'pending' ? 'scheduled' : j.status } : j;
+      }));
+      setSelectedQueue(new Set());
+      hapticFeedback.success();
+      Alert.alert('Auto-assigned', `${picks.length} job${picks.length === 1 ? '' : 's'} balanced across the crew.`);
+    } catch {
+      Alert.alert('Error', 'Failed to auto-assign');
+    }
+  };
+
+  const toggleQueueSelect = (jobId: string) => {
+    hapticFeedback.selection();
+    setSelectedQueue(prev => {
+      const next = new Set(prev);
+      if (next.has(jobId)) next.delete(jobId);
+      else next.add(jobId);
+      return next;
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return colors.warning;
@@ -759,9 +851,59 @@ export default function DispatchBoardScreen() {
     const userId = member?.userId || null;
     const rowName = member ? getMemberName(member) : 'Unassigned';
     const subtitle = member?.roleName || (isUnassignedRow ? 'no worker' : '');
+
+    const avail = userId ? availabilityByMember.get(userId) : null;
+    const availColor =
+      avail === 'on_job' ? colors.success :
+      avail === 'en_route' ? (colors.info || '#3b82f6') :
+      avail === 'available' ? colors.mutedForeground :
+      colors.border;
+    const availLabel = avail === 'on_job' ? 'on job' : avail === 'en_route' ? 'en route' : avail === 'available' ? 'available' : '';
+
+    // Pre-compute spans for conflict detection + travel blocks
+    const spans = memberJobs
+      .filter(j => j.scheduledAt)
+      .map(j => {
+        const d = parseISO(j.scheduledAt!);
+        const start = d.getHours() + d.getMinutes() / 60;
+        const dur = Math.max(0.5, (j.estimatedDuration || 60) / 60);
+        return { job: j, start, end: start + dur };
+      })
+      .sort((a, b) => a.start - b.start);
+
+    const conflictIds = new Set<string>();
+    for (let i = 0; i < spans.length; i++) {
+      for (let k = i + 1; k < spans.length; k++) {
+        if (spans[i].end > spans[k].start && spans[i].start < spans[k].end) {
+          conflictIds.add(spans[i].job.id);
+          conflictIds.add(spans[k].job.id);
+        }
+      }
+    }
+
+    const travelBlocks: { left: number; width: number }[] = [];
+    for (let i = 0; i < spans.length - 1; i++) {
+      const gap = spans[i + 1].start - spans[i].end;
+      if (gap > 0 && gap < 2) {
+        const left = (spans[i].end - TIMELINE_HOUR_START) * TIMELINE_HOUR_WIDTH;
+        const width = gap * TIMELINE_HOUR_WIDTH;
+        if (left + width > 0 && left < TIMELINE_GRID_WIDTH) {
+          travelBlocks.push({ left: Math.max(0, left), width: Math.min(width, TIMELINE_GRID_WIDTH - left) });
+        }
+      }
+    }
+
+    const isSameDay = format(selectedDate, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd');
+    const nowHourFloat = now.getHours() + now.getMinutes() / 60;
+    const nowOffset = nowHourFloat - TIMELINE_HOUR_START;
+    const showNowLine = isSameDay && nowOffset >= 0 && nowOffset <= TIMELINE_HOUR_COUNT;
+
     return (
       <View key={userId || 'unassigned'} style={styles.timelineRow}>
         <View style={[styles.timelineLabel, isUnassignedRow && { backgroundColor: `${colors.destructive}10` }]}>
+          {!isUnassignedRow && (
+            <View style={[styles.availStrip, { backgroundColor: availColor }]} />
+          )}
           {member ? (
             <TeamAvatar
               firstName={member.firstName}
@@ -777,7 +919,11 @@ export default function DispatchBoardScreen() {
           )}
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.timelineLabelName} numberOfLines={1}>{rowName}</Text>
-            {subtitle ? <Text style={styles.timelineLabelSub} numberOfLines={1}>{subtitle}</Text> : null}
+            {availLabel ? (
+              <Text style={[styles.timelineLabelSub, { color: availColor }]} numberOfLines={1}>{availLabel}</Text>
+            ) : subtitle ? (
+              <Text style={styles.timelineLabelSub} numberOfLines={1}>{subtitle}</Text>
+            ) : null}
           </View>
         </View>
         <View style={styles.timelineGrid}>
@@ -785,31 +931,36 @@ export default function DispatchBoardScreen() {
           {Array.from({ length: TIMELINE_HOUR_COUNT }).map((_, i) => (
             <View key={`gl-${i}`} style={[styles.timelineGridline, { left: i * TIMELINE_HOUR_WIDTH }]} />
           ))}
+          {/* travel blocks (between consecutive jobs) */}
+          {travelBlocks.map((t, i) => (
+            <View key={`tr-${i}`} style={[styles.travelBlock, { left: t.left, width: t.width }]}>
+              <Feather name="navigation" size={9} color={colors.mutedForeground} />
+            </View>
+          ))}
           {/* drop targets when picking up */}
           {pickup && Array.from({ length: TIMELINE_HOUR_COUNT }).map((_, i) => (
             <TouchableOpacity
               key={`drop-${i}`}
               activeOpacity={0.6}
-              onPress={() => handleDropPickup(userId, TIMELINE_HOUR_START + i)}
+              onPress={() => { hapticFeedback.success(); handleDropPickup(userId, TIMELINE_HOUR_START + i); }}
               style={[styles.timelineDropCell, { left: i * TIMELINE_HOUR_WIDTH }]}
             />
           ))}
           {/* job blocks */}
-          {memberJobs.map(j => {
-            if (!j.scheduledAt) return null;
-            const d = parseISO(j.scheduledAt);
-            const hourFloat = d.getHours() + d.getMinutes() / 60;
-            const offset = hourFloat - TIMELINE_HOUR_START;
+          {spans.map(({ job: j, start, end }) => {
+            const offset = start - TIMELINE_HOUR_START;
             if (offset < 0 || offset >= TIMELINE_HOUR_COUNT) return null;
-            const durHours = Math.max(0.5, (j.estimatedDuration || 60) / 60);
+            const durHours = end - start;
             const width = Math.max(44, Math.min(durHours * TIMELINE_HOUR_WIDTH, TIMELINE_GRID_WIDTH - offset * TIMELINE_HOUR_WIDTH) - 4);
             const color = getStatusColor(j.status);
+            const isConflict = conflictIds.has(j.id);
             return (
               <TouchableOpacity
                 key={j.id}
                 activeOpacity={0.8}
-                onLongPress={() => showMoveMenu(j)}
-                onPress={() => router.push(`/job/${j.id}`)}
+                onLongPress={handleLongPress(() => { hapticFeedback.longPress(); setPickup(j); })}
+                delayLongPress={250}
+                onPress={handlePressGuarded(() => router.push(`/job/${j.id}` as any))}
                 style={[
                   styles.timelineBlock,
                   {
@@ -818,15 +969,26 @@ export default function DispatchBoardScreen() {
                     backgroundColor: `${color}25`,
                     borderLeftColor: color,
                   },
+                  isConflict && styles.timelineBlockConflict,
                 ]}
               >
-                <Text style={[styles.timelineBlockTitle, { color }]} numberOfLines={1}>{j.title}</Text>
+                <View style={styles.timelineBlockTitleRow}>
+                  {isConflict && <Feather name="alert-triangle" size={9} color={colors.destructive} />}
+                  {j.isRecurring && <Feather name="repeat" size={9} color={color} />}
+                  <Text style={[styles.timelineBlockTitle, { color }]} numberOfLines={1}>{j.title}</Text>
+                </View>
                 <Text style={styles.timelineBlockMeta} numberOfLines={1}>
                   {formatTime(j.scheduledAt)} · {j.estimatedDuration || 60}m
                 </Text>
               </TouchableOpacity>
             );
           })}
+          {/* now line — only on today's date */}
+          {showNowLine && (
+            <View pointerEvents="none" style={[styles.nowLine, { left: nowOffset * TIMELINE_HOUR_WIDTH }]}>
+              <View style={styles.nowLineDot} />
+            </View>
+          )}
           {/* empty hint */}
           {memberJobs.length === 0 && !pickup && (
             <Text style={styles.timelineEmptyHint}>Free all day</Text>
@@ -837,8 +999,35 @@ export default function DispatchBoardScreen() {
   };
 
   const renderScheduleView = () => {
-    const memberRows = Array.from(scheduleData.memberMap.entries());
-    const hasAnyJobs = scheduleData.unassignedJobs.length > 0 || memberRows.some(([, v]) => v.jobs.length > 0);
+    // Apply quick filter
+    const matchFilter = (j: JobData): boolean => {
+      if (quickFilter === 'all') return true;
+      if (quickFilter === 'unassigned') return !j.assignedTo;
+      if (quickFilter === 'overdue') {
+        return !!j.scheduledAt && isBefore(parseISO(j.scheduledAt), now) && j.status !== 'completed' && j.status !== 'done';
+      }
+      if (quickFilter === 'urgent') {
+        return j.priority === 'urgent' || j.priority === 'high';
+      }
+      return true;
+    };
+
+    const filteredMemberMap = new Map<string, { member: TeamMember; jobs: JobData[] }>();
+    scheduleData.memberMap.forEach((entry, k) => {
+      filteredMemberMap.set(k, { member: entry.member, jobs: entry.jobs.filter(matchFilter) });
+    });
+    const filteredUnassigned = scheduleData.unassignedJobs.filter(matchFilter);
+
+    const memberRows = Array.from(filteredMemberMap.entries());
+    const hasAnyJobs = filteredUnassigned.length > 0 || memberRows.some(([, v]) => v.jobs.length > 0);
+
+    const filterChips: { key: QuickFilter; label: string; count: number }[] = [
+      { key: 'all', label: 'All', count: scheduleData.unassignedJobs.length + Array.from(scheduleData.memberMap.values()).reduce((a, v) => a + v.jobs.length, 0) },
+      { key: 'unassigned', label: 'Unassigned', count: scheduleData.unassignedJobs.length },
+      { key: 'overdue', label: 'Overdue', count: opsHealth.overdue },
+      { key: 'urgent', label: 'Urgent', count: jobs.filter(j => (j.priority === 'urgent' || j.priority === 'high') && j.status !== 'completed' && j.status !== 'done').length },
+    ];
+
     return (
       <View>
         <ScrollView
@@ -857,6 +1046,30 @@ export default function DispatchBoardScreen() {
               >
                 <Text style={[styles.weekDayDow, sel && styles.weekDayDowSel]}>{format(d, 'EEE').toUpperCase()}</Text>
                 <Text style={[styles.weekDayDom, sel && styles.weekDayDomSel]}>{format(d, 'd')}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Quick filters */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterChipsRow}
+        >
+          {filterChips.map(c => {
+            const active = quickFilter === c.key;
+            return (
+              <TouchableOpacity
+                key={c.key}
+                activeOpacity={0.7}
+                onPress={() => { hapticFeedback.selection(); setQuickFilter(c.key); }}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+              >
+                <Text style={[styles.filterChipLabel, active && styles.filterChipLabelActive]}>{c.label}</Text>
+                <View style={[styles.filterChipCount, active && styles.filterChipCountActive]}>
+                  <Text style={[styles.filterChipCountText, active && styles.filterChipCountTextActive]}>{c.count}</Text>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -902,34 +1115,81 @@ export default function DispatchBoardScreen() {
         )}
 
         {/* Unassigned queue card */}
-        {scheduleData.unassignedJobs.length > 0 && (
+        {filteredUnassigned.length > 0 && (
           <View style={styles.queueCard}>
-            <View style={styles.queueCardHeader}>
-              <Text style={styles.queueCardTitle}>Unassigned Queue · {scheduleData.unassignedJobs.length} job{scheduleData.unassignedJobs.length === 1 ? '' : 's'}</Text>
-              <Text style={styles.queueCardHint}>Tap to hold</Text>
-            </View>
-            {scheduleData.unassignedJobs.map(j => {
+            {selectedQueue.size > 0 ? (
+              <View style={styles.queueCardHeader}>
+                <Text style={[styles.queueCardTitle, { color: colors.primary }]}>{selectedQueue.size} selected</Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => { hapticFeedback.light(); setSelectedQueue(new Set()); }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.queueBulkCancel}>Clear</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleAutoAssign}
+                  style={styles.queueBulkBtn}
+                >
+                  <Feather name="zap" size={12} color={colors.primaryForeground} />
+                  <Text style={styles.queueBulkBtnText}>Auto-balance</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.queueCardHeader}>
+                <Text style={styles.queueCardTitle}>Unassigned Queue · {filteredUnassigned.length} job{filteredUnassigned.length === 1 ? '' : 's'}</Text>
+                <Text style={styles.queueCardHint}>Hold to lift · Long-press to multi-select</Text>
+              </View>
+            )}
+            {filteredUnassigned.map(j => {
               const held = pickup?.id === j.id;
+              const selected = selectedQueue.has(j.id);
               return (
-                <View key={j.id} style={[styles.queueItem, held && styles.queueItemHeld]}>
+                <View key={j.id} style={[styles.queueItem, held && styles.queueItemHeld, selected && styles.queueItemSelected]}>
+                  {selectedQueue.size > 0 && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => toggleQueueSelect(j.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={styles.queueCheckbox}
+                    >
+                      <Feather
+                        name={selected ? 'check-square' : 'square'}
+                        size={18}
+                        color={selected ? colors.primary : colors.mutedForeground}
+                      />
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     activeOpacity={0.7}
-                    onPress={() => setPickup(held ? null : j)}
+                    onPress={handlePressGuarded(() => {
+                      if (selectedQueue.size > 0) { toggleQueueSelect(j.id); return; }
+                      hapticFeedback.light();
+                      setPickup(held ? null : j);
+                    })}
+                    onLongPress={handleLongPress(() => { hapticFeedback.longPress(); toggleQueueSelect(j.id); })}
+                    delayLongPress={300}
                     style={styles.queueItemMain}
                   >
-                    <Text style={styles.queueItemTitle} numberOfLines={1}>{j.title}</Text>
+                    <View style={styles.queueItemTitleRow}>
+                      {j.isRecurring && <Feather name="repeat" size={11} color={colors.mutedForeground} />}
+                      <Text style={styles.queueItemTitle} numberOfLines={1}>{j.title}</Text>
+                    </View>
                     <Text style={styles.queueItemMeta} numberOfLines={1}>
                       {[j.address?.split(',')[0], j.estimatedDuration ? `~${Math.round(j.estimatedDuration / 60 * 10) / 10}hr` : null].filter(Boolean).join(' · ') || 'No location'}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => openAssignModal(j)}
-                    style={styles.queueItemAssignBtn}
-                  >
-                    <Text style={styles.queueItemAssignText}>Assign</Text>
-                    <Feather name="arrow-right" size={14} color={colors.primary} />
-                  </TouchableOpacity>
+                  {selectedQueue.size === 0 && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => openAssignModal(j)}
+                      style={styles.queueItemAssignBtn}
+                    >
+                      <Text style={styles.queueItemAssignText}>Assign</Text>
+                      <Feather name="arrow-right" size={14} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
                 </View>
               );
             })}
@@ -1396,11 +1656,17 @@ export default function DispatchBoardScreen() {
               <Text style={styles.pageTitle}>Team Ops</Text>
             </View>
             <View style={styles.headerDatePill}>
-              <Text style={styles.headerDatePillText}>{format(new Date(), 'EEE d MMM')}</Text>
+              <Text style={styles.headerDatePillText}>{format(now, 'EEE d MMM')}</Text>
             </View>
-            <PressableRow onPress={onRefresh} style={styles.refreshBtn} >
+            <PressableRow onPress={onRefresh} style={styles.refreshBtn} accessibilityLabel="Refresh data">
               <Feather name="refresh-cw" size={16} color={colors.mutedForeground} />
             </PressableRow>
+          </View>
+          <View style={styles.syncStampRow}>
+            <View style={[styles.syncDot, { backgroundColor: refreshing ? colors.warning : colors.success }]} />
+            <Text style={styles.syncStampText}>
+              {refreshing ? 'Syncing…' : `Updated ${formatRelativeAgo(lastSyncedAt)}`}
+            </Text>
           </View>
 
           <View style={styles.tabBar}>
@@ -2899,5 +3165,167 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   perfStatDot: {
     fontSize: 12,
     color: colors.mutedForeground,
+  },
+
+  // Sync stamp (under header)
+  syncStampRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.lg,
+    paddingLeft: spacing.xxs,
+  },
+  syncDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  syncStampText: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+    fontWeight: '500',
+  },
+
+  // Worker availability strip (left edge of timeline label)
+  availStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 4,
+    bottom: 4,
+    width: 3,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+
+  // Travel block (light grey segment between consecutive jobs)
+  travelBlock: {
+    position: 'absolute',
+    top: TIMELINE_ROW_HEIGHT / 2 - 6,
+    height: 12,
+    borderRadius: radius.sm,
+    backgroundColor: colors.muted,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Conflict highlight on timeline block
+  timelineBlockConflict: {
+    borderWidth: 1.5,
+    borderColor: colors.destructive,
+    borderLeftWidth: 3,
+  },
+  timelineBlockTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+
+  // Now line
+  nowLine: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: colors.destructive,
+    zIndex: 10,
+  },
+  nowLineDot: {
+    position: 'absolute',
+    top: -3,
+    left: -4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.destructive,
+  },
+
+  // Quick filter chips
+  filterChipsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingBottom: spacing.sm,
+    paddingHorizontal: 2,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.muted,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  filterChipActive: {
+    backgroundColor: `${colors.primary}15`,
+    borderColor: colors.primary,
+  },
+  filterChipLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
+  filterChipLabelActive: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  filterChipCount: {
+    minWidth: 18,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: radius.sm,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+  },
+  filterChipCountActive: {
+    backgroundColor: colors.primary,
+  },
+  filterChipCountText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.mutedForeground,
+  },
+  filterChipCountTextActive: {
+    color: colors.primaryForeground,
+  },
+
+  // Queue bulk-actions
+  queueItemSelected: {
+    backgroundColor: `${colors.primary}10`,
+    borderWidth: 1,
+    borderColor: `${colors.primary}40`,
+  },
+  queueItemTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  queueCheckbox: {
+    paddingRight: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  queueBulkCancel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
+  queueBulkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+  },
+  queueBulkBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primaryForeground,
   },
 });
