@@ -42,52 +42,53 @@ struct JobRunnerLiveActivity: Widget {
                 // status all live in the .bottom region as a single
                 // vertical stack instead.
                 // All expanded content lives inside .bottom so the
-                // expanded view sizes to the content height — no
-                // mid-pill dead zone between iOS's auto-positioned
-                // .leading/.trailing (top) and .bottom (bottom).
+                // expanded view sizes to the content height. Typography
+                // is sized up to actually use the bubble's vertical
+                // envelope instead of huddling small in the middle.
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 10) {
-                        HStack(alignment: .center, spacing: 12) {
+                    VStack(spacing: 14) {
+                        HStack(alignment: .center, spacing: 14) {
                             BrandBadge()
-                                .frame(width: 38, height: 38)
+                                .frame(width: 46, height: 46)
 
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 3) {
                                 Text(AddressParts(address: context.attributes.address).street)
-                                    .font(.system(size: 15, weight: .bold))
+                                    .font(.system(size: 17, weight: .bold))
                                     .foregroundStyle(.white)
                                     .lineLimit(1)
                                     .truncationMode(.tail)
+                                    .minimumScaleFactor(0.85)
                                 Text(AddressParts(address: context.attributes.address).suburbOrFallback)
-                                    .font(.system(size: 12))
+                                    .font(.system(size: 13))
                                     .foregroundStyle(Color.secondaryText)
                                     .lineLimit(1)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                            VStack(alignment: .trailing, spacing: 0) {
+                            VStack(alignment: .trailing, spacing: 1) {
                                 Text(context.attributes.startedAt, style: .timer)
-                                    .font(.system(size: 20, weight: .bold, design: .rounded).monospacedDigit())
+                                    .font(.system(size: 26, weight: .bold, design: .rounded).monospacedDigit())
                                     .foregroundStyle(Color.onBreak)
                                     .lineLimit(1)
-                                    .minimumScaleFactor(0.6)
+                                    .minimumScaleFactor(0.55)
                                     .multilineTextAlignment(.trailing)
                                 Text("ELAPSED")
-                                    .font(.system(size: 9, weight: .heavy))
+                                    .font(.system(size: 10, weight: .heavy))
                                     .tracking(1.4)
                                     .foregroundStyle(Color.tertiaryText)
                                     .lineLimit(1)
                             }
-                            .frame(width: 78, alignment: .trailing)
+                            .frame(width: 100, alignment: .trailing)
                         }
 
-                        HStack(spacing: 8) {
+                        HStack(spacing: 10) {
                             LiquidStatusPill(status: context.state.status)
                             if !context.attributes.customerName.isEmpty {
                                 Text("·")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(.system(size: 13, weight: .semibold))
                                     .foregroundStyle(Color.tertiaryText)
                                 Text(context.attributes.customerName)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: 13, weight: .medium))
                                     .foregroundStyle(.white.opacity(0.85))
                                     .lineLimit(1)
                                     .truncationMode(.tail)
@@ -95,17 +96,18 @@ struct JobRunnerLiveActivity: Widget {
                             Spacer()
                             HStack(spacing: 4) {
                                 Text("STARTED")
-                                    .font(.system(size: 8, weight: .heavy))
+                                    .font(.system(size: 9, weight: .heavy))
                                     .tracking(1.0)
                                     .foregroundStyle(Color.tertiaryText)
                                 Text(context.attributes.startedAt, style: .time)
-                                    .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
                                     .foregroundStyle(Color.secondaryText)
                             }
                         }
                     }
-                    .padding(.horizontal, 4)
-                    .padding(.top, 4)
+                    .padding(.horizontal, 6)
+                    .padding(.top, 6)
+                    .padding(.bottom, 2)
                 }
             } compactLeading: {
                 // Logo on the left of the notch — small but recognisable
