@@ -46,7 +46,7 @@ struct JobRunnerLiveActivity: Widget {
                 // is sized up to actually use the bubble's vertical
                 // envelope instead of huddling small in the middle.
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 14) {
+                    VStack(spacing: 10) {
                         HStack(alignment: .center, spacing: 14) {
                             BrandBadge()
                                 .frame(width: 46, height: 46)
@@ -105,9 +105,8 @@ struct JobRunnerLiveActivity: Widget {
                             }
                         }
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.top, 6)
-                    .padding(.bottom, 2)
+                    .padding(.horizontal, 2)
+                    .padding(.vertical, 2)
                 }
             } compactLeading: {
                 // Logo on the left of the notch — small but recognisable
@@ -135,6 +134,11 @@ struct JobRunnerLiveActivity: Widget {
                     .minimumScaleFactor(0.6)
             }
             .keylineTint(Color.brandBlue)
+            // Tighten the iOS-default content margins inside the
+            // expanded bubble — default is ~16-20pt all around, which
+            // produced the leftover space at the edges. 8pt all sides
+            // lets our content sit closer to the pill edges.
+            .contentMargins(.all, 8, for: .expanded)
         }
     }
 }
