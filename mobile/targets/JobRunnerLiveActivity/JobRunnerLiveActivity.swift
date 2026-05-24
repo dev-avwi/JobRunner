@@ -158,32 +158,46 @@ private struct LockScreenView: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
 
-                // Status pill — coloured dot + uppercase label with
-                // small-caps tracking, wrapped in a translucent capsule
-                // tinted with the status colour. Customer name sits
-                // beside the pill as a separate piece of metadata.
-                HStack(spacing: 8) {
-                    LiquidStatusPill(status: state.status)
-
-                    if !attributes.customerName.isEmpty {
-                        Text(attributes.customerName)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.secondaryText)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
+                // Customer name on its own dedicated row (when present) —
+                // promoted out of the status-pill row where it was
+                // getting squeezed/clipped. Reads as the "for whom" line
+                // between the address and the live-state pill.
+                if !attributes.customerName.isEmpty {
+                    Text(attributes.customerName)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .padding(.top, 1)
                 }
-                .padding(.top, 4)
+
+                LiquidStatusPill(status: state.status)
+                    .padding(.top, 4)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Hairline separator that anchors the timer as its own zone
-            // without taking real horizontal space.
+            // Hairline separator anchors the timer as its own zone.
             Rectangle()
                 .fill(Color.white.opacity(0.06))
-                .frame(width: 0.5, height: 40)
+                .frame(width: 0.5, height: 50)
 
-            LiquidTimerColumn(startedAt: attributes.startedAt)
+            // Right column: elapsed timer + a "STARTED HH:MM" metadata
+            // row that uses the same startedAt attribute formatted as
+            // absolute time-of-day. Fills the previously-empty space
+            // below the timer with a useful complementary piece of info
+            // (elapsed = how long, started = when did it begin).
+            VStack(alignment: .trailing, spacing: 6) {
+                LiquidTimerColumn(startedAt: attributes.startedAt)
+                HStack(spacing: 4) {
+                    Text("STARTED")
+                        .font(.system(size: 8, weight: .heavy))
+                        .tracking(1.0)
+                        .foregroundStyle(Color.tertiaryText)
+                    Text(attributes.startedAt, style: .time)
+                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(Color.secondaryText)
+                }
+            }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
