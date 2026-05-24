@@ -40,6 +40,14 @@ import { Swipeable } from 'react-native-gesture-handler';
 
 type ViewMode = 'schedule' | 'kanban' | 'map';
 
+const TIMELINE_HOUR_START = 7;
+const TIMELINE_HOUR_END = 19;
+const TIMELINE_HOUR_COUNT = TIMELINE_HOUR_END - TIMELINE_HOUR_START;
+const TIMELINE_HOUR_WIDTH = 60;
+const TIMELINE_ROW_HEIGHT = 64;
+const TIMELINE_LABEL_WIDTH = 92;
+const TIMELINE_GRID_WIDTH = TIMELINE_HOUR_COUNT * TIMELINE_HOUR_WIDTH;
+
 const KANBAN_STATUS_ORDER = [
   { key: 'unassigned', status: 'pending', label: 'Unassigned', icon: 'inbox' as const },
   { key: 'assigned', status: 'scheduled', label: 'Assigned', icon: 'user-check' as const },
@@ -135,7 +143,11 @@ export default function DispatchBoardScreen() {
   const [assigningJob, setAssigningJob] = useState<JobData | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
   const [selectedMapJob, setSelectedMapJob] = useState<JobData | null>(null);
+  const [opsExpanded, setOpsExpanded] = useState(false);
+  const [pickup, setPickup] = useState<JobData | null>(null);
+  const [kanbanCol, setKanbanCol] = useState<string>('unassigned');
   const mapRef = useRef<any>(null);
+  const kanbanScrollRef = useRef<ScrollView>(null);
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
 
   const fetchData = useCallback(async () => {
@@ -328,6 +340,28 @@ export default function DispatchBoardScreen() {
     ]);
   };
 
+  const handleDropPickup = async (memberId: string | null, hour: number) => {
+    if (!pickup) return;
+    const job = pickup;
+    setPickup(null);
+    const dropDate = new Date(selectedDate);
+    dropDate.setHours(hour, 0, 0, 0);
+    const isoDate = dropDate.toISOString();
+    try {
+      const body: any = { scheduledAt: isoDate };
+      if (memberId) body.assignedTo = memberId;
+      await api.patch(`/api/jobs/${job.id}`, body);
+      setJobs(prev => prev.map(j => j.id === job.id ? {
+        ...j,
+        assignedTo: memberId || j.assignedTo,
+        scheduledAt: isoDate,
+        status: j.status === 'pending' && memberId ? 'scheduled' : j.status,
+      } : j));
+    } catch {
+      Alert.alert('Error', 'Failed to schedule job');
+    }
+  };
+
   const handleStatusChange = async (job: JobData, newStatus: string) => {
     try {
       await api.patch(`/api/jobs/${job.id}`, { status: newStatus });
@@ -412,51 +446,43 @@ export default function DispatchBoardScreen() {
     );
   }
 
-  const renderOpsHealth = () => (
-    <View style={styles.opsHealthContainer}>
-      <View style={styles.opsHealthHeader}>
-        <View style={styles.opsHealthTitleRow}>
-          <Feather name="activity" size={18} color={colors.primary} />
-          <Text style={styles.opsHealthTitle}>Ops Health</Text>
-        </View>
-        <Text style={styles.opsHealthDate}>{format(new Date(), 'EEE, d MMM')}</Text>
+  const renderOpsHealth = () => {
+    const chips: { label: string; value: number; color: string; icon: keyof typeof Feather.glyphMap }[] = [
+      { label: 'conflict', value: opsHealth.conflicts, color: colors.destructive, icon: 'alert-triangle' },
+      { label: 'overdue', value: opsHealth.overdue, color: colors.warning, icon: 'clock' },
+      { label: 'unassigned', value: opsHealth.unassigned, color: colors.warning, icon: 'user-x' },
+      { label: 'today', value: opsHealth.totalToday, color: colors.primary, icon: 'briefcase' },
+      { label: 'in progress', value: opsHealth.inProgress, color: colors.info || '#3b82f6', icon: 'play-circle' },
+      { label: 'done', value: opsHealth.completed, color: colors.success, icon: 'check-circle' },
+    ];
+    return (
+      <View style={styles.opsCompact}>
+        <TouchableOpacity activeOpacity={0.7} onPress={() => setOpsExpanded(v => !v)} style={styles.opsCompactRow}>
+          <Feather name="activity" size={14} color={colors.primary} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.opsChipsRow}>
+            {chips.map(c => (
+              <View key={c.label} style={[styles.opsChip, c.value > 0 && { backgroundColor: `${c.color}15` }]}>
+                <Text style={[styles.opsChipValue, { color: c.value > 0 ? c.color : colors.mutedForeground }]}>{c.value}</Text>
+                <Text style={[styles.opsChipLabel, { color: c.value > 0 ? c.color : colors.mutedForeground }]}>{c.label}</Text>
+              </View>
+            ))}
+          </ScrollView>
+          <Feather name={opsExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+        </TouchableOpacity>
+        {opsExpanded && (
+          <View style={styles.opsExpanded}>
+            {chips.map(c => (
+              <View key={c.label} style={[styles.opsExpandedCard, c.value > 0 && { backgroundColor: `${c.color}10`, borderColor: `${c.color}40` }]}>
+                <Feather name={c.icon} size={16} color={c.value > 0 ? c.color : colors.mutedForeground} />
+                <Text style={[styles.opsExpandedValue, { color: c.value > 0 ? c.color : colors.foreground }]}>{c.value}</Text>
+                <Text style={styles.opsExpandedLabel} numberOfLines={1}>{c.label}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
-      <View style={styles.opsHealthGrid}>
-        <View style={[styles.opsHealthCard, opsHealth.conflicts > 0 && styles.opsHealthCardAlert]}>
-          <Feather name="alert-triangle" size={16} color={opsHealth.conflicts > 0 ? colors.destructive : colors.mutedForeground} />
-          <Text style={[styles.opsHealthValue, opsHealth.conflicts > 0 && { color: colors.destructive }]}>{opsHealth.conflicts}</Text>
-          <Text style={styles.opsHealthLabel}>Conflicts</Text>
-        </View>
-        <View style={[styles.opsHealthCard, opsHealth.overdue > 0 && styles.opsHealthCardWarn]}>
-          <Feather name="clock" size={16} color={opsHealth.overdue > 0 ? colors.warning : colors.mutedForeground} />
-          <Text style={[styles.opsHealthValue, opsHealth.overdue > 0 && { color: colors.warning }]}>{opsHealth.overdue}</Text>
-          <Text style={styles.opsHealthLabel}>Overdue</Text>
-        </View>
-        <View style={[styles.opsHealthCard, opsHealth.unassigned > 0 && styles.opsHealthCardWarn]}>
-          <Feather name="user-x" size={16} color={opsHealth.unassigned > 0 ? colors.warning : colors.mutedForeground} />
-          <Text style={[styles.opsHealthValue, opsHealth.unassigned > 0 && { color: colors.warning }]}>{opsHealth.unassigned}</Text>
-          <Text style={styles.opsHealthLabel} numberOfLines={1}>Unassigned</Text>
-        </View>
-        <View style={styles.opsHealthCard}>
-          <Feather name="briefcase" size={16} color={colors.primary} />
-          <Text style={[styles.opsHealthValue, { color: colors.primary }]}>{opsHealth.totalToday}</Text>
-          <Text style={styles.opsHealthLabel}>Today</Text>
-        </View>
-      </View>
-      <View style={styles.opsHealthRow2}>
-        <View style={styles.opsHealthSmallCard}>
-          <Feather name="play-circle" size={14} color={colors.info || '#3b82f6'} />
-          <Text style={[styles.opsHealthSmallValue, { color: colors.info || '#3b82f6' }]}>{opsHealth.inProgress}</Text>
-          <Text style={styles.opsHealthSmallLabel}>In Progress</Text>
-        </View>
-        <View style={styles.opsHealthSmallCard}>
-          <Feather name="check-circle" size={14} color={colors.success} />
-          <Text style={[styles.opsHealthSmallValue, { color: colors.success }]}>{opsHealth.completed}</Text>
-          <Text style={styles.opsHealthSmallLabel}>Completed</Text>
-        </View>
-      </View>
-    </View>
-  );
+    );
+  };
 
   const renderJobCard = (job: JobData, showAssignAction: boolean = true) => {
     const statusColor = getStatusColor(job.status);
@@ -518,71 +544,200 @@ export default function DispatchBoardScreen() {
     );
   };
 
-  const renderScheduleView = () => (
-    <View>
-      <View style={styles.dateNav}>
-        <PressableRow onPress={() => navigateDateBy(-1)} style={styles.dateNavButton} >
-          <Feather name="chevron-left" size={20} color={colors.foreground} />
-        </PressableRow>
-        <PressableRow onPress={() => setSelectedDate(new Date())} >
-          <Text style={styles.dateNavTitle}>{format(selectedDate, 'EEEE, d MMMM yyyy')}</Text>
-          {isToday(selectedDate) && (
-            <Text style={styles.dateNavToday}>Today</Text>
-          )}
-        </PressableRow>
-        <PressableRow onPress={() => navigateDateBy(1)} style={styles.dateNavButton} >
-          <Feather name="chevron-right" size={20} color={colors.foreground} />
-        </PressableRow>
-      </View>
-
-      {scheduleData.unassignedJobs.length > 0 && (
-        <View style={styles.scheduleSection}>
-          <View style={styles.scheduleSectionHeader}>
-            <View style={[styles.scheduleSectionDot, { backgroundColor: colors.destructive }]} />
-            <Text style={styles.scheduleSectionTitle}>Unassigned ({scheduleData.unassignedJobs.length})</Text>
+  const renderHourRuler = () => (
+    <View style={styles.timelineRuler}>
+      {Array.from({ length: TIMELINE_HOUR_COUNT }).map((_, i) => {
+        const h = TIMELINE_HOUR_START + i;
+        const label = h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`;
+        return (
+          <View key={h} style={styles.timelineRulerCell}>
+            <Text style={styles.timelineRulerText}>{label}</Text>
           </View>
-          {scheduleData.unassignedJobs.map(j => renderJobCard(j, true))}
-        </View>
-      )}
+        );
+      })}
+    </View>
+  );
 
-      {Array.from(scheduleData.memberMap.entries()).map(([userId, { member, jobs: memberJobs }]) => (
-        <View key={userId} style={styles.scheduleSection}>
-          <View style={styles.scheduleSectionHeader}>
+  const renderTimelineRow = (
+    member: TeamMember | null,
+    memberJobs: JobData[],
+    isUnassignedRow: boolean = false,
+  ) => {
+    const userId = member?.userId || null;
+    const rowName = member ? getMemberName(member) : 'Unassigned';
+    const subtitle = member?.roleName || (isUnassignedRow ? 'no worker' : '');
+    return (
+      <View key={userId || 'unassigned'} style={styles.timelineRow}>
+        <View style={[styles.timelineLabel, isUnassignedRow && { backgroundColor: `${colors.destructive}10` }]}>
+          {member ? (
             <TeamAvatar
               firstName={member.firstName}
               lastName={member.lastName}
               userId={String(member.userId)}
               themeColor={(member as any).themeColor}
-              size={36}
+              size={28}
             />
-            <View style={styles.scheduleSectionTitleWrap}>
-              <Text style={styles.scheduleSectionTitle}>{getMemberName(member)}</Text>
-              <Text style={styles.scheduleSectionSubtitle}>
-                {memberJobs.length} job{memberJobs.length !== 1 ? 's' : ''}
-                {member.roleName ? ` · ${member.roleName}` : ''}
-              </Text>
-            </View>
-          </View>
-          {memberJobs.length === 0 ? (
-            <View style={styles.emptyMemberCard}>
-              <Feather name="coffee" size={16} color={colors.mutedForeground} />
-              <Text style={styles.emptyMemberText}>No jobs scheduled</Text>
-            </View>
           ) : (
-            memberJobs.map(j => renderJobCard(j, true))
+            <View style={[styles.timelineLabelIcon, { backgroundColor: colors.destructive }]}>
+              <Feather name="inbox" size={14} color={colors.white} />
+            </View>
+          )}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.timelineLabelName} numberOfLines={1}>{rowName}</Text>
+            {subtitle ? <Text style={styles.timelineLabelSub} numberOfLines={1}>{subtitle}</Text> : null}
+          </View>
+        </View>
+        <View style={styles.timelineGrid}>
+          {/* hour gridlines */}
+          {Array.from({ length: TIMELINE_HOUR_COUNT }).map((_, i) => (
+            <View key={`gl-${i}`} style={[styles.timelineGridline, { left: i * TIMELINE_HOUR_WIDTH }]} />
+          ))}
+          {/* drop targets when picking up */}
+          {pickup && Array.from({ length: TIMELINE_HOUR_COUNT }).map((_, i) => (
+            <TouchableOpacity
+              key={`drop-${i}`}
+              activeOpacity={0.6}
+              onPress={() => handleDropPickup(userId, TIMELINE_HOUR_START + i)}
+              style={[styles.timelineDropCell, { left: i * TIMELINE_HOUR_WIDTH }]}
+            />
+          ))}
+          {/* job blocks */}
+          {memberJobs.map(j => {
+            if (!j.scheduledAt) return null;
+            const d = parseISO(j.scheduledAt);
+            const hourFloat = d.getHours() + d.getMinutes() / 60;
+            const offset = hourFloat - TIMELINE_HOUR_START;
+            if (offset < 0 || offset >= TIMELINE_HOUR_COUNT) return null;
+            const durHours = Math.max(0.5, (j.estimatedDuration || 60) / 60);
+            const width = Math.max(44, Math.min(durHours * TIMELINE_HOUR_WIDTH, TIMELINE_GRID_WIDTH - offset * TIMELINE_HOUR_WIDTH) - 4);
+            const color = getStatusColor(j.status);
+            return (
+              <TouchableOpacity
+                key={j.id}
+                activeOpacity={0.8}
+                onLongPress={() => showMoveMenu(j)}
+                onPress={() => router.push(`/job/${j.id}`)}
+                style={[
+                  styles.timelineBlock,
+                  {
+                    left: offset * TIMELINE_HOUR_WIDTH + 2,
+                    width,
+                    backgroundColor: `${color}25`,
+                    borderLeftColor: color,
+                  },
+                ]}
+              >
+                <Text style={[styles.timelineBlockTitle, { color }]} numberOfLines={1}>{j.title}</Text>
+                <Text style={styles.timelineBlockMeta} numberOfLines={1}>
+                  {formatTime(j.scheduledAt)} · {j.estimatedDuration || 60}m
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          {/* empty hint */}
+          {memberJobs.length === 0 && !pickup && (
+            <Text style={styles.timelineEmptyHint}>Free all day</Text>
           )}
         </View>
-      ))}
+      </View>
+    );
+  };
 
-      {scheduleData.unassignedJobs.length === 0 && Array.from(scheduleData.memberMap.values()).every(v => v.jobs.length === 0) && (
-        <View style={styles.emptyState}>
-          <Feather name="calendar" size={48} color={colors.mutedForeground} />
-          <Text style={styles.emptyStateTitle}>No jobs for this day</Text>
-          <Text style={styles.emptyStateSubtitle}>Select a different date or create a new job</Text>
+  const renderScheduleView = () => {
+    const memberRows = Array.from(scheduleData.memberMap.entries());
+    const hasAnyJobs = scheduleData.unassignedJobs.length > 0 || memberRows.some(([, v]) => v.jobs.length > 0);
+    return (
+      <View>
+        <View style={styles.dateNav}>
+          <PressableRow onPress={() => navigateDateBy(-1)} style={styles.dateNavButton} >
+            <Feather name="chevron-left" size={20} color={colors.foreground} />
+          </PressableRow>
+          <PressableRow onPress={() => setSelectedDate(new Date())} >
+            <Text style={styles.dateNavTitle}>{format(selectedDate, 'EEE, d MMM yyyy')}</Text>
+            {isToday(selectedDate) && (
+              <Text style={styles.dateNavToday}>Today</Text>
+            )}
+          </PressableRow>
+          <PressableRow onPress={() => navigateDateBy(1)} style={styles.dateNavButton} >
+            <Feather name="chevron-right" size={20} color={colors.foreground} />
+          </PressableRow>
         </View>
-      )}
-    </View>
-  );
+
+        {/* Unassigned strip — tap to pick up, then tap a slot on a worker lane */}
+        {scheduleData.unassignedJobs.length > 0 && (
+          <View style={styles.unassignedStrip}>
+            <View style={styles.unassignedStripHeader}>
+              <View style={[styles.scheduleSectionDot, { backgroundColor: colors.destructive }]} />
+              <Text style={styles.unassignedStripTitle}>Unassigned ({scheduleData.unassignedJobs.length})</Text>
+              {pickup ? (
+                <TouchableOpacity onPress={() => setPickup(null)} style={styles.pickupCancelBtn} activeOpacity={0.7}>
+                  <Feather name="x" size={12} color={colors.mutedForeground} />
+                  <Text style={styles.pickupCancelText}>Cancel</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.unassignedStripHint}>Tap a job, then a time slot</Text>
+              )}
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.unassignedChipsRow}>
+              {scheduleData.unassignedJobs.map(j => {
+                const active = pickup?.id === j.id;
+                return (
+                  <TouchableOpacity
+                    key={j.id}
+                    activeOpacity={0.7}
+                    onPress={() => setPickup(active ? null : j)}
+                    onLongPress={() => openAssignModal(j)}
+                    style={[styles.unassignedChip, active && styles.unassignedChipActive]}
+                  >
+                    <Feather name={active ? 'check-circle' : 'package'} size={12} color={active ? colors.primary : colors.mutedForeground} />
+                    <Text style={[styles.unassignedChipText, active && { color: colors.primary, fontWeight: '700' }]} numberOfLines={1}>{j.title}</Text>
+                    {j.estimatedDuration ? (
+                      <Text style={styles.unassignedChipDur}>{j.estimatedDuration}m</Text>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Timeline grid */}
+        {memberRows.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Feather name="users" size={48} color={colors.mutedForeground} />
+            <Text style={styles.emptyStateTitle}>No team members</Text>
+            <Text style={styles.emptyStateSubtitle}>Add team members to start dispatching</Text>
+          </View>
+        ) : (
+          <View style={styles.timelineCard}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator
+              persistentScrollbar
+              contentContainerStyle={{ paddingRight: spacing.sm }}
+            >
+              <View>
+                <View style={styles.timelineRulerRow}>
+                  <View style={{ width: TIMELINE_LABEL_WIDTH }}>
+                    <Text style={styles.timelineRulerCorner}>Worker</Text>
+                  </View>
+                  {renderHourRuler()}
+                </View>
+                {memberRows.map(([, { member, jobs: memberJobs }]) => renderTimelineRow(member, memberJobs))}
+              </View>
+            </ScrollView>
+          </View>
+        )}
+
+        {!hasAnyJobs && memberRows.length > 0 && (
+          <View style={[styles.emptyState, { paddingVertical: spacing.xl }]}>
+            <Feather name="calendar" size={36} color={colors.mutedForeground} />
+            <Text style={styles.emptyStateSubtitle}>No jobs scheduled for this day</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const getAdjacentStatus = (currentColumnKey: string, direction: 'prev' | 'next') => {
     const idx = KANBAN_STATUS_ORDER.findIndex(s => s.key === currentColumnKey);
@@ -744,19 +899,50 @@ export default function DispatchBoardScreen() {
     );
   };
 
+  const kanbanColWidth = isTabletDevice ? 210 : 170;
+
+  const jumpToCol = (key: string) => {
+    setKanbanCol(key);
+    const idx = KANBAN_COLUMNS.findIndex(c => c.key === key);
+    if (idx >= 0 && kanbanScrollRef.current) {
+      kanbanScrollRef.current.scrollTo({ x: idx * (kanbanColWidth + spacing.sm), animated: true });
+    }
+  };
+
   const renderKanbanView = () => (
     <View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kanbanNavRow}>
+        {KANBAN_COLUMNS.map(col => {
+          const count = (kanbanData[col.key as keyof typeof kanbanData] || []).length;
+          const active = kanbanCol === col.key;
+          return (
+            <TouchableOpacity
+              key={col.key}
+              activeOpacity={0.7}
+              onPress={() => jumpToCol(col.key)}
+              style={[styles.kanbanNavChip, active && { backgroundColor: col.color, borderColor: col.color }]}
+            >
+              <Feather name={col.icon} size={12} color={active ? colors.white : col.color} />
+              <Text style={[styles.kanbanNavChipText, { color: active ? colors.white : colors.foreground }]}>{col.label}</Text>
+              <View style={[styles.kanbanNavCount, { backgroundColor: active ? 'rgba(255,255,255,0.25)' : `${col.color}20` }]}>
+                <Text style={[styles.kanbanNavCountText, { color: active ? colors.white : col.color }]}>{count}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
       <View style={styles.kanbanHint}>
         <Feather name="info" size={12} color={colors.mutedForeground} />
-        <Text style={styles.kanbanHintText}>Swipe cards left/right to move between columns</Text>
+        <Text style={styles.kanbanHintText}>Swipe a card left or right to move it</Text>
       </View>
       <ScrollView
+        ref={kanbanScrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.kanbanScrollContainer}
         contentContainerStyle={styles.kanbanScrollContent}
         decelerationRate="fast"
-        snapToInterval={isTabletDevice ? 240 : 220}
+        snapToInterval={kanbanColWidth + spacing.sm}
         snapToAlignment="start"
       >
         {KANBAN_COLUMNS.map(col => renderKanbanColumn(col))}
@@ -1400,7 +1586,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     paddingBottom: spacing.md,
   },
   kanbanColumn: {
-    width: isTabletDevice ? 230 : 210,
+    width: isTabletDevice ? 210 : 170,
     backgroundColor: colors.muted,
     borderRadius: radius.xl,
     overflow: 'hidden',
@@ -1802,5 +1988,296 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     color: '#3b82f6',
     fontWeight: '600',
     marginTop: 6,
+  },
+  // Compact ops health
+  opsCompact: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+  },
+  opsCompactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs + 2,
+  },
+  opsChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
+  opsChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+    backgroundColor: colors.muted,
+  },
+  opsChipValue: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  opsChipLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  opsExpanded: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  opsExpandedCard: {
+    flexBasis: '31%',
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.muted,
+    gap: 2,
+  },
+  opsExpandedValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  opsExpandedLabel: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+    textTransform: 'capitalize',
+  },
+  // Unassigned pickup strip
+  unassignedStrip: {
+    marginBottom: spacing.md,
+  },
+  unassignedStripHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  unassignedStripTitle: {
+    ...typography.captionSmall,
+    color: colors.foreground,
+    fontWeight: '700',
+    flex: 1,
+  },
+  unassignedStripHint: {
+    fontSize: 10,
+    color: colors.mutedForeground,
+    fontStyle: 'italic',
+  },
+  pickupCancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+    backgroundColor: colors.muted,
+  },
+  pickupCancelText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
+  unassignedChipsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingBottom: 2,
+  },
+  unassignedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    maxWidth: 200,
+  },
+  unassignedChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}10`,
+  },
+  unassignedChipText: {
+    fontSize: 12,
+    color: colors.foreground,
+    flexShrink: 1,
+  },
+  unassignedChipDur: {
+    fontSize: 10,
+    color: colors.mutedForeground,
+    fontWeight: '600',
+  },
+  // Timeline
+  timelineCard: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    marginHorizontal: -responsivePadding,
+  },
+  timelineRulerRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.muted,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  timelineRulerCorner: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  timelineRuler: {
+    flexDirection: 'row',
+  },
+  timelineRulerCell: {
+    width: TIMELINE_HOUR_WIDTH,
+    paddingVertical: spacing.xs,
+    paddingLeft: 4,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+  },
+  timelineRulerText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    height: TIMELINE_ROW_HEIGHT,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  timelineLabel: {
+    width: TIMELINE_LABEL_WIDTH,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.xs,
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  timelineLabelIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timelineLabelName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.foreground,
+  },
+  timelineLabelSub: {
+    fontSize: 10,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+  timelineGrid: {
+    width: TIMELINE_GRID_WIDTH,
+    height: TIMELINE_ROW_HEIGHT,
+    position: 'relative',
+  },
+  timelineGridline: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: colors.border,
+    opacity: 0.5,
+  },
+  timelineDropCell: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    width: TIMELINE_HOUR_WIDTH - 2,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}08`,
+  },
+  timelineBlock: {
+    position: 'absolute',
+    top: 6,
+    bottom: 6,
+    borderRadius: radius.sm,
+    borderLeftWidth: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    overflow: 'hidden',
+    justifyContent: 'center',
+  },
+  timelineBlockTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  timelineBlockMeta: {
+    fontSize: 9,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+  timelineEmptyHint: {
+    position: 'absolute',
+    left: spacing.md,
+    top: '50%',
+    marginTop: -7,
+    fontSize: 10,
+    color: colors.mutedForeground,
+    fontStyle: 'italic',
+  },
+  // Kanban nav chips
+  kanbanNavRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingHorizontal: 2,
+    marginBottom: spacing.sm,
+  },
+  kanbanNavChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  kanbanNavChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  kanbanNavCount: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: radius.sm,
+    minWidth: 18,
+    alignItems: 'center',
+  },
+  kanbanNavCountText: {
+    fontSize: 10,
+    fontWeight: '800',
   },
 });
