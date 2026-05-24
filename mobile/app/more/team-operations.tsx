@@ -148,7 +148,7 @@ interface TeamMemberTimeOff {
   notes?: string;
 }
 
-type TabType = 'live' | 'admin' | 'scheduling' | 'performance';
+type TabType = 'live' | 'scheduling' | 'performance';
 type LiveViewMode = 'status' | 'activity' | 'map';
 
 // Cairns-area default to match demo data, but will dynamically center on team members
@@ -203,6 +203,17 @@ function safeDateDistance(dateStr: string | undefined | null): string {
   } catch { return ''; }
 }
 
+function formatRelativeAgo(d: Date | null): string {
+  if (!d) return 'never';
+  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 5) return 'just now';
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  return `${h}h ago`;
+}
+
 export default function TeamOperationsScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -240,6 +251,13 @@ export default function TeamOperationsScreen() {
   const [timeOffEnd, setTimeOffEnd] = useState('');
   const [timeOffReason, setTimeOffReason] = useState('annual_leave');
   const [timeOffNotes, setTimeOffNotes] = useState('');
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [now, setNow] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   const isOwnerOrManager = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'manager';
 
@@ -276,6 +294,7 @@ export default function TeamOperationsScreen() {
       if (Array.isArray(activityRes.data)) setActivityFeed(activityRes.data);
       if (Array.isArray(jobsRes.data)) setJobs(jobsRes.data);
       if (Array.isArray(timeOffRes.data)) setTimeOffRequests(timeOffRes.data);
+      setLastSyncedAt(new Date());
     } catch (error) {
       console.error('Error fetching team data:', error);
     } finally {
@@ -508,7 +527,6 @@ export default function TeamOperationsScreen() {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar} contentContainerStyle={styles.tabBarContent}>
       {[
         { key: 'live' as TabType, icon: 'activity' as const, label: 'Live Ops' },
-        ...(isOwnerOrManager ? [{ key: 'admin' as TabType, icon: 'users' as const, label: 'Team Admin' }] : []),
         { key: 'scheduling' as TabType, icon: 'calendar' as const, label: 'Scheduling' },
         { key: 'performance' as TabType, icon: 'trending-up' as const, label: 'Performance' },
       ].map(tab => {
@@ -771,29 +789,29 @@ export default function TeamOperationsScreen() {
       >
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <View style={[styles.statCardIcon, { backgroundColor: 'rgba(34,197,94,0.1)' }]}>
-              <Feather name="circle" size={20} color="#22c55e" />
+            <View style={[styles.statCardIcon, { backgroundColor: `${colors.success}15` }]}>
+              <Feather name="circle" size={20} color={colors.success} />
             </View>
             <Text style={styles.statCardValue}>{onlineCount}</Text>
             <Text style={styles.statCardLabel}>Online Now</Text>
           </View>
           <View style={styles.statCard}>
-            <View style={[styles.statCardIcon, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-              <Feather name="users" size={20} color="#3b82f6" />
+            <View style={[styles.statCardIcon, { backgroundColor: `${colors.primary}15` }]}>
+              <Feather name="users" size={20} color={colors.primary} />
             </View>
             <Text style={styles.statCardValue}>{acceptedMembers.length}</Text>
             <Text style={styles.statCardLabel}>Team</Text>
           </View>
           <View style={styles.statCard}>
-            <View style={[styles.statCardIcon, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-              <Feather name="tool" size={20} color="#3b82f6" />
+            <View style={[styles.statCardIcon, { backgroundColor: `${colors.info || colors.primary}15` }]}>
+              <Feather name="tool" size={20} color={colors.info || colors.primary} />
             </View>
             <Text style={styles.statCardValue}>{onJobCount}</Text>
             <Text style={styles.statCardLabel}>On Job</Text>
           </View>
           <View style={styles.statCard}>
-            <View style={[styles.statCardIcon, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
-              <Feather name="briefcase" size={20} color="#E8862E" />
+            <View style={[styles.statCardIcon, { backgroundColor: `${colors.warning}15` }]}>
+              <Feather name="briefcase" size={20} color={colors.warning} />
             </View>
             <Text style={styles.statCardValue}>{unassignedJobs.length}</Text>
             <Text style={styles.statCardLabel}>Unassigned</Text>
@@ -847,58 +865,6 @@ export default function TeamOperationsScreen() {
     );
   };
 
-  const renderTeamAdminTab = () => (
-    <ScrollView
-      style={styles.scrollContent}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <View style={[styles.statIcon, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-            <Feather name="users" size={18} color="#3b82f6" />
-          </View>
-          <Text style={styles.statValue}>{acceptedMembers.length}</Text>
-          <Text style={styles.statLabel}>Active</Text>
-        </View>
-        <View style={styles.statItem}>
-          <View style={[styles.statIcon, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-            <Feather name="mail" size={18} color="#f59e0b" />
-          </View>
-          <Text style={styles.statValue}>{teamMembers.filter(m => m.inviteStatus === 'pending').length}</Text>
-          <Text style={styles.statLabel}>Pending</Text>
-        </View>
-      </View>
-
-      <View style={styles.actionRow}>
-        <PressableRow style={styles.actionButton} onPress={() => router.push('/more/team-management')} >
-          <Feather name="user-plus" size={20} color={colors.primary} />
-          <Text style={styles.actionButtonText}>Manage Team</Text>
-        </PressableRow>
-      </View>
-
-      <Text style={styles.sectionTitle}>Team Members</Text>
-      {acceptedMembers.map(member => (
-        <PressableRow key={member.id} style={styles.memberCard} onPress={() => router.push(`/more/team-management?memberId=${member.id}`)} >
-          <TeamAvatar
-            firstName={member.firstName}
-            lastName={member.lastName}
-            email={member.email}
-            userId={String(member.userId)}
-            profileImageUrl={member.profileImageUrl}
-            themeColor={(member as any).themeColor}
-            size={40}
-          />
-          <View style={styles.memberInfo}>
-            <Text style={styles.memberName}>{member.firstName} {member.lastName}</Text>
-            <Text style={styles.memberStatus}>{member.email}</Text>
-          </View>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>{member.roleName || member.role}</Text>
-          </View>
-        </PressableRow>
-      ))}
-    </ScrollView>
-  );
 
   const renderSchedulingTab = () => (
     <ScrollView
@@ -1022,32 +988,32 @@ export default function TeamOperationsScreen() {
 
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
-          <View style={[styles.statCardIcon, { backgroundColor: 'rgba(34,197,94,0.1)' }]}>
-            <Feather name="check-circle" size={20} color="#22c55e" />
+          <View style={[styles.statCardIcon, { backgroundColor: `${colors.success}15` }]}>
+            <Feather name="check-circle" size={20} color={colors.success} />
           </View>
           <Text style={styles.statCardValue}>{totalCompleted}</Text>
           <Text style={styles.statCardLabel}>Jobs Completed</Text>
         </View>
         <View style={styles.statCard}>
-          <View style={[styles.statCardIcon, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-            <Feather name="clock" size={20} color="#3b82f6" />
+          <View style={[styles.statCardIcon, { backgroundColor: `${colors.primary}15` }]}>
+            <Feather name="clock" size={20} color={colors.primary} />
           </View>
           <Text style={styles.statCardValue}>{totalInProgress}</Text>
           <Text style={styles.statCardLabel}>In Progress</Text>
         </View>
         <View style={styles.statCard}>
-          <View style={[styles.statCardIcon, { backgroundColor: 'rgba(168,85,247,0.1)' }]}>
-            <Feather name="trending-up" size={20} color="#a855f7" />
+          <View style={[styles.statCardIcon, { backgroundColor: `${colors.success}15` }]}>
+            <Feather name="trending-up" size={20} color={colors.success} />
           </View>
           <Text style={styles.statCardValue}>{avgCompletionRate}%</Text>
           <Text style={styles.statCardLabel}>Avg Completion</Text>
         </View>
         <View style={styles.statCard}>
-          <View style={[styles.statCardIcon, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-            <Feather name="star" size={20} color="#f59e0b" />
+          <View style={[styles.statCardIcon, { backgroundColor: `${colors.warning}15` }]}>
+            <Feather name="briefcase" size={20} color={colors.warning} />
           </View>
-          <Text style={styles.statCardValue}>-</Text>
-          <Text style={styles.statCardLabel}>Avg Rating</Text>
+          <Text style={styles.statCardValue}>{unassignedJobs.length}</Text>
+          <Text style={styles.statCardLabel}>Unassigned</Text>
         </View>
       </View>
 
@@ -1112,12 +1078,26 @@ export default function TeamOperationsScreen() {
           headerShown: false,
         }}
       />
-      <View style={styles.container}>
-        <View style={[styles.tabletHeader, { paddingTop: insets.top + 4 }]}>
-          <View>
-            <Text style={styles.tabletTitle}>Team Operations</Text>
-            <Text style={styles.tabletSubtitle}>{acceptedMembers.length} team members</Text>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.pageHeader}>
+          <PressableRow onPress={() => router.back()} style={styles.backButton}>
+            <Feather name="chevron-left" size={22} color={colors.foreground} />
+          </PressableRow>
+          <View style={styles.headerLeft}>
+            <Text style={styles.pageTitle}>Team Operations</Text>
           </View>
+          <View style={styles.headerDatePill}>
+            <Text style={styles.headerDatePillText}>{format(now, 'EEE d MMM')}</Text>
+          </View>
+          <PressableRow onPress={onRefresh} style={styles.refreshBtn} accessibilityLabel="Refresh data">
+            <Feather name="refresh-cw" size={16} color={colors.mutedForeground} />
+          </PressableRow>
+        </View>
+        <View style={styles.syncStampRow}>
+          <View style={[styles.syncDot, { backgroundColor: refreshing ? colors.warning : colors.success }]} />
+          <Text style={styles.syncStampText}>
+            {refreshing ? 'Syncing…' : `Updated ${formatRelativeAgo(lastSyncedAt)} · ${acceptedMembers.length} team member${acceptedMembers.length === 1 ? '' : 's'}`}
+          </Text>
         </View>
         
         {/* Upgrade banner for non-team subscribers */}
@@ -1138,7 +1118,6 @@ export default function TeamOperationsScreen() {
         
         {renderTabs()}
         {activeTab === 'live' && renderLiveOpsTab()}
-        {activeTab === 'admin' && isOwnerOrManager && renderTeamAdminTab()}
         {activeTab === 'scheduling' && renderSchedulingTab()}
         {activeTab === 'performance' && renderPerformanceTab()}
       </View>
@@ -1287,6 +1266,66 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     backgroundColor: colors.background,
     paddingHorizontal: isTabletDevice ? spacing.lg : 0,
   },
+  pageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: responsivePadding,
+    paddingVertical: spacing.sm,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.muted,
+  },
+  headerLeft: {
+    flex: 1,
+    marginLeft: spacing.xs,
+  },
+  pageTitle: {
+    ...typography.largeTitle,
+    color: colors.foreground,
+  },
+  headerDatePill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.muted,
+  },
+  headerDatePillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  refreshBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.muted,
+  },
+  syncStampRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: responsivePadding,
+    paddingBottom: spacing.sm,
+  },
+  syncDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  syncStampText: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+    fontWeight: '500',
+  },
+  // Legacy aliases (kept to avoid touching every reference)
   tabletHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -672,7 +672,7 @@ export default function CalendarScreen() {
               <Text style={styles.pageSubtitle}>Schedule and track your jobs</Text>
             </View>
             <View style={styles.headerActions}>
-              <PressableRow style={styles.dispatchButton} onPress={() => router.push('/more/team-ops' as any)} >
+              <PressableRow style={styles.dispatchButton} onPress={() => router.push('/more/dispatch-board' as any)} >
                 <Feather name="columns" size={16} color={colors.foreground} />
               </PressableRow>
               <PressableRow style={styles.scheduleButton} onPress={handleScheduleJob} >
