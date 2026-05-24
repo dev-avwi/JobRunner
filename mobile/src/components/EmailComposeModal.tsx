@@ -352,7 +352,7 @@ export function EmailComposeModal({
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           {tabs.map((tab) => (
-            <PressableRow key={tab.key} style={[styles.tab, activeTab === tab.key && styles.tabActive]} onPress={() => setActiveTab(tab.key)} >
+            <TouchableOpacity key={tab.key} activeOpacity={0.7} style={[styles.tab, activeTab === tab.key && styles.tabActive]} onPress={() => setActiveTab(tab.key)} >
               <Feather
                 name={tab.icon}
                 size={16}
@@ -366,7 +366,7 @@ export function EmailComposeModal({
               >
                 {tab.label}
               </Text>
-            </PressableRow>
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -533,7 +533,7 @@ export function EmailComposeModal({
         <View style={styles.footer}>
           <View style={styles.footerButtons}>
             {/* Primary: Use JobRunner (backend send) */}
-            <PressableRow onPress={handleSend} disabled={isSending || isOpeningEmailApp || !subject.trim() || !message.trim()} style={[ styles.footerButton, styles.footerButtonPrimary, (isSending || !subject.trim() || !message.trim()) && styles.footerButtonDisabled ]} >
+            <TouchableOpacity activeOpacity={0.8} onPress={handleSend} disabled={isSending || isOpeningEmailApp || !subject.trim() || !message.trim()} style={[ styles.footerButton, styles.footerButtonPrimary, (isSending || !subject.trim() || !message.trim()) && styles.footerButtonDisabled ]} >
               {isSending ? (
                 <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
@@ -542,10 +542,10 @@ export function EmailComposeModal({
                   <Text style={styles.footerButtonPrimaryText}>Use JobRunner</Text>
                 </>
               )}
-            </PressableRow>
+            </TouchableOpacity>
 
             {/* Secondary: Open with Email App */}
-            <PressableRow onPress={showEmailAppOptions} disabled={isSending || isOpeningEmailApp || !subject.trim() || !message.trim()} style={[ styles.footerButton, styles.footerButtonSecondary, (isOpeningEmailApp || !subject.trim() || !message.trim()) && styles.footerButtonDisabled ]} >
+            <TouchableOpacity activeOpacity={0.8} onPress={showEmailAppOptions} disabled={isSending || isOpeningEmailApp || !subject.trim() || !message.trim()} style={[ styles.footerButton, styles.footerButtonSecondary, (isOpeningEmailApp || !subject.trim() || !message.trim()) && styles.footerButtonDisabled ]} >
               {isOpeningEmailApp ? (
                 <ActivityIndicator size="small" color={colors.foreground} />
               ) : (
@@ -554,7 +554,7 @@ export function EmailComposeModal({
                   <Text style={styles.footerButtonSecondaryText}>Open Email App</Text>
                 </>
               )}
-            </PressableRow>
+            </TouchableOpacity>
           </View>
           <Text style={styles.footerHint}>
             JobRunner sends automatically with PDF attached. Email App lets you review first.
