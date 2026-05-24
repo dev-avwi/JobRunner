@@ -1971,20 +1971,18 @@ export default function CollectScreen() {
     } else {
       setShowInvoicePickerModal(false);
       setPickerSearch('');
-      setPendingPaymentMethod(pendingPaymentMethod);
       setCustomAmountValue('');
       setCustomAmountDescription(job.title || '');
-      setShowCustomAmountModal(true);
+      setTimeout(() => setShowCustomAmountModal(true), 400);
     }
   };
 
   const handleCustomAmountFromPicker = () => {
     setShowInvoicePickerModal(false);
     setPickerSearch('');
-    
     setCustomAmountValue('');
     setCustomAmountDescription('');
-    setShowCustomAmountModal(true);
+    setTimeout(() => setShowCustomAmountModal(true), 400);
   };
   
   const handleSubmitCustomAmount = () => {

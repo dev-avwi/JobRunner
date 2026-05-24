@@ -204,6 +204,11 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
         ]).start(({ finished }) => {
           if (finished) setMounted(false);
         });
+        // Safety net: even if the close animation is interrupted (which would
+        // skip the `finished` callback), force-unmount after the animation
+        // window so the invisible backdrop can't keep eating touches.
+        const safetyUnmount = setTimeout(() => setMounted(false), 280);
+        return () => clearTimeout(safetyUnmount);
       }
     }, [isVisible, screenHeight, translateY, backdropOpacity, mounted]);
 
