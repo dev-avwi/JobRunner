@@ -19,7 +19,6 @@ import api, { API_URL } from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useAuthStore } from '../../src/lib/store';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 
 // Conditionally import Apple Authentication - only available in dev/production builds, not Expo Go
@@ -279,23 +278,21 @@ export default function RegisterScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <LinearGradient
-          colors={['#2563eb', '#7c3bbf', '#E8862E']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          <View style={styles.brandBadge}>
+        <View style={styles.hero}>
+          <View style={styles.brandRow}>
             <Image 
               source={require('../../assets/jobrunner-logo.png')}
               style={styles.brandLogo}
               resizeMode="contain"
             />
+            <Text style={styles.brandName}>
+              <Text style={styles.brandJob}>Job</Text>
+              <Text style={styles.brandRunner}>Runner</Text>
+            </Text>
           </View>
-          <Text style={styles.brandName}>JobRunner</Text>
           <Text style={styles.heroTitle}>Create your account</Text>
           <Text style={styles.heroSubtitle}>Get started in under 2 minutes</Text>
-        </LinearGradient>
+        </View>
 
         <View style={[styles.card, { paddingBottom: bottomInset + 24 }]}>
           <View style={styles.form}>
@@ -521,55 +518,53 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexGrow: 1,
   },
   hero: {
+    backgroundColor: '#0f172a',
     paddingTop: 72,
-    paddingHorizontal: 28,
-    paddingBottom: 56,
-    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 44,
   },
-  brandBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    backgroundColor: '#ffffff',
+  brandRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 6,
+    gap: 8,
+    marginBottom: 32,
   },
   brandLogo: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
   },
   brandName: {
-    color: '#ffffff',
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.5,
-    marginBottom: 28,
+  },
+  brandJob: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  brandRunner: {
+    color: '#E8862E',
+    fontSize: 22,
+    fontWeight: '700',
   },
   heroTitle: {
     color: '#ffffff',
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '700',
     letterSpacing: -0.8,
-    textAlign: 'center',
     marginBottom: 8,
   },
   heroSubtitle: {
-    color: 'rgba(255,255,255,0.88)',
+    color: 'rgba(255,255,255,0.72)',
     fontSize: 15,
     lineHeight: 21,
-    textAlign: 'center',
   },
   card: {
     backgroundColor: colors.background,
-    marginTop: -28,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    marginTop: -20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 24,
