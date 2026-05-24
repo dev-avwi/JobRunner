@@ -787,36 +787,32 @@ export default function TeamOperationsScreen() {
         style={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <View style={[styles.statCardIcon, { backgroundColor: `${colors.success}15` }]}>
-              <Feather name="circle" size={20} color={colors.success} />
+        <View style={styles.statBar}>
+          {[
+            { value: onlineCount, label: 'Online', color: colors.info || colors.primary },
+            { value: onJobCount, label: 'On Job', color: colors.success },
+            { value: unassignedJobs.length, label: 'Unassigned', color: colors.warning },
+            { value: acceptedMembers.length, label: 'Team', color: colors.foreground },
+          ].map(s => (
+            <View key={s.label} style={styles.statBarItem}>
+              <Text style={[styles.statBarValue, { color: s.color }]}>{s.value}</Text>
+              <Text style={styles.statBarLabel}>{s.label}</Text>
             </View>
-            <Text style={styles.statCardValue}>{onlineCount}</Text>
-            <Text style={styles.statCardLabel}>Online Now</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statCardIcon, { backgroundColor: `${colors.primary}15` }]}>
-              <Feather name="users" size={20} color={colors.primary} />
-            </View>
-            <Text style={styles.statCardValue}>{acceptedMembers.length}</Text>
-            <Text style={styles.statCardLabel}>Team</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statCardIcon, { backgroundColor: `${colors.info || colors.primary}15` }]}>
-              <Feather name="tool" size={20} color={colors.info || colors.primary} />
-            </View>
-            <Text style={styles.statCardValue}>{onJobCount}</Text>
-            <Text style={styles.statCardLabel}>On Job</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statCardIcon, { backgroundColor: `${colors.warning}15` }]}>
-              <Feather name="briefcase" size={20} color={colors.warning} />
-            </View>
-            <Text style={styles.statCardValue}>{unassignedJobs.length}</Text>
-            <Text style={styles.statCardLabel}>Unassigned</Text>
-          </View>
+          ))}
         </View>
+
+        {unassignedJobs.length > 0 && (
+          <PressableRow style={styles.alertBanner} onPress={() => router.push('/more/dispatch-board' as any)}>
+            <View style={[styles.alertBannerIcon, { backgroundColor: colors.warning }]}>
+              <Feather name="inbox" size={18} color={colors.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.alertBannerTitle}>{unassignedJobs.length} jobs need assigning</Text>
+              <Text style={styles.alertBannerSub}>Tap to open Dispatch Board</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={colors.warning} />
+          </PressableRow>
+        )}
 
         {renderLiveViewToggle()}
 
@@ -984,37 +980,18 @@ export default function TeamOperationsScreen() {
       style={styles.scrollContent}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={styles.sectionTitle}>Team Performance</Text>
-
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <View style={[styles.statCardIcon, { backgroundColor: `${colors.success}15` }]}>
-            <Feather name="check-circle" size={20} color={colors.success} />
+      <View style={styles.statBar}>
+        {[
+          { value: totalCompleted, label: 'Done', color: colors.success },
+          { value: totalInProgress, label: 'Active', color: colors.info || colors.primary },
+          { value: `${avgCompletionRate}%`, label: 'Avg Rate', color: colors.foreground },
+          { value: unassignedJobs.length, label: 'Unassigned', color: colors.warning },
+        ].map(s => (
+          <View key={s.label} style={styles.statBarItem}>
+            <Text style={[styles.statBarValue, { color: s.color }]}>{s.value}</Text>
+            <Text style={styles.statBarLabel}>{s.label}</Text>
           </View>
-          <Text style={styles.statCardValue}>{totalCompleted}</Text>
-          <Text style={styles.statCardLabel}>Jobs Completed</Text>
-        </View>
-        <View style={styles.statCard}>
-          <View style={[styles.statCardIcon, { backgroundColor: `${colors.primary}15` }]}>
-            <Feather name="clock" size={20} color={colors.primary} />
-          </View>
-          <Text style={styles.statCardValue}>{totalInProgress}</Text>
-          <Text style={styles.statCardLabel}>In Progress</Text>
-        </View>
-        <View style={styles.statCard}>
-          <View style={[styles.statCardIcon, { backgroundColor: `${colors.success}15` }]}>
-            <Feather name="trending-up" size={20} color={colors.success} />
-          </View>
-          <Text style={styles.statCardValue}>{avgCompletionRate}%</Text>
-          <Text style={styles.statCardLabel}>Avg Completion</Text>
-        </View>
-        <View style={styles.statCard}>
-          <View style={[styles.statCardIcon, { backgroundColor: `${colors.warning}15` }]}>
-            <Feather name="briefcase" size={20} color={colors.warning} />
-          </View>
-          <Text style={styles.statCardValue}>{unassignedJobs.length}</Text>
-          <Text style={styles.statCardLabel}>Unassigned</Text>
-        </View>
+        ))}
       </View>
 
       <Text style={styles.sectionTitle}>Individual Performance</Text>
@@ -1324,6 +1301,53 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     fontSize: 11,
     color: colors.mutedForeground,
     fontWeight: '500',
+  },
+  statBar: {
+    flexDirection: 'row',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  statBarItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: spacing.xxs,
+  },
+  statBarValue: {
+    ...typography.largeTitle,
+    fontWeight: '700',
+  },
+  statBarLabel: {
+    ...typography.label,
+    color: colors.mutedForeground,
+  },
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: `${colors.warning}12`,
+    borderWidth: 1,
+    borderColor: `${colors.warning}30`,
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  alertBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertBannerTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  alertBannerSub: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    marginTop: 2,
   },
   // Legacy aliases (kept to avoid touching every reference)
   tabletHeader: {
