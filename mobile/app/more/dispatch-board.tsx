@@ -232,6 +232,70 @@ export default function DispatchBoardScreen() {
     return { unassigned, assigned, en_route: enRoute, in_progress: inProgress, completed };
   }, [activeJobs, jobs]);
 
+  const weekDays = useMemo(() => {
+    const anchor = new Date();
+    const days: Date[] = [];
+    for (let i = -2; i <= 4; i++) {
+      const d = new Date(anchor);
+      d.setDate(anchor.getDate() + i);
+      d.setHours(0, 0, 0, 0);
+      days.push(d);
+    }
+    return days;
+  }, []);
+
+  const liveOpsData = useMemo(() => {
+    const memberStatus = new Map<string, { status: 'on_job' | 'en_route' | 'available'; job?: JobData }>();
+    teamMembers.forEach(m => memberStatus.set(m.userId, { status: 'available' }));
+    activeJobs.forEach(j => {
+      if (!j.assignedTo) return;
+      const entry = memberStatus.get(j.assignedTo);
+      if (!entry) return;
+      if (j.status === 'in_progress' || j.status === 'working') {
+        entry.status = 'on_job';
+        entry.job = j;
+      } else if ((j.status === 'en_route' || j.status === 'on_my_way') && entry.status === 'available') {
+        entry.status = 'en_route';
+        entry.job = j;
+      }
+    });
+    const list = teamMembers.map(m => ({ member: m, ...(memberStatus.get(m.userId) || { status: 'available' as const }) }));
+    const onJob = list.filter(l => l.status === 'on_job').length;
+    const enRoute = list.filter(l => l.status === 'en_route').length;
+    const available = list.filter(l => l.status === 'available').length;
+    const unassigned = activeJobs.filter(j => !j.assignedTo).length;
+    return { list, online: teamMembers.length, onJob, enRoute, available, unassigned, total: activeJobs.length };
+  }, [teamMembers, activeJobs]);
+
+  const performanceData = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now);
+    if (perfPeriod === 'today') start.setHours(0, 0, 0, 0);
+    else if (perfPeriod === 'week') { start.setDate(now.getDate() - 7); start.setHours(0, 0, 0, 0); }
+    else { start.setMonth(now.getMonth() - 1); start.setHours(0, 0, 0, 0); }
+
+    const inPeriod = jobs.filter(j => {
+      if (!j.scheduledAt) return false;
+      const d = parseISO(j.scheduledAt);
+      return d >= start && d <= now;
+    });
+    const completed = inPeriod.filter(j => j.status === 'completed' || j.status === 'done').length;
+    const activeCount = inPeriod.filter(j => j.status === 'in_progress' || j.status === 'working' || j.status === 'en_route').length;
+    const totalPeriod = inPeriod.length;
+    const onTimeRate = totalPeriod > 0 ? Math.round((completed / totalPeriod) * 100) : 0;
+    const unassignedPeriod = inPeriod.filter(j => !j.assignedTo).length;
+
+    const perMember = teamMembers.map(m => {
+      const memberJobs = inPeriod.filter(j => j.assignedTo === m.userId);
+      const memDone = memberJobs.filter(j => j.status === 'completed' || j.status === 'done').length;
+      const memActive = memberJobs.filter(j => j.status === 'in_progress' || j.status === 'working' || j.status === 'en_route').length;
+      const score = memberJobs.length > 0 ? Math.round((memDone / memberJobs.length) * 100) : 0;
+      return { member: m, done: memDone, active: memActive, total: memberJobs.length, score };
+    }).sort((a, b) => b.done - a.done || b.score - a.score);
+
+    return { completed, activeCount, totalPeriod, onTimeRate, unassignedPeriod, perMember };
+  }, [jobs, teamMembers, perfPeriod]);
+
   const scheduleData = useMemo(() => {
     const memberMap = new Map<string, { member: TeamMember; jobs: JobData[] }>();
 
@@ -447,39 +511,167 @@ export default function DispatchBoardScreen() {
     );
   }
 
-  const renderOpsHealth = () => {
-    const chips: { label: string; value: number; color: string; icon: keyof typeof Feather.glyphMap }[] = [
-      { label: 'conflict', value: opsHealth.conflicts, color: colors.destructive, icon: 'alert-triangle' },
-      { label: 'overdue', value: opsHealth.overdue, color: colors.warning, icon: 'clock' },
-      { label: 'unassigned', value: opsHealth.unassigned, color: colors.warning, icon: 'user-x' },
-      { label: 'today', value: opsHealth.totalToday, color: colors.primary, icon: 'briefcase' },
-      { label: 'in progress', value: opsHealth.inProgress, color: colors.info || '#3b82f6', icon: 'play-circle' },
-      { label: 'done', value: opsHealth.completed, color: colors.success, icon: 'check-circle' },
+  const renderLiveOps = () => {
+    const statusMeta = {
+      on_job: { label: 'On Job', color: colors.info || '#3b82f6' },
+      en_route: { label: 'En Route', color: colors.warning },
+      available: { label: 'Available', color: colors.success },
+    } as const;
+    const stats: { value: number; label: string; color: string }[] = [
+      { value: liveOpsData.online, label: 'Online', color: colors.info || '#3b82f6' },
+      { value: liveOpsData.onJob, label: 'On Job', color: colors.success },
+      { value: liveOpsData.unassigned, label: 'Unassigned', color: colors.warning },
+      { value: liveOpsData.total, label: 'Total', color: colors.foreground },
     ];
     return (
-      <View style={styles.opsCompact}>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => setOpsExpanded(v => !v)} style={styles.opsCompactRow}>
-          <Feather name="activity" size={14} color={colors.primary} />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.opsChipsRow}>
-            {chips.map(c => (
-              <View key={c.label} style={[styles.opsChip, c.value > 0 && { backgroundColor: `${c.color}15` }]}>
-                <Text style={[styles.opsChipValue, { color: c.value > 0 ? c.color : colors.mutedForeground }]}>{c.value}</Text>
-                <Text style={[styles.opsChipLabel, { color: c.value > 0 ? c.color : colors.mutedForeground }]}>{c.label}</Text>
-              </View>
-            ))}
-          </ScrollView>
-          <Feather name={opsExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-        </TouchableOpacity>
-        {opsExpanded && (
-          <View style={styles.opsExpanded}>
-            {chips.map(c => (
-              <View key={c.label} style={[styles.opsExpandedCard, c.value > 0 && { backgroundColor: `${c.color}10`, borderColor: `${c.color}40` }]}>
-                <Feather name={c.icon} size={16} color={c.value > 0 ? c.color : colors.mutedForeground} />
-                <Text style={[styles.opsExpandedValue, { color: c.value > 0 ? c.color : colors.foreground }]}>{c.value}</Text>
-                <Text style={styles.opsExpandedLabel} numberOfLines={1}>{c.label}</Text>
-              </View>
-            ))}
+      <View>
+        <View style={styles.statBar}>
+          {stats.map(s => (
+            <View key={s.label} style={styles.statBarItem}>
+              <Text style={[styles.statBarValue, { color: s.color }]}>{s.value}</Text>
+              <Text style={styles.statBarLabel}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {liveOpsData.unassigned > 0 && (
+          <PressableRow style={styles.alertBanner} onPress={() => setViewMode('schedule')}>
+            <View style={[styles.alertBannerIcon, { backgroundColor: colors.warning }]}>
+              <Feather name="zap" size={18} color={colors.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.alertBannerTitle}>{liveOpsData.unassigned} jobs need assigning</Text>
+              <Text style={styles.alertBannerSub}>Tap to dispatch from queue</Text>
+            </View>
+            <Feather name="arrow-right" size={18} color={colors.warning} />
+          </PressableRow>
+        )}
+
+        <Text style={styles.sectionEyebrow}>On Shift</Text>
+        {liveOpsData.list.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Feather name="users" size={36} color={colors.mutedForeground} />
+            <Text style={styles.emptyStateSubtitle}>No team members on shift</Text>
           </View>
+        ) : (
+          liveOpsData.list.map(({ member, status, job }) => {
+            const meta = statusMeta[status];
+            const subtitle = job
+              ? `${job.title}${job.address ? ` · ${job.address.split(',')[0]}` : ''}`
+              : 'Free · ready for a job';
+            return (
+              <PressableRow
+                key={member.id}
+                style={styles.workerCard}
+                onPress={() => job ? router.push(`/job/${job.id}`) : undefined}
+              >
+                <View style={styles.workerCardAvatarWrap}>
+                  <TeamAvatar
+                    firstName={member.firstName}
+                    lastName={member.lastName}
+                    userId={String(member.userId)}
+                    themeColor={(member as any).themeColor}
+                    size={40}
+                  />
+                  <View style={[styles.workerCardStatusDot, { backgroundColor: meta.color, borderColor: colors.card }]} />
+                </View>
+                <View style={styles.workerCardBody}>
+                  <Text style={styles.workerCardName} numberOfLines={1}>{getMemberName(member)}</Text>
+                  <View style={styles.workerCardMetaRow}>
+                    {job && <Feather name="map-pin" size={11} color={colors.mutedForeground} />}
+                    <Text style={styles.workerCardMeta} numberOfLines={1}>{subtitle}</Text>
+                  </View>
+                </View>
+                <View style={[styles.workerStatusPill, { backgroundColor: `${meta.color}18` }]}>
+                  <Text style={[styles.workerStatusPillText, { color: meta.color }]}>{meta.label}</Text>
+                </View>
+              </PressableRow>
+            );
+          })
+        )}
+      </View>
+    );
+  };
+
+  const renderPerformance = () => {
+    const periods: { key: PerfPeriod; label: string }[] = [
+      { key: 'today', label: 'Today' },
+      { key: 'week', label: 'This Week' },
+      { key: 'month', label: 'This Month' },
+    ];
+    const metrics: { value: string; label: string; color: string; icon: keyof typeof Feather.glyphMap }[] = [
+      { value: String(performanceData.completed), label: 'Jobs Completed', color: colors.success, icon: 'check-circle' },
+      { value: `${performanceData.onTimeRate}%`, label: 'Completion Rate', color: colors.info || '#3b82f6', icon: 'trending-up' },
+      { value: String(performanceData.activeCount), label: 'Active Jobs', color: colors.warning, icon: 'play-circle' },
+      { value: String(performanceData.unassignedPeriod), label: 'Unassigned', color: colors.destructive, icon: 'inbox' },
+    ];
+    return (
+      <View>
+        <View style={styles.periodRow}>
+          {periods.map(p => {
+            const active = perfPeriod === p.key;
+            return (
+              <TouchableOpacity
+                key={p.key}
+                activeOpacity={0.7}
+                onPress={() => setPerfPeriod(p.key)}
+                style={[styles.periodPill, active && styles.periodPillActive]}
+              >
+                <Text style={[styles.periodPillText, active && styles.periodPillTextActive]}>{p.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View style={styles.metricGrid}>
+          {metrics.map(m => (
+            <View key={m.label} style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Feather name={m.icon} size={14} color={m.color} />
+                <Text style={styles.metricLabel}>{m.label}</Text>
+              </View>
+              <Text style={[styles.metricValue, { color: m.color }]}>{m.value}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={styles.sectionEyebrow}>Individual</Text>
+        {performanceData.perMember.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Feather name="bar-chart-2" size={36} color={colors.mutedForeground} />
+            <Text style={styles.emptyStateSubtitle}>No team members yet</Text>
+          </View>
+        ) : (
+          performanceData.perMember.map(({ member, done, active, total, score }) => (
+            <View key={member.id} style={styles.perfMemberCard}>
+              <View style={styles.perfMemberHeader}>
+                <TeamAvatar
+                  firstName={member.firstName}
+                  lastName={member.lastName}
+                  userId={String(member.userId)}
+                  themeColor={(member as any).themeColor}
+                  size={36}
+                />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.perfMemberName} numberOfLines={1}>{getMemberName(member)}</Text>
+                  {member.roleName ? <Text style={styles.perfMemberRole} numberOfLines={1}>{member.roleName}</Text> : null}
+                </View>
+                <Text style={[styles.perfMemberScore, { color: score >= 80 ? colors.success : score >= 50 ? colors.warning : colors.mutedForeground }]}>
+                  {total > 0 ? `${score}%` : '—'}
+                </Text>
+              </View>
+              <View style={styles.perfBarTrack}>
+                <View style={[styles.perfBarFill, { width: `${score}%`, backgroundColor: score >= 80 ? colors.success : score >= 50 ? colors.warning : colors.mutedForeground }]} />
+              </View>
+              <View style={styles.perfStatsRow}>
+                <Text style={styles.perfStat}><Text style={styles.perfStatStrong}>{done}</Text> done</Text>
+                <Text style={styles.perfStatDot}>·</Text>
+                <Text style={styles.perfStat}><Text style={styles.perfStatStrong}>{active}</Text> active</Text>
+                <Text style={styles.perfStatDot}>·</Text>
+                <Text style={styles.perfStat}><Text style={styles.perfStatStrong}>{total}</Text> total</Text>
+              </View>
+            </View>
+          ))
         )}
       </View>
     );
@@ -649,56 +841,35 @@ export default function DispatchBoardScreen() {
     const hasAnyJobs = scheduleData.unassignedJobs.length > 0 || memberRows.some(([, v]) => v.jobs.length > 0);
     return (
       <View>
-        <View style={styles.dateNav}>
-          <PressableRow onPress={() => navigateDateBy(-1)} style={styles.dateNavButton} >
-            <Feather name="chevron-left" size={20} color={colors.foreground} />
-          </PressableRow>
-          <PressableRow onPress={() => setSelectedDate(new Date())} >
-            <Text style={styles.dateNavTitle}>{format(selectedDate, 'EEE, d MMM yyyy')}</Text>
-            {isToday(selectedDate) && (
-              <Text style={styles.dateNavToday}>Today</Text>
-            )}
-          </PressableRow>
-          <PressableRow onPress={() => navigateDateBy(1)} style={styles.dateNavButton} >
-            <Feather name="chevron-right" size={20} color={colors.foreground} />
-          </PressableRow>
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.weekStripRow}
+        >
+          {weekDays.map(d => {
+            const sel = format(d, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
+            return (
+              <TouchableOpacity
+                key={d.toISOString()}
+                activeOpacity={0.7}
+                onPress={() => setSelectedDate(d)}
+                style={[styles.weekDay, sel && styles.weekDaySel]}
+              >
+                <Text style={[styles.weekDayDow, sel && styles.weekDayDowSel]}>{format(d, 'EEE').toUpperCase()}</Text>
+                <Text style={[styles.weekDayDom, sel && styles.weekDayDomSel]}>{format(d, 'd')}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
-        {/* Unassigned strip — tap to pick up, then tap a slot on a worker lane */}
-        {scheduleData.unassignedJobs.length > 0 && (
-          <View style={styles.unassignedStrip}>
-            <View style={styles.unassignedStripHeader}>
-              <View style={[styles.scheduleSectionDot, { backgroundColor: colors.destructive }]} />
-              <Text style={styles.unassignedStripTitle}>Unassigned ({scheduleData.unassignedJobs.length})</Text>
-              {pickup ? (
-                <TouchableOpacity onPress={() => setPickup(null)} style={styles.pickupCancelBtn} activeOpacity={0.7}>
-                  <Feather name="x" size={12} color={colors.mutedForeground} />
-                  <Text style={styles.pickupCancelText}>Cancel</Text>
-                </TouchableOpacity>
-              ) : (
-                <Text style={styles.unassignedStripHint}>Tap a job, then a time slot</Text>
-              )}
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.unassignedChipsRow}>
-              {scheduleData.unassignedJobs.map(j => {
-                const active = pickup?.id === j.id;
-                return (
-                  <TouchableOpacity
-                    key={j.id}
-                    activeOpacity={0.7}
-                    onPress={() => setPickup(active ? null : j)}
-                    onLongPress={() => openAssignModal(j)}
-                    style={[styles.unassignedChip, active && styles.unassignedChipActive]}
-                  >
-                    <Feather name={active ? 'check-circle' : 'package'} size={12} color={active ? colors.primary : colors.mutedForeground} />
-                    <Text style={[styles.unassignedChipText, active && { color: colors.primary, fontWeight: '700' }]} numberOfLines={1}>{j.title}</Text>
-                    {j.estimatedDuration ? (
-                      <Text style={styles.unassignedChipDur}>{j.estimatedDuration}m</Text>
-                    ) : null}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+        {/* Pickup hint */}
+        {pickup && (
+          <View style={styles.pickupBar}>
+            <Feather name="package" size={14} color={colors.primary} />
+            <Text style={styles.pickupBarText} numberOfLines={1}>Holding <Text style={{ fontWeight: '700' }}>{pickup.title}</Text> — tap a time slot</Text>
+            <TouchableOpacity onPress={() => setPickup(null)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="x" size={14} color={colors.mutedForeground} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -727,6 +898,41 @@ export default function DispatchBoardScreen() {
                 {memberRows.map(([, { member, jobs: memberJobs }]) => renderTimelineRow(member, memberJobs))}
               </View>
             </ScrollView>
+          </View>
+        )}
+
+        {/* Unassigned queue card */}
+        {scheduleData.unassignedJobs.length > 0 && (
+          <View style={styles.queueCard}>
+            <View style={styles.queueCardHeader}>
+              <Text style={styles.queueCardTitle}>Unassigned Queue · {scheduleData.unassignedJobs.length} job{scheduleData.unassignedJobs.length === 1 ? '' : 's'}</Text>
+              <Text style={styles.queueCardHint}>Tap to hold</Text>
+            </View>
+            {scheduleData.unassignedJobs.map(j => {
+              const held = pickup?.id === j.id;
+              return (
+                <View key={j.id} style={[styles.queueItem, held && styles.queueItemHeld]}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setPickup(held ? null : j)}
+                    style={styles.queueItemMain}
+                  >
+                    <Text style={styles.queueItemTitle} numberOfLines={1}>{j.title}</Text>
+                    <Text style={styles.queueItemMeta} numberOfLines={1}>
+                      {[j.address?.split(',')[0], j.estimatedDuration ? `~${Math.round(j.estimatedDuration / 60 * 10) / 10}hr` : null].filter(Boolean).join(' · ') || 'No location'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => openAssignModal(j)}
+                    style={styles.queueItemAssignBtn}
+                  >
+                    <Text style={styles.queueItemAssignText}>Assign</Text>
+                    <Feather name="arrow-right" size={14} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -1187,32 +1393,40 @@ export default function DispatchBoardScreen() {
               <Feather name="chevron-left" size={22} color={colors.foreground} />
             </PressableRow>
             <View style={styles.headerLeft}>
-              <Text style={styles.pageTitle}>Dispatch Board</Text>
-              <Text style={styles.pageSubtitle}>Manage job assignments and scheduling</Text>
+              <Text style={styles.pageTitle}>Team Ops</Text>
+            </View>
+            <View style={styles.headerDatePill}>
+              <Text style={styles.headerDatePillText}>{format(new Date(), 'EEE d MMM')}</Text>
             </View>
             <PressableRow onPress={onRefresh} style={styles.refreshBtn} >
-              <Feather name="refresh-cw" size={18} color={colors.foreground} />
+              <Feather name="refresh-cw" size={16} color={colors.mutedForeground} />
             </PressableRow>
           </View>
 
-          {renderOpsHealth()}
-
-          <View style={styles.viewToggle}>
-            <PressableRow style={[styles.viewToggleButton, viewMode === 'schedule' && styles.viewToggleButtonActive]} onPress={() => setViewMode('schedule')} >
-              <Feather name="list" size={16} color={viewMode === 'schedule' ? colors.primaryForeground : colors.mutedForeground} />
-              <Text style={[styles.viewToggleText, viewMode === 'schedule' && styles.viewToggleTextActive]}>Schedule</Text>
-            </PressableRow>
-            <PressableRow style={[styles.viewToggleButton, viewMode === 'kanban' && styles.viewToggleButtonActive]} onPress={() => setViewMode('kanban')} >
-              <Feather name="columns" size={16} color={viewMode === 'kanban' ? colors.primaryForeground : colors.mutedForeground} />
-              <Text style={[styles.viewToggleText, viewMode === 'kanban' && styles.viewToggleTextActive]}>Kanban</Text>
-            </PressableRow>
-            <PressableRow style={[styles.viewToggleButton, viewMode === 'map' && styles.viewToggleButtonActive]} onPress={() => setViewMode('map')} >
-              <Feather name="map" size={16} color={viewMode === 'map' ? colors.primaryForeground : colors.mutedForeground} />
-              <Text style={[styles.viewToggleText, viewMode === 'map' && styles.viewToggleTextActive]}>Map</Text>
-            </PressableRow>
+          <View style={styles.tabBar}>
+            {([
+              { key: 'liveops', label: 'Live Ops' },
+              { key: 'schedule', label: 'Schedule' },
+              { key: 'performance', label: 'Performance' },
+            ] as { key: ViewMode; label: string }[]).map(t => {
+              const active = viewMode === t.key;
+              return (
+                <TouchableOpacity
+                  key={t.key}
+                  activeOpacity={0.7}
+                  onPress={() => setViewMode(t.key)}
+                  style={styles.tabBtn}
+                >
+                  <Text style={[styles.tabBtnText, active && styles.tabBtnTextActive]}>{t.label}</Text>
+                  {active && <View style={styles.tabBtnUnderline} />}
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
+          {viewMode === 'liveops' && renderLiveOps()}
           {viewMode === 'schedule' && renderScheduleView()}
+          {viewMode === 'performance' && renderPerformance()}
           {viewMode === 'kanban' && renderKanbanView()}
           {viewMode === 'map' && renderMapView()}
         </ScrollView>
@@ -2280,5 +2494,418 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   kanbanNavCountText: {
     fontSize: 10,
     fontWeight: '800',
+  },
+
+  // Header date pill
+  headerDatePill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    backgroundColor: colors.muted,
+    marginRight: spacing.xs,
+  },
+  headerDatePillText: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+    fontWeight: '600',
+  },
+
+  // Tab bar (underline style)
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    marginBottom: spacing.lg,
+  },
+  tabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    position: 'relative',
+  },
+  tabBtnText: {
+    ...typography.bodySmall,
+    color: colors.mutedForeground,
+    fontWeight: '600',
+  },
+  tabBtnTextActive: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  tabBtnUnderline: {
+    position: 'absolute',
+    bottom: -1,
+    left: '20%',
+    right: '20%',
+    height: 2,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+
+  // Stat bar (Live Ops top)
+  statBar: {
+    flexDirection: 'row',
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  statBarItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  statBarValue: {
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  statBarLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  // Alert banner
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: `${colors.warning}12`,
+    borderWidth: 1,
+    borderColor: `${colors.warning}40`,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  alertBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertBannerTitle: {
+    ...typography.body,
+    color: colors.foreground,
+    fontWeight: '700',
+  },
+  alertBannerSub: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+
+  // Section eyebrow
+  sectionEyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
+  },
+
+  // Worker card
+  workerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  workerCardAvatarWrap: {
+    position: 'relative',
+  },
+  workerCardStatusDot: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+  },
+  workerCardBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  workerCardName: {
+    ...typography.body,
+    color: colors.foreground,
+    fontWeight: '700',
+  },
+  workerCardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  workerCardMeta: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+    flex: 1,
+  },
+  workerStatusPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+  },
+  workerStatusPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // Week strip
+  weekStripRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingBottom: spacing.md,
+  },
+  weekDay: {
+    minWidth: 52,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    backgroundColor: colors.muted,
+  },
+  weekDaySel: {
+    backgroundColor: colors.primary,
+  },
+  weekDayDow: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.mutedForeground,
+    letterSpacing: 0.5,
+  },
+  weekDayDowSel: {
+    color: colors.primaryForeground,
+  },
+  weekDayDom: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.foreground,
+    marginTop: 2,
+  },
+  weekDayDomSel: {
+    color: colors.primaryForeground,
+  },
+
+  // Pickup hint bar
+  pickupBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: `${colors.primary}10`,
+    borderWidth: 1,
+    borderColor: `${colors.primary}30`,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+  },
+  pickupBarText: {
+    ...typography.captionSmall,
+    color: colors.foreground,
+    flex: 1,
+  },
+
+  // Unassigned queue card
+  queueCard: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  queueCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  queueCardTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    flex: 1,
+  },
+  queueCardHint: {
+    fontSize: 10,
+    color: colors.mutedForeground,
+    fontStyle: 'italic',
+  },
+  queueItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.muted,
+    marginBottom: spacing.xs,
+  },
+  queueItemHeld: {
+    backgroundColor: `${colors.primary}12`,
+    borderWidth: 1,
+    borderColor: `${colors.primary}40`,
+  },
+  queueItemMain: {
+    flex: 1,
+    minWidth: 0,
+  },
+  queueItemTitle: {
+    ...typography.bodySmall,
+    color: colors.foreground,
+    fontWeight: '700',
+  },
+  queueItemMeta: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+  queueItemAssignBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  queueItemAssignText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+
+  // Performance — period pills
+  periodRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  periodPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.muted,
+  },
+  periodPillActive: {
+    backgroundColor: colors.primary,
+  },
+  periodPillText: {
+    ...typography.captionSmall,
+    color: colors.foreground,
+    fontWeight: '600',
+  },
+  periodPillTextActive: {
+    color: colors.primaryForeground,
+    fontWeight: '700',
+  },
+
+  // Performance metric grid
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  metricCard: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  metricHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.xs,
+  },
+  metricLabel: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+    fontWeight: '600',
+    flex: 1,
+  },
+  metricValue: {
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+
+  // Performance per-member
+  perfMemberCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  perfMemberHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  perfMemberName: {
+    ...typography.body,
+    color: colors.foreground,
+    fontWeight: '700',
+  },
+  perfMemberRole: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+  perfMemberScore: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  perfBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.muted,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+  },
+  perfBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  perfStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  perfStat: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+  },
+  perfStatStrong: {
+    color: colors.foreground,
+    fontWeight: '700',
+  },
+  perfStatDot: {
+    fontSize: 12,
+    color: colors.mutedForeground,
   },
 });
