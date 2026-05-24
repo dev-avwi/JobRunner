@@ -41,54 +41,71 @@ struct JobRunnerLiveActivity: Widget {
                 // (the "blank pill" symptom). Address + suburb +
                 // status all live in the .bottom region as a single
                 // vertical stack instead.
-                DynamicIslandExpandedRegion(.leading) {
-                    BrandBadge()
-                        .frame(width: 38, height: 38)
-                        .padding(.leading, 6)
-                }
-                DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(context.attributes.startedAt, style: .timer)
-                            .font(.system(size: 20, weight: .bold, design: .rounded).monospacedDigit())
-                            .foregroundStyle(Color.onBreak)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.6)
-                            .multilineTextAlignment(.trailing)
-                        Text("ELAPSED")
-                            .font(.system(size: 9, weight: .heavy))
-                            .tracking(1.4)
-                            .foregroundStyle(Color.tertiaryText)
-                            .lineLimit(1)
-                    }
-                    .padding(.trailing, 6)
-                }
+                // All expanded content lives inside .bottom so the
+                // expanded view sizes to the content height — no
+                // mid-pill dead zone between iOS's auto-positioned
+                // .leading/.trailing (top) and .bottom (bottom).
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(AddressParts(address: context.attributes.address).street)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                        Text(AddressParts(address: context.attributes.address).suburbOrFallback)
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.secondaryText)
-                            .lineLimit(1)
-                        // Match the lock-screen status pill treatment —
-                        // Liquid Glass on iOS 26+, capsule fallback below.
+                    VStack(spacing: 10) {
+                        HStack(alignment: .center, spacing: 12) {
+                            BrandBadge()
+                                .frame(width: 38, height: 38)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(AddressParts(address: context.attributes.address).street)
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                Text(AddressParts(address: context.attributes.address).suburbOrFallback)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.secondaryText)
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                            VStack(alignment: .trailing, spacing: 0) {
+                                Text(context.attributes.startedAt, style: .timer)
+                                    .font(.system(size: 20, weight: .bold, design: .rounded).monospacedDigit())
+                                    .foregroundStyle(Color.onBreak)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.6)
+                                    .multilineTextAlignment(.trailing)
+                                Text("ELAPSED")
+                                    .font(.system(size: 9, weight: .heavy))
+                                    .tracking(1.4)
+                                    .foregroundStyle(Color.tertiaryText)
+                                    .lineLimit(1)
+                            }
+                            .frame(width: 78, alignment: .trailing)
+                        }
+
                         HStack(spacing: 8) {
                             LiquidStatusPill(status: context.state.status)
                             if !context.attributes.customerName.isEmpty {
+                                Text("·")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(Color.tertiaryText)
                                 Text(context.attributes.customerName)
                                     .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(Color.secondaryText)
+                                    .foregroundStyle(.white.opacity(0.85))
                                     .lineLimit(1)
                                     .truncationMode(.tail)
                             }
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Text("STARTED")
+                                    .font(.system(size: 8, weight: .heavy))
+                                    .tracking(1.0)
+                                    .foregroundStyle(Color.tertiaryText)
+                                Text(context.attributes.startedAt, style: .time)
+                                    .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                                    .foregroundStyle(Color.secondaryText)
+                            }
                         }
-                        .padding(.top, 4)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 6)
-                    .padding(.top, 6)
+                    .padding(.horizontal, 4)
+                    .padding(.top, 4)
                 }
             } compactLeading: {
                 // Logo on the left of the notch — small but recognisable
@@ -165,20 +182,20 @@ private struct LockScreenView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(alignment: .trailing, spacing: 0) {
+                VStack(alignment: .trailing, spacing: 1) {
                     Text(attributes.startedAt, style: .timer)
-                        .font(.system(size: 24, weight: .bold, design: .rounded).monospacedDigit())
+                        .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
                         .foregroundStyle(Color.onBreak)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.6)
+                        .minimumScaleFactor(0.55)
                         .multilineTextAlignment(.trailing)
                     Text("ELAPSED")
-                        .font(.system(size: 9, weight: .heavy))
+                        .font(.system(size: 10, weight: .heavy))
                         .tracking(1.4)
                         .foregroundStyle(Color.tertiaryText)
                         .lineLimit(1)
                 }
-                .frame(width: 92, alignment: .trailing)
+                .frame(width: 104, alignment: .trailing)
             }
 
             // Spacer with minLength keeps a guaranteed gap between
