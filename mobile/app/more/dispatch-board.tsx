@@ -38,7 +38,8 @@ import { getAvatarColor } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { Swipeable } from 'react-native-gesture-handler';
 
-type ViewMode = 'schedule' | 'kanban' | 'map';
+type ViewMode = 'liveops' | 'schedule' | 'performance' | 'kanban' | 'map';
+type PerfPeriod = 'today' | 'week' | 'month';
 
 const TIMELINE_HOUR_START = 7;
 const TIMELINE_HOUR_END = 19;
@@ -133,7 +134,8 @@ export default function DispatchBoardScreen() {
   const styles = useMemo(() => createStyles(colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice, isDark), [colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice, isDark]);
   const { user } = useAuthStore();
 
-  const [viewMode, setViewMode] = useState<ViewMode>('schedule');
+  const [viewMode, setViewMode] = useState<ViewMode>('liveops');
+  const [perfPeriod, setPerfPeriod] = useState<PerfPeriod>('today');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -143,7 +145,6 @@ export default function DispatchBoardScreen() {
   const [assigningJob, setAssigningJob] = useState<JobData | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
   const [selectedMapJob, setSelectedMapJob] = useState<JobData | null>(null);
-  const [opsExpanded, setOpsExpanded] = useState(false);
   const [pickup, setPickup] = useState<JobData | null>(null);
   const [kanbanCol, setKanbanCol] = useState<string>('unassigned');
   const mapRef = useRef<any>(null);
