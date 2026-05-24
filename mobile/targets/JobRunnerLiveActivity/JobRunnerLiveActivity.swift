@@ -137,60 +137,84 @@ private struct LockScreenView: View {
     let state: JobRunnerLiveActivityAttributes.ContentState
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            // Brand badge with a soft halo — gives the mark presence
-            // against the dark card surface without adding a hard
-            // container shape (per Apple HIG).
-            BrandBadge()
-                .frame(width: 46, height: 46)
+        // Two-row card that anchors content to the top and bottom of
+        // whatever vertical envelope the system gives the Live
+        // Activity. Top row carries the identity + headline + timer;
+        // bottom row carries the live state + the "for whom" / "started"
+        // metadata. A Spacer pushes them apart so the card fills its
+        // height naturally instead of floating one HStack in the middle.
+        VStack(spacing: 0) {
+            // ─── TOP ROW ─────────────────────────────────────────────
+            HStack(alignment: .center, spacing: 14) {
+                BrandBadge()
+                    .frame(width: 44, height: 44)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(AddressParts(address: attributes.address).street)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .minimumScaleFactor(0.85)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(AddressParts(address: attributes.address).street)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .minimumScaleFactor(0.85)
 
-                Text(AddressParts(address: attributes.address).suburbOrFallback)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.secondaryText)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                    Text(AddressParts(address: attributes.address).suburbOrFallback)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.secondaryText)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                // Customer name on its own dedicated row (when present) —
-                // promoted out of the status-pill row where it was
-                // getting squeezed/clipped. Reads as the "for whom" line
-                // between the address and the live-state pill.
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(attributes.startedAt, style: .timer)
+                        .font(.system(size: 24, weight: .bold, design: .rounded).monospacedDigit())
+                        .foregroundStyle(Color.onBreak)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                        .multilineTextAlignment(.trailing)
+                    Text("ELAPSED")
+                        .font(.system(size: 9, weight: .heavy))
+                        .tracking(1.4)
+                        .foregroundStyle(Color.tertiaryText)
+                        .lineLimit(1)
+                }
+                .frame(width: 92, alignment: .trailing)
+            }
+
+            // Spacer with minLength keeps a guaranteed gap between
+            // rows on the *compact* lock-screen card (where iOS gives
+            // the activity a small envelope), and stretches to use the
+            // *taller* lock-screen envelope when the system has more
+            // room — killing the previous mid-card dead zone.
+            Spacer(minLength: 12)
+
+            // Hairline that visually links the two rows so they read
+            // as one card, not two stacked floaters.
+            Rectangle()
+                .fill(Color.white.opacity(0.06))
+                .frame(height: 0.5)
+                .padding(.bottom, 10)
+
+            // ─── BOTTOM ROW ──────────────────────────────────────────
+            HStack(alignment: .center, spacing: 10) {
+                LiquidStatusPill(status: state.status)
+
                 if !attributes.customerName.isEmpty {
+                    Text("·")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.tertiaryText)
                     Text(attributes.customerName)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.white.opacity(0.85))
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        .padding(.top, 1)
                 }
 
-                LiquidStatusPill(status: state.status)
-                    .padding(.top, 4)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+                Spacer(minLength: 8)
 
-            // Hairline separator anchors the timer as its own zone.
-            Rectangle()
-                .fill(Color.white.opacity(0.06))
-                .frame(width: 0.5, height: 50)
-
-            // Right column: elapsed timer + a "STARTED HH:MM" metadata
-            // row that uses the same startedAt attribute formatted as
-            // absolute time-of-day. Fills the previously-empty space
-            // below the timer with a useful complementary piece of info
-            // (elapsed = how long, started = when did it begin).
-            VStack(alignment: .trailing, spacing: 6) {
-                LiquidTimerColumn(startedAt: attributes.startedAt)
                 HStack(spacing: 4) {
                     Text("STARTED")
-                        .font(.system(size: 8, weight: .heavy))
+                        .font(.system(size: 9, weight: .heavy))
                         .tracking(1.0)
                         .foregroundStyle(Color.tertiaryText)
                     Text(attributes.startedAt, style: .time)
@@ -200,7 +224,7 @@ private struct LockScreenView: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 16)
+        .padding(.vertical, 14)
     }
 }
 
