@@ -431,7 +431,7 @@ export default function RegisterScreen() {
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={styles.passwordInput}
-                    placeholder="At least 6 characters"
+                    placeholder="Create a password"
                     placeholderTextColor={colors.mutedForeground}
                     value={password}
                     onChangeText={(text) => {
@@ -460,6 +460,22 @@ export default function RegisterScreen() {
                       color={colors.mutedForeground}
                     />
                   </TouchableOpacity>
+                </View>
+                <View style={styles.pwReqs}>
+                  {[
+                    { label: 'At least 8 characters', met: password.length >= 8 },
+                    { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
+                    { label: 'One special character', met: /[^A-Za-z0-9]/.test(password) },
+                  ].map((r) => (
+                    <View key={r.label} style={styles.pwReqRow}>
+                      <Ionicons
+                        name={r.met ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={14}
+                        color={r.met ? '#16a34a' : colors.mutedForeground}
+                      />
+                      <Text style={[styles.pwReqText, r.met && styles.pwReqTextMet]}>{r.label}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
 
@@ -694,6 +710,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   eyeButton: {
     paddingHorizontal: 14,
     paddingVertical: 14,
+  },
+  pwReqs: {
+    marginTop: 8,
+    gap: 4,
+  },
+  pwReqRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pwReqText: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+  },
+  pwReqTextMet: {
+    color: '#16a34a',
   },
   messageContainer: {
     minHeight: 52,
