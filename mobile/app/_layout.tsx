@@ -1,6 +1,8 @@
 import { initSentry, setSentryUser, captureException } from '../src/lib/sentry';
+import { installGlobalErrorHandler } from '../src/lib/errors';
 
 initSentry();
+installGlobalErrorHandler();
 
 import { useEffect, useState, useRef } from 'react';
 import { View, StyleSheet, Alert, InteractionManager, Dimensions, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform } from 'react-native';
