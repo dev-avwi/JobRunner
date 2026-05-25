@@ -1227,10 +1227,12 @@ function OperationalAlertsCard() {
   }, [fetchAlerts]);
 
   const handleAlertAction = useCallback((alert: MobileOperationalAlert) => {
-    if (alert.actionType === 'navigate') {
-      router.push('/(tabs)/schedule' as any);
-    } else if (alert.actionType === 'nudge') {
-      router.push('/(tabs)/schedule' as any);
+    if (alert.actionType === 'navigate' || alert.actionType === 'nudge') {
+      if (alert.relatedJobId) {
+        router.push(`/job/${alert.relatedJobId}` as any);
+      } else {
+        router.push('/more/dispatch-board' as any);
+      }
     } else if (alert.relatedJobId) {
       if (alert.type === 'unassigned_upcoming') {
         router.push(`/job/${alert.relatedJobId}?action=assign`);
