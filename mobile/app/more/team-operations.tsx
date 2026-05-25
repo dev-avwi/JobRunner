@@ -3,15 +3,12 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   RefreshControl,
   StyleSheet,
   Alert,
   ActivityIndicator,
   Modal,
-  Dimensions,
   TextInput,
-  Linking,
 } from 'react-native';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { router, Stack } from 'expo-router';
@@ -19,12 +16,11 @@ import { Feather } from '@expo/vector-icons';
 import MapView, { Marker, Region, PROVIDER_DEFAULT, MapStyleElement } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, sizes, iconSizes, usePageShell, pageShell, componentStyles } from '../../src/lib/design-tokens';
-import { getAvatarColor } from '../../src/lib/avatar-colors';
+import { spacing, radius, shadows, typography, sizes, iconSizes, usePageShell } from '../../src/lib/design-tokens';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { api } from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
-import { formatDistanceToNow, format, isAfter } from 'date-fns';
+import { formatDistanceToNow, format, isAfter, isToday, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 import { useIsTablet, useContentWidth } from '../../src/lib/device';
 import { useUserRole } from '../../src/hooks/use-user-role';
 
@@ -35,8 +31,6 @@ const DARK_MAP_STYLE: MapStyleElement[] = [
   { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e1626' }] },
   { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#304a7d' }] },
 ];
-
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: keyof typeof Feather.glyphMap }> = {
   online: { color: '#22c55e', label: 'Online', icon: 'circle' },
@@ -71,17 +65,8 @@ interface TeamPresenceData {
   lastSeenAt?: string;
   lastLocationLat?: number;
   lastLocationLng?: number;
-  user?: {
-    id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    profileImageUrl?: string;
-  };
-  currentJob?: {
-    id: string;
-    title: string;
-  };
+  user?: { id: string; firstName?: string; lastName?: string; email?: string; profileImageUrl?: string };
+  currentJob?: { id: string; title: string };
 }
 
 interface TeamMemberData {
@@ -122,6 +107,7 @@ interface JobData {
   clientName?: string;
   assignedTo?: string;
   scheduledAt?: string;
+  estimatedDuration?: number;
 }
 
 interface MemberWithDetails extends TeamMemberData {
@@ -150,49 +136,14 @@ interface TeamMemberTimeOff {
 
 type TabType = 'live' | 'scheduling' | 'performance';
 type LiveViewMode = 'status' | 'activity' | 'map';
+type PerfPeriod = 'today' | 'week' | 'month';
 
-// Cairns-area default to match demo data, but will dynamically center on team members
 const DEFAULT_REGION: Region = {
   latitude: -16.9203,
   longitude: 145.7710,
   latitudeDelta: 0.1,
   longitudeDelta: 0.1,
 };
-
-function getInitials(firstName?: string, lastName?: string, email?: string): string {
-  if (firstName && lastName) {
-    return `${firstName[0]}${lastName[0]}`.toUpperCase();
-  }
-  if (firstName) return firstName[0].toUpperCase();
-  if (email) return email[0].toUpperCase();
-  return '?';
-}
-
-function formatLastSeen(dateStr?: string): string {
-  if (!dateStr) return 'Unknown';
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return 'Unknown';
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
-  } catch { return 'Unknown'; }
-}
-
-function safeDateFormat(dateStr: string | undefined | null, formatStr: string): string {
-  if (!dateStr) return '';
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '';
-    return format(d, formatStr);
-  } catch { return ''; }
-}
 
 function safeDateDistance(dateStr: string | undefined | null): string {
   if (!dateStr) return '';
@@ -214,22 +165,32 @@ function formatRelativeAgo(d: Date | null): string {
   return `${h}h ago`;
 }
 
+function formatJobTimeRange(job: JobData): string {
+  if (!job.scheduledAt) return '';
+  try {
+    const start = parseISO(job.scheduledAt);
+    if (isNaN(start.getTime())) return '';
+    const dur = job.estimatedDuration || 60;
+    const end = new Date(start.getTime() + dur * 60000);
+    return `${format(start, 'h:mma')} – ${format(end, 'h:mma')}`;
+  } catch { return ''; }
+}
+
 export default function TeamOperationsScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const responsiveShell = usePageShell();
   const contentWidth = useContentWidth();
   const isTabletDevice = useIsTablet();
-  const styles = useMemo(() => createStyles(colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice), [colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice]);
+  const styles = useMemo(() => createStyles(colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice, isDark), [colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice, isDark]);
   const { user } = useAuthStore();
   const mapRef = useRef<MapView | null>(null);
-  
-  // Subscription-aware access control
+
   const { hasTeamSubscription, hasProSubscription, subscriptionTier } = useUserRole();
-  const needsUpgradeBase = false;
 
   const [activeTab, setActiveTab] = useState<TabType>('live');
   const [liveViewMode, setLiveViewMode] = useState<LiveViewMode>('status');
+  const [perfPeriod, setPerfPeriod] = useState<PerfPeriod>('week');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -253,6 +214,7 @@ export default function TeamOperationsScreen() {
   const [timeOffNotes, setTimeOffNotes] = useState('');
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [now, setNow] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -316,37 +278,24 @@ export default function TeamOperationsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
-    if (selectedMemberId) {
-      fetchAvailability(selectedMemberId);
-    }
+    if (selectedMemberId) fetchAvailability(selectedMemberId);
   }, [selectedMemberId, fetchAvailability]);
-
-  const selectedMemberAvailability = useMemo(() => {
-    if (!selectedMemberId) return [];
-    return availabilityMap.get(selectedMemberId) || [];
-  }, [selectedMemberId, availabilityMap]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setAvailabilityMap(new Map());
     await fetchData();
-    if (selectedMemberId) {
-      await fetchAvailability(selectedMemberId);
-    }
+    if (selectedMemberId) await fetchAvailability(selectedMemberId);
     setRefreshing(false);
   }, [fetchData, fetchAvailability, selectedMemberId]);
 
-  const acceptedMembers = useMemo(() => 
+  const acceptedMembers = useMemo(() =>
     teamMembers.filter(m => m.inviteStatus === 'accepted'),
     [teamMembers]
   );
-
-  const needsUpgrade = needsUpgradeBase && acceptedMembers.length === 0;
 
   const membersWithDetails = useMemo(() => {
     return acceptedMembers.map(member => {
@@ -356,14 +305,12 @@ export default function TeamOperationsScreen() {
     });
   }, [acceptedMembers, teamPresence, jobs]);
 
-  // Animate map to center on team members when they have locations
+  // Center map on members with locations
   useEffect(() => {
     if (liveViewMode !== 'map') return;
-    
     const membersWithLocations = membersWithDetails.filter(
       m => m.presence?.lastLocationLat && m.presence?.lastLocationLng
     );
-    
     if (membersWithLocations.length > 0 && mapRef.current) {
       const lats = membersWithLocations.map(m => m.presence!.lastLocationLat!);
       const lngs = membersWithLocations.map(m => m.presence!.lastLocationLng!);
@@ -371,37 +318,43 @@ export default function TeamOperationsScreen() {
       const maxLat = Math.max(...lats);
       const minLng = Math.min(...lngs);
       const maxLng = Math.max(...lngs);
-      const centerLat = (minLat + maxLat) / 2;
-      const centerLng = (minLng + maxLng) / 2;
-      const latDelta = Math.max(0.05, (maxLat - minLat) * 1.5);
-      const lngDelta = Math.max(0.05, (maxLng - minLng) * 1.5);
-      
       mapRef.current.animateToRegion({
-        latitude: centerLat,
-        longitude: centerLng,
-        latitudeDelta: latDelta,
-        longitudeDelta: lngDelta,
+        latitude: (minLat + maxLat) / 2,
+        longitude: (minLng + maxLng) / 2,
+        latitudeDelta: Math.max(0.05, (maxLat - minLat) * 1.5),
+        longitudeDelta: Math.max(0.05, (maxLng - minLng) * 1.5),
       }, 500);
     }
   }, [membersWithDetails, liveViewMode]);
 
   const memberStats = useMemo(() => {
-    return acceptedMembers.map(member => {
-      const memberJobs = jobs.filter(j => j.assignedTo === member.userId);
-      const completedJobs = memberJobs.filter(j => j.status === 'completed');
-      const inProgressJobs = memberJobs.filter(j => j.status === 'in_progress');
-      const scheduledJobs = memberJobs.filter(j => j.status === 'scheduled');
+    const start = new Date();
+    let from: Date;
+    let to: Date = new Date();
+    if (perfPeriod === 'today') { from = new Date(); from.setHours(0,0,0,0); }
+    else if (perfPeriod === 'week') { from = startOfWeek(start, { weekStartsOn: 1 }); to = endOfWeek(start, { weekStartsOn: 1 }); }
+    else { from = startOfMonth(start); to = endOfMonth(start); }
 
+    return acceptedMembers.map(member => {
+      const allJobs = jobs.filter(j => j.assignedTo === member.userId);
+      const periodJobs = allJobs.filter(j => {
+        if (!j.scheduledAt) return perfPeriod === 'today';
+        const d = parseISO(j.scheduledAt);
+        return d >= from && d <= to;
+      });
+      const completedJobs = periodJobs.filter(j => j.status === 'completed' || j.status === 'done');
+      const inProgressJobs = periodJobs.filter(j => j.status === 'in_progress' || j.status === 'working');
+      const scheduledJobs = periodJobs.filter(j => j.status === 'scheduled');
       return {
         ...member,
-        totalJobs: memberJobs.length,
+        totalJobs: periodJobs.length,
         completedJobs: completedJobs.length,
         inProgressJobs: inProgressJobs.length,
         scheduledJobs: scheduledJobs.length,
-        completionRate: memberJobs.length > 0 ? Math.round((completedJobs.length / memberJobs.length) * 100) : 0,
+        completionRate: periodJobs.length > 0 ? Math.round((completedJobs.length / periodJobs.length) * 100) : 0,
       };
     }).sort((a, b) => b.completedJobs - a.completedJobs);
-  }, [acceptedMembers, jobs]);
+  }, [acceptedMembers, jobs, perfPeriod]);
 
   const totalCompleted = memberStats.reduce((sum, m) => sum + m.completedJobs, 0);
   const totalInProgress = memberStats.reduce((sum, m) => sum + m.inProgressJobs, 0);
@@ -410,49 +363,23 @@ export default function TeamOperationsScreen() {
     : 0;
 
   const pendingTimeOff = (timeOffRequests || []).filter(t => t.status === 'pending');
-  const upcomingTimeOff = (timeOffRequests || []).filter(t => {
-    try {
-      return t.status === 'approved' && t.startDate && isAfter(new Date(t.startDate), new Date());
-    } catch { return false; }
-  });
 
-  const onlineCount = useMemo(() => {
-    return teamPresence.filter(p => p.status === 'online' || p.status === 'on_job').length;
-  }, [teamPresence]);
+  const onlineCount = useMemo(() =>
+    teamPresence.filter(p => p.status === 'online' || p.status === 'on_job').length,
+    [teamPresence]
+  );
+  const onJobCount = useMemo(() =>
+    teamPresence.filter(p => p.status === 'on_job').length,
+    [teamPresence]
+  );
 
-  const onJobCount = useMemo(() => {
-    return teamPresence.filter(p => p.status === 'on_job').length;
-  }, [teamPresence]);
-
-  const unassignedJobs = useMemo(() => {
-    return jobs.filter(j => !j.assignedTo && (j.status === 'pending' || j.status === 'scheduled' || j.status === 'in_progress'));
-  }, [jobs]);
+  const unassignedJobs = useMemo(() =>
+    jobs.filter(j => !j.assignedTo && (j.status === 'pending' || j.status === 'scheduled' || j.status === 'in_progress')),
+    [jobs]
+  );
 
   const handleUpdateAvailability = async (dayOfWeek: number, isAvailable: boolean, startTime?: string, endTime?: string) => {
     if (!selectedMemberId) return;
-    
-    const newAvailabilityItem: TeamMemberAvailability = {
-      id: `temp-${dayOfWeek}`,
-      teamMemberId: selectedMemberId,
-      dayOfWeek,
-      isAvailable,
-      startTime: startTime || '08:00',
-      endTime: endTime || '17:00',
-    };
-    
-    setAvailabilityMap(prev => {
-      const newMap = new Map(prev);
-      const memberAvailability = [...(newMap.get(selectedMemberId) || [])];
-      const existingIndex = memberAvailability.findIndex(a => a.dayOfWeek === dayOfWeek);
-      if (existingIndex >= 0) {
-        memberAvailability[existingIndex] = newAvailabilityItem;
-      } else {
-        memberAvailability.push(newAvailabilityItem);
-      }
-      newMap.set(selectedMemberId, memberAvailability);
-      return newMap;
-    });
-    
     try {
       const res = await api.post<TeamMemberAvailability>('/api/team/availability', {
         teamMemberId: selectedMemberId,
@@ -463,19 +390,15 @@ export default function TeamOperationsScreen() {
       });
       if (res.data) {
         setAvailabilityMap(prev => {
-          const newMap = new Map(prev);
-          const memberAvailability = [...(newMap.get(selectedMemberId) || [])];
-          const idx = memberAvailability.findIndex(a => a.dayOfWeek === dayOfWeek);
-          if (idx >= 0) {
-            memberAvailability[idx] = res.data!;
-          } else {
-            memberAvailability.push(res.data!);
-          }
-          newMap.set(selectedMemberId, memberAvailability);
-          return newMap;
+          const next = new Map(prev);
+          const list = [...(next.get(selectedMemberId) || [])];
+          const idx = list.findIndex(a => a.dayOfWeek === dayOfWeek);
+          if (idx >= 0) list[idx] = res.data!; else list.push(res.data!);
+          next.set(selectedMemberId, list);
+          return next;
         });
       }
-    } catch (error) {
+    } catch {
       await fetchAvailability(selectedMemberId);
       Alert.alert('Error', 'Failed to update availability');
     }
@@ -486,7 +409,6 @@ export default function TeamOperationsScreen() {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
-
     try {
       const res = await api.post<TeamMemberTimeOff>('/api/team/time-off', {
         teamMemberId: selectedMemberId,
@@ -495,17 +417,13 @@ export default function TeamOperationsScreen() {
         reason: timeOffReason,
         notes: timeOffNotes || undefined,
       });
-
       if (res.data && !res.error) {
         setShowTimeOffModal(false);
-        setTimeOffStart('');
-        setTimeOffEnd('');
-        setTimeOffReason('annual_leave');
-        setTimeOffNotes('');
+        setTimeOffStart(''); setTimeOffEnd(''); setTimeOffReason('annual_leave'); setTimeOffNotes('');
         await fetchData();
         Alert.alert('Success', 'Time off requested');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to request time off');
     }
   };
@@ -513,122 +431,141 @@ export default function TeamOperationsScreen() {
   const handleApproveTimeOff = async (id: string, status: 'approved' | 'rejected') => {
     try {
       const res = await api.patch<TeamMemberTimeOff>(`/api/team/time-off/${id}`, { status });
-      if (res.data && !res.error) {
-        await fetchData();
-      }
-    } catch (error) {
+      if (res.data && !res.error) await fetchData();
+    } catch {
       Alert.alert('Error', 'Failed to update time off request');
     }
   };
 
-  const tabIconSize = isTabletDevice ? 18 : 16;
-  
-  const renderTabs = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar} contentContainerStyle={styles.tabBarContent}>
-      {[
-        { key: 'live' as TabType, icon: 'activity' as const, label: 'Live Ops' },
-        { key: 'scheduling' as TabType, icon: 'calendar' as const, label: 'Scheduling' },
-        { key: 'performance' as TabType, icon: 'trending-up' as const, label: 'Performance' },
-      ].map(tab => {
-        const isActive = activeTab === tab.key;
-        return (
-          <PressableRow key={tab.key} style={[styles.tabButton, isActive && styles.tabButtonActive]} onPress={() => setActiveTab(tab.key)} >
-            <Feather name={tab.icon} size={tabIconSize} color={isActive ? colors.white : colors.mutedForeground} />
-            <Text style={[styles.tabButtonText, isActive && styles.tabButtonTextActive]}>{tab.label}</Text>
-          </PressableRow>
-        );
-      })}
-    </ScrollView>
-  );
+  // Week strip days
+  const weekDays = useMemo(() => {
+    const anchor = new Date();
+    const out: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(anchor); d.setDate(anchor.getDate() + i); d.setHours(0,0,0,0);
+      out.push(d);
+    }
+    return out;
+  }, []);
 
-  const renderLiveViewToggle = () => (
-    <View style={styles.liveViewToggle}>
-      <PressableRow style={[styles.liveViewButton, liveViewMode === 'status' && styles.liveViewButtonActive]} onPress={() => setLiveViewMode('status')} >
-        <Feather name="users" size={14} color={liveViewMode === 'status' ? colors.primary : colors.mutedForeground} />
-        <Text style={[styles.liveViewText, liveViewMode === 'status' && styles.liveViewTextActive]}>Status</Text>
-      </PressableRow>
-      <PressableRow style={[styles.liveViewButton, liveViewMode === 'activity' && styles.liveViewButtonActive]} onPress={() => setLiveViewMode('activity')} >
-        <Feather name="clock" size={14} color={liveViewMode === 'activity' ? colors.primary : colors.mutedForeground} />
-        <Text style={[styles.liveViewText, liveViewMode === 'activity' && styles.liveViewTextActive]}>Activity</Text>
-      </PressableRow>
-      <PressableRow style={[styles.liveViewButton, liveViewMode === 'map' && styles.liveViewButtonActive]} onPress={() => setLiveViewMode('map')} >
-        <Feather name="map" size={14} color={liveViewMode === 'map' ? colors.primary : colors.mutedForeground} />
-        <Text style={[styles.liveViewText, liveViewMode === 'map' && styles.liveViewTextActive]}>Map</Text>
-      </PressableRow>
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'in_progress': case 'working': return colors.success;
+      case 'completed': case 'done': return colors.mutedForeground;
+      case 'en_route': case 'on_my_way': return colors.info || colors.primary;
+      case 'pending': return colors.warning;
+      default: return colors.info || colors.primary;
+    }
+  };
+
+  // -- RENDER PARTS --
+
+  const renderHero = () => (
+    <View style={styles.heroSection}>
+      <Text style={styles.pageTitle}>Team Operations</Text>
+      <View style={styles.subtitleRow}>
+        <Text style={styles.pageSubtitle}>
+          {acceptedMembers.length} team member{acceptedMembers.length === 1 ? '' : 's'}  ·  
+        </Text>
+        <View style={[styles.syncDot, { backgroundColor: refreshing ? colors.warning : colors.success }]} />
+        <Text style={styles.pageSubtitle}>
+          {refreshing ? ' Syncing…' : ` Updated ${formatRelativeAgo(lastSyncedAt)}`}
+        </Text>
+      </View>
     </View>
   );
 
-  const renderMemberCard = (member: MemberWithDetails) => {
-    const ws = workerStates.find((w: any) => w.userId === member.userId);
-    const wsState = ws?.state || 'available';
-    const wsConfig = STATUS_CONFIG[wsState] || STATUS_CONFIG.available;
-    const presenceStatus = member.presence?.status || 'offline';
-    const presenceConfig = STATUS_CONFIG[presenceStatus] || STATUS_CONFIG.offline;
-
+  const renderTabs = () => {
+    const tabs: { key: TabType; icon: keyof typeof Feather.glyphMap; label: string }[] = [
+      { key: 'live', icon: 'activity', label: 'Live Ops' },
+      { key: 'scheduling', icon: 'calendar', label: 'Scheduling' },
+      { key: 'performance', icon: 'bar-chart-2', label: 'Performance' },
+    ];
     return (
-      <PressableRow key={member.id} style={styles.memberCard} onPress={() => router.push(`/more/team-management?memberId=${member.id}`)} >
-        <View style={styles.avatarContainer}>
-          <TeamAvatar
-            firstName={member.firstName}
-            lastName={member.lastName}
-            email={member.email}
-            userId={String(member.userId)}
-            profileImageUrl={member.profileImageUrl}
-            themeColor={(member as any).themeColor}
-            size={40}
-          />
-          <View style={[styles.statusDot, { backgroundColor: wsConfig.color }]} />
-        </View>
-        <View style={styles.memberInfo}>
-          <View style={styles.memberNameRow}>
-            <Text style={styles.memberName}>{member.firstName} {member.lastName}</Text>
-            <View style={[styles.roleBadge, { backgroundColor: `${wsConfig.color}15` }]}>
-              <Feather name={wsConfig.icon} size={10} color={wsConfig.color} style={{ marginRight: 3 }} />
-              <Text style={[styles.roleBadgeText, { color: wsConfig.color }]}>{wsConfig.label}</Text>
-            </View>
-            {member.roleName && (
-              <View style={[styles.roleBadge, { backgroundColor: `${presenceConfig.color}15`, marginLeft: 4 }]}>
-                <Text style={[styles.roleBadgeText, { color: presenceConfig.color }]}>{member.roleName}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.memberStatus}>
-            {presenceConfig.label} · {formatLastSeen(member.presence?.lastSeenAt)}
-          </Text>
-        </View>
-        <View style={styles.memberCardActions}>
-          {isOwnerOrManager && unassignedJobs.length > 0 && (
-            <PressableRow style={styles.assignButton} onPress={() => { setAssigningToMember(member); setShowAssignModal(true); }} >
-              <Feather name="plus-circle" size={16} color={colors.primary} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabContainer}>
+        {tabs.map(t => {
+          const active = activeTab === t.key;
+          return (
+            <PressableRow
+              key={t.key}
+              style={[styles.tabButton, active ? styles.tabButtonActive : styles.tabButtonInactive]}
+              onPress={() => setActiveTab(t.key)}
+            >
+              <Feather name={t.icon} size={iconSizes.sm} color={active ? (colors.primaryForeground || colors.white) : colors.mutedForeground} />
+              <Text style={[styles.tabText, { color: active ? (colors.primaryForeground || colors.white) : colors.mutedForeground }]}>{t.label}</Text>
             </PressableRow>
-          )}
-          <PressableRow style={styles.messageButton} onPress={() => router.push(`/more/direct-messages?userId=${member.userId}`)} >
-            <Feather name="message-circle" size={18} color={colors.mutedForeground} />
-          </PressableRow>
-        </View>
-      </PressableRow>
+          );
+        })}
+      </ScrollView>
     );
   };
 
-  const getSubbieStatus = (member: MemberWithDetails): { label: string; color: string; icon: keyof typeof Feather.glyphMap } => {
-    const hasActiveJob = member.assignedJobs.some(j => j.status === 'in_progress');
-    if (hasActiveJob) {
-      const activeJob = member.assignedJobs.find(j => j.status === 'in_progress');
-      return { label: `On your job: ${activeJob?.title || 'Active'}`, color: '#3b82f6', icon: 'tool' };
-    }
-    const isOnline = member.presence?.status === 'online' || member.presence?.status === 'on_job';
-    if (isOnline) {
-      return { label: 'Available', color: '#22c55e', icon: 'check-circle' };
-    }
-    return { label: 'Unavailable', color: '#6b7280', icon: 'circle' };
+  const renderStatBar = (items: { value: number | string; label: string; color: string }[]) => (
+    <View style={styles.statBar}>
+      {items.map((s, i) => (
+        <View key={s.label} style={styles.statBarItemRow}>
+          <View style={styles.statBarItem}>
+            <Text style={[styles.statBarValue, { color: s.color }]}>{s.value}</Text>
+            <Text style={styles.statBarLabel}>{s.label}</Text>
+          </View>
+          {i < items.length - 1 && <View style={styles.statBarDivider} />}
+        </View>
+      ))}
+    </View>
+  );
+
+  const renderLiveSubToggle = () => {
+    const opts: { key: LiveViewMode; icon: keyof typeof Feather.glyphMap; label: string }[] = [
+      { key: 'status', icon: 'users', label: 'Status' },
+      { key: 'activity', icon: 'clock', label: 'Activity' },
+      { key: 'map', icon: 'map', label: 'Map' },
+    ];
+    return (
+      <View style={styles.subToggleRow}>
+        {opts.map(o => {
+          const active = liveViewMode === o.key;
+          return (
+            <PressableRow
+              key={o.key}
+              style={[styles.subTogglePill, active ? styles.subTogglePillActive : styles.subTogglePillInactive]}
+              onPress={() => setLiveViewMode(o.key)}
+            >
+              <Feather name={o.icon} size={12} color={active ? (colors.primaryForeground || colors.white) : colors.mutedForeground} />
+              <Text style={[styles.subTogglePillText, { color: active ? (colors.primaryForeground || colors.white) : colors.mutedForeground }]}>{o.label}</Text>
+            </PressableRow>
+          );
+        })}
+      </View>
+    );
   };
 
-  const renderSubbieCard = (member: MemberWithDetails) => {
-    const subbieStatus = getSubbieStatus(member);
+  const renderMemberCard = (member: MemberWithDetails) => {
+    const ws = workerStates.find((w: any) => w.userId === member.userId);
+    const wsState = ws?.state || member.presence?.status || 'offline';
+    const wsConfig = STATUS_CONFIG[wsState] || STATUS_CONFIG.offline;
+
+    const activeJob = member.assignedJobs.find(j => j.status === 'in_progress' || j.status === 'working');
+    const enRouteJob = !activeJob ? member.assignedJobs.find(j => j.status === 'en_route' || j.status === 'on_my_way') : null;
+    const focusJob = activeJob || enRouteJob;
+
+    let pillLabel = 'Available';
+    let pillColor = colors.success;
+    if (activeJob) { pillLabel = 'On Job'; pillColor = colors.success; }
+    else if (enRouteJob) { pillLabel = 'En Route'; pillColor = colors.info || colors.primary; }
+    else if (wsState === 'offline') { pillLabel = 'Offline'; pillColor = colors.mutedForeground; }
+
+    const locShort = focusJob?.address ? focusJob.address.split(',')[0] : null;
+    const subtitle = focusJob
+      ? `${focusJob.title}${locShort ? ` · ${locShort}` : ''}`
+      : (wsState === 'offline' ? 'Offline' : 'Free · ready for a job');
 
     return (
-      <PressableRow key={member.id} style={styles.memberCard} onPress={() => router.push(`/more/team-management?memberId=${member.id}`)} >
-        <View style={styles.avatarContainer}>
+      <PressableRow
+        key={member.id}
+        style={styles.memberCard}
+        onPress={() => router.push(`/more/team-management?memberId=${member.id}` as any)}
+      >
+        <View style={styles.avatarWrap}>
           <TeamAvatar
             firstName={member.firstName}
             lastName={member.lastName}
@@ -638,467 +575,387 @@ export default function TeamOperationsScreen() {
             themeColor={(member as any).themeColor}
             size={40}
           />
-          <View style={[styles.statusDot, { backgroundColor: subbieStatus.color }]} />
+          <View style={[styles.statusDot, { backgroundColor: wsConfig.color, borderColor: colors.card }]} />
         </View>
-        <View style={styles.memberInfo}>
-          <View style={styles.memberNameRow}>
-            <Text style={styles.memberName}>{member.firstName} {member.lastName}</Text>
-            <View style={[styles.roleBadge, { backgroundColor: '#8B5CF615' }]}>
-              <Text style={[styles.roleBadgeText, { color: '#8B5CF6' }]}>Subcontractor</Text>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-            <Feather name={subbieStatus.icon} size={12} color={subbieStatus.color} />
-            <Text style={[styles.memberStatus, { color: subbieStatus.color }]} numberOfLines={1}>
-              {subbieStatus.label}
-            </Text>
-          </View>
+        <View style={styles.memberBody}>
+          <Text style={styles.memberName} numberOfLines={1}>{member.firstName} {member.lastName}</Text>
+          <Text style={styles.memberSubtitle} numberOfLines={1}>{subtitle}</Text>
         </View>
-        <View style={styles.memberCardActions}>
-          <PressableRow style={styles.messageButton} onPress={() => router.push(`/more/direct-messages?userId=${member.userId}`)} >
-            <Feather name="message-circle" size={18} color={colors.mutedForeground} />
-          </PressableRow>
+        <View style={[styles.statusPill, { backgroundColor: `${pillColor}20` }]}>
+          <Text style={[styles.statusPillText, { color: pillColor }]}>{pillLabel}</Text>
         </View>
       </PressableRow>
     );
   };
 
   const renderActivityItem = (item: ActivityFeedItem) => {
-    const config = ACTIVITY_CONFIG[item.activityType] || { icon: 'activity', color: colors.mutedForeground, bgColor: colors.muted };
-
+    const config = ACTIVITY_CONFIG[item.activityType] || { icon: 'activity' as const, color: colors.mutedForeground, bgColor: colors.muted };
     return (
-      <View key={item.id} style={styles.activityItem}>
+      <View key={item.id} style={styles.activityCard}>
         <View style={[styles.activityIcon, { backgroundColor: config.bgColor }]}>
           <Feather name={config.icon} size={16} color={config.color} />
         </View>
-        <View style={styles.activityContent}>
-          <Text style={styles.activityTitle}>{item.description || (typeof item.activityType === 'string' ? item.activityType.replace(/_/g, ' ') : 'Activity')}</Text>
-          {item.actorName && <Text style={styles.activityDescription}>{item.actorName}</Text>}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.activityTitle} numberOfLines={2}>
+            {item.description || (typeof item.activityType === 'string' ? item.activityType.replace(/_/g, ' ') : 'Activity')}
+          </Text>
+          {item.actorName && <Text style={styles.activitySub} numberOfLines={1}>{item.actorName}</Text>}
           <Text style={styles.activityTime}>{safeDateDistance(item.createdAt)}</Text>
         </View>
-        {item.isImportant && (
-          <View style={styles.importantBadge}>
-            <Text style={styles.importantBadgeText}>Important</Text>
-          </View>
-        )}
       </View>
     );
   };
 
-  const renderLiveOpsTab = () => {
-    if (liveViewMode === 'map') {
-      const membersWithLocations = membersWithDetails.filter(m => {
-        if (!m.presence?.lastLocationLat || !m.presence?.lastLocationLng) return false;
-        const rl = (m.roleName || '').toLowerCase();
-        const isSub = rl.includes('subcontractor') || rl.includes('sub_contractor');
-        if (isSub) {
-          return m.assignedJobs.some(j => j.status === 'in_progress');
-        }
-        return true;
-      });
-      
-      let mapRegion = DEFAULT_REGION;
-      if (membersWithLocations.length > 0) {
-        const lats = membersWithLocations.map(m => m.presence!.lastLocationLat!);
-        const lngs = membersWithLocations.map(m => m.presence!.lastLocationLng!);
-        const minLat = Math.min(...lats);
-        const maxLat = Math.max(...lats);
-        const minLng = Math.min(...lngs);
-        const maxLng = Math.max(...lngs);
-        const centerLat = (minLat + maxLat) / 2;
-        const centerLng = (minLng + maxLng) / 2;
-        const latDelta = Math.max(0.05, (maxLat - minLat) * 1.5);
-        const lngDelta = Math.max(0.05, (maxLng - minLng) * 1.5);
-        mapRegion = {
-          latitude: centerLat,
-          longitude: centerLng,
-          latitudeDelta: latDelta,
-          longitudeDelta: lngDelta,
-        };
-      }
-      
-      return (
-        <View style={styles.mapContainer}>
+  const renderLiveOpsTab = () => (
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: spacing['3xl'] }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+    >
+      {renderStatBar([
+        { value: onlineCount, label: 'Online', color: colors.info || colors.primary },
+        { value: onJobCount, label: 'On Job', color: colors.success },
+        { value: unassignedJobs.length, label: 'Unassigned', color: colors.warning },
+        { value: acceptedMembers.length, label: 'Team', color: colors.foreground },
+      ])}
+
+      {unassignedJobs.length > 0 && (
+        <PressableRow style={styles.alertBanner} onPress={() => router.push('/more/dispatch-board' as any)}>
+          <View style={[styles.alertBannerIcon, { backgroundColor: colors.warning }]}>
+            <Feather name="inbox" size={18} color={colors.white} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.alertBannerTitle}>{unassignedJobs.length} jobs need assigning</Text>
+            <Text style={styles.alertBannerSub}>Tap to open Dispatch Board</Text>
+          </View>
+          <Feather name="chevron-right" size={20} color={colors.warning} />
+        </PressableRow>
+      )}
+
+      {renderLiveSubToggle()}
+
+      {liveViewMode === 'status' && (
+        <>
+          <Text style={styles.sectionEyebrow}>On Shift</Text>
+          {membersWithDetails.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Feather name="users" size={iconSizes['2xl']} color={colors.mutedForeground} />
+              <Text style={styles.emptyText}>No team members yet</Text>
+            </View>
+          ) : (
+            membersWithDetails.map(renderMemberCard)
+          )}
+        </>
+      )}
+
+      {liveViewMode === 'activity' && (
+        <>
+          <Text style={styles.sectionEyebrow}>Recent Activity</Text>
+          {activityFeed.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Feather name="clock" size={iconSizes['2xl']} color={colors.mutedForeground} />
+              <Text style={styles.emptyText}>No recent activity</Text>
+            </View>
+          ) : (
+            activityFeed.slice(0, 20).map(renderActivityItem)
+          )}
+        </>
+      )}
+
+      {liveViewMode === 'map' && (
+        <View style={styles.mapCard}>
           <MapView
             ref={mapRef}
-            style={styles.map}
             provider={PROVIDER_DEFAULT}
-            initialRegion={mapRegion}
-            region={mapRegion}
-            mapType="standard"
-            userInterfaceStyle={isDark ? 'dark' : 'light'}
+            style={styles.map}
+            initialRegion={DEFAULT_REGION}
+            customMapStyle={isDark ? DARK_MAP_STYLE : []}
           >
-            {membersWithLocations.map(member => {
-              const statusConfig = STATUS_CONFIG[member.presence?.status || 'offline'];
-              const firstName = member.firstName || '';
-              const lastName = member.lastName || '';
-              const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
-              const rl2 = (member.roleName || '').toLowerCase();
-              const isSub = rl2.includes('subcontractor') || rl2.includes('sub_contractor');
-              const activeJob = isSub ? member.assignedJobs.find(j => j.status === 'in_progress') : null;
-              const shortName = isSub && activeJob
-                ? `On job: ${activeJob.title}`
-                : (firstName || member.email?.split('@')[0] || 'Team');
-              const memberColor = isSub ? '#9B7BDB' : ((member as any).themeColor || getAvatarColor(`${firstName} ${lastName}`).bg);
-              
-              return (
+            {membersWithDetails
+              .filter(m => m.presence?.lastLocationLat && m.presence?.lastLocationLng)
+              .map(m => (
                 <Marker
-                  key={member.id}
-                  coordinate={{
-                    latitude: member.presence!.lastLocationLat!,
-                    longitude: member.presence!.lastLocationLng!,
-                  }}
-                  anchor={{ x: 0.5, y: 0.5 }}
-                  tracksViewChanges={false}
-                >
-                  <View style={{ alignItems: 'center' }}>
-                    <View style={[styles.teamMarkerOuter, { backgroundColor: memberColor }, isSub && { borderColor: '#8B5CF6', borderWidth: 2 }]}>
-                      <Text style={styles.teamMarkerText}>{initials}</Text>
-                      <View style={[styles.activityDot, { backgroundColor: statusConfig?.color || '#9ca3af' }]} />
-                    </View>
-                    <View style={styles.nameLabel}>
-                      <Text style={styles.nameLabelText} numberOfLines={1}>{shortName}</Text>
-                    </View>
-                  </View>
-                </Marker>
-              );
-            })}
+                  key={m.id}
+                  coordinate={{ latitude: m.presence!.lastLocationLat!, longitude: m.presence!.lastLocationLng! }}
+                  title={`${m.firstName} ${m.lastName}`}
+                />
+              ))
+            }
           </MapView>
-          <View style={[styles.mapOverlay, { top: insets.top + spacing.md }]}>
-            {renderLiveViewToggle()}
-          </View>
-          {membersWithLocations.length === 0 && (
-            <View style={styles.mapEmptyState}>
-              <View style={styles.mapEmptyIcon}>
-                <Feather name="map-pin" size={32} color={colors.mutedForeground} />
-              </View>
-              <Text style={styles.mapEmptyTitle}>No Team Locations</Text>
-              <Text style={styles.mapEmptyText}>
-                Team members will appear here when they share their location
-              </Text>
-            </View>
-          )}
         </View>
-      );
-    }
+      )}
+    </ScrollView>
+  );
+
+  const renderSchedulingTab = () => {
+    const dayJobs = jobs.filter(j => {
+      if (!j.scheduledAt) return false;
+      try { return isSameDay(parseISO(j.scheduledAt), selectedDate); } catch { return false; }
+    });
+    const unassignedForDay = dayJobs.filter(j => !j.assignedTo);
 
     return (
       <ScrollView
-        style={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: spacing['3xl'] }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        <View style={styles.statBar}>
-          {[
-            { value: onlineCount, label: 'Online', color: colors.info || colors.primary },
-            { value: onJobCount, label: 'On Job', color: colors.success },
-            { value: unassignedJobs.length, label: 'Unassigned', color: colors.warning },
-            { value: acceptedMembers.length, label: 'Team', color: colors.foreground },
-          ].map(s => (
-            <View key={s.label} style={styles.statBarItem}>
-              <Text style={[styles.statBarValue, { color: s.color }]}>{s.value}</Text>
-              <Text style={styles.statBarLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekStripRow}>
+          {weekDays.map(d => {
+            const isSel = isSameDay(d, selectedDate);
+            const isTodayDay = isToday(d);
+            return (
+              <PressableRow
+                key={d.toISOString()}
+                onPress={() => setSelectedDate(d)}
+                style={[
+                  styles.dayPill,
+                  isSel ? styles.dayPillActive : styles.dayPillInactive,
+                ]}
+              >
+                <Text style={[styles.dayPillDow, { color: isSel ? (colors.primaryForeground || colors.white) : colors.mutedForeground }]}>
+                  {format(d, 'EEE').toUpperCase()}
+                </Text>
+                <Text style={[styles.dayPillNum, { color: isSel ? (colors.primaryForeground || colors.white) : colors.foreground }]}>
+                  {format(d, 'd')}
+                </Text>
+                {isTodayDay && !isSel && <View style={[styles.todayDot, { backgroundColor: colors.primary }]} />}
+              </PressableRow>
+            );
+          })}
+        </ScrollView>
 
-        {unassignedJobs.length > 0 && (
-          <PressableRow style={styles.alertBanner} onPress={() => router.push('/more/dispatch-board' as any)}>
-            <View style={[styles.alertBannerIcon, { backgroundColor: colors.warning }]}>
-              <Feather name="inbox" size={18} color={colors.white} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.alertBannerTitle}>{unassignedJobs.length} jobs need assigning</Text>
-              <Text style={styles.alertBannerSub}>Tap to open Dispatch Board</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={colors.warning} />
-          </PressableRow>
+        <Text style={styles.sectionEyebrow}>Crew · {format(selectedDate, 'EEE d MMM')}</Text>
+        {acceptedMembers.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Feather name="users" size={iconSizes['2xl']} color={colors.mutedForeground} />
+            <Text style={styles.emptyText}>No team members yet</Text>
+          </View>
+        ) : (
+          acceptedMembers.map(member => {
+            const memberJobs = dayJobs
+              .filter(j => j.assignedTo === member.userId)
+              .sort((a, b) => {
+                if (!a.scheduledAt || !b.scheduledAt) return 0;
+                return parseISO(a.scheduledAt).getTime() - parseISO(b.scheduledAt).getTime();
+              });
+            return (
+              <View key={member.id} style={styles.scheduleMemberRow}>
+                <View style={styles.scheduleMemberHeader}>
+                  <TeamAvatar
+                    firstName={member.firstName}
+                    lastName={member.lastName}
+                    email={member.email}
+                    userId={String(member.userId)}
+                    profileImageUrl={member.profileImageUrl}
+                    themeColor={(member as any).themeColor}
+                    size={32}
+                  />
+                  <Text style={styles.scheduleMemberName} numberOfLines={1}>{member.firstName} {member.lastName}</Text>
+                  <Text style={styles.scheduleMemberCount}>{memberJobs.length} job{memberJobs.length === 1 ? '' : 's'}</Text>
+                </View>
+                {memberJobs.length === 0 ? (
+                  <PressableRow
+                    style={styles.assignDashedRow}
+                    onPress={() => router.push('/more/dispatch-board' as any)}
+                  >
+                    <Feather name="plus" size={14} color={colors.primary} />
+                    <Text style={[styles.assignDashedText, { color: colors.primary }]}>Tap to assign</Text>
+                  </PressableRow>
+                ) : (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.jobBlockRow}>
+                    {memberJobs.map(j => {
+                      const sc = getStatusColor(j.status);
+                      return (
+                        <PressableRow
+                          key={j.id}
+                          style={[styles.jobBlock, { backgroundColor: `${sc}18` }]}
+                          onPress={() => router.push(`/job/${j.id}` as any)}
+                        >
+                          <View style={[styles.jobBlockAccent, { backgroundColor: sc }]} />
+                          <Text style={[styles.jobBlockTitle, { color: sc }]} numberOfLines={1}>{j.title}</Text>
+                          <Text style={styles.jobBlockMeta} numberOfLines={1}>{formatJobTimeRange(j)}</Text>
+                          {j.address && (
+                            <Text style={styles.jobBlockAddr} numberOfLines={1}>{j.address.split(',')[0]}</Text>
+                          )}
+                        </PressableRow>
+                      );
+                    })}
+                  </ScrollView>
+                )}
+              </View>
+            );
+          })
         )}
 
-        {renderLiveViewToggle()}
-
-        {liveViewMode === 'status' && (() => {
-          const isSub = (rn?: string) => { const r = (rn || '').toLowerCase(); return r.includes('subcontractor') || r.includes('sub_contractor'); };
-          const employees = membersWithDetails.filter(m => !isSub(m.roleName));
-          const subbies = membersWithDetails.filter(m => isSub(m.roleName));
-          return (
-            <>
-              <Text style={styles.sectionTitle}>Your Team ({employees.length})</Text>
-              {employees.length > 0 ? employees.map(renderMemberCard) : (
-                <View style={{ paddingVertical: spacing.md, alignItems: 'center' }}>
-                  <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>No employees</Text>
-                </View>
-              )}
-
-              {subbies.length > 0 && (
-                <>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.sm }}>
-                    <Text style={styles.sectionTitle}>Your Subbies ({subbies.length})</Text>
-                  </View>
-                  {subbies.map(renderSubbieCard)}
-                </>
-              )}
-            </>
-          );
-        })()}
-
-        {liveViewMode === 'activity' && (
+        {unassignedForDay.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            {activityFeed.length === 0 ? (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIconCircle}>
-                  <Feather name="clock" size={40} color={colors.mutedForeground} />
+            <Text style={[styles.sectionEyebrow, { marginTop: spacing.lg }]}>Unassigned Queue</Text>
+            {unassignedForDay.map(j => (
+              <View key={j.id} style={styles.queueCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.queueTitle} numberOfLines={1}>{j.title}</Text>
+                  <Text style={styles.queueMeta} numberOfLines={1}>
+                    {[j.clientName, formatJobTimeRange(j)].filter(Boolean).join(' · ') || 'No details'}
+                  </Text>
                 </View>
-                <Text style={styles.emptyStateTitle}>No Recent Activity</Text>
-                <Text style={styles.emptyStateText}>Team activity will appear here as your team works</Text>
+                <PressableRow
+                  style={styles.assignDashedBtn}
+                  onPress={() => router.push('/more/dispatch-board' as any)}
+                >
+                  <Text style={[styles.assignDashedBtnText, { color: colors.primary }]}>Assign →</Text>
+                </PressableRow>
               </View>
-            ) : (
-              activityFeed.slice(0, 20).map(renderActivityItem)
-            )}
+            ))}
+          </>
+        )}
+
+        {pendingTimeOff.length > 0 && isOwnerOrManager && (
+          <>
+            <Text style={[styles.sectionEyebrow, { marginTop: spacing.lg }]}>Pending Time Off</Text>
+            {pendingTimeOff.map(req => {
+              const member = teamMembers.find(m => m.id === req.teamMemberId);
+              return (
+                <View key={req.id} style={styles.queueCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.queueTitle} numberOfLines={1}>{member?.firstName} {member?.lastName}</Text>
+                    <Text style={styles.queueMeta} numberOfLines={1}>
+                      {req.startDate?.slice(0, 10)} – {req.endDate?.slice(0, 10)} · {req.reason.replace(/_/g, ' ')}
+                    </Text>
+                  </View>
+                  <PressableRow style={[styles.smallBtn, { backgroundColor: colors.success }]} onPress={() => handleApproveTimeOff(req.id, 'approved')}>
+                    <Feather name="check" size={14} color={colors.white} />
+                  </PressableRow>
+                  <PressableRow style={[styles.smallBtn, { backgroundColor: colors.destructive, marginLeft: spacing.xs }]} onPress={() => handleApproveTimeOff(req.id, 'rejected')}>
+                    <Feather name="x" size={14} color={colors.white} />
+                  </PressableRow>
+                </View>
+              );
+            })}
           </>
         )}
       </ScrollView>
     );
   };
 
+  const renderPerformanceTab = () => {
+    const periods: { key: PerfPeriod; label: string }[] = [
+      { key: 'today', label: 'Today' },
+      { key: 'week', label: 'This Week' },
+      { key: 'month', label: 'This Month' },
+    ];
+    const metrics: { value: string | number; label: string; color: string; icon: keyof typeof Feather.glyphMap }[] = [
+      { value: totalCompleted, label: 'Total Completed', color: colors.success, icon: 'check-circle' },
+      { value: totalInProgress, label: 'In Progress', color: colors.info || colors.primary, icon: 'clock' },
+      { value: `${avgCompletionRate}%`, label: 'Avg Completion', color: colors.foreground, icon: 'trending-up' },
+      { value: unassignedJobs.length, label: 'Unassigned', color: colors.warning, icon: 'briefcase' },
+    ];
 
-  const renderSchedulingTab = () => (
-    <ScrollView
-      style={styles.scrollContent}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Weekly Availability</Text>
-        </View>
-
-        <View style={styles.selectContainer}>
-          <Text style={styles.selectLabel}>Select Team Member</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.memberChips}>
-              {acceptedMembers.map(member => (
-                <PressableRow key={member.id} style={[styles.memberChip, selectedMemberId === member.id && styles.memberChipActive]} onPress={() => setSelectedMemberId(member.id)} >
-                  <Text style={[styles.memberChipText, selectedMemberId === member.id && styles.memberChipTextActive]}>
-                    {member.firstName} {member.lastName}
-                  </Text>
-                </PressableRow>
-              ))}
-            </View>
-          </ScrollView>
-        </View>
-
-        {selectedMemberId ? (
-          availabilityLoading ? (
-            <View style={styles.emptyState}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={styles.emptyStateText}>Loading availability...</Text>
-            </View>
-          ) : (
-          <View style={styles.availabilityList}>
-            {DAY_NAMES.map((day, index) => {
-              const dayAvailability = selectedMemberAvailability.find(a => a.dayOfWeek === index);
-              const isAvailable = dayAvailability?.isAvailable ?? (index > 0 && index < 6);
-              const startTime = dayAvailability?.startTime || '08:00';
-              const endTime = dayAvailability?.endTime || '17:00';
-
-              return (
-                <PressableRow key={day} style={styles.availabilityRow} onPress={() => handleUpdateAvailability(index, !isAvailable, startTime, endTime)} >
-                  <View style={styles.availabilityLeft}>
-                    <View style={[styles.availabilityDot, { backgroundColor: isAvailable ? '#22c55e' : colors.muted }]} />
-                    <Text style={[styles.availabilityDay, !isAvailable && { color: colors.mutedForeground }]}>{day}</Text>
-                  </View>
-                  <Text style={styles.availabilityTime}>
-                    {isAvailable ? `${startTime} - ${endTime}` : 'Not available'}
-                  </Text>
-                </PressableRow>
-              );
-            })}
-          </View>
-          )
-        ) : (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconCircle}>
-              <Feather name="calendar" size={40} color={colors.mutedForeground} />
-            </View>
-            <Text style={styles.emptyStateTitle}>View Availability</Text>
-            <Text style={styles.emptyStateText}>Select a team member to view their availability</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Time Off Requests</Text>
-          <PressableRow style={styles.addButton} onPress={() => setShowTimeOffModal(true)} >
-            <Feather name="plus" size={18} color={colors.primaryForeground} />
-          </PressableRow>
-        </View>
-
-        {pendingTimeOff.length > 0 ? (
-          pendingTimeOff.map(request => {
-            const member = teamMembers.find(m => m.id === request.teamMemberId);
+    return (
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: spacing['3xl'] }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
+        <View style={styles.periodRow}>
+          {periods.map(p => {
+            const active = perfPeriod === p.key;
             return (
-              <View key={request.id} style={styles.timeOffCard}>
-                <View style={styles.timeOffHeader}>
-                  <Text style={styles.timeOffName}>{member?.firstName} {member?.lastName}</Text>
-                  <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingBadgeText}>Pending</Text>
+              <PressableRow
+                key={p.key}
+                style={[styles.periodPill, active ? styles.periodPillActive : styles.periodPillInactive]}
+                onPress={() => setPerfPeriod(p.key)}
+              >
+                <Text style={[styles.periodPillText, { color: active ? (colors.primaryForeground || colors.white) : colors.mutedForeground }]}>{p.label}</Text>
+              </PressableRow>
+            );
+          })}
+        </View>
+
+        <View style={styles.metricGrid}>
+          {metrics.map(m => (
+            <View key={m.label} style={styles.metricCard}>
+              <View style={[styles.metricIcon, { backgroundColor: `${m.color}20` }]}>
+                <Feather name={m.icon} size={iconSizes.md} color={m.color} />
+              </View>
+              <Text style={[styles.metricValue, { color: m.color }]}>{m.value}</Text>
+              <Text style={styles.metricLabel}>{m.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={[styles.sectionEyebrow, { marginTop: spacing.lg }]}>Individual</Text>
+        {memberStats.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Feather name="bar-chart-2" size={iconSizes['2xl']} color={colors.mutedForeground} />
+            <Text style={styles.emptyText}>No performance data</Text>
+          </View>
+        ) : (
+          memberStats.map(m => {
+            const barColor = m.completionRate >= 80 ? colors.success
+              : m.completionRate >= 50 ? colors.warning
+              : colors.mutedForeground;
+            return (
+              <View key={m.id} style={styles.perfCard}>
+                <View style={styles.perfHeader}>
+                  <TeamAvatar
+                    firstName={m.firstName}
+                    lastName={m.lastName}
+                    email={m.email}
+                    userId={String(m.userId)}
+                    profileImageUrl={m.profileImageUrl}
+                    themeColor={(m as any).themeColor}
+                    size={36}
+                  />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.perfName} numberOfLines={1}>{m.firstName} {m.lastName}</Text>
+                    {m.roleName ? <Text style={styles.perfRole} numberOfLines={1}>{m.roleName}</Text> : null}
                   </View>
+                  <Text style={[styles.perfRate, { color: barColor }]}>
+                    {m.totalJobs > 0 ? `${m.completionRate}%` : '—'}
+                  </Text>
                 </View>
-                <Text style={styles.timeOffDates}>
-                  {safeDateFormat(request.startDate, 'MMM d')} - {safeDateFormat(request.endDate, 'MMM d, yyyy')}
+                <View style={styles.barTrack}>
+                  <View style={[styles.barFill, { width: `${m.completionRate}%`, backgroundColor: barColor }]} />
+                </View>
+                <Text style={styles.perfStats}>
+                  {m.completedJobs} done · {m.inProgressJobs} active · {m.totalJobs} total
                 </Text>
-                <Text style={styles.timeOffReason}>{typeof request.reason === 'string' ? request.reason.replace(/_/g, ' ') : '-'}</Text>
-                {isOwnerOrManager && (
-                  <View style={styles.timeOffActions}>
-                    <PressableRow style={[styles.timeOffButton, { backgroundColor: colors.success }]} onPress={() => handleApproveTimeOff(request.id, 'approved')} >
-                      <Text style={styles.timeOffButtonText}>Approve</Text>
-                    </PressableRow>
-                    <PressableRow style={[styles.timeOffButton, { backgroundColor: colors.destructive }]} onPress={() => handleApproveTimeOff(request.id, 'rejected')} >
-                      <Text style={styles.timeOffButtonText}>Reject</Text>
-                    </PressableRow>
-                  </View>
-                )}
               </View>
             );
           })
-        ) : (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconCircle}>
-              <Feather name="calendar" size={40} color={colors.mutedForeground} />
-            </View>
-            <Text style={styles.emptyStateTitle}>No Pending Requests</Text>
-            <Text style={styles.emptyStateText}>Time off requests will appear here</Text>
-          </View>
         )}
-      </View>
-    </ScrollView>
-  );
-
-  const renderPerformanceTab = () => (
-    <ScrollView
-      style={styles.scrollContent}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={styles.statBar}>
-        {[
-          { value: totalCompleted, label: 'Done', color: colors.success },
-          { value: totalInProgress, label: 'Active', color: colors.info || colors.primary },
-          { value: `${avgCompletionRate}%`, label: 'Avg Rate', color: colors.foreground },
-          { value: unassignedJobs.length, label: 'Unassigned', color: colors.warning },
-        ].map(s => (
-          <View key={s.label} style={styles.statBarItem}>
-            <Text style={[styles.statBarValue, { color: s.color }]}>{s.value}</Text>
-            <Text style={styles.statBarLabel}>{s.label}</Text>
-          </View>
-        ))}
-      </View>
-
-      <Text style={styles.sectionTitle}>Individual Performance</Text>
-      {memberStats.map((member, index) => {
-        const rankColor = index === 0 ? colors.warning : index === 1 ? colors.mutedForeground : index === 2 ? '#cd7f32' : colors.mutedForeground;
-        return (
-        <View key={member.id} style={styles.performanceCard}>
-          <View style={[styles.performanceRank, index < 3 && { backgroundColor: `${rankColor}20` }]}>
-            <Text style={[styles.performanceRankText, index < 3 && { color: rankColor }]}>{index + 1}</Text>
-          </View>
-          <TeamAvatar
-            firstName={member.firstName}
-            lastName={member.lastName}
-            email={member.email}
-            userId={String(member.userId || member.id)}
-            profileImageUrl={member.profileImageUrl}
-            themeColor={(member as any).themeColor}
-            size={36}
-          />
-          <View style={styles.performanceInfo}>
-            <Text style={styles.performanceName}>{member.firstName} {member.lastName}</Text>
-            <Text style={styles.performanceStats}>{member.completedJobs} done | {member.inProgressJobs} active | {member.scheduledJobs} upcoming</Text>
-          </View>
-          <View style={[styles.performanceRate, {
-            backgroundColor: member.completionRate >= 75 ? `${colors.success}15` :
-              member.completionRate >= 50 ? `${colors.warning}15` : colors.muted,
-          }]}>
-            <Text style={[styles.performanceRateText, {
-              color: member.completionRate >= 75 ? colors.success :
-                member.completionRate >= 50 ? colors.warning : colors.foreground,
-            }]}>{member.completionRate}%</Text>
-          </View>
-        </View>
-        );
-      })}
-
-      {memberStats.length === 0 && (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconCircle}>
-            <Feather name="bar-chart-2" size={40} color={colors.mutedForeground} />
-          </View>
-          <Text style={styles.emptyStateTitle}>No Performance Data</Text>
-          <Text style={styles.emptyStateText}>Team performance metrics will appear here</Text>
-        </View>
-      )}
-    </ScrollView>
-  );
+      </ScrollView>
+    );
+  };
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </>
     );
   }
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.pageHeader}>
-          <PressableRow onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="chevron-left" size={22} color={colors.foreground} />
-          </PressableRow>
-          <View style={styles.headerLeft}>
-            <Text style={styles.pageTitle}>Team Operations</Text>
-          </View>
-          <View style={styles.headerDatePill}>
-            <Text style={styles.headerDatePillText}>{format(now, 'EEE d MMM')}</Text>
-          </View>
-          <PressableRow onPress={onRefresh} style={styles.refreshBtn} accessibilityLabel="Refresh data">
-            <Feather name="refresh-cw" size={16} color={colors.mutedForeground} />
-          </PressableRow>
+        <View style={styles.contentShell}>
+          {renderHero()}
+          {renderTabs()}
         </View>
-        <View style={styles.syncStampRow}>
-          <View style={[styles.syncDot, { backgroundColor: refreshing ? colors.warning : colors.success }]} />
-          <Text style={styles.syncStampText}>
-            {refreshing ? 'Syncing…' : `Updated ${formatRelativeAgo(lastSyncedAt)} · ${acceptedMembers.length} team member${acceptedMembers.length === 1 ? '' : 's'}`}
-          </Text>
+        <View style={styles.tabContent}>
+          {activeTab === 'live' && renderLiveOpsTab()}
+          {activeTab === 'scheduling' && renderSchedulingTab()}
+          {activeTab === 'performance' && renderPerformanceTab()}
         </View>
-        
-        {/* Upgrade banner for non-team subscribers */}
-        {needsUpgrade && (
-          <PressableRow style={[styles.upgradeBanner, { backgroundColor: colors.primary + '15' }]} onPress={() => router.push('/more/subscription')} >
-            <Feather name="star" size={18} color={colors.primary} />
-            <View style={styles.upgradeBannerContent}>
-              <Text style={[styles.upgradeBannerTitle, { color: colors.foreground }]}>
-                Upgrade to Team Plan
-              </Text>
-              <Text style={[styles.upgradeBannerText, { color: colors.mutedForeground }]}>
-                Unlock team management, live tracking, and dispatch features
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={colors.primary} />
-          </PressableRow>
-        )}
-        
-        {renderTabs()}
-        {activeTab === 'live' && renderLiveOpsTab()}
-        {activeTab === 'scheduling' && renderSchedulingTab()}
-        {activeTab === 'performance' && renderPerformanceTab()}
       </View>
 
+      {/* Time Off Modal — kept reachable through pending list actions only; preserved for future use */}
       <Modal
         visible={showTimeOffModal}
         animationType="slide"
@@ -1113,19 +970,6 @@ export default function TeamOperationsScreen() {
             </PressableRow>
           </View>
           <ScrollView style={styles.modalContent}>
-            <Text style={styles.inputLabel}>Team Member</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
-              <View style={styles.memberChips}>
-                {acceptedMembers.map(member => (
-                  <PressableRow key={member.id} style={[styles.memberChip, selectedMemberId === member.id && styles.memberChipActive]} onPress={() => setSelectedMemberId(member.id)} >
-                    <Text style={[styles.memberChipText, selectedMemberId === member.id && styles.memberChipTextActive]}>
-                      {member.firstName} {member.lastName}
-                    </Text>
-                  </PressableRow>
-                ))}
-              </View>
-            </ScrollView>
-
             <Text style={styles.inputLabel}>Start Date (YYYY-MM-DD)</Text>
             <TextInput
               style={styles.textInput}
@@ -1134,7 +978,6 @@ export default function TeamOperationsScreen() {
               placeholder="2024-01-01"
               placeholderTextColor={colors.mutedForeground}
             />
-
             <Text style={styles.inputLabel}>End Date (YYYY-MM-DD)</Text>
             <TextInput
               style={styles.textInput}
@@ -1143,18 +986,20 @@ export default function TeamOperationsScreen() {
               placeholder="2024-01-05"
               placeholderTextColor={colors.mutedForeground}
             />
-
             <Text style={styles.inputLabel}>Reason</Text>
             <View style={styles.reasonChips}>
               {['annual_leave', 'sick_leave', 'personal', 'other'].map(reason => (
-                <PressableRow key={reason} style={[styles.reasonChip, timeOffReason === reason && styles.reasonChipActive]} onPress={() => setTimeOffReason(reason)} >
-                  <Text style={[styles.reasonChipText, timeOffReason === reason && styles.reasonChipTextActive]}>
+                <PressableRow
+                  key={reason}
+                  style={[styles.reasonChip, timeOffReason === reason && { backgroundColor: colors.primary }]}
+                  onPress={() => setTimeOffReason(reason)}
+                >
+                  <Text style={[styles.reasonChipText, { color: timeOffReason === reason ? (colors.primaryForeground || colors.white) : colors.foreground }]}>
                     {reason.replace(/_/g, ' ')}
                   </Text>
                 </PressableRow>
               ))}
             </View>
-
             <Text style={styles.inputLabel}>Notes (optional)</Text>
             <TextInput
               style={[styles.textInput, { height: 80, textAlignVertical: 'top' }]}
@@ -1164,9 +1009,8 @@ export default function TeamOperationsScreen() {
               placeholderTextColor={colors.mutedForeground}
               multiline
             />
-
-            <PressableRow style={styles.submitButton} onPress={handleRequestTimeOff} >
-              <Text style={styles.submitButtonText}>Submit Request</Text>
+            <PressableRow style={[styles.submitButton, { backgroundColor: colors.primary }]} onPress={handleRequestTimeOff}>
+              <Text style={[styles.submitButtonText, { color: colors.primaryForeground || colors.white }]}>Submit Request</Text>
             </PressableRow>
           </ScrollView>
         </View>
@@ -1176,151 +1020,156 @@ export default function TeamOperationsScreen() {
       <Modal
         visible={showAssignModal}
         animationType="slide"
-        transparent={true}
+        presentationStyle="pageSheet"
         onRequestClose={() => { setShowAssignModal(false); setAssigningToMember(null); }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.assignModalContainer, { paddingBottom: 24 + insets.bottom }]}>
-            <View style={styles.assignModalHandle} />
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>Assign a Job</Text>
-                {assigningToMember && (
-                  <Text style={styles.modalSubtitle}>
-                    To {assigningToMember.firstName} {assigningToMember.lastName}
-                  </Text>
-                )}
-              </View>
-              <PressableRow onPress={() => { setShowAssignModal(false); setAssigningToMember(null); }}>
-                <Feather name="x" size={24} color={colors.foreground} />
-              </PressableRow>
-            </View>
-            <ScrollView style={styles.assignJobList} showsVerticalScrollIndicator={false}>
-              {unassignedJobs.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Feather name="check-circle" size={40} color={colors.mutedForeground} />
-                  <Text style={styles.emptyStateTitle}>No Unassigned Jobs</Text>
-                  <Text style={styles.emptyStateText}>All current jobs have been assigned.</Text>
-                </View>
-              ) : (
-                unassignedJobs.map((job: JobData) => (
-                  <PressableRow key={job.id} style={styles.assignJobRow} onPress={() => handleAssignJob(job)} disabled={isAssigningJob} >
-                    <View style={styles.assignJobInfo}>
-                      <Text style={styles.assignJobTitle} numberOfLines={1}>{job.title}</Text>
-                      {job.clientName && (
-                        <Text style={styles.assignJobClient} numberOfLines={1}>{job.clientName}</Text>
-                      )}
-                      {job.scheduledAt && (
-                        <Text style={styles.assignJobDate}>
-                          {safeDateFormat(job.scheduledAt, 'EEE d MMM')}
-                        </Text>
-                      )}
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: job.status === 'in_progress' ? '#3b82f620' : '#f59e0b20' }]}>
-                      <Text style={[styles.statusBadgeText, { color: job.status === 'in_progress' ? '#3b82f6' : '#f59e0b' }]}>
-                        {job.status === 'in_progress' ? 'In Progress' : 'Scheduled'}
-                      </Text>
-                    </View>
-                    {isAssigningJob ? (
-                      <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />
-                    ) : (
-                      <Feather name="chevron-right" size={18} color={colors.mutedForeground} style={{ marginLeft: 8 }} />
-                    )}
-                  </PressableRow>
-                ))
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Assign a Job</Text>
+              {assigningToMember && (
+                <Text style={styles.modalSubtitle}>To {assigningToMember.firstName} {assigningToMember.lastName}</Text>
               )}
-            </ScrollView>
+            </View>
+            <PressableRow onPress={() => { setShowAssignModal(false); setAssigningToMember(null); }}>
+              <Feather name="x" size={24} color={colors.foreground} />
+            </PressableRow>
           </View>
+          <ScrollView style={styles.modalContent}>
+            {unassignedJobs.length === 0 ? (
+              <View style={styles.emptyBox}>
+                <Feather name="check-circle" size={40} color={colors.mutedForeground} />
+                <Text style={styles.emptyText}>No unassigned jobs</Text>
+              </View>
+            ) : (
+              unassignedJobs.map((job) => (
+                <PressableRow
+                  key={job.id}
+                  style={styles.assignJobRow}
+                  onPress={() => handleAssignJob(job)}
+                  disabled={isAssigningJob}
+                >
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.assignJobTitle} numberOfLines={1}>{job.title}</Text>
+                    {job.clientName && <Text style={styles.assignJobMeta} numberOfLines={1}>{job.clientName}</Text>}
+                  </View>
+                  {isAssigningJob
+                    ? <ActivityIndicator size="small" color={colors.primary} />
+                    : <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+                  }
+                </PressableRow>
+              ))
+            )}
+          </ScrollView>
         </View>
       </Modal>
     </>
   );
 }
 
-const createStyles = (colors: ThemeColors, contentWidth: number, responsivePadding: number, isTabletDevice: boolean) => StyleSheet.create({
+const createStyles = (colors: ThemeColors, contentWidth: number, responsivePadding: number, isTabletDevice: boolean, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingHorizontal: isTabletDevice ? spacing.lg : 0,
   },
-  pageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+  contentShell: {
     paddingHorizontal: responsivePadding,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.md,
   },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.muted,
-  },
-  headerLeft: {
+  tabContent: {
     flex: 1,
-    marginLeft: spacing.xs,
+    paddingHorizontal: responsivePadding,
+  },
+  heroSection: {
+    marginBottom: spacing.md,
+    paddingTop: spacing.sm,
   },
   pageTitle: {
-    ...typography.largeTitle,
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.foreground,
+    letterSpacing: -0.5,
   },
-  headerDatePill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    backgroundColor: colors.muted,
+  pageSubtitle: {
+    fontSize: 14,
+    color: colors.mutedForeground,
+    lineHeight: 20,
   },
-  headerDatePillText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  refreshBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.muted,
-  },
-  syncStampRow: {
+  subtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: responsivePadding,
-    paddingBottom: spacing.sm,
+    marginTop: 4,
   },
   syncDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
+    marginLeft: 4,
   },
-  syncStampText: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-    fontWeight: '500',
+  tabContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
   },
+  tabButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    height: sizes.filterChipHeight,
+    borderRadius: radius.pill,
+    gap: spacing.sm,
+  },
+  tabButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  tabButtonInactive: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  tabText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+
+  // Stat bar (single compact card with dividers)
   statBar: {
     flexDirection: 'row',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xs,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: radius['2xl'],
     marginBottom: spacing.md,
+    ...shadows.sm,
+  },
+  statBarItemRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   statBarItem: {
     flex: 1,
     alignItems: 'center',
-    gap: spacing.xxs,
   },
   statBarValue: {
-    ...typography.largeTitle,
+    fontSize: 24,
     fontWeight: '700',
+    letterSpacing: -0.5,
   },
   statBarLabel: {
     ...typography.label,
     color: colors.mutedForeground,
+    marginTop: 2,
   },
+  statBarDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.cardBorder,
+  },
+
   alertBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1328,7 +1177,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     backgroundColor: `${colors.warning}12`,
     borderWidth: 1,
     borderColor: `${colors.warning}30`,
-    borderRadius: radius.xl,
+    borderRadius: radius['2xl'],
     padding: spacing.md,
     marginBottom: spacing.md,
   },
@@ -1349,774 +1198,450 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     color: colors.mutedForeground,
     marginTop: 2,
   },
-  // Legacy aliases (kept to avoid touching every reference)
-  tabletHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: responsivePadding,
-    paddingTop: 0,
-    paddingBottom: spacing.sm,
-  },
-  tabletTitle: {
-    ...typography.largeTitle,
-    color: colors.foreground,
-  },
-  tabletSubtitle: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    marginTop: spacing.xs,
-  },
-  refreshButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.xl,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  tabBar: {
-    flexGrow: 0,
-    flexShrink: 0,
-    marginBottom: spacing.sm,
-    paddingHorizontal: isTabletDevice ? spacing.sm : responsivePadding,
-  },
-  tabBarContent: {
+
+  subToggleRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
   },
-  tabButton: {
+  subTogglePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
     borderRadius: radius.pill,
-    backgroundColor: colors.muted,
-    height: sizes.filterChipHeight,
   },
-  tabButtonActive: {
+  subTogglePillActive: {
     backgroundColor: colors.primary,
   },
-  tabButtonText: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    fontWeight: '500',
-  },
-  tabButtonTextActive: {
-    color: colors.primaryForeground,
-    fontWeight: '600',
-  },
-  scrollContent: {
-    flex: 1,
-    paddingHorizontal: isTabletDevice ? spacing.sm : responsivePadding,
-  },
-  liveViewToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.muted,
-    borderRadius: radius['2xl'],
-    padding: spacing.xs,
-    marginVertical: spacing.sm,
-  },
-  liveViewButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.xl,
-  },
-  liveViewButtonActive: {
+  subTogglePillInactive: {
     backgroundColor: colors.card,
-    ...shadows.sm,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
-  liveViewText: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-  },
-  liveViewTextActive: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  sectionTitle: {
+  subTogglePillText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  heroCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
-    padding: spacing.lg,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  heroIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  heroValue: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    color: colors.foreground,
-  },
-  heroLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.mutedForeground,
-    marginTop: spacing.xs,
-    letterSpacing: 0.3,
-  },
-  memberCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    gap: spacing.sm,
-    ...shadows.sm,
-  },
-  avatarContainer: {
-    position: 'relative',
-  },
-  avatar: {
-    width: sizes.avatarMd,
-    height: sizes.avatarMd,
-    borderRadius: sizes.avatarMd / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  statusDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: colors.card,
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  memberName: {
-    ...typography.cardTitle,
-    color: colors.foreground,
-  },
-  roleBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    backgroundColor: colors.muted,
-  },
-  roleBadgeText: {
-    ...typography.captionSmall,
-    color: colors.mutedForeground,
-    textTransform: 'capitalize',
-  },
-  memberStatus: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    marginTop: 2,
-  },
-  memberCardActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  assignButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.xl,
-    backgroundColor: `${colors.primary}15`,
-  },
-  messageButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.xl,
-    backgroundColor: colors.muted,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalSubtitle: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    marginTop: 2,
-  },
-  assignJobList: {
-    maxHeight: 400,
-    paddingHorizontal: spacing.md,
-  },
-  assignJobRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  assignJobInfo: {
-    flex: 1,
-  },
-  assignJobTitle: {
-    ...typography.cardTitle,
-    color: colors.foreground,
-  },
-  assignJobClient: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    marginTop: 2,
-  },
-  assignJobDate: {
-    ...typography.caption,
-    color: colors.primary,
-    marginTop: 2,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.xl,
-  },
-  statusBadgeText: {
-    fontSize: 11,
     fontWeight: '600',
   },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    gap: spacing.md,
-    ...shadows.sm,
-  },
-  activityIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityTitle: {
-    ...typography.cardTitle,
-    color: colors.foreground,
-  },
-  activityDescription: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    marginTop: 2,
-  },
-  activityTime: {
-    ...typography.captionSmall,
-    color: colors.mutedForeground,
-    marginTop: 4,
-  },
-  importantBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(245,158,11,0.1)',
-  },
-  importantBadgeText: {
-    ...typography.captionSmall,
-    color: '#f59e0b',
-    fontWeight: '600',
-  },
-  mapContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  mapOverlay: {
-    position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
-  },
-  mapEmptyState: {
-    position: 'absolute',
-    top: '40%',
-    left: spacing.md,
-    right: spacing.md,
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
-    padding: spacing.md,
-    ...shadows.md,
-  },
-  mapEmptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.muted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  mapEmptyTitle: {
-    ...typography.cardTitle,
-    color: colors.foreground,
-    marginBottom: spacing.xs,
-  },
-  mapEmptyText: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-  },
-  teamMarkerOuter: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: colors.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  teamMarkerText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.white,
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  activityDot: {
-    position: 'absolute',
-    bottom: -1,
-    right: -1,
-    width: 13,
-    height: 13,
-    borderRadius: 6.5,
-    borderWidth: 2.5,
-    borderColor: colors.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  nameLabel: {
-    marginTop: spacing.xs,
-    backgroundColor: colors.card,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.md,
-    minWidth: 64,
-    alignItems: 'center' as const,
-    ...shadows.sm,
-  },
-  nameLabelText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.foreground,
-    textAlign: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing['2xl'],
-    paddingHorizontal: spacing['2xl'],
-  },
-  emptyIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.muted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  emptyStateTitle: {
-    ...typography.cardTitle,
-    color: colors.foreground,
-    marginBottom: spacing.xs,
-  },
-  emptyStateText: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: spacing.md,
-    backgroundColor: colors.card,
-    marginTop: spacing.sm,
-    borderRadius: radius['2xl'],
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    ...shadows.sm,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  statValue: {
-    ...typography.statValue,
-    color: colors.foreground,
-  },
-  statLabel: {
-    ...typography.captionSmall,
-    color: colors.mutedForeground,
-  },
-  actionRow: {
-    marginTop: spacing.sm,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    ...shadows.sm,
-  },
-  actionButtonText: {
-    ...typography.cardTitle,
-    color: colors.primary,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
-    padding: spacing.md,
-    marginTop: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    ...shadows.sm,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  cardTitle: {
-    ...typography.cardTitle,
-    color: colors.foreground,
-  },
-  selectContainer: {
-    marginBottom: spacing.sm,
-  },
-  selectLabel: {
+
+  sectionEyebrow: {
     ...typography.label,
     color: colors.mutedForeground,
     marginBottom: spacing.sm,
   },
-  memberChips: {
-    flexDirection: 'row',
+
+  emptyBox: {
+    alignItems: 'center',
+    paddingVertical: spacing['3xl'],
     gap: spacing.sm,
   },
-  memberChip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.muted,
-    height: sizes.filterChipHeight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  memberChipActive: {
-    backgroundColor: colors.primary,
-  },
-  memberChipText: {
+  emptyText: {
     ...typography.caption,
     color: colors.mutedForeground,
   },
-  memberChipTextActive: {
-    color: colors.primaryForeground,
-    fontWeight: '600',
-  },
-  availabilityList: {
-    marginTop: spacing.sm,
-  },
-  availabilityRow: {
+
+  // Member cards
+  memberCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  availabilityLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  availabilityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  availabilityDay: {
-    ...typography.body,
-    color: colors.foreground,
-  },
-  availabilityTime: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-  },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.xs,
-  },
-  timeOffCard: {
-    padding: spacing.md,
-    borderRadius: radius['2xl'],
-    backgroundColor: colors.muted,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  timeOffHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  timeOffName: {
-    ...typography.cardTitle,
-    color: colors.foreground,
-  },
-  pendingBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(245,158,11,0.1)',
-  },
-  pendingBadgeText: {
-    ...typography.captionSmall,
-    color: '#f59e0b',
-    fontWeight: '600',
-  },
-  timeOffDates: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-  },
-  timeOffReason: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    textTransform: 'capitalize',
-    marginTop: 2,
-  },
-  timeOffActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  timeOffButton: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.xl,
-    alignItems: 'center',
-  },
-  timeOffButtonText: {
-    ...typography.caption,
-    color: colors.white,
-    fontWeight: '600',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  statCard: {
-    flexBasis: '48%',
-    flexGrow: 0,
-    flexShrink: 0,
+    gap: spacing.md,
     padding: spacing.md,
     backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    alignItems: 'center',
+    marginBottom: spacing.sm,
     ...shadows.sm,
   },
-  statCardIcon: {
+  avatarWrap: {
     width: 40,
     height: 40,
-    borderRadius: radius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
+    position: 'relative',
   },
-  statCardValue: {
-    ...typography.statValue,
-    color: colors.foreground,
+  statusDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
   },
-  statCardLabel: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  performanceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    gap: spacing.sm,
-    ...shadows.sm,
-  },
-  performanceRank: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.muted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  performanceRankText: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    fontWeight: '700',
-  },
-  performanceInfo: {
+  memberBody: {
     flex: 1,
+    minWidth: 0,
   },
-  performanceName: {
-    ...typography.cardTitle,
+  memberName: {
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.foreground,
   },
-  performanceStats: {
-    ...typography.caption,
+  memberSubtitle: {
+    fontSize: 13,
     color: colors.mutedForeground,
     marginTop: 2,
   },
-  performanceRate: {
+  statusPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // Activity
+  activityCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    marginBottom: spacing.sm,
+    ...shadows.sm,
+  },
+  activityIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  activitySub: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+  activityTime: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+    marginTop: 4,
+  },
+
+  // Map
+  mapCard: {
+    height: 320,
+    borderRadius: radius['2xl'],
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  map: {
+    flex: 1,
+  },
+
+  // Scheduling
+  weekStripRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  dayPill: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    minWidth: 48,
+    position: 'relative',
+  },
+  dayPillActive: {
+    backgroundColor: colors.primary,
+  },
+  dayPillInactive: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  dayPillDow: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  dayPillNum: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  todayDot: {
+    position: 'absolute',
+    bottom: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+
+  scheduleMemberRow: {
+    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    marginBottom: spacing.sm,
+    ...shadows.sm,
+  },
+  scheduleMemberHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  scheduleMemberName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  scheduleMemberCount: {
+    ...typography.label,
+    color: colors.mutedForeground,
+  },
+  jobBlockRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  jobBlock: {
+    position: 'relative',
+    width: 180,
+    paddingVertical: spacing.sm,
+    paddingRight: spacing.sm,
+    paddingLeft: spacing.sm + 3,
+    borderRadius: radius.md,
+  },
+  jobBlockAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: radius.md,
+    borderBottomLeftRadius: radius.md,
+  },
+  jobBlockTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  jobBlockMeta: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+    marginTop: 2,
+  },
+  jobBlockAddr: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+  assignDashedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.cardBorder,
+  },
+  assignDashedText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  queueCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    marginBottom: spacing.sm,
+  },
+  queueTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  queueMeta: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    marginTop: 2,
+  },
+  assignDashedBtn: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.pill,
-    backgroundColor: colors.muted,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.primary,
   },
-  performanceRateText: {
-    ...typography.caption,
-    color: colors.foreground,
+  assignDashedBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  smallBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Performance
+  periodRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  periodPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  periodPillActive: {
+    backgroundColor: colors.primary,
+  },
+  periodPillInactive: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  periodPillText: {
+    fontSize: 12,
     fontWeight: '600',
   },
-  modalContainer: {
-    flex: 1,
+
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
-  assignModalContainer: {
+  metricCard: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    padding: spacing.md,
     backgroundColor: colors.card,
-    borderTopLeftRadius: radius['2xl'],
-    borderTopRightRadius: radius['2xl'],
-    maxHeight: '70%',
+    borderRadius: radius['2xl'],
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    ...shadows.sm,
   },
-  assignModalHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.muted,
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
+  metricIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
-  modalHeader: {
+  metricValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  metricLabel: {
+    ...typography.label,
+    color: colors.mutedForeground,
+    marginTop: 2,
+  },
+
+  perfCard: {
+    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    marginBottom: spacing.sm,
+    ...shadows.sm,
+  },
+  perfHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
-  modalTitle: {
-    ...typography.sectionTitle,
+  perfName: {
+    fontSize: 14,
+    fontWeight: '600',
     color: colors.foreground,
   },
+  perfRole: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+  perfRate: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  barTrack: {
+    height: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.cardBorder,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: radius.full,
+  },
+  perfStats: {
+    ...typography.caption,
+    color: colors.mutedForeground,
+  },
+
+  // Modal styles
+  modalContainer: { flex: 1 },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.foreground,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: colors.mutedForeground,
+    marginTop: 2,
+  },
   modalContent: {
-    padding: spacing.md,
+    flex: 1,
+    padding: spacing.lg,
   },
   inputLabel: {
     ...typography.label,
     color: colors.mutedForeground,
-    marginBottom: spacing.sm,
-    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    marginTop: spacing.md,
   },
   textInput: {
-    backgroundColor: colors.muted,
-    borderRadius: radius.xl,
-    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 15,
     color: colors.foreground,
-    ...typography.body,
-    height: sizes.inputHeight,
   },
   reasonChips: {
     flexDirection: 'row',
@@ -2124,86 +1649,46 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     gap: spacing.sm,
   },
   reasonChip: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
-    backgroundColor: colors.muted,
-  },
-  reasonChipActive: {
-    backgroundColor: colors.primary,
-  },
-  reasonChipText: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    textTransform: 'capitalize',
-  },
-  reasonChipTextActive: {
-    color: colors.primaryForeground,
-    fontWeight: '600',
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    padding: spacing.md,
-    borderRadius: radius['2xl'],
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  submitButtonText: {
-    ...typography.button,
-    color: colors.primaryForeground,
-    fontWeight: '600',
-  },
-  kpiStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.sm,
-    gap: spacing.sm,
-  },
-  kpiStatItem: {
-    flex: 1,
-    alignItems: 'center',
-    padding: spacing.md,
     backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    ...shadows.sm,
   },
-  kpiStatIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.xl,
+  reasonChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  submitButton: {
+    marginTop: spacing.xl,
+    padding: spacing.md,
+    borderRadius: radius.lg,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
   },
-  kpiStatValue: {
-    ...typography.statValue,
-    color: colors.foreground,
+  submitButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
-  kpiStatLabel: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    marginTop: spacing.xs,
-  },
-  upgradeBanner: {
+  assignJobRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
     padding: spacing.md,
-    marginHorizontal: isTabletDevice ? spacing.sm : responsivePadding,
-    marginVertical: spacing.xs,
-    borderRadius: radius['2xl'],
-    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    marginBottom: spacing.sm,
   },
-  upgradeBannerContent: {
-    flex: 1,
-  },
-  upgradeBannerTitle: {
-    ...typography.cardTitle,
+  assignJobTitle: {
+    fontSize: 14,
+    fontWeight: '600',
     color: colors.foreground,
   },
-  upgradeBannerText: {
-    ...typography.caption,
+  assignJobMeta: {
+    fontSize: 12,
     color: colors.mutedForeground,
     marginTop: 2,
   },
