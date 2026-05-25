@@ -93,7 +93,7 @@ struct JobRunnerLiveActivity: Widget {
                                     .lineLimit(1)
                                     .truncationMode(.tail)
                             }
-                            Spacer()
+                            Spacer(minLength: 8)
                             HStack(spacing: 4) {
                                 Text("STARTED")
                                     .font(.system(size: 9, weight: .heavy))
@@ -102,11 +102,16 @@ struct JobRunnerLiveActivity: Widget {
                                 Text(context.attributes.startedAt, style: .time)
                                     .font(.system(size: 12, weight: .semibold).monospacedDigit())
                                     .foregroundStyle(Color.secondaryText)
+                                    .lineLimit(1)
                             }
+                            // Reserve natural width — without this the
+                            // status pill on the left expands and chops
+                            // off the "am"/"pm" suffix.
+                            .fixedSize()
                         }
                     }
-                    .padding(.horizontal, 2)
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
                 }
             } compactLeading: {
                 // Logo on the left of the notch — small but recognisable
