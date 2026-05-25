@@ -26,16 +26,28 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   });
 }
 
+function isVitePingNoise(msg: string): boolean {
+  if (!msg) return false;
+  if (msg.includes('localhost:undefined') && msg.includes('WebSocket')) return true;
+  if (msg.includes("Failed to construct 'WebSocket'")) return true;
+  return false;
+}
+
 window.addEventListener('error', (event) => {
+  const message = event.message || '';
+  if (isVitePingNoise(message)) return;
+  if (event.filename?.includes('/@vite/')) return;
   trackEvent('js_error', {
-    message: event.message?.substring(0, 200),
+    message: message.substring(0, 200),
     source: event.filename?.split('/').pop(),
   });
 });
 
 window.addEventListener('unhandledrejection', (event) => {
+  const message = String(event.reason) || '';
+  if (isVitePingNoise(message)) return;
   trackEvent('unhandled_promise_rejection', {
-    message: String(event.reason)?.substring(0, 200),
+    message: message.substring(0, 200),
   });
 });
 
