@@ -1,17 +1,17 @@
-app/job/[id].tsx(101,3): error TS2300: Duplicate identifier 'workerStatus'.
-app/job/[id].tsx(101,3): error TS2717: Subsequent property declarations must have the same type.  Property 'workerStatus' must be of type 'string | undefined', but here has type 'string | null | undefined'.
-app/job/[id].tsx(102,3): error TS2300: Duplicate identifier 'isRecurring'.
-app/job/[id].tsx(103,3): error TS2300: Duplicate identifier 'recurrencePattern'.
-app/job/[id].tsx(103,3): error TS2717: Subsequent property declarations must have the same type.  Property 'recurrencePattern' must be of type 'string | undefined', but here has type 'string | null | undefined'.
-app/job/[id].tsx(104,3): error TS2300: Duplicate identifier 'nextRecurrenceDate'.
-app/job/[id].tsx(105,3): error TS2300: Duplicate identifier 'recurrenceEndDate'.
-app/job/[id].tsx(106,3): error TS2300: Duplicate identifier 'estimatedDuration'.
-app/job/[id].tsx(87,3): error TS2300: Duplicate identifier 'estimatedDuration'.
-app/job/[id].tsx(90,3): error TS2300: Duplicate identifier 'workerStatus'.
-app/job/[id].tsx(91,3): error TS2300: Duplicate identifier 'isRecurring'.
-app/job/[id].tsx(92,3): error TS2300: Duplicate identifier 'recurrencePattern'.
-app/job/[id].tsx(93,3): error TS2300: Duplicate identifier 'nextRecurrenceDate'.
-app/job/[id].tsx(94,3): error TS2300: Duplicate identifier 'recurrenceEndDate'.
+app/job/[id].tsx(106,3): error TS2300: Duplicate identifier 'workerStatus'.
+app/job/[id].tsx(106,3): error TS2717: Subsequent property declarations must have the same type.  Property 'workerStatus' must be of type 'string | undefined', but here has type 'string | null | undefined'.
+app/job/[id].tsx(107,3): error TS2300: Duplicate identifier 'isRecurring'.
+app/job/[id].tsx(108,3): error TS2300: Duplicate identifier 'recurrencePattern'.
+app/job/[id].tsx(108,3): error TS2717: Subsequent property declarations must have the same type.  Property 'recurrencePattern' must be of type 'string | undefined', but here has type 'string | null | undefined'.
+app/job/[id].tsx(109,3): error TS2300: Duplicate identifier 'nextRecurrenceDate'.
+app/job/[id].tsx(110,3): error TS2300: Duplicate identifier 'recurrenceEndDate'.
+app/job/[id].tsx(111,3): error TS2300: Duplicate identifier 'estimatedDuration'.
+app/job/[id].tsx(92,3): error TS2300: Duplicate identifier 'estimatedDuration'.
+app/job/[id].tsx(95,3): error TS2300: Duplicate identifier 'workerStatus'.
+app/job/[id].tsx(96,3): error TS2300: Duplicate identifier 'isRecurring'.
+app/job/[id].tsx(97,3): error TS2300: Duplicate identifier 'recurrencePattern'.
+app/job/[id].tsx(98,3): error TS2300: Duplicate identifier 'nextRecurrenceDate'.
+app/job/[id].tsx(99,3): error TS2300: Duplicate identifier 'recurrenceEndDate'.
 src/lib/store.ts(16,3): error TS2300: Duplicate identifier 'name'.
 src/lib/store.ts(20,3): error TS2300: Duplicate identifier 'name'.
 src/lib/store.ts(61,3): error TS2300: Duplicate identifier 'simpleMode'.
