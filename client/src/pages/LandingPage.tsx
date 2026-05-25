@@ -218,7 +218,11 @@ export default function LandingPage() {
             >
               <img 
                 src={jobrunnerLogo} 
-                alt="JobRunner" 
+                alt=""
+                fetchPriority="high"
+                decoding="async"
+                width="32"
+                height="32"
                 className="h-8 w-auto"
               />
               <span className="text-2xl font-bold tracking-tight"><span className="text-brand">Job</span><span className="text-brand-accent">Runner</span></span>
@@ -338,7 +342,7 @@ export default function LandingPage() {
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <span className="flex items-center gap-2 text-base font-bold">
-                <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
+                <img src={jobrunnerLogo} alt="" loading="lazy" decoding="async" width="32" height="32" className="h-8 w-auto" />
                 <span className="text-brand">Job</span>
                 <span className="text-brand-accent">Runner</span>
               </span>
@@ -609,7 +613,9 @@ export default function LandingPage() {
               <div className="relative max-w-2xl mx-auto">
                 <img 
                   src={iphoneMockup} 
-                  alt="JobRunner mobile app on construction site" 
+                  alt="Tradesperson holding an iPhone running the JobRunner app on a construction site" 
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-auto rounded-2xl shadow-2xl"
                 />
               </div>
@@ -641,7 +647,9 @@ export default function LandingPage() {
               <div className="relative max-w-4xl mx-auto">
                 <img 
                   src={macbookMockup} 
-                  alt="JobRunner web dashboard on MacBook at construction site" 
+                  alt="JobRunner web dashboard open on a MacBook at a construction project" 
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-auto rounded-2xl shadow-2xl"
                 />
               </div>
@@ -698,14 +706,14 @@ export default function LandingPage() {
               </ul>
             </AnimatedSection>
             <AnimatedSection animation="fade-left" delay={100} className="order-1 lg:order-2 flex justify-center">
-              <PhoneMockup screenshot={scheduleScreenshot} />
+              <PhoneMockup screenshot={scheduleScreenshot} alt="JobRunner weekly schedule with drag-and-drop jobs on a phone" />
             </AnimatedSection>
           </div>
 
           {/* Feature 2: Job Map */}
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-20 lg:mb-28">
             <AnimatedSection animation="fade-right" className="flex justify-center">
-              <PhoneMockup screenshot={jobMapScreenshot} />
+              <PhoneMockup screenshot={jobMapScreenshot} alt="Map view in JobRunner showing all active jobs and team locations" />
             </AnimatedSection>
             <AnimatedSection animation="fade-left" delay={100}>
               <div className="inline-flex items-center justify-center w-10 h-10 bg-orange-100 rounded-xl mb-5">
@@ -747,14 +755,14 @@ export default function LandingPage() {
               </ul>
             </AnimatedSection>
             <AnimatedSection animation="fade-left" delay={100} className="order-1 lg:order-2 flex justify-center">
-              <PhoneMockup screenshot={quotePreviewScreenshot} />
+              <PhoneMockup screenshot={quotePreviewScreenshot} alt="Professional quote preview in the JobRunner mobile app ready to send to a client" />
             </AnimatedSection>
           </div>
 
           {/* Feature 4: Job Management */}
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <AnimatedSection animation="fade-right" className="flex justify-center">
-              <PhoneMockup screenshot={jobsListScreenshot} />
+              <PhoneMockup screenshot={jobsListScreenshot} alt="List of active and upcoming jobs in the JobRunner mobile app" />
             </AnimatedSection>
             <AnimatedSection animation="fade-left" delay={100}>
               <div className="inline-flex items-center justify-center w-10 h-10 bg-purple-100 rounded-xl mb-5">
@@ -1140,7 +1148,11 @@ export default function LandingPage() {
               >
                 <img 
                   src={jobrunnerLogo} 
-                  alt="JobRunner" 
+                  alt="" 
+                  loading="lazy"
+                  decoding="async"
+                  width="32"
+                  height="32"
                   className="h-8 w-auto brightness-0 invert"
                 />
                 <span className="text-base font-bold">
@@ -1407,7 +1419,7 @@ export default function LandingPage() {
   );
 }
 
-function PhoneMockup({ screenshot }: { screenshot: string }) {
+function PhoneMockup({ screenshot, alt }: { screenshot: string; alt: string }) {
   const imgRef = useRef<HTMLImageElement>(null);
   
   useEffect(() => {
@@ -1438,11 +1450,11 @@ function PhoneMockup({ screenshot }: { screenshot: string }) {
           <img 
             ref={imgRef}
             src={screenshot} 
-            alt="JobRunner App"
+            alt={alt}
             className="w-full h-full object-cover object-top transition-opacity duration-300"
             style={{ opacity: 0 }}
-            loading="eager"
-            decoding="sync"
+            loading="lazy"
+            decoding="async"
           />
         </div>
       </div>
