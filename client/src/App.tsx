@@ -106,6 +106,16 @@ const PaymentHub = React.lazy(() => import("@/pages/PaymentHub"));
 const ExpensesPage = React.lazy(() => import("@/pages/ExpensesPage"));
 const WorkPage = React.lazy(() => import("@/pages/WorkPage"));
 const AdminDashboard = React.lazy(() => import("@/pages/AdminDashboard"));
+
+// Shared admin sub-paths, rendered in both the main tradie Router (so
+// /admin/* doesn't fall through to NotFound — AdminDashboard handles 403s)
+// and the AdminAppShell switch (the only shell platform admins ever see).
+// Returns an array (not a wrapping component) because wouter's <Switch>
+// only flattens through React.Fragment when matching Route children.
+const ADMIN_SUB_PATHS = ["/admin", "/admin/comms", "/admin/revenue", "/admin/users", "/admin/kanban", "/admin/ai-queue", "/admin/call-monitor", "/admin/porting", "/admin/activity", "/admin/health", "/admin/settings"] as const;
+const renderAdminRoutes = () => ADMIN_SUB_PATHS.map((path) => (
+  <Route key={path} path={path} component={AdminDashboard} />
+));
 const LandingPage = React.lazy(() => import("@/pages/LandingPage"));
 const DemoPage = React.lazy(() => import("@/pages/Demo"));
 const SubscriptionPage = React.lazy(() => import("@/pages/SubscriptionPage"));
@@ -820,17 +830,7 @@ function Router({
       
       <Route path="/calculators" component={Calculators} />
       
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/comms" component={AdminDashboard} />
-      <Route path="/admin/revenue" component={AdminDashboard} />
-      <Route path="/admin/users" component={AdminDashboard} />
-      <Route path="/admin/kanban" component={AdminDashboard} />
-      <Route path="/admin/ai-queue" component={AdminDashboard} />
-      <Route path="/admin/call-monitor" component={AdminDashboard} />
-      <Route path="/admin/porting" component={AdminDashboard} />
-      <Route path="/admin/activity" component={AdminDashboard} />
-      <Route path="/admin/health" component={AdminDashboard} />
-      <Route path="/admin/settings" component={AdminDashboard} />
+      {renderAdminRoutes()}
       
       <Route path="/payment-hub" component={PaymentHub} />
 
@@ -1507,17 +1507,7 @@ function AppLayout() {
           </div>
         }>
         <Switch>
-          <Route path="/admin" component={AdminDashboard} />
-          <Route path="/admin/comms" component={AdminDashboard} />
-          <Route path="/admin/revenue" component={AdminDashboard} />
-          <Route path="/admin/users" component={AdminDashboard} />
-          <Route path="/admin/kanban" component={AdminDashboard} />
-          <Route path="/admin/ai-queue" component={AdminDashboard} />
-          <Route path="/admin/call-monitor" component={AdminDashboard} />
-          <Route path="/admin/porting" component={AdminDashboard} />
-          <Route path="/admin/activity" component={AdminDashboard} />
-          <Route path="/admin/health" component={AdminDashboard} />
-          <Route path="/admin/settings" component={AdminDashboard} />
+          {renderAdminRoutes()}
           {/* Redirect any other path to admin dashboard */}
           <Route>
             <Redirect to="/admin" />
