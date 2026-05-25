@@ -683,7 +683,7 @@ export default function CommunicationsHub() {
   
   return (
     <div className="min-h-screen bg-background">
-      <div className="px-4 py-6 w-full">
+      <div className="px-4 pt-8 pb-6 md:pt-6 w-full">
         <div className="flex items-center gap-4 mb-6">
           {/* Back button only visible on mobile - desktop has sidebar navigation */}
           <Button 
