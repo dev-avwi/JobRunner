@@ -13,11 +13,10 @@ import type { TemplateCustomization } from './document-templates';
 interface User {
   id: string;
   email: string;
+  /** Pre-computed display name from the server (falls back to firstName + lastName). */
   name?: string;
   firstName?: string;
   lastName?: string;
-  /** Pre-computed display name from the server (falls back to firstName + lastName). */
-  name?: string;
   businessName?: string;
   tradeType?: string;
   role?: string;
@@ -85,7 +84,6 @@ interface BusinessSettings {
   dedicatedPhoneNumber?: string;
   aiReceptionistEnabled?: boolean;
   aiReceptionistMode?: string;
-  simpleMode?: boolean;
 }
 
 export interface Job {

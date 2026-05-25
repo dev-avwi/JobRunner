@@ -5,6 +5,7 @@ import { notifyInvoiceOverdue as notifyInvoiceOverdueDB } from './notifications'
 import { sendSMS } from './twilioClient';
 import { sendCustomerReply } from './services/smsService';
 import { getProductionBaseUrl } from './urlHelper';
+import { getErrorMessage } from "./lib/errors";
 
 interface ReminderResult {
   invoiceId: string;
@@ -150,8 +151,8 @@ export async function processOverdueReminders(): Promise<ReminderResult[]> {
               null
             );
             emailSent = true;
-          } catch (e: any) {
-            error = e.message;
+          } catch (e: unknown) {
+            error = getErrorMessage(e);
           }
         }
         
@@ -162,8 +163,8 @@ export async function processOverdueReminders(): Promise<ReminderResult[]> {
             try {
               await sendCustomerReply(formattedPhone, content.smsBody, user.id);
               smsSent = true;
-            } catch (e: any) {
-              if (!error) error = e.message;
+            } catch (e: unknown) {
+              if (!error) error = getErrorMessage(e);
             }
           }
         }
@@ -202,7 +203,7 @@ export async function processOverdueReminders(): Promise<ReminderResult[]> {
         });
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error processing overdue reminders:', error);
   }
   
@@ -254,8 +255,8 @@ export async function previewReminder(
       clientPhone: client.phone || null,
       hasValidMobile: !!(client.phone && isValidAustralianMobile(client.phone)),
     };
-  } catch (error: any) {
-    return { error: error.message };
+  } catch (error: unknown) {
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -305,8 +306,8 @@ export async function sendManualReminder(
           replyTo: businessSettings.email || undefined,
         });
         emailSent = true;
-      } catch (e: any) {
-        error = e.message;
+      } catch (e: unknown) {
+        error = getErrorMessage(e);
       }
     }
     
@@ -317,8 +318,8 @@ export async function sendManualReminder(
         try {
           await sendCustomerReply(formattedPhone, content.smsBody, userId);
           smsSent = true;
-        } catch (e: any) {
-          if (!error) error = e.message;
+        } catch (e: unknown) {
+          if (!error) error = getErrorMessage(e);
         }
       }
     }
@@ -334,7 +335,7 @@ export async function sendManualReminder(
     });
     
     return { invoiceId, success: emailSent || smsSent, emailSent, smsSent, error };
-  } catch (error: any) {
-    return { invoiceId, success: false, emailSent: false, smsSent: false, error: error.message };
+  } catch (error: unknown) {
+    return { invoiceId, success: false, emailSent: false, smsSent: false, error: getErrorMessage(error) };
   }
 }

@@ -7,6 +7,7 @@
  */
 
 import { storage } from './storage';
+import { getErrorMessage } from "./lib/errors";
 
 const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID;
 const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET;
@@ -176,8 +177,8 @@ export async function handleOAuthCallback(code: string, userId: string): Promise
         email = profile.mail || profile.userPrincipalName;
         console.log(`[Outlook] Got user email: ${email}`);
       }
-    } catch (profileError: any) {
-      console.warn('[Outlook] Could not fetch user profile:', profileError.message);
+    } catch (profileError: unknown) {
+      console.warn('[Outlook] Could not fetch user profile:', getErrorMessage(profileError));
     }
     
     const expiryDate = new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
@@ -192,9 +193,9 @@ export async function handleOAuthCallback(code: string, userId: string): Promise
     
     console.log(`[Outlook] Successfully connected for user ${userId}: ${email}`);
     return { success: true, email };
-  } catch (error: any) {
-    console.error('[Outlook] OAuth callback error:', error.message || error);
-    return { success: false, error: error.message || 'Unknown error during authorization' };
+  } catch (error: unknown) {
+    console.error('[Outlook] OAuth callback error:', getErrorMessage(error) || error);
+    return { success: false, error: getErrorMessage(error) || 'Unknown error during authorization' };
   }
 }
 
@@ -286,10 +287,10 @@ async function getUserAccessToken(userId: string): Promise<string> {
       
       console.log(`[Outlook] Successfully refreshed token for user ${userId}`);
       return tokens.access_token;
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
       
-      if (error.message.includes('revoked') || error.message.includes('invalid_grant')) {
+      if (getErrorMessage(error).includes('revoked') || getErrorMessage(error).includes('invalid_grant')) {
         throw error;
       }
       
@@ -410,11 +411,11 @@ export async function sendViaOutlookAPI(
       success: true,
       messageId: `outlook_${Date.now()}`,
     };
-  } catch (error: any) {
-    console.error('[Outlook] Send email error:', error.message);
+  } catch (error: unknown) {
+    console.error('[Outlook] Send email error:', getErrorMessage(error));
     return {
       success: false,
-      error: error.message,
+      error: getErrorMessage(error),
     };
   }
 }

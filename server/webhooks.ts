@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 import { Express } from 'express';
 import { createNotification } from './notifications';
 import { sendPaymentSuccessEmail, sendPaymentFailedEmail } from './emailService';
@@ -26,9 +27,9 @@ export function setupStripeWebhooks(app: Express, stripe: any, storage: any) {
 
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    } catch (err: any) {
-      console.error('⚠️ Webhook signature verification failed:', err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+    } catch (err: unknown) {
+      console.error('⚠️ Webhook signature verification failed:', getErrorMessage(err));
+      return res.status(400).send(`Webhook Error: ${getErrorMessage(err)}`);
     }
 
     // Handle the event

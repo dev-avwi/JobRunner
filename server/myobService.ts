@@ -3,6 +3,7 @@ import { storage } from "./storage";
 import type { MyobConnection } from "@shared/schema";
 import { encrypt, decrypt } from "./encryption";
 import { myobAccountsCache, myobTaxCodesCache, myobItemsCache } from "./cache";
+import { getErrorMessage } from "./lib/errors";
 
 // ─── Pull-and-cache helpers (Task #91) ─────────────────────────────────────
 async function myobGet(userId: string, path: string): Promise<any[]> {
@@ -442,14 +443,14 @@ export async function testMyobConnection(userId: string): Promise<{
       },
     };
   } catch (err: any) {
-    const upstream = err?.response?.data || err?.message || 'Unknown error';
+    const upstream = err?.response?.data || getErrorMessage(err) || 'Unknown error';
     const status = err?.response?.status;
     const msg = status === 401
       ? 'MYOB token rejected (401) — please reconnect'
       : status === 403
         ? 'MYOB returned 403 — check API permissions / company file access'
         : `MYOB API call failed${status ? ` (HTTP ${status})` : ''}: ${typeof upstream === 'string' ? upstream : JSON.stringify(upstream).slice(0, 200)}`;
-    return { success: false, message: msg, error: err?.message };
+    return { success: false, message: msg, error: getErrorMessage(err) };
   }
 }
 
@@ -533,9 +534,9 @@ export async function syncSingleInvoiceToMyob(userId: string, invoiceId: string)
     );
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MYOB] Failed to sync single invoice:', error);
-    return { success: false, error: error.message || "Failed to sync invoice" };
+    return { success: false, error: getErrorMessage(error) || "Failed to sync invoice" };
   }
 }
 
@@ -698,8 +699,8 @@ export async function voidInvoiceInMyob(userId: string, invoiceId: string): Prom
       voidMethod: 'unsupported',
       message,
     };
-  } catch (error: any) {
-    return { success: false, voidMethod: 'unsupported', message: error.message, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, voidMethod: 'unsupported', message: getErrorMessage(error), error: getErrorMessage(error) };
   }
 }
 
@@ -781,12 +782,12 @@ export async function createCreditNoteInMyob(
       ? typeof upstream === "string"
         ? upstream
         : JSON.stringify(upstream).slice(0, 300)
-      : error?.message || "Unknown error";
+      : getErrorMessage(error) || "Unknown error";
     console.error("[MYOB] Failed to raise credit note:", detail);
     return {
       success: false,
       message: `Failed to raise credit note in MYOB: ${detail}`,
-      error: error?.message || "credit_note_failed",
+      error: getErrorMessage(error) || "credit_note_failed",
     };
   }
 }

@@ -2,6 +2,7 @@ import { getUncachableStripeClient, getStripePublishableKey } from './stripeClie
 import { storage } from './storage';
 import Stripe from 'stripe';
 import { PRICING } from '@shared/schema';
+import { getErrorMessage } from "./lib/errors";
 
 export interface CheckoutSessionResult {
   success: boolean;
@@ -238,9 +239,9 @@ export async function createSubscriptionCheckout(
       sessionId: session.id,
       sessionUrl: session.url || undefined,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating subscription checkout:', error);
-    return { success: false, error: error.message || 'Failed to create checkout session' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to create checkout session' };
   }
 }
 
@@ -342,9 +343,9 @@ async function createFlatTierCheckout(
       sessionId: session.id,
       sessionUrl: session.url || undefined,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error creating ${tier} subscription checkout:`, error);
-    return { success: false, error: error.message || 'Failed to create checkout session' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to create checkout session' };
   }
 }
 
@@ -445,9 +446,9 @@ export async function createTrialSubscription(
       customerId,
       trialEndsAt: trialEnd,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating trial subscription:', error);
-    return { success: false, error: error.message || 'Failed to create trial subscription' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to create trial subscription' };
   }
 }
 
@@ -536,9 +537,9 @@ export async function getPaymentMethodDetails(userId: string): Promise<PaymentMe
     }
 
     return { success: false, error: 'No card payment method found' };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting payment method details:', error);
-    return { success: false, error: error.message || 'Failed to get payment method' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to get payment method' };
   }
 }
 
@@ -568,9 +569,9 @@ export async function createBillingPortalSession(
       success: true,
       url: session.url,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating billing portal session:', error);
-    return { success: false, error: error.message || 'Failed to create portal session' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to create portal session' };
   }
 }
 
@@ -647,7 +648,7 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
       stripeSubscriptionId: subscriptionId,
       seatCount: (tier === 'team' || tier === 'business') ? seatCount : undefined,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching subscription:', error);
     const tier = (user.subscriptionTier as 'free' | 'pro' | 'team' | 'business') || 'free';
     return {
@@ -678,9 +679,9 @@ export async function cancelSubscription(userId: string): Promise<{ success: boo
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error canceling subscription:', error);
-    return { success: false, error: error.message || 'Failed to cancel subscription' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to cancel subscription' };
   }
 }
 
@@ -703,9 +704,9 @@ export async function resumeSubscription(userId: string): Promise<{ success: boo
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error resuming subscription:', error);
-    return { success: false, error: error.message || 'Failed to resume subscription' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to resume subscription' };
   }
 }
 
@@ -742,9 +743,9 @@ export async function pauseSubscription(userId: string): Promise<{ success: bool
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error pausing subscription:', error);
-    return { success: false, error: error.message || 'Failed to pause subscription' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to pause subscription' };
   }
 }
 
@@ -772,9 +773,9 @@ export async function unpauseSubscription(userId: string): Promise<{ success: bo
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error unpausing subscription:', error);
-    return { success: false, error: error.message || 'Failed to unpause subscription' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to unpause subscription' };
   }
 }
 
@@ -978,9 +979,9 @@ export async function initializeStripeProducts(): Promise<{
 
     console.log('✅ Stripe products initialized:', products);
     return { success: true, products };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to initialize Stripe products:', error);
-    return { success: false, products: {}, error: error.message };
+    return { success: false, products: {}, error: getErrorMessage(error) };
   }
 }
 
@@ -1088,9 +1089,9 @@ export async function downgradeTeamToPro(userId: string): Promise<DowngradeToPro
     console.log(`[downgradeTeamToPro] Suspended ${suspendedCount} team members for user ${userId}`);
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error downgrading to Pro:', error);
-    return { success: false, error: error.message || 'Failed to downgrade subscription' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to downgrade subscription' };
   }
 }
 
@@ -1202,9 +1203,9 @@ async function upgradeProToFlatTierTrial(
       subscriptionId: updatedSubscription.id,
       trialEndsAt,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error upgrading to ${targetTier} trial:`, error);
-    return { success: false, error: error.message || 'Failed to upgrade subscription' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to upgrade subscription' };
   }
 }
 
@@ -1259,9 +1260,9 @@ export async function createAiReceptionistCheckout(
       sessionId: session.id,
       sessionUrl: session.url || undefined,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating AI Receptionist checkout:', error);
-    return { success: false, error: error.message || 'Failed to create checkout session' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to create checkout session' };
   }
 }
 
@@ -1368,9 +1369,9 @@ export async function createDedicatedNumberCheckout(
       sessionId: session.id,
       sessionUrl: session.url || undefined,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating dedicated number checkout:', error);
-    return { success: false, error: error.message || 'Failed to create checkout session' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to create checkout session' };
   }
 }
 

@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 import { db } from "./storage";
 import { smsMessages, smsConversations, emailDeliveryLogs } from "@shared/schema";
 import { eq, and, lte, lt, sql, isNotNull } from "drizzle-orm";
@@ -100,7 +101,7 @@ async function processFailedSmsMessages() {
       }
     }
   } catch (error: any) {
-    const msg = error?.message || '';
+    const msg = getErrorMessage(error) || '';
     if (msg.includes('does not exist') || msg.includes('relation')) {
       // Table not yet created — skip silently
     } else if (
@@ -133,8 +134,8 @@ async function recoverStrandedMessages() {
     if (recovered.length > 0) {
       logger.warn('background', `Recovered ${recovered.length} stranded SMS messages from 'retrying' state`);
     }
-  } catch (error: any) {
-    const m = error?.message || '';
+  } catch (error: unknown) {
+    const m = getErrorMessage(error) || '';
     if (!m.includes('does not exist') && !m.includes('relation')) {
       logger.error('background', 'Failed to recover stranded SMS messages', { error });
     }
@@ -200,25 +201,25 @@ export async function processFailedEmailMessages() {
           payloadJson: null, // free up storage on success
         }).where(eq(emailDeliveryLogs.id, row.id));
         logger.info('background', `Email retry #${currentRetry} succeeded`, { metadata: { id: row.id } });
-      } catch (err: any) {
+      } catch (err: unknown) {
         const permanent = isPermanentEmailFailure(err);
         const max = row.maxRetries ?? 5;
         const nextRetryAt = (!permanent && currentRetry < max) ? scheduleEmailRetry(currentRetry) : null;
         await db.update(emailDeliveryLogs).set({
           status: 'failed',
           nextRetryAt,
-          errorMessage: err?.message || 'Retry failed',
+          errorMessage: getErrorMessage(err) || 'Retry failed',
           permanentlyFailed: permanent || currentRetry >= max,
         }).where(eq(emailDeliveryLogs.id, row.id));
         if (permanent || currentRetry >= max) {
           logger.warn('background', `Email permanently failed`, {
-            metadata: { id: row.id, error: err?.message, retries: currentRetry },
+            metadata: { id: row.id, error: getErrorMessage(err), retries: currentRetry },
           });
         }
       }
     }
   } catch (err: any) {
-    const m = err?.message || '';
+    const m = getErrorMessage(err) || '';
     if (m.includes('does not exist') || m.includes('relation')) {
       // Table not yet created — skip silently
     } else if (

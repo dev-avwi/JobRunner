@@ -3,6 +3,7 @@ import type { BusinessSettings, InsertAiReceptionistCall, InsertAiReceptionistCo
 import crypto from 'crypto';
 import { sendSMS } from './twilioClient';
 import { analyzeCallSentiment } from './ai';
+import { getErrorMessage } from "./lib/errors";
 
 interface TransferNumber {
   name: string;
@@ -857,7 +858,7 @@ export async function refreshLatencyEstimate(
       await storage.updateAiReceptionistConfig(userId, patch);
     }
     return { ms: result.ms, status: result.status };
-  } catch (e: unknown) {
+  } catch (e: any) {
     const msg = e instanceof Error ? e.message : 'Unknown error';
     console.warn('[Vapi] refreshLatencyEstimate failed:', msg);
     return null;
@@ -1042,7 +1043,7 @@ export async function enableAiReceptionist(userId: string): Promise<{
       success: true,
       assistantId: assistant.id,
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[Vapi] Failed to enable AI Receptionist for user ${userId}:`, message);
     try {
@@ -1066,7 +1067,7 @@ export async function disableAiReceptionist(userId: string): Promise<{ success: 
 
     console.log(`[Vapi] AI Receptionist disabled for user ${userId} (assistant preserved: ${config.vapiAssistantId})`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[Vapi] Failed to disable AI Receptionist for user ${userId}:`, message);
     return { success: false, error: message };
@@ -1083,7 +1084,7 @@ export async function destroyAiReceptionist(userId: string): Promise<{ success: 
     if (config.vapiAssistantId) {
       try {
         await deleteAssistant(config.vapiAssistantId);
-      } catch (e: unknown) {
+      } catch (e: any) {
         const msg = e instanceof Error ? e.message : 'Unknown error';
         console.warn(`[Vapi] Failed to delete assistant ${config.vapiAssistantId}:`, msg);
       }
@@ -1092,7 +1093,7 @@ export async function destroyAiReceptionist(userId: string): Promise<{ success: 
     if (config.vapiPhoneNumberId) {
       try {
         await removePhoneNumber(config.vapiPhoneNumberId);
-      } catch (e: unknown) {
+      } catch (e: any) {
         const msg = e instanceof Error ? e.message : 'Unknown error';
         console.warn(`[Vapi] Failed to release phone number ${config.vapiPhoneNumberId}:`, msg);
       }
@@ -1109,7 +1110,7 @@ export async function destroyAiReceptionist(userId: string): Promise<{ success: 
 
     console.log(`[Vapi] AI Receptionist fully destroyed for user ${userId}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[Vapi] Failed to destroy AI Receptionist for user ${userId}:`, message);
     return { success: false, error: message };
@@ -1239,7 +1240,7 @@ export async function updateReceptionistConfig(userId: string, updates: {
           aiTemperature: updates.aiTemperature ?? config.aiTemperature ?? 0.5,
           customInstructions: updates.customInstructions ?? config.customInstructions ?? undefined,
         });
-      } catch (e: unknown) {
+      } catch (e: any) {
         const msg = e instanceof Error ? e.message : 'Unknown error';
         console.error(`[Vapi] Failed to sync assistant update:`, msg);
       }
@@ -1249,7 +1250,7 @@ export async function updateReceptionistConfig(userId: string, updates: {
     await refreshLatencyEstimate(userId);
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[Vapi] Failed to update config for user ${userId}:`, message);
     return { success: false, error: message };
@@ -1418,7 +1419,7 @@ export async function updateReceptionistConfigById(configId: string, userId: str
     await refreshLatencyEstimate(userId, configId);
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[Vapi] Failed to update config ${configId}:`, message);
     return { success: false, error: message };
@@ -1615,7 +1616,7 @@ async function handleCaptureLead(args: any, userId: string, callId: string): Pro
 
     console.log(`[Vapi] Lead ${lead.id} created for call ${callId} (no auto-job)`);
     return { result: `I've got all your details. Someone will review your enquiry and get back to you shortly. Reference: ${lead.id.slice(0, 8)}` };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Vapi] Failed to capture lead:', error);
     return { result: 'I\'ve noted down the details. Someone will follow up shortly.' };
   }
@@ -1791,7 +1792,7 @@ async function handleTransferCall(args: { reason: string; caller_phone?: string 
       result: `Transferring to ${target.name}...`,
       forwardingPhoneNumber: target.phone,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Vapi] Transfer failed:', error);
     return { result: 'No one is available to take the call right now, but don\'t worry — I\'ve got all your details and we\'ll call you back as soon as possible.' };
   }
@@ -1832,7 +1833,7 @@ async function handleCheckAvailability(args: any, userId: string): Promise<any> 
     } else {
       return { result: `We're currently outside business hours (${hoursStr}). I'll take your details and someone will get back to you during business hours.` };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Vapi] Check availability failed:', error);
     return { result: 'I\'m not able to check availability right now. I\'ll make sure someone gets back to you.' };
   }
@@ -1871,7 +1872,7 @@ async function handleLookupClient(args: any, userId: string): Promise<any> {
       result: 'I wasn\'t able to find that in our records. No worries — I\'ll take your details as a new enquiry.',
       clientFound: false,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Vapi] Client lookup failed:', error);
     return { result: 'I\'ll take your details and the team can check our records.', clientFound: false };
   }
@@ -1910,7 +1911,7 @@ async function handleCreateBooking(args: any, userId: string, callId: string): P
     return {
       result: `I've created a tentative booking for ${args.job_type || 'the requested work'}${args.preferred_date ? ` on ${args.preferred_date}` : ''}. Reference: ${lead.id.slice(0, 8)}. Someone from the team will confirm the details with you.`,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Vapi] Create booking failed:', error);
     return { result: 'I\'ve noted your booking request. Someone from the team will call you to confirm.' };
   }
@@ -2074,8 +2075,8 @@ async function handleEndOfCallReport(event: any): Promise<any> {
   try {
     sentimentResult = await analyzeCallSentiment(transcriptText, summaryText);
     console.log(`[Vapi] Sentiment for call ${callId}: ${sentimentResult.sentiment} (${sentimentResult.sentimentScore})`);
-  } catch (e: any) {
-    console.error(`[Vapi] Sentiment analysis error for call ${callId}:`, e.message);
+  } catch (e: unknown) {
+    console.error(`[Vapi] Sentiment analysis error for call ${callId}:`, getErrorMessage(e));
   }
 
   const measuredLatencyMs = extractCallLatencyMs(message);
@@ -2166,8 +2167,8 @@ async function handleEndOfCallReport(event: any): Promise<any> {
       }
       console.log(`[Vapi] Auto-created lead ${lead.id} for call ${callId}`);
       }
-    } catch (e: any) {
-      console.error(`[Vapi] Failed to auto-create lead for call ${callId}:`, e.message);
+    } catch (e: unknown) {
+      console.error(`[Vapi] Failed to auto-create lead for call ${callId}:`, getErrorMessage(e));
     }
   }
 
@@ -2218,8 +2219,8 @@ async function sendCallerAutoReply(
       fromNumber: business.dedicatedPhoneNumber,
     });
     console.log(`[Vapi] Auto-reply SMS sent to caller ${callerPhone} from ${business.dedicatedPhoneNumber}`);
-  } catch (e: any) {
-    console.error(`[Vapi] Auto-reply SMS failed for caller ${callerPhone}:`, e.message);
+  } catch (e: unknown) {
+    console.error(`[Vapi] Auto-reply SMS failed for caller ${callerPhone}:`, getErrorMessage(e));
   }
 }
 
@@ -2254,8 +2255,8 @@ async function sendCallPushNotification(
       skipInAppNotification: true,
     });
     console.log(`[Vapi] Push notification sent to tradie ${userId} for AI call`);
-  } catch (e: any) {
-    console.error(`[Vapi] Push notification failed for user ${userId}:`, e.message);
+  } catch (e: unknown) {
+    console.error(`[Vapi] Push notification failed for user ${userId}:`, getErrorMessage(e));
   }
 }
 
@@ -2282,8 +2283,8 @@ async function sendCallNotifications(
       };
       await storage.createNotification(notificationPayload);
       console.log(`[Vapi] In-app notification created for user ${userId}`);
-    } catch (e: any) {
-      console.error(`[Vapi] In-app notification failed:`, e.message);
+    } catch (e: unknown) {
+      console.error(`[Vapi] In-app notification failed:`, getErrorMessage(e));
     }
 
     const config = await storage.getAiReceptionistConfig(userId);
@@ -2300,8 +2301,8 @@ async function sendCallNotifications(
           try {
             await sendSMS({ to: contact.phone, message: smsBody, fromNumber });
             console.log(`[Vapi] SMS sent to ${contact.name} (${contact.phone})`);
-          } catch (e: any) {
-            console.error(`[Vapi] SMS send failed for ${contact.phone}:`, e.message);
+          } catch (e: unknown) {
+            console.error(`[Vapi] SMS send failed for ${contact.phone}:`, getErrorMessage(e));
           }
         }
       }
@@ -2312,12 +2313,12 @@ async function sendCallNotifications(
           await sendSMS({ to: user.phone, message: smsBody, fromNumber });
           console.log(`[Vapi] SMS sent to owner ${user.phone}`);
         }
-      } catch (e: any) {
-        console.error(`[Vapi] Owner SMS send failed:`, e.message);
+      } catch (e: unknown) {
+        console.error(`[Vapi] Owner SMS send failed:`, getErrorMessage(e));
       }
     }
-  } catch (e: any) {
-    console.error(`[Vapi] sendCallNotifications error:`, e.message);
+  } catch (e: unknown) {
+    console.error(`[Vapi] sendCallNotifications error:`, getErrorMessage(e));
   }
 }
 
@@ -2341,8 +2342,8 @@ async function sendSupportLineNotifications(
 
     await sendSMS({ to: adminPhone, message: smsBody });
     console.log(`[Vapi] Support line SMS sent to admin ${adminPhone}`);
-  } catch (e: any) {
-    console.error(`[Vapi] Support line SMS failed:`, e.message);
+  } catch (e: unknown) {
+    console.error(`[Vapi] Support line SMS failed:`, getErrorMessage(e));
   }
 }
 
@@ -2384,8 +2385,8 @@ async function handleToolCalls(event: any): Promise<any> {
           phoneNumberId: matchedConfig?.id || null,
           calledNumber,
         });
-      } catch (createErr: any) {
-        console.error(`[Vapi Webhook] Failed to create AI receptionist call record for ${call.id}:`, createErr?.message || createErr);
+      } catch (createErr: unknown) {
+        console.error(`[Vapi Webhook] Failed to create AI receptionist call record for ${call.id}:`, getErrorMessage(createErr) || createErr);
       }
     }
 
@@ -2412,8 +2413,8 @@ async function handleToolCalls(event: any): Promise<any> {
           existingCall?.id || call.id,
           callerPhone,
         );
-      } catch (toolErr: any) {
-        console.error(`[Vapi Webhook] Tool "${toolName}" threw — returning soft-success to caller:`, toolErr?.message || toolErr);
+      } catch (toolErr: unknown) {
+        console.error(`[Vapi Webhook] Tool "${toolName}" threw — returning soft-success to caller:`, getErrorMessage(toolErr) || toolErr);
         result = { result: "I've noted that down. Someone from the team will be in touch." };
       }
 
@@ -2424,8 +2425,8 @@ async function handleToolCalls(event: any): Promise<any> {
     }
 
     return { results };
-  } catch (outerErr: any) {
-    console.error('[Vapi Webhook] handleToolCalls outer failure — returning soft-success:', outerErr?.message || outerErr);
+  } catch (outerErr: unknown) {
+    console.error('[Vapi Webhook] handleToolCalls outer failure — returning soft-success:', getErrorMessage(outerErr) || outerErr);
     return { results: fallbackResults("I've noted that. Someone from the team will follow up shortly.") };
   }
 }

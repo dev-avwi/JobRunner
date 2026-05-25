@@ -4,6 +4,7 @@ import { storage, db } from './storage';
 import { activityLogs, inviteCodes, userRoles, subcontractorTokens } from '@shared/schema';
 import { tradeCatalog } from '../shared/tradeCatalog';
 import { eq, and, sql } from 'drizzle-orm';
+import { getErrorMessage } from "./lib/errors";
 
 // ============================================
 // DEMO USER CREDENTIALS
@@ -2096,9 +2097,9 @@ export async function forceResetDemoData(): Promise<{ success: boolean; message:
     await createDemoUserAndData();
 
     return { success: true, message: 'Demo data reset complete. All clients, jobs, quotes, invoices, and receipts have been recreated with new IDs.' };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DemoReset] Error resetting demo data:', error);
-    return { success: false, message: error.message || 'Failed to reset demo data' };
+    return { success: false, message: getErrorMessage(error) || 'Failed to reset demo data' };
   }
 }
 
@@ -2626,9 +2627,9 @@ export async function refreshDemoDataForScreenshots(): Promise<{ success: boolea
       message: `Demo data refreshed for screenshots: ${updated.todaysJobs} jobs today, ${updated.thisWeekJobs} this week, ${updated.upcomingJobs} upcoming. Activity logs updated.`,
       updated
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DemoScreenshots] Error refreshing demo data:', error);
-    return { success: false, message: error.message || 'Failed to refresh demo data', updated: {} };
+    return { success: false, message: getErrorMessage(error) || 'Failed to refresh demo data', updated: {} };
   }
 }
 
@@ -3160,9 +3161,9 @@ export async function seedUserDemoData(userId: string, tradeType?: string): Prom
     console.log(`[DemoSeed] Demo data seeding complete for user ${userId} (trade: ${effectiveTradeType})`);
     console.log(`[DemoSeed] Stored demo IDs: ${JSON.stringify(demoDataIds)}`);
     return { success: true, message: `Sample ${effectiveTradeType} data created successfully! You now have clients, jobs, quotes, and invoices to explore.` };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DemoSeed] Error seeding demo data:', error);
-    return { success: false, message: error.message || 'Failed to seed demo data' };
+    return { success: false, message: getErrorMessage(error) || 'Failed to seed demo data' };
   }
 }
 
@@ -3262,9 +3263,9 @@ export async function clearUserDemoData(userId: string): Promise<{
       message: 'Sample data cleared! You now have a fresh start.',
       deleted
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DemoClear] Error clearing demo data:', error);
-    return { success: false, message: error.message || 'Failed to clear demo data', deleted: { clients: 0, jobs: 0, quotes: 0, invoices: 0 } };
+    return { success: false, message: getErrorMessage(error) || 'Failed to clear demo data', deleted: { clients: 0, jobs: 0, quotes: 0, invoices: 0 } };
   }
 }
 

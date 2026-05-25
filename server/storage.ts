@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { eq, desc, asc, sql, and, or, lt, gt, gte, lte, isNull, isNotNull, inArray } from "drizzle-orm";
@@ -8714,8 +8715,8 @@ Thank you for your prompt attention to this matter.`,
       }
       const [result] = await db.select().from(workerStates).where(eq(workerStates.userId, userId)).limit(1);
       return result;
-    } catch (error: any) {
-      if (error?.message?.includes('does not exist')) return undefined;
+    } catch (error: unknown) {
+      if (getErrorMessage(error)?.includes('does not exist')) return undefined;
       throw error;
     }
   }
@@ -8723,8 +8724,8 @@ Thank you for your prompt attention to this matter.`,
   async getWorkerStatesByBusiness(businessOwnerId: string): Promise<WorkerState[]> {
     try {
       return await db.select().from(workerStates).where(eq(workerStates.businessOwnerId, businessOwnerId));
-    } catch (error: any) {
-      if (error?.message?.includes('does not exist')) return [];
+    } catch (error: unknown) {
+      if (getErrorMessage(error)?.includes('does not exist')) return [];
       throw error;
     }
   }
@@ -8740,8 +8741,8 @@ Thank you for your prompt attention to this matter.`,
         })
         .returning();
       return result;
-    } catch (error: any) {
-      if (error?.message?.includes('does not exist')) {
+    } catch (error: unknown) {
+      if (getErrorMessage(error)?.includes('does not exist')) {
         return { id: '', userId, businessOwnerId, state, jobId: jobId ?? null, note: note ?? null, updatedAt: new Date(), createdAt: new Date() } as WorkerState;
       }
       throw error;

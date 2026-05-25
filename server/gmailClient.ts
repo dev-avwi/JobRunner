@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 // Gmail Client using Replit's managed connector
 // This provides access to Gmail API for sending emails on behalf of tradies
 
@@ -85,8 +86,8 @@ export async function isGmailConnected(): Promise<boolean> {
     await getAccessToken();
     console.log('[Gmail] Connection check: Connected');
     return true;
-  } catch (error: any) {
-    console.log('[Gmail] Connection check: Not connected -', error?.message || 'Unknown error');
+  } catch (error: unknown) {
+    console.log('[Gmail] Connection check: Not connected -', getErrorMessage(error) || 'Unknown error');
     return false;
   }
 }
@@ -106,7 +107,7 @@ export async function getGmailProfile(): Promise<{ email: string; displayName: s
     if (error?.code === 403 || error?.status === 403) {
       console.log('[Gmail] Profile access not permitted (send-only connector scope is normal)');
     } else {
-      console.error('[Gmail] Profile fetch failed:', error?.message || error);
+      console.error('[Gmail] Profile fetch failed:', getErrorMessage(error) || error);
     }
     return null;
   }
@@ -321,7 +322,7 @@ async function updateSendAsDisplayName(gmail: any, fromEmail: string, displayNam
     if (error?.code === 403 || error?.status === 403) {
       console.log(`[Gmail] Cannot update sendAs display name (insufficient permissions) — sender will show account default name`);
     } else {
-      console.warn(`[Gmail] sendAs display name update failed:`, error?.message);
+      console.warn(`[Gmail] sendAs display name update failed:`, getErrorMessage(error));
     }
     return false;
   }
@@ -356,7 +357,7 @@ export async function sendViaGmailAPI(options: {
         if (profileError?.code === 403 || profileError?.status === 403) {
           console.log('[Gmail] Profile API returned 403 - connector has send-only permissions, will try sending without explicit From');
         } else {
-          console.warn('[Gmail] Profile fetch failed:', profileError?.message);
+          console.warn('[Gmail] Profile fetch failed:', getErrorMessage(profileError));
         }
       }
     }
@@ -421,11 +422,11 @@ export async function sendViaGmailAPI(options: {
       success: true,
       messageId: result.data.id || undefined
     };
-  } catch (error: any) {
-    console.error('Gmail send error:', error?.message || 'Unknown error');
+  } catch (error: unknown) {
+    console.error('Gmail send error:', getErrorMessage(error) || 'Unknown error');
     return {
       success: false,
-      error: error.message || 'Failed to send via Gmail'
+      error: getErrorMessage(error) || 'Failed to send via Gmail'
     };
   }
 }
@@ -461,7 +462,7 @@ export async function createGmailDraftWithAttachment(options: {
         if (profileError?.code === 403 || profileError?.status === 403) {
           console.log('[Gmail] Profile API returned 403 for draft creation - will try without explicit From');
         } else {
-          console.warn('[Gmail] Profile fetch failed for draft:', profileError?.message);
+          console.warn('[Gmail] Profile fetch failed for draft:', getErrorMessage(profileError));
         }
       }
     }
@@ -512,11 +513,11 @@ export async function createGmailDraftWithAttachment(options: {
       draftId: draftId || undefined,
       draftUrl: draftUrl || undefined
     };
-  } catch (error: any) {
-    console.error('Gmail draft creation error:', error?.message || 'Unknown error');
+  } catch (error: unknown) {
+    console.error('Gmail draft creation error:', getErrorMessage(error) || 'Unknown error');
     return {
       success: false,
-      error: error.message || 'Failed to create Gmail draft'
+      error: getErrorMessage(error) || 'Failed to create Gmail draft'
     };
   }
 }

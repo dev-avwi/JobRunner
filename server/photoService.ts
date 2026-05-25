@@ -2,6 +2,7 @@ import { storage as dbStorage } from './storage';
 import { objectStorageClient } from './objectStorage';
 import crypto from 'crypto';
 import { categorizePhoto } from './ai';
+import { getErrorMessage } from "./lib/errors";
 
 const BUCKET_ID = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
 
@@ -143,9 +144,9 @@ export async function uploadJobPhoto(
       photoId: photo.id,
       objectStorageKey: objectKey,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading job photo:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -200,18 +201,18 @@ export async function getSignedPhotoUrl(
         
         console.log('[PhotoService] GCS fallback successful');
         return { url: signedUrl };
-      } catch (gcsError: any) {
-        console.error('[PhotoService] GCS fallback failed:', gcsError.message);
-        return { error: `Sidecar: ${errorText}, GCS: ${gcsError.message}` };
+      } catch (gcsError: unknown) {
+        console.error('[PhotoService] GCS fallback failed:', getErrorMessage(gcsError));
+        return { error: `Sidecar: ${errorText}, GCS: ${getErrorMessage(gcsError)}` };
       }
     }
 
     const { signed_url: signedURL } = await response.json();
     console.log('[PhotoService] Signed URL generated successfully');
     return { url: signedURL };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PhotoService] Error getting signed URL:', error);
-    return { error: error.message };
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -239,9 +240,9 @@ export async function deleteJobPhoto(
     await dbStorage.deleteJobPhoto(photoId, userId);
     
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting job photo:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -311,9 +312,9 @@ export async function updatePhotoMetadata(
   try {
     await dbStorage.updateJobPhoto(photoId, userId, updates);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating photo metadata:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 

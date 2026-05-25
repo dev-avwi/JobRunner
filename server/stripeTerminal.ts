@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 import Stripe from 'stripe';
 import { getUncachableStripeClient } from './stripeClient';
 
@@ -49,9 +50,9 @@ export async function createTerminalConnectionToken(
       success: true,
       secret: connectionToken.secret,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating Terminal connection token:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -105,9 +106,9 @@ export async function getOrCreateTerminalLocation(
       locationId: newLocation.id,
       location: newLocation,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating Terminal location:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -127,9 +128,9 @@ export async function listTerminalLocations(): Promise<{
       success: true,
       locations: locations.data,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error listing Terminal locations:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -176,9 +177,9 @@ export async function createTerminalPaymentIntent(
       clientSecret: paymentIntent.client_secret || undefined,
       amount: amountInCents,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating Terminal payment intent:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -233,9 +234,9 @@ export async function createTerminalPaymentIntentWithConnect(
       clientSecret: paymentIntent.client_secret || undefined,
       amount: amountInCents,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating Terminal payment intent with Connect:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -268,9 +269,9 @@ export async function captureTerminalPayment(
       paymentIntentId: paymentIntent.id,
       status: paymentIntent.status,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error capturing Terminal payment:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -285,9 +286,9 @@ export async function cancelTerminalPayment(
   try {
     await stripe.paymentIntents.cancel(paymentIntentId);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error canceling Terminal payment:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -309,9 +310,9 @@ export async function getTerminalPaymentIntent(
       success: true,
       paymentIntent,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error retrieving Terminal payment intent:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -381,8 +382,8 @@ export async function simulateTerminalPayment(
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error simulating Terminal payment:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }

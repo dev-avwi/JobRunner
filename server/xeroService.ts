@@ -1,6 +1,7 @@
 import { XeroClient, TokenSet, Contact, Phone, Address } from "xero-node";
 import { createRequire } from "module";
 import { storage } from "./storage";
+import { getErrorMessage } from "./lib/errors";
 
 // Xero rate-limits / Akamai-blocks repeated hits to its OIDC discovery endpoint
 // (`https://identity.xero.com/.well-known/openid-configuration`). The xero-node
@@ -225,7 +226,7 @@ export async function handleCallback(url: string, userId: string): Promise<XeroC
     }
     tenants = respBody;
   } catch (err: any) {
-    if (err?.message && /Xero (rejected|\/connections)/.test(err.message)) {
+    if (getErrorMessage(err) && /Xero (rejected|\/connections)/.test(getErrorMessage(err))) {
       throw err; // already a friendly message from above
     }
     // xero-node sometimes throws a PLAIN STRING (e.g. raw response body) for
@@ -243,7 +244,7 @@ export async function handleCallback(url: string, userId: string): Promise<XeroC
       '';
     const detailBody = err?.response?.body || err?.body || {};
     const detail = (detailBody?.Detail || detailBody?.detail || '') as string;
-    const errMsg = errIsString ? err : String(err?.message || '');
+    const errMsg = errIsString ? err : String(getErrorMessage(err) || '');
 
     console.error('[Xero] updateTenants failed:', {
       status,
@@ -384,7 +385,7 @@ export async function refreshTokenIfNeeded(connection: XeroConnection): Promise<
           tenantId: connection.tenantId,
           status: "revoked",
           statusCode,
-          error: err.message,
+          error: getErrorMessage(err),
         });
         await storage.updateXeroConnection(connection.id, {
           status: "token_expired",
@@ -400,7 +401,7 @@ export async function refreshTokenIfNeeded(connection: XeroConnection): Promise<
           status: "retrying",
           attempt,
           backoffMs,
-          error: err.message,
+          error: getErrorMessage(err),
         });
         await sleep(backoffMs);
       }
@@ -455,11 +456,11 @@ async function xeroApiCall<T>(
         status: "error",
         statusCode,
         attempt,
-        error: err.message,
+        error: getErrorMessage(err),
       });
 
       if (statusCode === 401 || statusCode === 403) {
-        await handleXeroDisconnection(connection, statusCode, err.message);
+        await handleXeroDisconnection(connection, statusCode, getErrorMessage(err));
         throw new Error(
           statusCode === 401
             ? "Xero access has been revoked. Please reconnect your Xero account."
@@ -1533,9 +1534,9 @@ export async function syncPaymentsFromXero(userId: string): Promise<{
             xeroInvoiceMap.set(inv.invoiceID, inv);
           }
         }
-      } catch (batchErr: any) {
-        xeroLog("syncPaymentsBatch", { userId, status: "warning", error: batchErr.message });
-        if (!batchErr.message?.includes('304') && !batchErr.message?.includes('Not Modified')) {
+      } catch (batchErr: unknown) {
+        xeroLog("syncPaymentsBatch", { userId, status: "warning", error: getErrorMessage(batchErr) });
+        if (!getErrorMessage(batchErr)?.includes('304') && !getErrorMessage(batchErr)?.includes('Not Modified')) {
           for (const id of batchIds) {
             try {
               const resp = await xeroApiCall(connection, "getInvoice", () =>
@@ -1545,9 +1546,9 @@ export async function syncPaymentsFromXero(userId: string): Promise<{
               if (inv?.invoiceID) {
                 xeroInvoiceMap.set(inv.invoiceID, inv);
               }
-            } catch (individualErr: any) {
-              if (!individualErr.message?.includes('404')) {
-                errors.push(`Failed to fetch invoice ${id}: ${individualErr.message || individualErr}`);
+            } catch (individualErr: unknown) {
+              if (!getErrorMessage(individualErr)?.includes('404')) {
+                errors.push(`Failed to fetch invoice ${id}: ${getErrorMessage(individualErr) || individualErr}`);
               }
             }
           }
@@ -2096,13 +2097,13 @@ export async function checkConnectionHealth(userId: string): Promise<{
       tokenValid: true,
       lastSyncAt: refreshedConnection.lastSyncAt || undefined,
     };
-  } catch (err: any) {
-    xeroLog("healthCheck", { userId, status: "unhealthy", error: err.message });
+  } catch (err: unknown) {
+    xeroLog("healthCheck", { userId, status: "unhealthy", error: getErrorMessage(err) });
     return {
       healthy: false,
       status: "error",
       tokenValid: false,
-      error: err.message,
+      error: getErrorMessage(err),
     };
   }
 }
@@ -2661,9 +2662,9 @@ export async function pullSelectedInvoicesFromXero(userId: string, xeroIds: stri
       importedSet.add(xeroId);
       result.imported++;
       result.details.push({ xeroId, localId: created.id, status: 'imported' });
-    } catch (err: any) {
+    } catch (err: unknown) {
       result.failed++;
-      result.details.push({ xeroId, status: 'failed', error: err?.message || String(err) });
+      result.details.push({ xeroId, status: 'failed', error: getErrorMessage(err) || String(err) });
     }
   }
   xeroLog("pullSelectedInvoices", { userId, imported: result.imported, skipped: result.skipped, failed: result.failed });
@@ -2724,9 +2725,9 @@ export async function pullSelectedQuotesFromXero(userId: string, xeroIds: string
       importedSet.add(xeroId);
       result.imported++;
       result.details.push({ xeroId, localId: created.id, status: 'imported' });
-    } catch (err: any) {
+    } catch (err: unknown) {
       result.failed++;
-      result.details.push({ xeroId, status: 'failed', error: err?.message || String(err) });
+      result.details.push({ xeroId, status: 'failed', error: getErrorMessage(err) || String(err) });
     }
   }
   xeroLog("pullSelectedQuotes", { userId, imported: result.imported, skipped: result.skipped, failed: result.failed });
@@ -2764,9 +2765,9 @@ export async function pushSelectedInvoicesToXero(userId: string, localIds: strin
         result.failed++;
         result.details.push({ localId: id, status: 'failed', error: r.error });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       result.failed++;
-      result.details.push({ localId: id, status: 'failed', error: err?.message || String(err) });
+      result.details.push({ localId: id, status: 'failed', error: getErrorMessage(err) || String(err) });
     }
   }
   return result;
@@ -2795,9 +2796,9 @@ export async function pushSelectedQuotesToXero(userId: string, localIds: string[
         result.failed++;
         result.details.push({ localId: id, status: 'failed', error: r.error });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       result.failed++;
-      result.details.push({ localId: id, status: 'failed', error: err?.message || String(err) });
+      result.details.push({ localId: id, status: 'failed', error: getErrorMessage(err) || String(err) });
     }
   }
   return result;

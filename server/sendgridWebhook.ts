@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { db } from './storage';
 import { emailDeliveryLogs } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
+import { getErrorMessage } from "./lib/errors";
 
 // SendGrid Event Webhook
 // Docs: https://docs.sendgrid.com/for-developers/tracking-events/getting-started-event-webhook
@@ -95,8 +96,8 @@ export function verifySendGridWebhook(
       console.warn('[SendGrid Webhook] Signature verification failed');
     }
     return ok;
-  } catch (err: any) {
-    console.error('[SendGrid Webhook] Verification error:', err?.message);
+  } catch (err: unknown) {
+    console.error('[SendGrid Webhook] Verification error:', getErrorMessage(err));
     return false;
   }
 }
@@ -220,9 +221,9 @@ export async function processSendGridEvents(events: SendGridEvent[]): Promise<{ 
     try {
       await applyEvent(event);
       processed += 1;
-    } catch (err: any) {
+    } catch (err: unknown) {
       errors += 1;
-      console.error('[SendGrid Webhook] Failed to apply event:', err?.message, JSON.stringify(event));
+      console.error('[SendGrid Webhook] Failed to apply event:', getErrorMessage(err), JSON.stringify(event));
     }
   }
   return { processed, errors };

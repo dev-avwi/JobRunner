@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 
@@ -68,8 +69,8 @@ export function verifyAppleJws(jws: string, expectedBundleId?: string): AppleVer
   let certs: crypto.X509Certificate[];
   try {
     certs = x5c.map((c: string) => new crypto.X509Certificate(Buffer.from(c, 'base64')));
-  } catch (e: any) {
-    return { valid: false, error: `Invalid certificate in x5c: ${e?.message}` };
+  } catch (e: unknown) {
+    return { valid: false, error: `Invalid certificate in x5c: ${getErrorMessage(e)}` };
   }
 
   // Verify chain links and date validity.
@@ -95,8 +96,8 @@ export function verifyAppleJws(jws: string, expectedBundleId?: string): AppleVer
   try {
     const leafPem = certs[0].publicKey.export({ format: 'pem', type: 'spki' }) as string;
     payload = jwt.verify(jws, leafPem, { algorithms: ['ES256'] });
-  } catch (e: any) {
-    return { valid: false, error: `JWS signature invalid: ${e?.message}` };
+  } catch (e: unknown) {
+    return { valid: false, error: `JWS signature invalid: ${getErrorMessage(e)}` };
   }
 
   if (expectedBundleId) {

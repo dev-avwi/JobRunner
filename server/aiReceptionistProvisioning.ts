@@ -3,6 +3,7 @@ import { createAssistant, importPhoneNumber, getWebhookUrl } from './vapiService
 import { createNotification } from './notifications';
 import { logTeamActivity } from './activityService';
 import { isSharedPlatformNumber } from './phoneNumberUtils';
+import { getErrorMessage } from "./lib/errors";
 
 interface ProvisioningResult {
   success: boolean;
@@ -93,9 +94,9 @@ export async function provisionAiReceptionist(userId: string, phoneNumber?: stri
       const vapiPhone = await importPhoneNumber(purchasedNumber, twilioAccountSid, twilioAuthToken, assistant.id);
       vapiPhoneNumberId = vapiPhone.id;
       console.log(`[AI Provisioning] Imported to Vapi: ${vapiPhoneNumberId}`);
-    } catch (vapiImportError: any) {
-      console.warn(`[AI Provisioning] Vapi import warning: ${vapiImportError.message} - assistant created without phone import`);
-      stepErrors.push(`Phone import to Vapi: ${vapiImportError.message}`);
+    } catch (vapiImportError: unknown) {
+      console.warn(`[AI Provisioning] Vapi import warning: ${getErrorMessage(vapiImportError)} - assistant created without phone import`);
+      stepErrors.push(`Phone import to Vapi: ${getErrorMessage(vapiImportError)}`);
     }
 
     console.log(`[AI Provisioning] Step 3: Saving to database...`);
@@ -139,8 +140,8 @@ export async function provisionAiReceptionist(userId: string, phoneNumber?: stri
       phoneNumber: purchasedNumber,
       assistantId: assistant.id,
     };
-  } catch (error: any) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown provisioning error';
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown provisioning error';
     console.error(`[AI Provisioning] Failed for user ${userId}:`, errorMessage);
 
     try {

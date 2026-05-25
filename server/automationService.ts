@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 import { storage } from './storage';
 import { sendEmail } from './emailService';
 import { getTemplateById } from './automationTemplates';
@@ -97,9 +98,9 @@ async function processNoResponseAutomation(
               await storage.logAutomationProcessed(automation.id, 'quote', quote.id, 'success');
               processed++;
               console.log(`[Automations] Processed quote ${quote.id} with automation ${automation.name}`);
-            } catch (actionError: any) {
+            } catch (actionError: unknown) {
               console.error(`[Automations] Error executing actions for quote ${quote.id}:`, actionError);
-              await storage.logAutomationProcessed(automation.id, 'quote', quote.id, 'error', actionError.message);
+              await storage.logAutomationProcessed(automation.id, 'quote', quote.id, 'error', getErrorMessage(actionError));
               errors++;
             }
           }
@@ -149,9 +150,9 @@ async function processTimeDelayAutomation(
                 await storage.logAutomationProcessed(automation.id, 'job', job.id, 'success');
                 processed++;
                 console.log(`[Automations] Processed upcoming job ${job.id} with automation ${automation.name}`);
-              } catch (actionError: any) {
+              } catch (actionError: unknown) {
                 console.error(`[Automations] Error executing actions for job ${job.id}:`, actionError);
-                await storage.logAutomationProcessed(automation.id, 'job', job.id, 'error', actionError.message);
+                await storage.logAutomationProcessed(automation.id, 'job', job.id, 'error', getErrorMessage(actionError));
                 errors++;
               }
             }
@@ -175,9 +176,9 @@ async function processTimeDelayAutomation(
                 await storage.logAutomationProcessed(automation.id, 'job', job.id, 'success');
                 processed++;
                 console.log(`[Automations] Processed overdue job ${job.id} with automation ${automation.name}`);
-              } catch (actionError: any) {
+              } catch (actionError: unknown) {
                 console.error(`[Automations] Error executing actions for job ${job.id}:`, actionError);
-                await storage.logAutomationProcessed(automation.id, 'job', job.id, 'error', actionError.message);
+                await storage.logAutomationProcessed(automation.id, 'job', job.id, 'error', getErrorMessage(actionError));
                 errors++;
               }
             }
@@ -204,9 +205,9 @@ async function processTimeDelayAutomation(
               await storage.logAutomationProcessed(automation.id, 'invoice', invoice.id, 'success');
               processed++;
               console.log(`[Automations] Processed overdue invoice ${invoice.id} with automation ${automation.name}`);
-            } catch (actionError: any) {
+            } catch (actionError: unknown) {
               console.error(`[Automations] Error executing actions for invoice ${invoice.id}:`, actionError);
-              await storage.logAutomationProcessed(automation.id, 'invoice', invoice.id, 'error', actionError.message);
+              await storage.logAutomationProcessed(automation.id, 'invoice', invoice.id, 'error', getErrorMessage(actionError));
               errors++;
             }
           }

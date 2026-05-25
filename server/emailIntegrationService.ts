@@ -6,6 +6,7 @@ import { sendEmail as sendPlatformEmail, sendEmailWithAttachment } from './email
 import { encrypt, decrypt, isEncryptionEnabled } from './cryptoHelper';
 import { isGmailConnected, sendViaGmailAPI, getGmailProfile } from './gmailClient';
 import { isOutlookConnected, sendViaOutlookAPI, getOutlookProfile } from './outlookClient';
+import { getErrorMessage } from "./lib/errors";
 
 // Email Integration Service - Manages tradie email connections
 // Tradies can connect their own Gmail, Outlook, or SMTP email to send quotes/invoices
@@ -137,9 +138,9 @@ export async function connectSmtpEmail(
 
     console.log(`✅ SMTP email connected for user ${userId}: ${config.emailAddress}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to connect SMTP email:', error);
-    return { success: false, error: error.message || 'Failed to connect email' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to connect email' };
   }
 }
 
@@ -264,17 +265,17 @@ export async function sendEmailViaIntegration(options: SendEmailOptions): Promis
     }
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Update log entry with error
     await db
       .update(emailDeliveryLogs)
       .set({
         status: 'failed',
-        errorMessage: error.message,
+        errorMessage: getErrorMessage(error),
       })
       .where(eq(emailDeliveryLogs.id, logEntry.id));
 
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -337,7 +338,7 @@ async function sendViaSMTP(
 
     return {
       success: false,
-      error: error.message,
+      error: getErrorMessage(error),
       sentVia: 'smtp',
     };
   }
@@ -382,11 +383,11 @@ async function sendViaGmail(
         sentVia: 'gmail',
       };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Gmail send error:', error);
     return {
       success: false,
-      error: error.message,
+      error: getErrorMessage(error),
       sentVia: 'gmail',
     };
   }
@@ -422,11 +423,11 @@ async function sendViaGmailDirect(
         sentVia: 'gmail_connector',
       };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Gmail connector send error:', error);
     return {
       success: false,
-      error: error.message,
+      error: getErrorMessage(error),
       sentVia: 'gmail_connector',
     };
   }
@@ -497,10 +498,10 @@ async function sendViaPlatform(
       sentVia: 'sendgrid',
       error: result.error,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
-      error: error.message,
+      error: getErrorMessage(error),
       sentVia: 'sendgrid',
     };
   }
@@ -554,18 +555,18 @@ export async function testEmailConnection(userId: string): Promise<{ success: bo
 
     // For OAuth providers
     return { success: true, message: 'Email connection is active.' };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Update integration status
     await db
       .update(emailIntegrations)
       .set({
         status: 'error',
-        lastError: error.message,
+        lastError: getErrorMessage(error),
         updatedAt: new Date(),
       })
       .where(eq(emailIntegrations.id, integration.id));
 
-    return { success: false, message: `Connection failed: ${error.message}` };
+    return { success: false, message: `Connection failed: ${getErrorMessage(error)}` };
   }
 }
 

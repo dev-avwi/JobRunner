@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 /**
  * Unified Notification Service for JobRunner
  * Handles Email and SMS notifications
@@ -45,13 +46,13 @@ const sendSMS = async (options: { to: string; message: string; businessOwnerId?:
       error: result.error,
       simulated: result.simulated
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Return actual failure - do NOT silently succeed
-    console.error(`❌ SMS ERROR sending to ${options.to}:`, error.message);
+    console.error(`❌ SMS ERROR sending to ${options.to}:`, getErrorMessage(error));
     return {
       success: false,
       simulated: false,
-      error: error.message
+      error: getErrorMessage(error)
     };
   }
 };
@@ -160,8 +161,8 @@ export async function notifyQuoteReady(
       if (!emailResult.success) {
         result.emailError = emailResult.error;
       }
-    } catch (error: any) {
-      result.emailError = error.message;
+    } catch (error: unknown) {
+      result.emailError = getErrorMessage(error);
     }
   }
 
@@ -175,8 +176,8 @@ export async function notifyQuoteReady(
       if (!smsResult.success) {
         result.smsError = smsResult.error;
       }
-    } catch (error: any) {
-      result.smsError = error.message;
+    } catch (error: unknown) {
+      result.smsError = getErrorMessage(error);
     }
   }
 
@@ -233,8 +234,8 @@ export async function notifyInvoiceSent(
       });
       result.emailSent = emailResult.success;
       if (!emailResult.success) result.emailError = emailResult.error;
-    } catch (error: any) {
-      result.emailError = error.message;
+    } catch (error: unknown) {
+      result.emailError = getErrorMessage(error);
     }
   }
 
@@ -246,8 +247,8 @@ export async function notifyInvoiceSent(
         : await sendSMS({ to: clientPhone, message: smsTemplates.invoiceSent(clientName, businessName, invoiceNumber, invoiceTotal, options.businessPhone) });
       result.smsSent = smsResult.success;
       if (!smsResult.success) result.smsError = smsResult.error;
-    } catch (error: any) {
-      result.smsError = error.message;
+    } catch (error: unknown) {
+      result.smsError = getErrorMessage(error);
     }
   }
 
@@ -291,8 +292,8 @@ export async function notifyPaymentReceived(
       });
       result.emailSent = emailResult.success;
       if (!emailResult.success) result.emailError = emailResult.error;
-    } catch (error: any) {
-      result.emailError = error.message;
+    } catch (error: unknown) {
+      result.emailError = getErrorMessage(error);
     }
   }
 
@@ -304,8 +305,8 @@ export async function notifyPaymentReceived(
         : await sendSMS({ to: clientPhone, message: smsTemplates.paymentReceived(clientName, amount, businessName, undefined, options.businessPhone) });
       result.smsSent = smsResult.success;
       if (!smsResult.success) result.smsError = smsResult.error;
-    } catch (error: any) {
-      result.smsError = error.message;
+    } catch (error: unknown) {
+      result.smsError = getErrorMessage(error);
     }
   }
 
@@ -350,8 +351,8 @@ export async function notifyJobScheduled(
       });
       result.emailSent = emailResult.success;
       if (!emailResult.success) result.emailError = emailResult.error;
-    } catch (error: any) {
-      result.emailError = error.message;
+    } catch (error: unknown) {
+      result.emailError = getErrorMessage(error);
     }
   }
 
@@ -363,8 +364,8 @@ export async function notifyJobScheduled(
         : await sendSMS({ to: clientPhone, message: smsTemplates.jobScheduled(clientName, businessName, jobDate, options.businessPhone) });
       result.smsSent = smsResult.success;
       if (!smsResult.success) result.smsError = smsResult.error;
-    } catch (error: any) {
-      result.smsError = error.message;
+    } catch (error: unknown) {
+      result.smsError = getErrorMessage(error);
     }
   }
 
@@ -416,9 +417,9 @@ export async function notifyOwnerViaSms(
     const message = (template as any)(...args);
     const result = await sendSMS({ to: ownerPhone, message });
     return { success: result.success, error: result.error };
-  } catch (error: any) {
-    console.error(`[OwnerSMS] Failed to send ${templateKey}:`, error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    console.error(`[OwnerSMS] Failed to send ${templateKey}:`, getErrorMessage(error));
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -490,9 +491,9 @@ export async function notifyOwnerViaEmail(
       console.log(`[OwnerEmail] ${type} notification sent to ${ownerEmail}`);
     }
     return { success: result.success, error: result.error };
-  } catch (error: any) {
-    console.error(`[OwnerEmail] Failed to send ${type}:`, error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    console.error(`[OwnerEmail] Failed to send ${type}:`, getErrorMessage(error));
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 

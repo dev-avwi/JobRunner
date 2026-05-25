@@ -103,12 +103,6 @@ interface Job {
   geofenceRadius?: number;
   geofenceAutoClockIn?: boolean;
   geofenceAutoClockOut?: boolean;
-  workerStatus?: string | null;
-  isRecurring?: boolean;
-  recurrencePattern?: string | null;
-  nextRecurrenceDate?: string | null;
-  recurrenceEndDate?: string | null;
-  estimatedDuration?: number;
   portalEnabled?: boolean;
 }
 

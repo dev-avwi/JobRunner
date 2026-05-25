@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 import { storage } from './storage';
 import type { Job, Invoice } from '@shared/schema';
 
@@ -100,13 +101,13 @@ export async function processRecurringJobsForUser(userId: string): Promise<Recur
           newId: newJob.id,
           success: true,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`Error processing recurring job ${job.id}:`, error);
         results.push({
           type: 'job',
           originalId: job.id,
           success: false,
-          error: error.message,
+          error: getErrorMessage(error),
         });
       }
     }
@@ -188,13 +189,13 @@ export async function processRecurringInvoicesForUser(userId: string): Promise<R
           newId: newInvoice.id,
           success: true,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`Error processing recurring invoice ${invoice.id}:`, error);
         results.push({
           type: 'invoice',
           originalId: invoice.id,
           success: false,
-          error: error.message,
+          error: getErrorMessage(error),
         });
       }
     }

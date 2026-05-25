@@ -8,6 +8,7 @@ import { notifyQuoteSent, notifyInvoiceSent, notifyInvoicePaid } from './notific
 import { syncSingleInvoiceToXero, markInvoicePaidInXero } from './xeroService';
 import { processPaymentReceivedAutomation } from './automationService';
 import { getProductionBaseUrl, getQuotePublicUrl, getInvoicePublicUrl, getReceiptPublicUrl } from './urlHelper';
+import { getErrorMessage } from "./lib/errors";
 
 const sendCooldowns = new Map<string, number>();
 const SEND_COOLDOWN_MS = 60_000; // 60 seconds
@@ -410,9 +411,9 @@ export const handleQuoteSend = async (req: any, res: any, storage: any) => {
           const friendlyError = getTradieFriendlyEmailError(result.error || 'unknown error');
           return res.status(502).json(friendlyError);
         }
-      } catch (emailError: any) {
-        console.error("Quote email sending failed:", emailError.message);
-        const friendlyError = getTradieFriendlyEmailError(emailError.message);
+      } catch (emailError: unknown) {
+        console.error("Quote email sending failed:", getErrorMessage(emailError));
+        const friendlyError = getTradieFriendlyEmailError(getErrorMessage(emailError));
         return res.status(502).json(friendlyError);
       }
     } else {
@@ -771,9 +772,9 @@ export const handleInvoiceSend = async (req: any, res: any, storage: any) => {
           const friendlyError = getTradieFriendlyEmailError(result.error || 'unknown error');
           return res.status(502).json(friendlyError);
         }
-      } catch (emailError: any) {
-        console.error("Invoice email sending failed:", emailError.message);
-        const friendlyError = getTradieFriendlyEmailError(emailError.message);
+      } catch (emailError: unknown) {
+        console.error("Invoice email sending failed:", getErrorMessage(emailError));
+        const friendlyError = getTradieFriendlyEmailError(getErrorMessage(emailError));
         return res.status(502).json(friendlyError);
       }
     } else {
@@ -993,8 +994,8 @@ export const handleInvoiceMarkPaid = async (req: any, res: any, storage: any) =>
           emailMessage = `Payment recorded. Receipt couldn't be sent - you may need to set up email in Settings.`;
           console.error("Receipt email integration failed:", result.error);
         }
-      } catch (emailError: any) {
-        console.error("Receipt email sending failed:", emailError.message);
+      } catch (emailError: unknown) {
+        console.error("Receipt email sending failed:", getErrorMessage(emailError));
         emailMessage = `Payment recorded. Receipt couldn't be sent - check Settings → Email Integration.`;
       }
     } else {
@@ -1051,7 +1052,7 @@ async function uploadPDFToStorage(
     const path = await objectStorage.uploadFile(filename, pdfBuffer, 'application/pdf');
     console.log(`✅ PDF uploaded to storage: ${filename}`);
     return { path, filename: `${type.toUpperCase()}-${documentNumber}.pdf` };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PDF upload error:', error);
     throw new Error('Failed to save PDF to cloud storage');
   }
@@ -1384,9 +1385,9 @@ export const handleQuoteEmailWithPDF = async (req: any, res: any, storage: any) 
       });
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating quote email with PDF:", error);
-    const friendlyError = getTradieFriendlyEmailError(error.message);
+    const friendlyError = getTradieFriendlyEmailError(getErrorMessage(error));
     res.status(500).json(friendlyError);
   }
 };
@@ -1738,9 +1739,9 @@ export const handleInvoiceEmailWithPDF = async (req: any, res: any, storage: any
       });
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating invoice email with PDF:", error);
-    const friendlyError = getTradieFriendlyEmailError(error.message);
+    const friendlyError = getTradieFriendlyEmailError(getErrorMessage(error));
     res.status(500).json(friendlyError);
   }
 };
@@ -1889,9 +1890,9 @@ export const handleSendPaymentLink = async (req: any, res: any, storage: any) =>
       paymentUrl
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error sending payment link:", error);
-    const friendlyError = getTradieFriendlyEmailError(error.message || 'Unknown error');
+    const friendlyError = getTradieFriendlyEmailError(getErrorMessage(error) || 'Unknown error');
     res.status(500).json(friendlyError);
   }
 };

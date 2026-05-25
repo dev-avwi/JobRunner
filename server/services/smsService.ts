@@ -538,7 +538,7 @@ async function checkAndProcessQuoteAcceptance(
       message: `Quote ${latestQuote.number} accepted via SMS` 
     };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SMS Quote Accept] Error processing acceptance:', error);
     return { processed: false };
   }

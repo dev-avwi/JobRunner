@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 import Stripe from 'stripe';
 import { getUncachableStripeClient } from './stripeClient';
 import { STRIPE_CONFIG } from './config/stripe';
@@ -65,9 +66,9 @@ export async function createConnectAccount(
       accountId: account.id,
       onboardingUrl: accountLink.url,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating Connect account:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -89,18 +90,18 @@ export async function createConnectOnboardingLink(
       type: 'account_onboarding',
     });
     return { url: accountLink.url };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating onboarding link:', error);
     
     // Check for Australia country not enabled error
-    if (error.message?.includes('not enabled for Express') || error.message?.includes('Country and Capabilities')) {
+    if (getErrorMessage(error)?.includes('not enabled for Express') || getErrorMessage(error)?.includes('Country and Capabilities')) {
       return { 
         error: 'Stripe payment setup is being configured. Please try again shortly or contact support.',
         isConfigurationError: true
       };
     }
     
-    return { error: error.message };
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -130,14 +131,14 @@ export async function getConnectAccountStatus(accountId: string): Promise<{
       detailsSubmitted: account.details_submitted || false,
       requirementsCurrentlyDue: account.requirements?.currently_due || [],
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting Connect account status:', error);
     return { 
       chargesEnabled: false, 
       payoutsEnabled: false, 
       detailsSubmitted: false,
       requirementsCurrentlyDue: [],
-      error: error.message 
+      error: getErrorMessage(error) 
     };
   }
 }
@@ -194,9 +195,9 @@ export async function createPaymentIntentWithFee(
       tradieAmount: tradieAmount / 100,
       platformFee: platformFeeAmount / 100,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating payment intent with fee:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -273,9 +274,9 @@ export async function createCheckoutSessionWithFee(
       sessionId: session.id,
       url: session.url || undefined,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating checkout session with fee:', error);
-    return { error: error.message };
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -288,9 +289,9 @@ export async function createLoginLink(accountId: string): Promise<{ url?: string
   try {
     const loginLink = await stripe.accounts.createLoginLink(accountId);
     return { url: loginLink.url };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating login link:', error);
-    return { error: error.message };
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -318,8 +319,8 @@ export async function getAccountBalance(accountId: string): Promise<{
       .reduce((sum, b) => sum + b.amount, 0) / 100;
 
     return { available, pending };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting account balance:', error);
-    return { available: 0, pending: 0, error: error.message };
+    return { available: 0, pending: 0, error: getErrorMessage(error) };
   }
 }

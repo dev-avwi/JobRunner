@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./lib/errors";
 // Email Provider Service - Handles SendGrid health checks and fallback to external email clients
 // Supports: SendGrid (direct send), Gmail, Outlook, Apple Mail, generic mailto
 
@@ -50,8 +51,8 @@ export async function checkSendGridHealth(): Promise<{ available: boolean; confi
     
     // For now, assume configured means available - we'll get real errors on send attempts
     return { available: true, configured: true };
-  } catch (error: any) {
-    return { available: false, configured: false, error: error.message };
+  } catch (error: unknown) {
+    return { available: false, configured: false, error: getErrorMessage(error) };
   }
 }
 

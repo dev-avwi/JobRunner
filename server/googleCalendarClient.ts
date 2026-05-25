@@ -4,6 +4,7 @@
 
 import { google, calendar_v3 } from 'googleapis';
 import { storage } from './storage';
+import { getErrorMessage } from "./lib/errors";
 
 // Google OAuth credentials from environment
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
@@ -105,8 +106,8 @@ export async function handleOAuthCallback(code: string, userId: string): Promise
       const userInfo = await oauth2.userinfo.get();
       email = userInfo.data.email || undefined;
       console.log(`[GoogleCalendar] Got user email: ${email}`);
-    } catch (emailError: any) {
-      console.warn(`[GoogleCalendar] Could not fetch user email: ${emailError.message}`);
+    } catch (emailError: unknown) {
+      console.warn(`[GoogleCalendar] Could not fetch user email: ${getErrorMessage(emailError)}`);
     }
     
     // Store tokens in businessSettings
@@ -127,10 +128,10 @@ export async function handleOAuthCallback(code: string, userId: string): Promise
     console.log(`[GoogleCalendar] Successfully connected for user ${userId}: ${email}`);
     return { success: true, email };
   } catch (error: any) {
-    console.error('[GoogleCalendar] OAuth callback error:', error.message || error);
+    console.error('[GoogleCalendar] OAuth callback error:', getErrorMessage(error) || error);
     
     // Provide more helpful error messages
-    let errorMessage = error.message || 'Unknown error during authorization';
+    let errorMessage = getErrorMessage(error) || 'Unknown error during authorization';
     if (errorMessage.includes('invalid_grant')) {
       errorMessage = 'Authorization code expired. Please try connecting again.';
     } else if (errorMessage.includes('redirect_uri_mismatch')) {
@@ -212,9 +213,9 @@ async function getUserAccessToken(userId: string): Promise<string> {
       
       console.log(`[GoogleCalendar] Successfully refreshed token for user ${userId} (attempt ${attempt})`);
       return credentials.access_token;
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
-      const errorMessage = error.message || '';
+      const errorMessage = getErrorMessage(error) || '';
       
       // Check if this is a permanent error (token revoked or expired)
       const isPermanentError = errorMessage.includes('invalid_grant') || 

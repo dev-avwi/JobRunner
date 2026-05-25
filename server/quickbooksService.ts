@@ -3,6 +3,7 @@ import type { QuickbooksConnection } from "@shared/schema";
 import { encrypt, decrypt } from "./encryption";
 import crypto from "crypto";
 import { qboAccountsCache, qboTaxRatesCache, qboItemsCache } from "./cache";
+import { getErrorMessage } from "./lib/errors";
 
 const QUICKBOOKS_SCOPES = "com.intuit.quickbooks.accounting openid profile email";
 
@@ -184,8 +185,8 @@ export async function testQuickbooksConnection(userId: string): Promise<{
       return { success: false, error: 'QuickBooks API returned no company info' };
     }
     return { success: true, companyName: info.CompanyName, realmId: refreshed.realmId };
-  } catch (err: any) {
-    return { success: false, error: err?.message || 'QuickBooks connection test failed' };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err) || 'QuickBooks connection test failed' };
   }
 }
 
@@ -699,9 +700,9 @@ export async function syncSingleInvoiceToQuickbooks(userId: string, invoiceId: s
     }
 
     return { success: true, quickbooksInvoiceId: createdInvoice?.Id };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[QuickBooks] Failed to sync single invoice:', error);
-    return { success: false, error: error.message || "Failed to sync invoice" };
+    return { success: false, error: getErrorMessage(error) || "Failed to sync invoice" };
   }
 }
 
@@ -856,8 +857,8 @@ export async function voidInvoiceInQuickbooks(userId: string, invoiceId: string)
     }
 
     return { success: true, voidMethod: 'void', message: `Invoice ${qbInvoiceId} voided in QuickBooks` };
-  } catch (error: any) {
-    return { success: false, voidMethod: 'void', message: error.message, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, voidMethod: 'void', message: getErrorMessage(error), error: getErrorMessage(error) };
   }
 }
 
@@ -1165,8 +1166,8 @@ export async function attachInvoicePdfToQuickbooks(userId: string, invoiceId: st
       return { success: false, error: `QBO attach failed: ${t}` };
     }
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err?.message || String(err) };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err) || String(err) };
   }
 }
 

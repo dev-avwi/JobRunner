@@ -8,6 +8,7 @@ import { notifyInstallmentDue } from './notifications';
 import { getProductionBaseUrl } from './urlHelper';
 import { jobs, quotes, invoices, smsAutomationRules, smsAutomationLogs, paymentSchedules, paymentInstallments, automationSettings, invoiceReminderLogs, complianceDocuments } from '@shared/schema';
 import { and, or, eq, lt, isNull, gte, lte, not } from 'drizzle-orm';
+import { getErrorMessage } from "./lib/errors";
 
 let reminderInterval: NodeJS.Timeout | null = null;
 let recurringInterval: NodeJS.Timeout | null = null;
@@ -370,14 +371,14 @@ async function processQuoteFollowUp(rule: any, quote: any): Promise<void> {
       lastTriggeredAt: new Date(),
       triggerCount: (rule.triggerCount || 0) + 1,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[SMS Automation] Error sending quote follow-up:`, error);
     await storage.createSmsAutomationLog({
       ruleId: rule.id,
       entityType: 'quote',
       entityId: quote.id,
       status: 'failed',
-      errorMessage: error.message,
+      errorMessage: getErrorMessage(error),
     });
   }
 }
@@ -420,14 +421,14 @@ async function processInvoiceOverdue(rule: any, invoice: any): Promise<void> {
       lastTriggeredAt: new Date(),
       triggerCount: (rule.triggerCount || 0) + 1,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[SMS Automation] Error sending invoice overdue:`, error);
     await storage.createSmsAutomationLog({
       ruleId: rule.id,
       entityType: 'invoice',
       entityId: invoice.id,
       status: 'failed',
-      errorMessage: error.message,
+      errorMessage: getErrorMessage(error),
     });
   }
 }
@@ -471,14 +472,14 @@ async function processJobDayBefore(rule: any, job: any): Promise<void> {
       lastTriggeredAt: new Date(),
       triggerCount: (rule.triggerCount || 0) + 1,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[SMS Automation] Error sending job day before reminder:`, error);
     await storage.createSmsAutomationLog({
       ruleId: rule.id,
       entityType: 'job',
       entityId: job.id,
       status: 'failed',
-      errorMessage: error.message,
+      errorMessage: getErrorMessage(error),
     });
   }
 }
@@ -596,8 +597,8 @@ async function processAutoQuoteFollowUps(): Promise<void> {
             });
             
             processed++;
-          } catch (sendError: any) {
-            console.error(`[Auto Quote Follow-up] Error sending follow-up for quote ${quote.id}:`, sendError.message);
+          } catch (sendError: unknown) {
+            console.error(`[Auto Quote Follow-up] Error sending follow-up for quote ${quote.id}:`, getErrorMessage(sendError));
           }
         }
       } catch (userError) {
@@ -710,8 +711,8 @@ async function processAutoInvoiceReminders(): Promise<void> {
             });
             
             processed++;
-          } catch (sendError: any) {
-            console.error(`[Auto Invoice Reminder] Error sending reminder for invoice ${invoice.id}:`, sendError.message);
+          } catch (sendError: unknown) {
+            console.error(`[Auto Invoice Reminder] Error sending reminder for invoice ${invoice.id}:`, getErrorMessage(sendError));
           }
         }
       } catch (userError) {
@@ -1013,7 +1014,7 @@ async function processComplianceExpiry(): Promise<void> {
           });
           notificationsCreated++;
         } catch (notifError: any) {
-          if (notifError?.message?.includes('duplicate') || notifError?.code === '23505') {
+          if (getErrorMessage(notifError)?.includes('duplicate') || notifError?.code === '23505') {
             continue;
           }
           console.error(`[Scheduler] Error creating compliance notification for doc ${doc.id}:`, notifError);

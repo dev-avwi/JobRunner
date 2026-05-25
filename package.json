@@ -59,6 +59,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/colorthief": "^2.6.0",
     "@types/cookie": "^0.6.0",
+    "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/leaflet": "^1.9.21",
     "@types/lodash": "^4.17.21",

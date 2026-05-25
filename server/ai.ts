@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { aiQueue, visionQueue } from "./concurrency";
+import { getErrorMessage } from "./lib/errors";
 
 const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -431,8 +432,8 @@ Respond ONLY with valid JSON: {"sentiment":"positive"|"neutral"|"negative","scor
       const score = typeof parsed.score === 'number' ? Math.max(0, Math.min(1, parsed.score)) : 0.5;
       return { sentiment, sentimentScore: score };
     }
-  } catch (e: any) {
-    console.error('[AI] Sentiment analysis failed:', e.message);
+  } catch (e: unknown) {
+    console.error('[AI] Sentiment analysis failed:', getErrorMessage(e));
   }
 
   return { sentiment: 'neutral', sentimentScore: 0.5 };
@@ -2131,9 +2132,9 @@ Keep descriptions practical and focused on what matters for the job documentatio
         yield content;
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AI] Photo analysis streaming error:', error);
-    yield `\n\n[Error analysing photos: ${error.message}]`;
+    yield `\n\n[Error analysing photos: ${getErrorMessage(error)}]`;
   }
 }
 
@@ -2616,7 +2617,7 @@ Keep each tip to 1-2 sentences.`;
     });
 
     return response.choices[0]?.message?.content || 'Unable to generate recommendations.';
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AI] Scheduling recommendations error:', error);
     return 'Unable to generate recommendations at this time.';
   }

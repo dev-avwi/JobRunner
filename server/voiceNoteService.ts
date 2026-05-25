@@ -2,6 +2,7 @@ import { storage as dbStorage } from './storage';
 import { objectStorageClient } from './objectStorage';
 import crypto from 'crypto';
 import OpenAI from 'openai';
+import { getErrorMessage } from "./lib/errors";
 
 const BUCKET_ID = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
@@ -138,9 +139,9 @@ export async function uploadVoiceNote(
       voiceNoteId: voiceNote.id,
       objectStorageKey: objectKey,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading voice note:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -193,18 +194,18 @@ export async function getSignedVoiceNoteUrl(
         
         console.log('[VoiceNoteService] GCS fallback successful');
         return { url: signedUrl };
-      } catch (gcsError: any) {
-        console.error('[VoiceNoteService] GCS fallback failed:', gcsError.message);
-        return { error: `Sidecar: ${errorText}, GCS: ${gcsError.message}` };
+      } catch (gcsError: unknown) {
+        console.error('[VoiceNoteService] GCS fallback failed:', getErrorMessage(gcsError));
+        return { error: `Sidecar: ${errorText}, GCS: ${getErrorMessage(gcsError)}` };
       }
     }
 
     const { signed_url: signedURL } = await response.json();
     console.log('[VoiceNoteService] Signed URL generated successfully');
     return { url: signedURL };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[VoiceNoteService] Error getting signed URL:', error);
-    return { error: error.message };
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -232,9 +233,9 @@ export async function deleteVoiceNote(
     await dbStorage.deleteVoiceNote(voiceNoteId, userId);
     
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting voice note:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -285,9 +286,9 @@ export async function updateVoiceNoteTitle(
   try {
     await dbStorage.updateVoiceNote(voiceNoteId, userId, { title });
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating voice note title:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -360,9 +361,9 @@ export async function transcribeVoiceNote(
     });
     
     return { success: true, transcription: transcriptionText };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error transcribing voice note:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -426,8 +427,8 @@ export async function detectActionsFromTranscription(
     }
 
     return validActions;
-  } catch (error: any) {
-    console.error('[VoiceNoteService] Error detecting actions:', error.message);
+  } catch (error: unknown) {
+    console.error('[VoiceNoteService] Error detecting actions:', getErrorMessage(error));
     return [];
   }
 }

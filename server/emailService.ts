@@ -1,6 +1,7 @@
 import sgMail from '@sendgrid/mail';
 import { sendViaGmailAPI, isGmailConnected } from './gmailClient';
 import { logger } from './logger';
+import { getErrorMessage } from "./lib/errors";
 
 let connectorFromEmail: string | null = null;
 
@@ -94,7 +95,7 @@ export async function sendViaSendGrid(emailData: any): Promise<{ messageId: stri
   } catch (err: any) {
     const statusCode = err?.code || err?.response?.statusCode;
     const body = err?.response?.body;
-    console.error(`[SendGrid] Send failed - status: ${statusCode}, body:`, JSON.stringify(body || err.message));
+    console.error(`[SendGrid] Send failed - status: ${statusCode}, body:`, JSON.stringify(body || getErrorMessage(err)));
     throw err;
   }
 }
@@ -165,8 +166,8 @@ async function logEmailDelivery(
       nextRetryAt: status === 'failed' && !permanentlyFailed ? scheduleEmailRetry(0) : null,
       payloadJson: status === 'failed' && !permanentlyFailed ? sanitizePayloadForRetry(emailData) : null,
     });
-  } catch (logErr: any) {
-    console.warn('[Email] Failed to log delivery (non-fatal):', logErr?.message);
+  } catch (logErr: unknown) {
+    console.warn('[Email] Failed to log delivery (non-fatal):', getErrorMessage(logErr));
   }
 }
 
@@ -195,10 +196,10 @@ export async function sendSystemEmail(emailData: any): Promise<{ messageId: stri
     const sgResult = await sendViaSendGrid(emailData);
     await logEmailDelivery(emailData, 'sent', 'sendgrid', null, false, sgResult.messageId);
     return { messageId: sgResult.messageId, sentVia: 'sendgrid' };
-  } catch (sgError: any) {
+  } catch (sgError: unknown) {
     lastError = sgError;
     permanentSendGrid = isPermanentEmailFailure(sgError);
-    console.warn(`⚠️ SendGrid failed for system email to ${emailData.to}, trying Gmail fallback: ${sgError.message}`);
+    console.warn(`⚠️ SendGrid failed for system email to ${emailData.to}, trying Gmail fallback: ${getErrorMessage(sgError)}`);
   }
 
   const gmailConnected = await isGmailConnected();
@@ -226,9 +227,9 @@ export async function sendSystemEmail(emailData: any): Promise<{ messageId: stri
         return { messageId: result.messageId || null, sentVia: 'gmail' };
       }
       throw new Error(result.error || 'Gmail send failed');
-    } catch (gmailError: any) {
+    } catch (gmailError: unknown) {
       lastError = gmailError;
-      console.error(`❌ Gmail fallback also failed: ${gmailError.message}`);
+      console.error(`❌ Gmail fallback also failed: ${getErrorMessage(gmailError)}`);
     }
   }
 
@@ -829,7 +830,7 @@ export const sendQuoteEmail = async (quote: any, client: any, business: any = {}
   } catch (error: any) {
     console.error('Error sending quote email:', error);
     // Sanitize error message for client response
-    if (error.message?.includes('SendGrid') || error.response?.body) {
+    if (getErrorMessage(error)?.includes('SendGrid') || error.response?.body) {
       throw new Error('Email service error. Please check your configuration.');
     }
     throw new Error('Email sending failed. Please try again.');
@@ -863,7 +864,7 @@ export const sendInvoiceEmail = async (invoice: any, client: any, business: any 
   } catch (error: any) {
     console.error('Error sending invoice email:', error);
     // Sanitize error message for client response
-    if (error.message?.includes('SendGrid') || error.response?.body) {
+    if (getErrorMessage(error)?.includes('SendGrid') || error.response?.body) {
       throw new Error('Email service error. Please check your configuration.');
     }
     throw new Error('Email sending failed. Please try again.');
@@ -904,7 +905,7 @@ export const sendReceiptEmail = async (invoice: any, client: any, business: any 
   } catch (error: any) {
     console.error('Error sending receipt email:', error);
     // Sanitize error message for client response
-    if (error.message?.includes('SendGrid') || error.response?.body) {
+    if (getErrorMessage(error)?.includes('SendGrid') || error.response?.body) {
       throw new Error('Email service error. Please check your configuration.');
     }
     throw new Error('Email sending failed. Please try again.');
@@ -1058,9 +1059,9 @@ export async function sendReceiptEmailWithPdf(
     if (!pdfBuffer || pdfBuffer.length === 0) {
       throw new Error('PDF generation returned empty buffer');
     }
-  } catch (pdfError: any) {
+  } catch (pdfError: unknown) {
     console.error(`❌ Failed to generate receipt PDF for invoice ${invoice.id}:`, pdfError);
-    throw new Error(`Failed to generate receipt PDF: ${pdfError.message || 'Unknown error'}`);
+    throw new Error(`Failed to generate receipt PDF: ${getErrorMessage(pdfError) || 'Unknown error'}`);
   }
   
   // Get email content using existing template
@@ -1205,7 +1206,7 @@ export const sendJobConfirmationEmail = async (job: any, client: any, business: 
     return { success: true, message: 'Job confirmation sent successfully' };
   } catch (error: any) {
     console.error('Error sending job confirmation email:', error);
-    if (error.message?.includes('SendGrid') || error.response?.body) {
+    if (getErrorMessage(error)?.includes('SendGrid') || error.response?.body) {
       throw new Error('Email service error. Please check your configuration.');
     }
     throw new Error('Email sending failed. Please try again.');
@@ -1346,9 +1347,9 @@ export const sendEmail = async (options: EmailOptions): Promise<EmailResult> => 
       console.error('Email send error - Status:', error.code);
       console.error('Email send error - Body:', JSON.stringify(error.response.body, null, 2));
     } else {
-      console.error('Email send error:', error.message);
+      console.error('Email send error:', getErrorMessage(error));
     }
-    return { success: false, error: error.message || 'Failed to send email' };
+    return { success: false, error: getErrorMessage(error) || 'Failed to send email' };
   }
 };
 
@@ -1416,7 +1417,7 @@ export const sendEmailVerificationEmail = async (user: any, verificationToken: s
     const emailData = createEmailVerificationEmail(user, verificationToken);
     await sendSystemEmail(emailData);
     return { success: true, message: 'Verification email sent successfully' };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error sending verification email:', error);
     throw new Error('Email sending failed. Please try again.');
   }
@@ -1489,7 +1490,7 @@ export const sendPasswordResetEmail = async (user: any, resetToken: string) => {
     await sendSystemEmail(emailData);
     console.log('Password reset email sent successfully to:', user.email);
     return { success: true, message: 'Password reset email sent successfully' };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error sending password reset email:', error);
     throw new Error('Email sending failed. Please try again.');
   }
@@ -1804,11 +1805,11 @@ export async function sendWelcomeEmail(
     await sendSystemEmail(emailData);
     console.log('✅ Welcome email sent to:', user.email);
     return { success: true, mock: !isSendGridConfigured };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Failed to send welcome email:', error);
     return { 
       success: false, 
-      error: error.message || 'Failed to send welcome email',
+      error: getErrorMessage(error) || 'Failed to send welcome email',
       mock: !isSendGridConfigured
     };
   }
@@ -1867,11 +1868,11 @@ export async function sendTestEmail(
     await sendSystemEmail(emailData);
     console.log('✅ Test email sent to:', toEmail);
     return { success: true, mock: !isSendGridConfigured };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Failed to send test email:', error);
     return { 
       success: false, 
-      error: error.message || 'Failed to send email',
+      error: getErrorMessage(error) || 'Failed to send email',
       mock: !isSendGridConfigured
     };
   }
@@ -1966,11 +1967,11 @@ export async function sendTeamInviteEmail(
     await sendSystemEmail(emailData);
     console.log('✅ Team invite email sent to:', inviteeEmail);
     return { success: true, mock: !isSendGridConfigured };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Failed to send team invite email:', error);
     return { 
       success: false, 
-      error: error.message || 'Failed to send invite email',
+      error: getErrorMessage(error) || 'Failed to send invite email',
       mock: !isSendGridConfigured
     };
   }
@@ -2053,11 +2054,11 @@ export async function sendJobAssignmentEmail(
     await sendSystemEmail(emailData);
     console.log('✅ Job assignment email sent to:', assigneeEmail);
     return { success: true, mock: !isSendGridConfigured };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Failed to send job assignment email:', error);
     return { 
       success: false, 
-      error: error.message || 'Failed to send job assignment email',
+      error: getErrorMessage(error) || 'Failed to send job assignment email',
       mock: !isSendGridConfigured
     };
   }
@@ -2140,11 +2141,11 @@ export async function sendJobCompletionNotificationEmail(
     await sendSystemEmail(emailData);
     console.log('✅ Job completion notification sent to:', ownerEmail);
     return { success: true, mock: !isSendGridConfigured };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Failed to send job completion notification:', error);
     return { 
       success: false, 
-      error: error.message || 'Failed to send notification',
+      error: getErrorMessage(error) || 'Failed to send notification',
       mock: !isSendGridConfigured
     };
   }
@@ -2193,9 +2194,9 @@ export async function sendEmailWithAttachment(params: EmailWithAttachmentParams)
     const result = await sendSystemEmail(emailData);
     console.log('✅ Email with attachment sent to:', params.to);
     return { messageId: result.messageId };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Failed to send email with attachment:', error);
-    throw new Error(error.message || 'Failed to send email');
+    throw new Error(getErrorMessage(error) || 'Failed to send email');
   }
 }
 
@@ -2393,7 +2394,7 @@ export async function sendQuoteEmailWithTemplate(
     };
   } catch (error: any) {
     console.error('Error sending quote email with template:', error);
-    if (error.message?.includes('SendGrid') || error.response?.body) {
+    if (getErrorMessage(error)?.includes('SendGrid') || error.response?.body) {
       throw new Error('Email service error. Please check your configuration.');
     }
     throw new Error('Email sending failed. Please try again.');
@@ -2456,7 +2457,7 @@ export async function sendInvoiceEmailWithTemplate(
     };
   } catch (error: any) {
     console.error('Error sending invoice email with template:', error);
-    if (error.message?.includes('SendGrid') || error.response?.body) {
+    if (getErrorMessage(error)?.includes('SendGrid') || error.response?.body) {
       throw new Error('Email service error. Please check your configuration.');
     }
     throw new Error('Email sending failed. Please try again.');
@@ -2769,7 +2770,7 @@ export async function sendDailySummaryEmail(summaryData: DailySummaryData): Prom
     };
   } catch (error: any) {
     console.error('Error sending daily summary email:', error);
-    if (error.message?.includes('SendGrid') || error.response?.body) {
+    if (getErrorMessage(error)?.includes('SendGrid') || error.response?.body) {
       throw new Error('Email service error. Please check your configuration.');
     }
     throw new Error('Email sending failed. Please try again.');

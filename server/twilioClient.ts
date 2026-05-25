@@ -11,6 +11,7 @@
  */
 
 import twilio from 'twilio';
+import { getErrorMessage } from "./lib/errors";
 
 let twilioClient: ReturnType<typeof twilio> | null = null;
 let twilioPhoneNumber: string | null = null;
@@ -306,15 +307,15 @@ export async function sendSMS(options: SendSMSOptions): Promise<SMSResult> {
       success: true,
       messageId: result.sid
     };
-  } catch (error: any) {
-    console.error(`❌ Failed to send ${isMMS ? 'MMS' : 'SMS'}:`, error.message);
+  } catch (error: unknown) {
+    console.error(`❌ Failed to send ${isMMS ? 'MMS' : 'SMS'}:`, getErrorMessage(error));
     try {
       const { logSystemEvent } = await import('./systemEventService');
-      logSystemEvent('twilio', 'error', 'sms_send_failed', `Failed to send ${isMMS ? 'MMS' : 'SMS'}: ${error.message}`, { to: options.to, error: error.message });
+      logSystemEvent('twilio', 'error', 'sms_send_failed', `Failed to send ${isMMS ? 'MMS' : 'SMS'}: ${getErrorMessage(error)}`, { to: options.to, error: getErrorMessage(error) });
     } catch {}
     return {
       success: false,
-      error: error.message
+      error: getErrorMessage(error)
     };
   }
 }
@@ -367,8 +368,8 @@ export async function configureTwilioWebhook(baseUrl: string): Promise<boolean> 
       console.log(`   (SMS was: ${currentSmsUrl})`);
     }
     return true;
-  } catch (error: any) {
-    console.error('❌ Failed to configure Twilio webhook:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ Failed to configure Twilio webhook:', getErrorMessage(error));
     console.log(`   Please manually set SMS webhook URL to: ${webhookUrl}`);
     return false;
   }
@@ -428,9 +429,9 @@ export async function searchAvailableNumbers(options: {
         monthlyPrice: '3.00',
       })),
     };
-  } catch (error: any) {
-    console.error('Error searching available numbers:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    console.error('Error searching available numbers:', getErrorMessage(error));
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -509,8 +510,8 @@ export async function createOrFindTwilioAddress(businessOwnerId: string, busines
       const created = await client.addresses.create(addressPayload);
       console.log(`[Twilio] Created address: ${created.sid} for tenant ${tenantKey}`);
       return { success: true, addressSid: created.sid };
-    } catch (createError: any) {
-      console.warn('[Twilio] Address creation failed:', createError.message);
+    } catch (createError: unknown) {
+      console.warn('[Twilio] Address creation failed:', getErrorMessage(createError));
 
       const validated = await client.addresses.list({ isoCountry: 'AU', limit: 5 });
       const reusable = validated.find(a => a.validated);
@@ -521,9 +522,9 @@ export async function createOrFindTwilioAddress(businessOwnerId: string, busines
 
       throw createError;
     }
-  } catch (error: any) {
-    console.error('[Twilio] Error creating address:', error.message);
-    const msg = error.message || '';
+  } catch (error: unknown) {
+    console.error('[Twilio] Error creating address:', getErrorMessage(error));
+    const msg = getErrorMessage(error) || '';
     if (msg.includes('cannot be validated') || msg.includes('invalid') || msg.includes('not valid')) {
       return { success: false, error: 'Your business address could not be verified by Twilio. Please ensure it is a real, complete Australian address with unit/street number, street name, suburb, state, and postcode (e.g. "42 Smith Street, Cairns, QLD 4870").' };
     }
@@ -571,9 +572,9 @@ export async function purchasePhoneNumber(phoneNumber: string, webhookUrl: strin
       sid: purchased.sid,
       phoneNumber: purchased.phoneNumber,
     };
-  } catch (error: any) {
-    console.error('[SMS] Error purchasing phone number:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    console.error('[SMS] Error purchasing phone number:', getErrorMessage(error));
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -588,9 +589,9 @@ export async function updateNumberFriendlyName(phoneNumber: string, friendlyName
     await client.incomingPhoneNumbers(numbers[0].sid).update({ friendlyName });
     console.log(`[SMS] Updated friendly name for ${phoneNumber} to "${friendlyName}"`);
     return { success: true };
-  } catch (error: any) {
-    console.error('[SMS] Error updating friendly name:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    console.error('[SMS] Error updating friendly name:', getErrorMessage(error));
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -617,9 +618,9 @@ export async function updateNumberWebhooks(phoneNumber: string, smsWebhookUrl: s
     await client.incomingPhoneNumbers(numbers[0].sid).update(updateParams);
     console.log(`[SMS] Updated webhooks for ${phoneNumber}: SMS → ${smsWebhookUrl}${voiceWebhookUrl ? `, Voice → ${voiceWebhookUrl}` : ''}${friendlyName ? `, Name → ${friendlyName}` : ''}`);
     return { success: true };
-  } catch (error: any) {
-    console.error('[SMS] Error updating number webhooks:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    console.error('[SMS] Error updating number webhooks:', getErrorMessage(error));
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -640,8 +641,8 @@ export async function listAllTwilioNumbers(): Promise<{ success: boolean; number
         capabilities: n.capabilities,
       })),
     };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -667,9 +668,9 @@ export async function releasePhoneNumber(phoneNumber: string): Promise<{ success
     await client.incomingPhoneNumbers(numbers[0].sid).remove();
     console.log(`✅ Released Twilio number: ${phoneNumber}`);
     return { success: true };
-  } catch (error: any) {
-    console.error('Error releasing phone number:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    console.error('Error releasing phone number:', getErrorMessage(error));
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 

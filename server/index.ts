@@ -13,6 +13,7 @@ import { WebhookHandlers } from "./webhookHandlers";
 import { storage, pool as sharedPgPool } from "./storage";
 import { setupWebSocket } from "./websocket";
 import { metricsMiddleware } from "./metrics";
+import { getErrorMessage } from "./lib/errors";
 
 process.on('uncaughtException', (error: Error) => {
   Sentry.captureException(error);
@@ -157,8 +158,8 @@ if (process.env.DATABASE_URL) {
           await WebhookHandlers.processWebhook(req.body as Buffer, sig, uuid, storage);
 
           res.status(200).json({ received: true });
-        } catch (error: any) {
-          console.error('Webhook error:', error.message);
+        } catch (error: unknown) {
+          console.error('Webhook error:', getErrorMessage(error));
           res.status(400).json({ error: 'Webhook processing error' });
         }
       }
@@ -187,7 +188,7 @@ if (process.env.DATABASE_URL) {
         const parsed = JSON.parse(req.body.toString('utf8'));
         const result = await processWebhookEvent(parsed);
         res.json(result);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[Vapi Webhook] Error:', error);
         res.status(500).json({ error: 'Webhook processing failed' });
       }
@@ -233,7 +234,7 @@ if (process.env.DATABASE_URL) {
         processSendGridEvents(events).catch(err =>
           console.error('[SendGrid Webhook] Processing error:', err?.message)
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[SendGrid Webhook] Error:', error);
         if (!res.headersSent) {
           res.status(500).json({ error: 'Webhook processing error' });
@@ -328,7 +329,7 @@ if (process.env.DATABASE_URL) {
         qbo.processQboWebhookPayload(payload).catch(err =>
           console.error('[QBO Webhook] Processing error:', err?.message || err)
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[QBO Webhook] Error:', error);
         if (!res.headersSent) res.status(200).send();
       }
@@ -405,11 +406,11 @@ if (process.env.DATABASE_URL) {
         await applyAppleNotification({ notification, transactionInfo, renewalInfo });
         log({ signatureValid: true, eventType: notificationType, subtype: subtype || null });
         res.json({ ok: true });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[AppleWebhook] Error processing notification:', error);
-        log({ signatureValid: true, eventType: notificationType, error: error?.message });
+        log({ signatureValid: true, eventType: notificationType, error: getErrorMessage(error) });
         // Apple retries on non-2xx; only fail-closed for signature problems.
-        res.json({ ok: true, error: error?.message });
+        res.json({ ok: true, error: getErrorMessage(error) });
       }
     },
   );

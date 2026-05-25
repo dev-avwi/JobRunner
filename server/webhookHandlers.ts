@@ -7,6 +7,7 @@ import { broadcastPaymentReceived } from './websocket';
 import { sendSMS } from './twilioClient';
 import { logger } from './logger';
 import { logSystemEvent } from './systemEventService';
+import { getErrorMessage } from "./lib/errors";
 
 export class WebhookHandlers {
   static async processWebhook(payload: Buffer, signature: string, uuid: string, storage: any): Promise<void> {
@@ -175,9 +176,9 @@ async function handleStripeEvent(event: any, storage: any) {
                     await storage.updateInvoice(invoiceId, userId, {
                       receiptSentAt: new Date().toISOString(),
                     });
-                  } catch (sendGridError: any) {
+                  } catch (sendGridError: unknown) {
                     // If SendGrid is not configured, log but don't fail
-                    if (sendGridError.message?.includes('SendGrid') || sendGridError.message?.includes('not configured')) {
+                    if (getErrorMessage(sendGridError)?.includes('SendGrid') || getErrorMessage(sendGridError)?.includes('not configured')) {
                       console.log('⚠️ SendGrid not configured - skipping payment receipt email');
                     } else {
                       throw sendGridError; // Re-throw other errors

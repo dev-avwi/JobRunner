@@ -7,6 +7,7 @@ import type { User, BusinessSettings } from '@shared/schema';
 import { sendPushNotification } from './pushNotifications';
 import { getProductionBaseUrl } from './urlHelper';
 import { getUncachableStripeClient } from './stripeClient';
+import { getErrorMessage } from "./lib/errors";
 
 let stripe: Stripe | null = null;
 async function getStripe(): Promise<Stripe | null> {
@@ -155,8 +156,8 @@ async function sendBillingReminderEmail(
       console.error(`[BillingReminder] Failed to send email to ${user.email}:`, result.error);
       return false;
     }
-  } catch (error: any) {
-    console.error(`[BillingReminder] Error sending email to ${user.email}:`, error.message);
+  } catch (error: unknown) {
+    console.error(`[BillingReminder] Error sending email to ${user.email}:`, getErrorMessage(error));
     return false;
   }
 }
@@ -202,8 +203,8 @@ async function sendBillingReminderSms(
       console.error(`[BillingReminder] Failed to send SMS to ${phone}:`, result.error);
       return false;
     }
-  } catch (error: any) {
-    console.error(`[BillingReminder] Error sending SMS to ${phone}:`, error.message);
+  } catch (error: unknown) {
+    console.error(`[BillingReminder] Error sending SMS to ${phone}:`, getErrorMessage(error));
     return false;
   }
 }
@@ -319,8 +320,8 @@ export async function processBillingReminders(): Promise<{
           }
         }
 
-      } catch (error: any) {
-        console.error(`[BillingReminder] Error processing settings ${settings.id}:`, error.message);
+      } catch (error: unknown) {
+        console.error(`[BillingReminder] Error processing settings ${settings.id}:`, getErrorMessage(error));
         stats.errors++;
       }
     }
@@ -328,8 +329,8 @@ export async function processBillingReminders(): Promise<{
     console.log(`[BillingReminder] Completed. Processed: ${stats.processed}, Emails: ${stats.emailsSent}, SMS: ${stats.smsSent}, Errors: ${stats.errors}`);
     return stats;
 
-  } catch (error: any) {
-    console.error('[BillingReminder] Fatal error:', error.message);
+  } catch (error: unknown) {
+    console.error('[BillingReminder] Fatal error:', getErrorMessage(error));
     stats.errors++;
     return stats;
   }
@@ -415,8 +416,8 @@ async function sendOverdueReminderEmail(
     }
     console.error(`[OverdueReminder] Failed to send email to ${user.email}:`, result.error);
     return false;
-  } catch (error: any) {
-    console.error(`[OverdueReminder] Error sending email to ${user.email}:`, error.message);
+  } catch (error: unknown) {
+    console.error(`[OverdueReminder] Error sending email to ${user.email}:`, getErrorMessage(error));
     return false;
   }
 }
@@ -453,8 +454,8 @@ async function sendOverdueReminderSms(
     }
     console.error(`[OverdueReminder] Failed to send SMS to ${phone}:`, result.error);
     return false;
-  } catch (error: any) {
-    console.error(`[OverdueReminder] Error sending SMS to ${phone}:`, error.message);
+  } catch (error: unknown) {
+    console.error(`[OverdueReminder] Error sending SMS to ${phone}:`, getErrorMessage(error));
     return false;
   }
 }
@@ -532,16 +533,16 @@ export async function processOverdueReminders(): Promise<{
             console.error('[OverdueReminder] Push notification error:', pushError);
           }
         }
-      } catch (error: any) {
-        console.error(`[OverdueReminder] Error processing settings ${settings.id}:`, error.message);
+      } catch (error: unknown) {
+        console.error(`[OverdueReminder] Error processing settings ${settings.id}:`, getErrorMessage(error));
         stats.errors++;
       }
     }
 
     console.log(`[OverdueReminder] Completed. Processed: ${stats.processed}, Emails: ${stats.emailsSent}, SMS: ${stats.smsSent}, Errors: ${stats.errors}`);
     return stats;
-  } catch (error: any) {
-    console.error('[OverdueReminder] Fatal error:', error.message);
+  } catch (error: unknown) {
+    console.error('[OverdueReminder] Fatal error:', getErrorMessage(error));
     stats.errors++;
     return stats;
   }

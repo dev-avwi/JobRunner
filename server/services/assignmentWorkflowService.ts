@@ -1,6 +1,7 @@
 import { storage } from '../storage';
 import { sendSmsToClient } from './smsService';
 import { randomBytes } from 'crypto';
+import { getErrorMessage } from "../lib/errors";
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -227,8 +228,8 @@ export async function handleOnMyWay(params: OnMyWayParams): Promise<OnMyWayResul
             etaMinutes,
           },
         });
-      } catch (smsError: any) {
-        console.error('[OnMyWay] SMS send failed:', smsError.message);
+      } catch (smsError: unknown) {
+        console.error('[OnMyWay] SMS send failed:', getErrorMessage(smsError));
       }
     }
   }
@@ -413,8 +414,8 @@ export async function handleWorkerStatusChange(params: WorkerStatusParams): Prom
             await storage.updateJobAssignment(assignmentId, {
               lastSmsSentAt: new Date(),
             });
-          } catch (smsError: any) {
-            console.error(`[WorkerStatus] SMS send failed for ${status}:`, smsError.message);
+          } catch (smsError: unknown) {
+            console.error(`[WorkerStatus] SMS send failed for ${status}:`, getErrorMessage(smsError));
           }
         }
       }
@@ -499,8 +500,8 @@ export async function handleDelayedNotification(params: {
         notificationType: 'delayed',
         etaMinutes: newEtaMinutes,
       });
-    } catch (e: any) {
-      console.error('[Delayed] SMS send failed:', e.message);
+    } catch (e: unknown) {
+      console.error('[Delayed] SMS send failed:', getErrorMessage(e));
     }
   }
 
