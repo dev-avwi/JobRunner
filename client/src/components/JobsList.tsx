@@ -329,21 +329,21 @@ export default function JobsList({
 
   const getStatusBadge = (status: string) => {
     if (status === 'done') {
-      return <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-[11px] font-medium px-2 py-0.5 rounded-full">Completed</Badge>;
+      return <Badge className="bg-status-completed/10 text-status-completed border-status-completed/20 text-[11px] font-medium px-2 py-0.5 rounded-full">Completed</Badge>;
     }
     if (status === 'invoiced') {
-      return <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-[11px] font-medium px-2 py-0.5 rounded-full">Invoiced</Badge>;
+      return <Badge className="bg-status-invoiced/10 text-status-invoiced border-status-invoiced/20 text-[11px] font-medium px-2 py-0.5 rounded-full">Invoiced</Badge>;
     }
     if (status === 'in_progress') {
       return (
-        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[11px] font-medium px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse" />
+        <Badge className="bg-status-in-progress/10 text-status-in-progress border-status-in-progress/20 text-[11px] font-medium px-2 py-0.5 rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-status-in-progress mr-1.5 animate-pulse" />
           In Progress
         </Badge>
       );
     }
     if (status === 'scheduled') {
-      return <Badge className="bg-slate-500/10 text-slate-600 border-slate-500/20 dark:text-slate-400 text-[11px] font-medium px-2 py-0.5 rounded-full">Scheduled</Badge>;
+      return <Badge className="bg-status-scheduled/10 text-status-scheduled border-status-scheduled/20 text-[11px] font-medium px-2 py-0.5 rounded-full">Scheduled</Badge>;
     }
     return <Badge variant="outline" className="text-[11px] font-medium px-2 py-0.5 rounded-full">New</Badge>;
   };
@@ -485,9 +485,9 @@ export default function JobsList({
           <>
             {[
               { title: "Total Jobs", value: statusCounts.all, filter: 'all', icon: Briefcase, color: 'hsl(var(--trade))' },
-              { title: "Scheduled", value: statusCounts.scheduled, filter: 'scheduled', icon: Clock, color: 'hsl(210 80% 52%)' },
-              { title: "In Progress", value: statusCounts.in_progress, filter: 'in_progress', icon: Play, color: 'hsl(35 90% 55%)' },
-              { title: "Completed", value: statusCounts.done, filter: 'done', icon: CheckCircle, color: 'hsl(145 65% 45%)' },
+              { title: "Scheduled", value: statusCounts.scheduled, filter: 'scheduled', icon: Clock, color: 'hsl(var(--status-scheduled))' },
+              { title: "In Progress", value: statusCounts.in_progress, filter: 'in_progress', icon: Play, color: 'hsl(var(--status-in-progress))' },
+              { title: "Completed", value: statusCounts.done, filter: 'done', icon: CheckCircle, color: 'hsl(var(--status-completed))' },
             ].map((kpi) => (
               <div
                 key={kpi.filter}
@@ -661,11 +661,11 @@ export default function JobsList({
                 {['pending', 'scheduled', 'in_progress', 'done', 'invoiced'].map((status) => {
                   const statusJobs = filteredJobs.filter((j: any) => j.status === status);
                   const columnConfig = {
-                    pending: { label: 'New', icon: Briefcase, color: 'hsl(var(--muted-foreground))' },
-                    scheduled: { label: 'Scheduled', icon: Calendar, color: 'hsl(210 80% 52%)' },
-                    in_progress: { label: 'In Progress', icon: Play, color: 'hsl(35 90% 55%)' },
-                    done: { label: 'Done', icon: CheckCircle, color: 'hsl(145 65% 45%)' },
-                    invoiced: { label: 'Invoiced', icon: Receipt, color: 'hsl(280 60% 55%)' },
+                    pending: { label: 'New', icon: Briefcase, color: 'hsl(var(--status-pending))' },
+                    scheduled: { label: 'Scheduled', icon: Calendar, color: 'hsl(var(--status-scheduled))' },
+                    in_progress: { label: 'In Progress', icon: Play, color: 'hsl(var(--status-in-progress))' },
+                    done: { label: 'Done', icon: CheckCircle, color: 'hsl(var(--status-completed))' },
+                    invoiced: { label: 'Invoiced', icon: Receipt, color: 'hsl(var(--status-invoiced))' },
                   }[status]!;
                   const ColumnIcon = columnConfig.icon;
                   

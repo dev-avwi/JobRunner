@@ -57,6 +57,13 @@
   --info: 200 80% 50%;
   --info-foreground: 0 0% 98%;
 
+  /* Job status colors - one token per 5-stage job status (light mode) */
+  --status-pending: 217 10% 45%;
+  --status-scheduled: 210 80% 45%;
+  --status-in-progress: 35 90% 42%;
+  --status-completed: 145 65% 35%;
+  --status-invoiced: 280 60% 45%;
+
   /* Trade-specific colors - dynamically set by JavaScript */
   --trade: 217 91% 53%; /* Default blue, overridden by trade selection */
   --trade-bg: 217 20% 96%; /* Light tint for backgrounds */
@@ -162,6 +169,13 @@
   --warning-foreground: 0 0% 10%;
   --info: 200 80% 60%;
   --info-foreground: 0 0% 10%;
+
+  /* Job status colors - one token per 5-stage job status (dark mode) */
+  --status-pending: 217 10% 70%;
+  --status-scheduled: 210 85% 70%;
+  --status-in-progress: 35 90% 62%;
+  --status-completed: 145 55% 62%;
+  --status-invoiced: 280 65% 75%;
 
   /* Trade-specific colors - dynamically set by JavaScript */
   --trade: 217 25% 95%; /* Default blue for dark mode */
