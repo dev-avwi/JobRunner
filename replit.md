@@ -65,6 +65,9 @@ Core architectural and design decisions include:
 
 ### Active Runbooks
 
+**Routes splitting pattern (task #162).** `server/routes.ts` is being split by domain. The jobs domain lives in `server/routes/jobs.ts` and is registered via a single `registerJobsRoutes(app, deps)` call from inside `registerRoutes`, placed AFTER all closure-scoped deps it uses are defined (currently right after the `chatUpload` multer instance). The `deps` object passes closure-scoped singletons (`trackingTokens`, `buildProofPackData`, `sitePhotoCache`, `upload`, `getJobWithChatAccess`, `chatUpload`) so handlers keep referencing the same instances. To extract another domain (clients, invoices, quotes, etc.): (1) enumerate all `app.METHOD("/api/<domain>...` blocks, (2) identify closure symbols they reference, (3) emit `server/routes/<domain>.ts` exporting `register<Domain>Routes(app, deps)` with the same imports as routes.ts (using `../` prefix for `server/*` siblings and `./` for `server/routes/*` siblings), (4) register the call AFTER the latest closure dep is defined, (5) verify route count is preserved (`rg -c 'app\.(get|post|put|patch|delete)\('`) and `npm run check` shows no NEW errors vs baseline.
+
+
 **Integrations health debugging.** Use the **Test Connection** button on each provider card in `client/src/pages/Integrations.tsx` (calls `POST /api/integrations/<provider>/test`). It performs a real upstream read and the toast shows the verbatim provider error or the connected tenant/company name. Health states returned by `/api/integrations/health`:
 *   `configured: false` → server missing env vars; OAuth flow can't even start. Fix env, redeploy.
 *   `configured: true, connected: false` → env present, no user token. User clicks Connect.
