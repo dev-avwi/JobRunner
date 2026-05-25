@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   saveItem,
   getAllItems,
@@ -46,21 +46,61 @@ interface UseOfflineDataResult<T> {
 export function useOfflineData<T extends { id: string | number }>(
   options: UseOfflineDataOptions<T>
 ): UseOfflineDataResult<T> {
-  const { storeName, apiEndpoint, queryKey, idField = 'id' as keyof T } = options;
+  const { storeName, apiEndpoint, queryKey } = options;
   const queryClientInstance = useQueryClient();
   const { toast } = useToast();
-  
+
   const [isOffline, setIsOffline] = useState(!isOnline());
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingSyncs, setPendingSyncs] = useState(0);
-  const [cachedData, setCachedData] = useState<T[] | undefined>(undefined);
+
+  const updatePendingCount = useCallback(async () => {
+    try {
+      const queue = await getAllItems<any>('syncQueue');
+      const count = queue.filter(op => op.storeName === storeName).length;
+      setPendingSyncs(count);
+    } catch {
+      setPendingSyncs(0);
+    }
+  }, [storeName]);
+
+  const performSync = useCallback(async () => {
+    if (isSyncing || !isOnline()) return;
+
+    setIsSyncing(true);
+    try {
+      const result = await processSyncQueue();
+
+      if (result.synced > 0) {
+        toast({
+          title: 'Synced',
+          description: `${result.synced} offline change${result.synced > 1 ? 's' : ''} synced.`,
+        });
+        safeInvalidateQueries({ queryKey });
+      }
+
+      if (result.failed > 0) {
+        toast({
+          title: 'Sync Issues',
+          description: `${result.failed} change${result.failed > 1 ? 's' : ''} failed to sync.`,
+          variant: 'destructive',
+        });
+      }
+
+      await updatePendingCount();
+    } catch (error) {
+      console.error('Sync failed:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [isSyncing, queryKey, toast, updatePendingCount]);
 
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
       performSync();
     };
-    
+
     const handleOffline = () => {
       setIsOffline(true);
     };
@@ -72,80 +112,26 @@ export function useOfflineData<T extends { id: string | number }>(
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [performSync]);
 
   useEffect(() => {
-    loadCachedData();
     updatePendingCount();
-  }, [storeName]);
-
-  const loadCachedData = async () => {
-    try {
-      const items = await getAllItems<T>(storeName);
-      setCachedData(items);
-    } catch (error) {
-      console.error('Failed to load cached data:', error);
-    }
-  };
-
-  const updatePendingCount = async () => {
-    try {
-      const queue = await getAllItems<any>('syncQueue');
-      const count = queue.filter(op => op.storeName === storeName).length;
-      setPendingSyncs(count);
-    } catch {
-      setPendingSyncs(0);
-    }
-  };
-
-  const performSync = async () => {
-    if (isSyncing || !isOnline()) return;
-    
-    setIsSyncing(true);
-    try {
-      const result = await processSyncQueue();
-      
-      if (result.synced > 0) {
-        toast({
-          title: 'Synced',
-          description: `${result.synced} offline change${result.synced > 1 ? 's' : ''} synced.`,
-        });
-        safeInvalidateQueries({ queryKey });
-      }
-      
-      if (result.failed > 0) {
-        toast({
-          title: 'Sync Issues',
-          description: `${result.failed} change${result.failed > 1 ? 's' : ''} failed to sync.`,
-          variant: 'destructive',
-        });
-      }
-      
-      await updatePendingCount();
-    } catch (error) {
-      console.error('Sync failed:', error);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+  }, [updatePendingCount]);
 
   const offlineAwareQueryFn = useCallback(async (): Promise<T[]> => {
     if (!isOnline()) {
       const cached = await getAllItems<T>(storeName);
-      if (cached.length > 0) {
-        return cached;
-      }
-      throw new Error('offline: No cached data available');
+      return cached;
     }
-    
+
     try {
       const response = await apiRequest('GET', apiEndpoint);
       const data = await response.json();
-      
+
       for (const item of data) {
         await saveItem(storeName, item);
       }
-      
+
       return data;
     } catch (error) {
       const cached = await getAllItems<T>(storeName);
@@ -162,22 +148,12 @@ export function useOfflineData<T extends { id: string | number }>(
     staleTime: 5 * 60 * 1000,
   });
 
-  useEffect(() => {
-    if (query.data && !isOffline) {
-      cacheApiResponse(query.data);
-    }
-  }, [query.data, isOffline]);
-
-  const cacheApiResponse = async (items: T[]) => {
-    try {
-      for (const item of items) {
-        await saveItem(storeName, item);
-      }
-      setCachedData(items);
-    } catch (error) {
-      console.error('Failed to cache API response:', error);
-    }
-  };
+  const setListCache = useCallback(
+    (mutator: (old: T[] | undefined) => T[] | undefined) => {
+      queryClientInstance.setQueryData<T[]>(queryKey, (old) => mutator(old));
+    },
+    [queryClientInstance, queryKey]
+  );
 
   const persistAttachments = async (
     entityId: string | number,
@@ -210,7 +186,7 @@ export function useOfflineData<T extends { id: string | number }>(
     const newItem = { ...itemData, id: offlineId } as T;
 
     await saveItem(storeName, newItem);
-    setCachedData(prev => prev ? [...prev, newItem] : [newItem]);
+    setListCache((old) => (old ? [...old, newItem] : [newItem]));
 
     const fileAttachmentIds = attachments?.length
       ? await persistAttachments(offlineId, attachments)
@@ -220,14 +196,14 @@ export function useOfflineData<T extends { id: string | number }>(
       try {
         const response = await apiRequest('POST', apiEndpoint, itemData);
         const serverItem = await response.json();
-        
+
         await deleteItem(storeName, offlineId);
         await saveItem(storeName, serverItem);
-        
-        setCachedData(prev => 
-          prev ? prev.map(item => item.id === offlineId ? serverItem : item) : [serverItem]
+
+        setListCache((old) =>
+          old ? old.map((item) => (item.id === offlineId ? serverItem : item)) : [serverItem]
         );
-        
+
         safeInvalidateQueries({ queryKey });
 
         if (fileAttachmentIds?.length) {
@@ -252,14 +228,14 @@ export function useOfflineData<T extends { id: string | number }>(
           method: 'POST',
           fileAttachmentIds,
         });
-        
+
         await updatePendingCount();
-        
+
         toast({
           title: 'Saved Offline',
           description: 'Changes will sync when you reconnect.',
         });
-        
+
         return newItem;
       }
     } else {
@@ -271,31 +247,31 @@ export function useOfflineData<T extends { id: string | number }>(
         method: 'POST',
         fileAttachmentIds,
       });
-      
+
       await updatePendingCount();
-      
+
       toast({
         title: 'Saved Offline',
         description: 'Changes will sync when you reconnect.',
       });
-      
+
       return newItem;
     }
-  }, [storeName, apiEndpoint, queryKey, isOffline, toast]);
+  }, [storeName, apiEndpoint, queryKey, setListCache, toast, updatePendingCount]);
 
   const update = useCallback(async (id: string | number, updates: Partial<T>, attachments?: OfflineAttachmentInput[]): Promise<T> => {
     const resolvedId = resolveId(id);
     const existingItem = await getItem<T>(storeName, id) || await getItem<T>(storeName, resolvedId);
-    
+
     if (!existingItem) {
       throw new Error(`Item with id ${id} not found`);
     }
 
     const updatedItem = { ...existingItem, ...updates } as T;
-    
+
     await saveItem(storeName, updatedItem);
-    setCachedData(prev => 
-      prev ? prev.map(item => item.id === id || item.id === resolvedId ? updatedItem : item) : [updatedItem]
+    setListCache((old) =>
+      old ? old.map((item) => (item.id === id || item.id === resolvedId ? updatedItem : item)) : [updatedItem]
     );
 
     const fileAttachmentIds = attachments?.length
@@ -306,12 +282,12 @@ export function useOfflineData<T extends { id: string | number }>(
       try {
         const response = await apiRequest('PATCH', `${apiEndpoint}/${resolvedId}`, updates);
         const serverItem = await response.json();
-        
+
         await saveItem(storeName, serverItem);
-        setCachedData(prev => 
-          prev ? prev.map(item => item.id === id || item.id === resolvedId ? serverItem : item) : [serverItem]
+        setListCache((old) =>
+          old ? old.map((item) => (item.id === id || item.id === resolvedId ? serverItem : item)) : [serverItem]
         );
-        
+
         safeInvalidateQueries({ queryKey });
 
         if (fileAttachmentIds?.length) {
@@ -336,14 +312,14 @@ export function useOfflineData<T extends { id: string | number }>(
           method: 'PATCH',
           fileAttachmentIds,
         });
-        
+
         await updatePendingCount();
-        
+
         toast({
           title: 'Saved Offline',
           description: 'Changes will sync when you reconnect.',
         });
-        
+
         return updatedItem;
       }
     } else {
@@ -355,23 +331,25 @@ export function useOfflineData<T extends { id: string | number }>(
         method: 'PATCH',
         fileAttachmentIds,
       });
-      
+
       await updatePendingCount();
-      
+
       toast({
         title: 'Saved Offline',
         description: 'Changes will sync when you reconnect.',
       });
-      
+
       return updatedItem;
     }
-  }, [storeName, apiEndpoint, queryKey, isOffline, toast]);
+  }, [storeName, apiEndpoint, queryKey, setListCache, toast, updatePendingCount]);
 
   const remove = useCallback(async (id: string | number): Promise<void> => {
     const resolvedId = resolveId(id);
-    
+
     await deleteItem(storeName, id);
-    setCachedData(prev => prev ? prev.filter(item => item.id !== id && item.id !== resolvedId) : []);
+    setListCache((old) =>
+      old ? old.filter((item) => item.id !== id && item.id !== resolvedId) : []
+    );
 
     if (isOnline()) {
       try {
@@ -385,9 +363,9 @@ export function useOfflineData<T extends { id: string | number }>(
           endpoint: `${apiEndpoint}/${resolvedId}`,
           method: 'DELETE',
         });
-        
+
         await updatePendingCount();
-        
+
         toast({
           title: 'Saved Offline',
           description: 'Changes will sync when you reconnect.',
@@ -401,28 +379,23 @@ export function useOfflineData<T extends { id: string | number }>(
         endpoint: `${apiEndpoint}/${resolvedId}`,
         method: 'DELETE',
       });
-      
+
       await updatePendingCount();
-      
+
       toast({
         title: 'Saved Offline',
         description: 'Changes will sync when you reconnect.',
       });
     }
-  }, [storeName, apiEndpoint, queryKey, isOffline, toast]);
+  }, [storeName, apiEndpoint, queryKey, setListCache, toast, updatePendingCount]);
 
   const refetch = useCallback(() => {
-    if (!isOffline) {
-      safeInvalidateQueries({ queryKey });
-    }
-    loadCachedData();
-  }, [queryKey, isOffline]);
-
-  const effectiveData = isOffline ? cachedData : (query.data ?? cachedData);
+    query.refetch();
+  }, [query]);
 
   return {
-    data: effectiveData,
-    isLoading: !isOffline && query.isLoading,
+    data: query.data,
+    isLoading: query.isLoading,
     isOffline,
     isSyncing,
     pendingSyncs,

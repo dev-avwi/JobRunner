@@ -96,21 +96,47 @@ export function useOfflineTimeTracking(
   const { jobId, userId } = options;
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   const [isOffline, setIsOffline] = useState(!isOnline());
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingSyncs, setPendingSyncs] = useState(0);
-  const [cachedEntries, setCachedEntries] = useState<OfflineTimeEntry[]>([]);
   const [activeTimer, setActiveTimer] = useState<ActiveTimer | null>(getActiveTimerFromStorage);
-  
+
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const queryKey = jobId ? ['/api/time-entries', jobId] : ['/api/time-entries'];
+
+  const updatePendingCount = useCallback(async () => {
+    try {
+      const queue = await getSyncQueue();
+      const count = queue.filter(op => op.storeName === 'timeEntries').length;
+      setPendingSyncs(count);
+    } catch {
+      setPendingSyncs(0);
+    }
+  }, []);
+
+  const performSync = useCallback(async () => {
+    if (isSyncing || !isOnline()) return;
+
+    setIsSyncing(true);
+    try {
+      await syncManager.triggerSync();
+      await updatePendingCount();
+      safeInvalidateQueries({ queryKey: ['/api/time-entries'] });
+    } catch (error) {
+      console.error('Sync failed:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [isSyncing, updatePendingCount]);
 
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
       performSync();
     };
-    
+
     const handleOffline = () => {
       setIsOffline(true);
     };
@@ -122,7 +148,7 @@ export function useOfflineTimeTracking(
     const unsubscribeOffline = syncManager.on('offline', handleOffline);
     const unsubscribeSyncComplete = syncManager.on('syncComplete', () => {
       updatePendingCount();
-      loadCachedEntries();
+      safeInvalidateQueries({ queryKey: ['/api/time-entries'] });
     });
 
     return () => {
@@ -132,37 +158,15 @@ export function useOfflineTimeTracking(
       unsubscribeOffline();
       unsubscribeSyncComplete();
     };
-  }, []);
+  }, [performSync, updatePendingCount]);
 
   useEffect(() => {
-    loadCachedEntries();
     updatePendingCount();
     const storedTimer = getActiveTimerFromStorage();
     if (storedTimer) {
       setActiveTimer(storedTimer);
     }
-  }, [jobId]);
-
-  useEffect(() => {
-    if (activeTimer) {
-      heartbeatIntervalRef.current = setInterval(() => {
-        performHeartbeat();
-      }, HEARTBEAT_INTERVAL_MS);
-
-      performHeartbeat();
-
-      return () => {
-        if (heartbeatIntervalRef.current) {
-          clearInterval(heartbeatIntervalRef.current);
-        }
-      };
-    } else {
-      if (heartbeatIntervalRef.current) {
-        clearInterval(heartbeatIntervalRef.current);
-        heartbeatIntervalRef.current = null;
-      }
-    }
-  }, [activeTimer?.id]);
+  }, [jobId, updatePendingCount]);
 
   const performHeartbeat = useCallback(async () => {
     if (!activeTimer) return;
@@ -184,7 +188,7 @@ export function useOfflineTimeTracking(
       isBreak: activeTimer.isBreak,
       updatedAt: new Date().toISOString(),
     };
-    
+
     try {
       await saveTimeEntry(entryUpdate);
     } catch (error) {
@@ -202,86 +206,73 @@ export function useOfflineTimeTracking(
         console.debug('Server heartbeat failed (non-critical):', error);
       }
     }
-  }, [activeTimer, isOnline]);
+  }, [activeTimer]);
 
-  const loadCachedEntries = async () => {
-    try {
-      let entries: OfflineTimeEntry[];
-      if (jobId) {
-        entries = await getTimeEntriesForJob(typeof jobId === 'string' ? parseInt(jobId, 10) : jobId);
-      } else {
-        entries = await getAllTimeEntries();
+  useEffect(() => {
+    if (activeTimer) {
+      heartbeatIntervalRef.current = setInterval(() => {
+        performHeartbeat();
+      }, HEARTBEAT_INTERVAL_MS);
+
+      performHeartbeat();
+
+      return () => {
+        if (heartbeatIntervalRef.current) {
+          clearInterval(heartbeatIntervalRef.current);
+        }
+      };
+    } else {
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = null;
       }
-      setCachedEntries(entries);
-    } catch (error) {
-      console.error('Failed to load cached entries:', error);
     }
-  };
+  }, [activeTimer?.id, performHeartbeat]);
 
-  const updatePendingCount = async () => {
-    try {
-      const queue = await getSyncQueue();
-      const count = queue.filter(op => op.storeName === 'timeEntries').length;
-      setPendingSyncs(count);
-    } catch {
-      setPendingSyncs(0);
-    }
-  };
-
-  const performSync = async () => {
-    if (isSyncing || !isOnline()) return;
-    
-    setIsSyncing(true);
-    try {
-      await syncManager.triggerSync();
-      await updatePendingCount();
-      await loadCachedEntries();
-      safeInvalidateQueries({ queryKey: ['/api/time-entries'] });
-    } catch (error) {
-      console.error('Sync failed:', error);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const queryFn = useCallback(async (): Promise<OfflineTimeEntry[]> => {
+  const offlineAwareQueryFn = useCallback(async (): Promise<OfflineTimeEntry[]> => {
     if (!isOnline()) {
-      return cachedEntries;
+      const cached = jobId
+        ? await getTimeEntriesForJob(typeof jobId === 'string' ? parseInt(jobId, 10) : jobId)
+        : await getAllTimeEntries();
+      return cached;
     }
-    
+
     try {
       const endpoint = jobId ? `/api/time-entries?jobId=${jobId}` : '/api/time-entries';
       const response = await apiRequest('GET', endpoint);
-      const data = await response.json();
-      
+      const data: OfflineTimeEntry[] = await response.json();
+
       for (const item of data) {
         await saveTimeEntry({ ...item, syncStatus: 'synced' });
       }
-      
-      const offlineEntries = cachedEntries.filter(e => 
-        e.id.toString().startsWith('offline_') && e.pendingSync
+
+      const allCached = await getAllTimeEntries();
+      const offlineEntries = allCached.filter(e =>
+        e.id.toString().startsWith('offline_') &&
+        (!jobId || String(e.jobId) === String(jobId))
       );
-      
+
       return [...data, ...offlineEntries];
     } catch (error) {
-      return cachedEntries;
+      const cached = jobId
+        ? await getTimeEntriesForJob(typeof jobId === 'string' ? parseInt(jobId, 10) : jobId)
+        : await getAllTimeEntries();
+      return cached;
     }
-  }, [jobId, cachedEntries]);
+  }, [jobId]);
 
   const query = useQuery<OfflineTimeEntry[]>({
-    queryKey: jobId ? ['/api/time-entries', jobId] : ['/api/time-entries'],
-    queryFn,
+    queryKey,
+    queryFn: offlineAwareQueryFn,
     staleTime: 60000,
   });
 
-  useEffect(() => {
-    if (query.data && !isOffline) {
-      for (const entry of query.data) {
-        saveTimeEntry({ ...entry, syncStatus: 'synced' }).catch(() => {});
-      }
-      setCachedEntries(query.data);
-    }
-  }, [query.data, isOffline]);
+  const setEntriesCache = useCallback(
+    (mutator: (old: OfflineTimeEntry[] | undefined) => OfflineTimeEntry[] | undefined) => {
+      queryClient.setQueryData<OfflineTimeEntry[]>(queryKey, (old) => mutator(old));
+    },
+    [queryClient, queryKey]
+  );
 
   const startTimer = useCallback(async (data: StartTimerData = {}): Promise<OfflineTimeEntry> => {
     if (activeTimer) {
@@ -290,7 +281,7 @@ export function useOfflineTimeTracking(
 
     const offlineId = generateOfflineId();
     const startTime = new Date().toISOString();
-    
+
     const newEntry: OfflineTimeEntry = {
       id: offlineId,
       jobId: typeof jobId === 'string' ? parseInt(jobId, 10) : jobId,
@@ -305,7 +296,7 @@ export function useOfflineTimeTracking(
     };
 
     await saveTimeEntry(newEntry);
-    setCachedEntries(prev => [...prev, newEntry]);
+    setEntriesCache((old) => (old ? [...old, newEntry] : [newEntry]));
 
     const timer: ActiveTimer = {
       id: offlineId,
@@ -329,20 +320,20 @@ export function useOfflineTimeTracking(
           isBreak: newEntry.isBreak,
         });
         const serverEntry = await response.json();
-        
+
         await deleteTimeEntry(offlineId);
         await saveTimeEntry({ ...serverEntry, syncStatus: 'synced' });
-        
+
         const updatedTimer = { ...timer, id: serverEntry.id };
         saveActiveTimerToStorage(updatedTimer);
         setActiveTimer(updatedTimer);
-        
-        setCachedEntries(prev => 
-          prev.map(e => e.id === offlineId ? { ...serverEntry, syncStatus: 'synced' } : e)
+
+        setEntriesCache((old) =>
+          old ? old.map(e => e.id === offlineId ? { ...serverEntry, syncStatus: 'synced' } : e) : [serverEntry]
         );
-        
+
         safeInvalidateQueries({ queryKey: ['/api/time-entries'] });
-        
+
         return serverEntry;
       } catch (error) {
         await addToSyncQueue({
@@ -352,14 +343,14 @@ export function useOfflineTimeTracking(
           endpoint: '/api/time-entries',
           method: 'POST',
         });
-        
+
         await updatePendingCount();
-        
+
         toast({
           title: 'Timer Started (Offline)',
           description: 'Timer will sync when you reconnect.',
         });
-        
+
         return newEntry;
       }
     } else {
@@ -370,17 +361,17 @@ export function useOfflineTimeTracking(
         endpoint: '/api/time-entries',
         method: 'POST',
       });
-      
+
       await updatePendingCount();
-      
+
       toast({
         title: 'Timer Started (Offline)',
         description: 'Timer will sync when you reconnect.',
       });
-      
+
       return newEntry;
     }
-  }, [activeTimer, jobId, userId, toast]);
+  }, [activeTimer, jobId, userId, toast, setEntriesCache, updatePendingCount]);
 
   const stopTimer = useCallback(async (timerId?: string): Promise<OfflineTimeEntry | null> => {
     const timerToStop = timerId ? { id: timerId } : activeTimer;
@@ -390,12 +381,12 @@ export function useOfflineTimeTracking(
 
     const endTime = new Date().toISOString();
     const existingEntry = await getTimeEntry(timerToStop.id);
-    
+
     const startTime = existingEntry?.startTime || activeTimer?.startTime;
     if (!startTime) {
       throw new Error('Cannot find start time for timer');
     }
-    
+
     const durationMs = new Date(endTime).getTime() - new Date(startTime).getTime();
     const duration = Math.floor(durationMs / 60000);
 
@@ -410,8 +401,8 @@ export function useOfflineTimeTracking(
     };
 
     await saveTimeEntry(updatedEntry);
-    setCachedEntries(prev => 
-      prev.map(e => e.id === timerToStop.id ? updatedEntry : e)
+    setEntriesCache((old) =>
+      old ? old.map(e => e.id === timerToStop.id ? updatedEntry : e) : [updatedEntry]
     );
 
     saveActiveTimerToStorage(null);
@@ -421,15 +412,15 @@ export function useOfflineTimeTracking(
       try {
         const response = await apiRequest('POST', `/api/time-entries/${timerToStop.id}/stop`);
         const serverEntry = await response.json();
-        
+
         await saveTimeEntry({ ...serverEntry, syncStatus: 'synced' });
-        
-        setCachedEntries(prev => 
-          prev.map(e => e.id === timerToStop.id ? { ...serverEntry, syncStatus: 'synced' } : e)
+
+        setEntriesCache((old) =>
+          old ? old.map(e => e.id === timerToStop.id ? { ...serverEntry, syncStatus: 'synced' } : e) : [serverEntry]
         );
-        
+
         safeInvalidateQueries({ queryKey: ['/api/time-entries'] });
-        
+
         return serverEntry;
       } catch (error) {
         await addToSyncQueue({
@@ -439,14 +430,14 @@ export function useOfflineTimeTracking(
           endpoint: `/api/time-entries/${timerToStop.id}/stop`,
           method: 'POST',
         });
-        
+
         await updatePendingCount();
-        
+
         toast({
           title: 'Time Saved (Offline)',
           description: 'Entry will sync when you reconnect.',
         });
-        
+
         return updatedEntry;
       }
     } else {
@@ -459,17 +450,17 @@ export function useOfflineTimeTracking(
           method: 'PATCH',
         });
       }
-      
+
       await updatePendingCount();
-      
+
       toast({
         title: 'Time Saved (Offline)',
         description: 'Entry will sync when you reconnect.',
       });
-      
+
       return updatedEntry;
     }
-  }, [activeTimer, toast]);
+  }, [activeTimer, toast, setEntriesCache, updatePendingCount]);
 
   const pauseTimer = useCallback(async (): Promise<OfflineTimeEntry | null> => {
     if (!activeTimer || activeTimer.isBreak) {
@@ -477,7 +468,7 @@ export function useOfflineTimeTracking(
     }
 
     const stoppedEntry = await stopTimer();
-    
+
     if (stoppedEntry) {
       const breakEntry = await startTimer({
         description: `Break - ${activeTimer.description || 'Work session'}`,
@@ -485,7 +476,7 @@ export function useOfflineTimeTracking(
       });
       return breakEntry;
     }
-    
+
     return null;
   }, [activeTimer, stopTimer, startTimer]);
 
@@ -503,7 +494,7 @@ export function useOfflineTimeTracking(
       hourlyRate: data.hourlyRate,
       isBreak: false,
     });
-    
+
     return workEntry;
   }, [activeTimer, stopTimer, startTimer]);
 
@@ -523,7 +514,7 @@ export function useOfflineTimeTracking(
 
   const deleteEntryFn = useCallback(async (id: string | number): Promise<void> => {
     await deleteTimeEntry(id);
-    setCachedEntries(prev => prev.filter(e => e.id !== id));
+    setEntriesCache((old) => (old ? old.filter(e => e.id !== id) : []));
 
     if (isOnline() && !id.toString().startsWith('offline_')) {
       try {
@@ -537,9 +528,9 @@ export function useOfflineTimeTracking(
           endpoint: `/api/time-entries/${id}`,
           method: 'DELETE',
         });
-        
+
         await updatePendingCount();
-        
+
         toast({
           title: 'Deleted (Offline)',
           description: 'Deletion will sync when you reconnect.',
@@ -554,33 +545,25 @@ export function useOfflineTimeTracking(
           endpoint: `/api/time-entries/${id}`,
           method: 'DELETE',
         });
-        
+
         await updatePendingCount();
       }
-      
+
       toast({
         title: 'Entry Deleted',
         description: 'Changes saved locally.',
       });
     }
-  }, [toast]);
+  }, [toast, setEntriesCache, updatePendingCount]);
 
   const refetch = useCallback(() => {
-    if (!isOffline) {
-      safeInvalidateQueries({ queryKey: ['/api/time-entries'] });
-      if (jobId) {
-        safeInvalidateQueries({ queryKey: ['/api/time-entries', jobId] });
-      }
-    }
-    loadCachedEntries();
-  }, [isOffline, jobId]);
-
-  const effectiveEntries = isOffline ? cachedEntries : (query.data ?? cachedEntries);
+    query.refetch();
+  }, [query]);
 
   return {
-    entries: effectiveEntries,
+    entries: query.data ?? [],
     activeTimer,
-    isLoading: !isOffline && query.isLoading,
+    isLoading: query.isLoading,
     isOffline,
     isSyncing,
     pendingSyncs,

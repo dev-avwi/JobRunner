@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   saveDraftPayment,
   getAllDraftPayments,
@@ -9,6 +10,7 @@ import {
   isOnline,
   type DraftPayment,
 } from '@/lib/offlineStorage';
+import { safeInvalidateQueries } from '@/lib/queryClient';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { syncManager } from '@/lib/syncManager';
 
@@ -37,44 +39,45 @@ export interface UseOfflinePaymentsReturn {
   refreshPayments: () => Promise<void>;
 }
 
+const PAYMENTS_QUERY_KEY = ['offline', 'payments'] as const;
+
 export function useOfflinePayments(): UseOfflinePaymentsReturn {
-  const [draftPayments, setDraftPayments] = useState<DraftPayment[]>([]);
-  const [pendingPayments, setPendingPayments] = useState<DraftPayment[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const { isOnline: networkOnline } = useNetwork();
 
-  const refreshPayments = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const [allPayments, pending] = await Promise.all([
-        getAllDraftPayments(),
-        getPendingDraftPayments(),
-      ]);
-      setDraftPayments(allPayments);
-      setPendingPayments(pending);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load payments');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const query = useQuery<DraftPayment[], Error>({
+    queryKey: PAYMENTS_QUERY_KEY,
+    queryFn: () => getAllDraftPayments(),
+    staleTime: 60_000,
+  });
 
-  useEffect(() => {
-    refreshPayments();
-  }, [refreshPayments]);
+  const draftPayments = query.data ?? [];
+  const pendingPayments = draftPayments.filter(
+    (p) => p.status === 'draft' || p.status === 'pending'
+  );
+  const error = query.error ? query.error.message : null;
+
+  const refreshPayments = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
+  }, [queryClient]);
 
   useEffect(() => {
     if (networkOnline && pendingPayments.length > 0) {
       syncManager.triggerSync();
     }
-  }, [networkOnline]);
+  }, [networkOnline, pendingPayments.length]);
+
+  useEffect(() => {
+    const unsubscribe = syncManager.on('syncComplete', () => {
+      queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
+    });
+    return unsubscribe;
+  }, [queryClient]);
 
   const recordPayment = useCallback(async (params: RecordPaymentParams): Promise<DraftPayment> => {
     const paymentId = generateOfflineId();
     const now = new Date().toISOString();
-    
+
     const payment: DraftPayment = {
       id: paymentId,
       invoiceId: params.invoiceId,
@@ -89,7 +92,7 @@ export function useOfflinePayments(): UseOfflinePaymentsReturn {
     };
 
     const savedPayment = await saveDraftPayment(payment);
-    
+
     await addToSyncQueue({
       type: 'create',
       storeName: 'payments',
@@ -97,36 +100,33 @@ export function useOfflinePayments(): UseOfflinePaymentsReturn {
       endpoint: '/api/payments',
       method: 'POST',
     });
-    
-    await refreshPayments();
+
+    queryClient.setQueryData<DraftPayment[]>(PAYMENTS_QUERY_KEY, (old) =>
+      old ? [...old, savedPayment] : [savedPayment]
+    );
+    safeInvalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
 
     if (isOnline()) {
       syncManager.triggerSync();
     }
 
     return savedPayment;
-  }, [refreshPayments]);
+  }, [queryClient]);
 
   const getPendingPaymentsAsync = useCallback(async (): Promise<DraftPayment[]> => {
-    const pending = await getPendingDraftPayments();
-    setPendingPayments(pending);
-    return pending;
+    return getPendingDraftPayments();
   }, []);
 
   const syncPayment = useCallback(async (_paymentId: string | number): Promise<boolean> => {
     if (!isOnline()) {
-      setError('Cannot sync while offline');
       return false;
     }
 
     try {
       await syncManager.triggerSync();
       await refreshPayments();
-      setError(null);
       return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync payment';
-      setError(errorMessage);
+    } catch {
       return false;
     }
   }, [refreshPayments]);
@@ -135,27 +135,30 @@ export function useOfflinePayments(): UseOfflinePaymentsReturn {
     if (!isOnline()) {
       return { synced: 0, failed: 0 };
     }
-    
+
     const pendingBefore = await getPendingDraftPayments();
     await syncManager.triggerSync();
     const pendingAfter = await getPendingDraftPayments();
-    
+
     const synced = pendingBefore.length - pendingAfter.length;
     const failed = pendingAfter.length;
-    
+
     await refreshPayments();
     return { synced: Math.max(0, synced), failed };
   }, [refreshPayments]);
 
   const deleteDraft = useCallback(async (paymentId: string | number): Promise<void> => {
     await deleteDraftPayment(paymentId);
-    await refreshPayments();
-  }, [refreshPayments]);
+    queryClient.setQueryData<DraftPayment[]>(PAYMENTS_QUERY_KEY, (old) =>
+      old ? old.filter((p) => p.id !== paymentId) : []
+    );
+    safeInvalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
+  }, [queryClient]);
 
   return {
     draftPayments,
     pendingPayments,
-    isLoading,
+    isLoading: query.isLoading,
     error,
     recordPayment,
     getPendingPayments: getPendingPaymentsAsync,
