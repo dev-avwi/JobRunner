@@ -28,6 +28,7 @@ import {
   transcribePerUserLimiter,
   backpressureErrorHandler,
 } from "./routes/middleware";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { isBackpressure, send429, aiQueue } from "./concurrency";
 import {
   dbCheckEnRouteNotif,
@@ -48690,39 +48691,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
-    const statusCode = err.status || err.statusCode || 500;
-    const requestId = req.headers['x-request-id'] || randomUUID().substring(0, 8);
-
-    if (statusCode >= 500) {
-      Sentry.captureException(err);
-    }
-
-    const logEntry = {
-      level: statusCode >= 500 ? 'error' : 'warn',
-      timestamp: new Date().toISOString(),
-      requestId,
-      method: req.method,
-      path: req.path,
-      statusCode,
-      message: err.message || 'Internal server error',
-      stack: err.stack,
-      userId: (req as any).session?.userId || 'anonymous',
-    };
-
-    console.error(JSON.stringify(logEntry));
-
-    if (!res.headersSent) {
-      const safeMessage = statusCode >= 500
-        ? 'Internal server error'
-        : (err.message || 'Internal server error');
-
-      res.status(statusCode).json({
-        error: safeMessage,
-        requestId,
-      });
-    }
-  });
+  app.use(errorHandler);
 
   // ============================================
   // PHOTO LIBRARY ROUTES (Files > Photos tab)
@@ -53406,6 +53375,10 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       res.status(500).json({ error: 'Failed to update port request.' });
     }
   });
+
+  // 404 handler for unknown /api/* paths — must be mounted after all /api
+  // routes but before the Vite SPA catch-all so deep links still serve HTML.
+  app.all('/api/*', notFoundHandler);
 
   // Convert any thrown BackpressureError into HTTP 429 + Retry-After
   app.use(backpressureErrorHandler);
