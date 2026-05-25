@@ -599,7 +599,9 @@ export const businessSettings = pgTable("business_settings", {
   scheduleEndHour: integer("schedule_end_hour").default(20),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_business_settings_user_id").on(table.userId),
+]);
 
 // Integration Settings
 export const integrationSettings = pgTable("integration_settings", {
@@ -632,7 +634,9 @@ export const integrationSettings = pgTable("integration_settings", {
   googleCalendarEmail: text("google_calendar_email"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_integration_settings_user_id").on(table.userId),
+]);
 
 // Notifications
 // Notification priority levels for Smart Notifications Hub
@@ -653,7 +657,9 @@ export const notifications = pgTable("notifications", {
   actionUrl: text("action_url"), // Deep link to relevant page
   actionLabel: text("action_label"), // e.g. "View Quote", "Create Invoice"
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_notifications_user_id").on(table.userId),
+]);
 
 export type Notification = typeof notifications.$inferSelect;
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
@@ -669,7 +675,9 @@ export const pushTokens = pgTable("push_tokens", {
   isActive: boolean("is_active").default(true),
   lastUsedAt: timestamp("last_used_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_push_tokens_user_id").on(table.userId),
+]);
 
 export type PushToken = typeof pushTokens.$inferSelect;
 export const insertPushTokenSchema = createInsertSchema(pushTokens).omit({ id: true, createdAt: true, lastUsedAt: true });
@@ -688,7 +696,9 @@ export const activityLogs = pgTable("activity_logs", {
   // Metadata for additional context
   metadata: jsonb("metadata").default({}), // Can store client name, amounts, etc.
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_activity_logs_user_id").on(table.userId),
+]);
 
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({ id: true, createdAt: true });
@@ -707,7 +717,11 @@ export const teamPresence = pgTable("team_presence", {
   lastLocationLng: real("last_location_lng"),
   lastLocationUpdatedAt: timestamp("last_location_updated_at"),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_team_presence_user_id").on(table.userId),
+  index("idx_team_presence_business_owner_id").on(table.businessOwnerId),
+  index("idx_team_presence_current_job_id").on(table.currentJobId),
+]);
 
 export type TeamPresence = typeof teamPresence.$inferSelect;
 export const insertTeamPresenceSchema = createInsertSchema(teamPresence).omit({ id: true, updatedAt: true });
@@ -729,7 +743,11 @@ export const activityFeed = pgTable("activity_feed", {
   isImportant: boolean("is_important").default(false), // For highlighting key events
   isRead: boolean("is_read").default(false), // Mark as read functionality
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_activity_feed_business_owner_id").on(table.businessOwnerId),
+  index("idx_activity_feed_actor_user_id").on(table.actorUserId),
+  index("idx_activity_feed_team_member_id").on(table.teamMemberId),
+]);
 
 export type ActivityFeed = typeof activityFeed.$inferSelect;
 export const insertActivityFeedSchema = createInsertSchema(activityFeed).omit({ id: true, createdAt: true });
@@ -755,7 +773,9 @@ export const clients = pgTable("clients", {
   isSample: boolean("is_sample").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_clients_user_id").on(table.userId),
+]);
 
 // Jobs
 export const jobs = pgTable("jobs", {
@@ -820,7 +840,10 @@ export const jobs = pgTable("jobs", {
   isSample: boolean("is_sample").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_jobs_user_id").on(table.userId),
+  index("idx_jobs_client_id").on(table.clientId),
+]);
 
 // Service Reminders - for recurring maintenance and service tracking
 export const serviceReminders = pgTable("service_reminders", {
@@ -837,7 +860,11 @@ export const serviceReminders = pgTable("service_reminders", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_service_reminders_job_id").on(table.jobId),
+  index("idx_service_reminders_client_id").on(table.clientId),
+  index("idx_service_reminders_user_id").on(table.userId),
+]);
 
 export type ServiceReminder = typeof serviceReminders.$inferSelect;
 export const insertServiceReminderSchema = createInsertSchema(serviceReminders).omit({ id: true, createdAt: true, updatedAt: true });
@@ -852,7 +879,9 @@ export const checklistItems = pgTable("checklist_items", {
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_checklist_items_job_id").on(table.jobId),
+]);
 
 // Job Check-ins for location tracking
 export const jobCheckins = pgTable("job_checkins", {
@@ -866,7 +895,10 @@ export const jobCheckins = pgTable("job_checkins", {
   address: text("address"), // Reverse geocoded address
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_checkins_job_id").on(table.jobId),
+  index("idx_job_checkins_user_id").on(table.userId),
+]);
 
 export type JobCheckin = typeof jobCheckins.$inferSelect;
 export const insertJobCheckinSchema = createInsertSchema(jobCheckins).omit({ id: true, createdAt: true });
@@ -924,7 +956,11 @@ export const quotes = pgTable("quotes", {
   isSample: boolean("is_sample").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_quotes_user_id").on(table.userId),
+  index("idx_quotes_client_id").on(table.clientId),
+  index("idx_quotes_job_id").on(table.jobId),
+]);
 
 // Quote Options (for multi-option interactive quotes)
 export const quoteOptions = pgTable("quote_options", {
@@ -938,7 +974,9 @@ export const quoteOptions = pgTable("quote_options", {
   isRecommended: boolean("is_recommended").default(false), // Mark one as recommended
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_quote_options_quote_id").on(table.quoteId),
+]);
 
 export type QuoteOption = typeof quoteOptions.$inferSelect;
 export const insertQuoteOptionSchema = createInsertSchema(quoteOptions).omit({ id: true, createdAt: true });
@@ -956,7 +994,10 @@ export const quoteLineItems = pgTable("quote_line_items", {
   total: decimal("total", { precision: 10, scale: 2 }).notNull().default('0.00'),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_quote_line_items_quote_id").on(table.quoteId),
+  index("idx_quote_line_items_option_id").on(table.optionId),
+]);
 
 // Quote Version History
 export const quoteVersions = pgTable("quote_versions", {
@@ -967,7 +1008,9 @@ export const quoteVersions = pgTable("quote_versions", {
   changeNote: text("change_note"),
   snapshot: jsonb("snapshot").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_quote_versions_quote_id").on(table.quoteId),
+]);
 
 export type QuoteVersion = typeof quoteVersions.$inferSelect;
 export type InsertQuoteVersion = typeof quoteVersions.$inferInsert;
@@ -1039,7 +1082,12 @@ export const invoices = pgTable("invoices", {
   isSample: boolean("is_sample").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_invoices_user_id").on(table.userId),
+  index("idx_invoices_client_id").on(table.clientId),
+  index("idx_invoices_job_id").on(table.jobId),
+  index("idx_invoices_quote_id").on(table.quoteId),
+]);
 
 // Invoice Line Items
 export const invoiceLineItems = pgTable("invoice_line_items", {
@@ -1054,7 +1102,9 @@ export const invoiceLineItems = pgTable("invoice_line_items", {
   sourceId: varchar("source_id"),
   rateSnapshot: decimal("rate_snapshot", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_invoice_line_items_invoice_id").on(table.invoiceId),
+]);
 
 // Payment Requests - for phone-to-phone payments (like ServiceM8's Scan & Pay)
 export const paymentRequests = pgTable("payment_requests", {
@@ -1084,7 +1134,12 @@ export const paymentRequests = pgTable("payment_requests", {
   notificationsSent: jsonb("notifications_sent").default([]), // Track SMS/email sent
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_payment_requests_user_id").on(table.userId),
+  index("idx_payment_requests_invoice_id").on(table.invoiceId),
+  index("idx_payment_requests_job_id").on(table.jobId),
+  index("idx_payment_requests_client_id").on(table.clientId),
+]);
 
 // Payment Receipts - professional receipts stored and linked to jobs
 export const receipts = pgTable("receipts", {
@@ -1116,7 +1171,13 @@ export const receipts = pgTable("receipts", {
   // Public access token for SMS links
   viewToken: text("view_token").unique(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_receipts_user_id").on(table.userId),
+  index("idx_receipts_job_id").on(table.jobId),
+  index("idx_receipts_invoice_id").on(table.invoiceId),
+  index("idx_receipts_client_id").on(table.clientId),
+  index("idx_receipts_payment_request_id").on(table.paymentRequestId),
+]);
 
 export const insertReceiptSchema = createInsertSchema(receipts).omit({ id: true, createdAt: true });
 export type InsertReceipt = z.infer<typeof insertReceiptSchema>;
@@ -1142,7 +1203,12 @@ export const rebates = pgTable("rebates", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_rebates_user_id").on(table.userId),
+  index("idx_rebates_client_id").on(table.clientId),
+  index("idx_rebates_job_id").on(table.jobId),
+  index("idx_rebates_invoice_id").on(table.invoiceId),
+]);
 
 export const insertRebateSchema = createInsertSchema(rebates).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertRebate = z.infer<typeof insertRebateSchema>;
@@ -1164,7 +1230,9 @@ export const documentTemplates = pgTable("document_templates", {
   isDefault: boolean("is_default").default(false), // System-provided default template
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_document_templates_user_id").on(table.userId),
+]);
 
 // Line Item Catalog
 export const lineItemCatalog = pgTable("line_item_catalog", {
@@ -1179,7 +1247,9 @@ export const lineItemCatalog = pgTable("line_item_catalog", {
   tags: json("tags").default([]), // string[]
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_line_item_catalog_user_id").on(table.userId),
+]);
 
 // Rate Cards
 export const rateCards = pgTable("rate_cards", {
@@ -1194,7 +1264,9 @@ export const rateCards = pgTable("rate_cards", {
   gstEnabled: boolean("gst_enabled").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_rate_cards_user_id").on(table.userId),
+]);
 
 export const quoteTemplates = pgTable("quote_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1207,7 +1279,9 @@ export const quoteTemplates = pgTable("quote_templates", {
   isDefault: boolean("is_default").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_quote_templates_user_id").on(table.userId),
+]);
 
 // Style Presets for Document Templates
 export const stylePresets = pgTable("style_presets", {
@@ -1235,7 +1309,9 @@ export const stylePresets = pgTable("style_presets", {
   compactMode: boolean("compact_mode").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_style_presets_user_id").on(table.userId),
+]);
 
 export const insertStylePresetSchema = createInsertSchema(stylePresets).omit({
   id: true,
@@ -1465,7 +1541,10 @@ export const templateAnalysisJobs = pgTable("template_analysis_jobs", {
   createdTemplateId: varchar("created_template_id").references(() => documentTemplates.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_template_analysis_jobs_user_id").on(table.userId),
+  index("idx_template_analysis_jobs_created_template_id").on(table.createdTemplateId),
+]);
 
 export const insertTemplateAnalysisJobSchema = createInsertSchema(templateAnalysisJobs).omit({
   id: true,
@@ -1495,7 +1574,9 @@ export const inventoryCategories = pgTable("inventory_categories", {
   description: text("description"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_inventory_categories_user_id").on(table.userId),
+]);
 
 export const inventoryItems = pgTable("inventory_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1518,7 +1599,10 @@ export const inventoryItems = pgTable("inventory_items", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_inventory_items_user_id").on(table.userId),
+  index("idx_inventory_items_category_id").on(table.categoryId),
+]);
 
 export const inventoryTransactions = pgTable("inventory_transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1533,7 +1617,11 @@ export const inventoryTransactions = pgTable("inventory_transactions", {
   notes: text("notes"),
   transactionDate: timestamp("transaction_date").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_inventory_transactions_user_id").on(table.userId),
+  index("idx_inventory_transactions_item_id").on(table.itemId),
+  index("idx_inventory_transactions_job_id").on(table.jobId),
+]);
 
 // Time Tracking
 // Time entry categories for billable/non-billable tracking
@@ -1587,7 +1675,11 @@ export const timeEntries = pgTable("time_entries", {
   disputeResolution: text("dispute_resolution"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_time_entries_user_id").on(table.userId),
+  index("idx_time_entries_job_id").on(table.jobId),
+  index("idx_time_entries_approved_by").on(table.approvedBy),
+]);
 
 export const timesheets = pgTable("timesheets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1603,7 +1695,10 @@ export const timesheets = pgTable("timesheets", {
   approvedBy: varchar("approved_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_timesheets_user_id").on(table.userId),
+  index("idx_timesheets_approved_by").on(table.approvedBy),
+]);
 
 // Time Entry Edit Audit Trail
 export const timeEntryEdits = pgTable("time_entry_edits", {
@@ -1616,7 +1711,10 @@ export const timeEntryEdits = pgTable("time_entry_edits", {
   oldValue: text("old_value"),
   newValue: text("new_value"),
   editSource: text("edit_source").default('manual'),
-});
+}, (table) => [
+  index("idx_time_entry_edits_time_entry_id").on(table.timeEntryId),
+  index("idx_time_entry_edits_edited_by").on(table.editedBy),
+]);
 
 // Invoice Edit Audit Trail - financial-grade versioning
 export const invoiceEdits = pgTable("invoice_edits", {
@@ -1629,7 +1727,10 @@ export const invoiceEdits = pgTable("invoice_edits", {
   oldValue: text("old_value"),
   newValue: text("new_value"),
   editSource: text("edit_source").default('manual'),
-});
+}, (table) => [
+  index("idx_invoice_edits_invoice_id").on(table.invoiceId),
+  index("idx_invoice_edits_edited_by").on(table.editedBy),
+]);
 
 export const insertTimeEntryEditSchema = createInsertSchema(timeEntryEdits).omit({ id: true, editedAt: true });
 export type InsertTimeEntryEdit = z.infer<typeof insertTimeEntryEditSchema>;
@@ -1642,7 +1743,10 @@ export const timeEntryDisputeEvents = pgTable("time_entry_dispute_events", {
   actorId: varchar("actor_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_time_entry_dispute_events_time_entry_id").on(table.timeEntryId),
+  index("idx_time_entry_dispute_events_actor_id").on(table.actorId),
+]);
 
 export const insertTimeEntryDisputeEventSchema = createInsertSchema(timeEntryDisputeEvents).omit({ id: true, createdAt: true });
 export type InsertTimeEntryDisputeEvent = z.infer<typeof insertTimeEntryDisputeEventSchema>;
@@ -1660,7 +1764,9 @@ export const expenseCategories = pgTable("expense_categories", {
   description: text("description"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_expense_categories_user_id").on(table.userId),
+]);
 
 export const expenses = pgTable("expenses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1681,7 +1787,12 @@ export const expenses = pgTable("expenses", {
   approvedBy: varchar("approved_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_expenses_user_id").on(table.userId),
+  index("idx_expenses_job_id").on(table.jobId),
+  index("idx_expenses_category_id").on(table.categoryId),
+  index("idx_expenses_approved_by").on(table.approvedBy),
+]);
 
 // Team Management
 export const userRoles = pgTable("user_roles", {
@@ -1728,7 +1839,11 @@ export const teamMembers = pgTable("team_members", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_team_members_business_owner_id").on(table.businessOwnerId),
+  index("idx_team_members_member_id").on(table.memberId),
+  index("idx_team_members_role_id").on(table.roleId),
+]);
 
 export const inviteCodes = pgTable("invite_codes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1741,7 +1856,10 @@ export const inviteCodes = pgTable("invite_codes", {
   expiresAt: timestamp("expires_at").notNull(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_invite_codes_business_owner_id").on(table.businessOwnerId),
+  index("idx_invite_codes_role_id").on(table.roleId),
+]);
 
 export const insertInviteCodeSchema = createInsertSchema(inviteCodes).omit({
   id: true,
@@ -1779,7 +1897,11 @@ export const jobAssignments = pgTable("job_assignments", {
   acceptanceIpAddress: text("acceptance_ip_address"),
   acceptanceUserAgent: text("acceptance_user_agent"),
   isPrimary: boolean("is_primary").default(false),
-});
+}, (table) => [
+  index("idx_job_assignments_job_id").on(table.jobId),
+  index("idx_job_assignments_user_id").on(table.userId),
+  index("idx_job_assignments_team_member_id").on(table.teamMemberId),
+]);
 
 export const insertJobAssignmentSchema = createInsertSchema(jobAssignments).omit({ id: true, createdAt: true, lastSmsSentAt: true, travelStartedAt: true, arrivedAt: true, etaUpdatedAt: true, acceptedAt: true, acceptanceSignatureData: true, acceptanceIpAddress: true, acceptanceUserAgent: true });
 export type InsertJobAssignment = z.infer<typeof insertJobAssignmentSchema>;
@@ -1796,7 +1918,10 @@ export const staffSchedules = pgTable("staff_schedules", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_staff_schedules_user_id").on(table.userId),
+  index("idx_staff_schedules_job_id").on(table.jobId),
+]);
 
 // Team Member Skills & Certifications - track qualifications with expiry dates
 export const teamMemberSkills = pgTable("team_member_skills", {
@@ -1812,7 +1937,9 @@ export const teamMemberSkills = pgTable("team_member_skills", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_team_member_skills_team_member_id").on(table.teamMemberId),
+]);
 
 // Team Member Availability - weekly work schedule preferences
 export const teamMemberAvailability = pgTable("team_member_availability", {
@@ -1825,7 +1952,9 @@ export const teamMemberAvailability = pgTable("team_member_availability", {
   notes: text("notes"), // e.g., "school pickup at 3pm"
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_team_member_availability_team_member_id").on(table.teamMemberId),
+]);
 
 // Team Member Time Off - leave requests and holidays
 export const teamMemberTimeOff = pgTable("team_member_time_off", {
@@ -1840,7 +1969,10 @@ export const teamMemberTimeOff = pgTable("team_member_time_off", {
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_team_member_time_off_team_member_id").on(table.teamMemberId),
+  index("idx_team_member_time_off_approved_by").on(table.approvedBy),
+]);
 
 // Permission Requests - team members can request additional permissions from owner/manager
 export const permissionRequests = pgTable("permission_requests", {
@@ -1855,7 +1987,11 @@ export const permissionRequests = pgTable("permission_requests", {
   responseNote: text("response_note"), // Optional note from owner/manager
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_permission_requests_team_member_id").on(table.teamMemberId),
+  index("idx_permission_requests_business_owner_id").on(table.businessOwnerId),
+  index("idx_permission_requests_responded_by").on(table.respondedBy),
+]);
 
 // Job Assignment Requests - team members can request to be assigned to available jobs
 export const jobAssignmentRequests = pgTable("job_assignment_requests", {
@@ -1871,7 +2007,13 @@ export const jobAssignmentRequests = pgTable("job_assignment_requests", {
   responseNote: text("response_note"), // Optional note from owner/manager
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_assignment_requests_job_id").on(table.jobId),
+  index("idx_job_assignment_requests_team_member_id").on(table.teamMemberId),
+  index("idx_job_assignment_requests_requester_id").on(table.requesterId),
+  index("idx_job_assignment_requests_business_owner_id").on(table.businessOwnerId),
+  index("idx_job_assignment_requests_responded_by").on(table.respondedBy),
+]);
 
 // Team Member Performance Metrics - track productivity and ratings
 export const teamMemberMetrics = pgTable("team_member_metrics", {
@@ -1889,7 +2031,9 @@ export const teamMemberMetrics = pgTable("team_member_metrics", {
   revenueGenerated: decimal("revenue_generated", { precision: 12, scale: 2 }).default('0'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_team_member_metrics_team_member_id").on(table.teamMemberId),
+]);
 
 // GPS Tracking - Life360-style location with battery and activity
 export const locationTracking = pgTable("location_tracking", {
@@ -1910,7 +2054,10 @@ export const locationTracking = pgTable("location_tracking", {
   timestamp: timestamp("timestamp").notNull(),
   trackingType: text("tracking_type").default('automatic'), // automatic, manual, job_site
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_location_tracking_user_id").on(table.userId),
+  index("idx_location_tracking_job_id").on(table.jobId),
+]);
 
 // Geofence Alerts - triggered when tradies enter/leave job sites
 export const geofenceAlerts = pgTable("geofence_alerts", {
@@ -1926,7 +2073,11 @@ export const geofenceAlerts = pgTable("geofence_alerts", {
   isRead: boolean("is_read").default(false),
   dwellSeconds: integer("dwell_seconds"), // For 'departure' alerts: seconds spent on site since the matching arrival.
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_geofence_alerts_user_id").on(table.userId),
+  index("idx_geofence_alerts_job_id").on(table.jobId),
+  index("idx_geofence_alerts_business_owner_id").on(table.businessOwnerId),
+]);
 
 // GPS Signal Loss Logging - tracks when team members lose/regain GPS signal
 export const gpsSignalLogs = pgTable("gps_signal_logs", {
@@ -1944,7 +2095,11 @@ export const gpsSignalLogs = pgTable("gps_signal_logs", {
   durationSeconds: integer("duration_seconds"), // how long signal was lost (only on regained events)
   metadata: json("metadata"), // extra device info
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_gps_signal_logs_user_id").on(table.userId),
+  index("idx_gps_signal_logs_business_owner_id").on(table.businessOwnerId),
+  index("idx_gps_signal_logs_job_id").on(table.jobId),
+]);
 
 export type GpsSignalLog = typeof gpsSignalLogs.$inferSelect;
 export const insertGpsSignalLogSchema = createInsertSchema(gpsSignalLogs).omit({ id: true, createdAt: true });
@@ -1972,7 +2127,10 @@ export const tradieStatus = pgTable("tradie_status", {
   lastLocationUpdate: timestamp("last_location_update"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_tradie_status_business_owner_id").on(table.businessOwnerId),
+  index("idx_tradie_status_current_job_id").on(table.currentJobId),
+]);
 
 export const routes = pgTable("routes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1990,7 +2148,9 @@ export const routes = pgTable("routes", {
   status: text("status").default('saved'), // saved, planned, in_progress, completed
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_routes_user_id").on(table.userId),
+]);
 
 // Route schemas
 export const insertRouteSchema = createInsertSchema(routes).omit({
@@ -2020,7 +2180,10 @@ export const customerUsers = pgTable("customer_users", {
   resetTokenExpiresAt: timestamp("reset_token_expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_customer_users_client_id").on(table.clientId),
+  index("idx_customer_users_business_owner_id").on(table.businessOwnerId),
+]);
 
 export const customerSessions = pgTable("customer_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2028,7 +2191,9 @@ export const customerSessions = pgTable("customer_sessions", {
   sessionToken: text("session_token").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_customer_sessions_customer_user_id").on(table.customerUserId),
+]);
 
 // Equipment Management
 export const equipmentCategories = pgTable("equipment_categories", {
@@ -2038,7 +2203,9 @@ export const equipmentCategories = pgTable("equipment_categories", {
   description: text("description"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_equipment_categories_user_id").on(table.userId),
+]);
 
 export const equipment = pgTable("equipment", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2062,7 +2229,11 @@ export const equipment = pgTable("equipment", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_equipment_user_id").on(table.userId),
+  index("idx_equipment_category_id").on(table.categoryId),
+  index("idx_equipment_assigned_to").on(table.assignedTo),
+]);
 
 export const equipmentMaintenance = pgTable("equipment_maintenance", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2082,7 +2253,11 @@ export const equipmentMaintenance = pgTable("equipment_maintenance", {
   documents: json("documents").default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_equipment_maintenance_user_id").on(table.userId),
+  index("idx_equipment_maintenance_equipment_id").on(table.equipmentId),
+  index("idx_equipment_maintenance_performed_by").on(table.performedBy),
+]);
 
 // Client Assets - Equipment/systems installed at customer locations (Mrs Smith's AC unit)
 export const clientAssets = pgTable("client_assets", {
@@ -2113,7 +2288,10 @@ export const clientAssets = pgTable("client_assets", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_client_assets_user_id").on(table.userId),
+  index("idx_client_assets_client_id").on(table.clientId),
+]);
 
 // Client Asset Service History - Track all work done on a client's asset
 export const clientAssetServices = pgTable("client_asset_services", {
@@ -2135,7 +2313,12 @@ export const clientAssetServices = pgTable("client_asset_services", {
   documents: json("documents").default([]),
   nextServiceDue: timestamp("next_service_due"), // Updates asset's next service date
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_client_asset_services_user_id").on(table.userId),
+  index("idx_client_asset_services_asset_id").on(table.assetId),
+  index("idx_client_asset_services_job_id").on(table.jobId),
+  index("idx_client_asset_services_performed_by").on(table.performedBy),
+]);
 
 // Recurring Jobs & Contracts
 export const recurringContracts = pgTable("recurring_contracts", {
@@ -2157,7 +2340,10 @@ export const recurringContracts = pgTable("recurring_contracts", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_recurring_contracts_user_id").on(table.userId),
+  index("idx_recurring_contracts_client_id").on(table.clientId),
+]);
 
 export const recurringSchedules = pgTable("recurring_schedules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2168,7 +2354,10 @@ export const recurringSchedules = pgTable("recurring_schedules", {
   status: text("status").default('scheduled'), // scheduled, completed, skipped, cancelled
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_recurring_schedules_contract_id").on(table.contractId),
+  index("idx_recurring_schedules_job_id").on(table.jobId),
+]);
 
 // Digital Forms & Signatures
 export const customForms = pgTable("custom_forms", {
@@ -2185,7 +2374,9 @@ export const customForms = pgTable("custom_forms", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_custom_forms_user_id").on(table.userId),
+]);
 
 export const formSubmissions = pgTable("form_submissions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2202,7 +2393,13 @@ export const formSubmissions = pgTable("form_submissions", {
   reviewedAt: timestamp("reviewed_at"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_form_submissions_form_id").on(table.formId),
+  index("idx_form_submissions_job_id").on(table.jobId),
+  index("idx_form_submissions_submitted_by").on(table.submittedBy),
+  index("idx_form_submissions_customer_user_id").on(table.customerUserId),
+  index("idx_form_submissions_reviewed_by").on(table.reviewedBy),
+]);
 
 export const digitalSignatures = pgTable("digital_signatures", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2222,7 +2419,14 @@ export const digitalSignatures = pgTable("digital_signatures", {
   documentType: text("document_type").notNull(), // 'quote', 'invoice', 'form', 'contract', 'job_completion'
   isValid: boolean("is_valid").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_digital_signatures_form_submission_id").on(table.formSubmissionId),
+  index("idx_digital_signatures_assignment_id").on(table.assignmentId),
+  index("idx_digital_signatures_job_id").on(table.jobId),
+  index("idx_digital_signatures_quote_id").on(table.quoteId),
+  index("idx_digital_signatures_invoice_id").on(table.invoiceId),
+  index("idx_digital_signatures_client_id").on(table.clientId),
+]);
 
 // Marketing Automation
 export const emailCampaigns = pgTable("email_campaigns", {
@@ -2243,7 +2447,9 @@ export const emailCampaigns = pgTable("email_campaigns", {
   unsubscribeCount: integer("unsubscribe_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_email_campaigns_user_id").on(table.userId),
+]);
 
 export const customerSurveys = pgTable("customer_surveys", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2262,7 +2468,11 @@ export const customerSurveys = pgTable("customer_surveys", {
   publicReviewPosted: boolean("public_review_posted").default(false),
   reviewPlatform: text("review_platform"), // 'google', 'facebook', 'custom'
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_customer_surveys_user_id").on(table.userId),
+  index("idx_customer_surveys_job_id").on(table.jobId),
+  index("idx_customer_surveys_client_id").on(table.clientId),
+]);
 
 // Supplier Management
 export const suppliers = pgTable("suppliers", {
@@ -2283,7 +2493,9 @@ export const suppliers = pgTable("suppliers", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_suppliers_user_id").on(table.userId),
+]);
 
 export const purchaseOrders = pgTable("purchase_orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2304,7 +2516,12 @@ export const purchaseOrders = pgTable("purchase_orders", {
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_purchase_orders_user_id").on(table.userId),
+  index("idx_purchase_orders_supplier_id").on(table.supplierId),
+  index("idx_purchase_orders_job_id").on(table.jobId),
+  index("idx_purchase_orders_approved_by").on(table.approvedBy),
+]);
 
 export const purchaseOrderItems = pgTable("purchase_order_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2317,7 +2534,10 @@ export const purchaseOrderItems = pgTable("purchase_order_items", {
   receivedQuantity: integer("received_quantity").default(0),
   status: text("status").default('pending'), // 'pending', 'partial', 'received', 'cancelled'
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_purchase_order_items_po_id").on(table.poId),
+  index("idx_purchase_order_items_inventory_item_id").on(table.inventoryItemId),
+]);
 
 // Advanced Reporting
 export const reportConfigurations = pgTable("report_configurations", {
@@ -2335,7 +2555,9 @@ export const reportConfigurations = pgTable("report_configurations", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_report_configurations_user_id").on(table.userId),
+]);
 
 export const savedReports = pgTable("saved_reports", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2349,7 +2571,10 @@ export const savedReports = pgTable("saved_reports", {
   isAutoGenerated: boolean("is_auto_generated").default(false),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_saved_reports_config_id").on(table.configId),
+  index("idx_saved_reports_user_id").on(table.userId),
+]);
 
 // ===== ZOD SCHEMAS AND TYPES FOR ADVANCED FEATURES =====
 
@@ -2760,7 +2985,9 @@ export const emailIntegrations = pgTable("email_integrations", {
   lastError: text("last_error"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_email_integrations_user_id").on(table.userId),
+]);
 
 export const insertEmailIntegrationSchema = createInsertSchema(emailIntegrations).omit({
   id: true,
@@ -2801,7 +3028,10 @@ export const emailDeliveryLogs = pgTable("email_delivery_logs", {
   permanentlyFailed: boolean("permanently_failed").default(false),
   payloadJson: jsonb("payload_json"), // Snapshot of {to, html, text, attachments} for retries
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_email_delivery_logs_user_id").on(table.userId),
+  index("idx_email_delivery_logs_email_integration_id").on(table.emailIntegrationId),
+]);
 
 export const insertEmailDeliveryLogSchema = createInsertSchema(emailDeliveryLogs).omit({
   id: true,
@@ -2831,7 +3061,11 @@ export const jobPhotos = pgTable("job_photos", {
   aiSuggestedCategory: text("ai_suggested_category"),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_photos_user_id").on(table.userId),
+  index("idx_job_photos_job_id").on(table.jobId),
+  index("idx_job_photos_uploaded_by").on(table.uploadedBy),
+]);
 
 export const insertJobPhotoSchema = createInsertSchema(jobPhotos).omit({
   id: true,
@@ -2855,7 +3089,11 @@ export const voiceNotes = pgTable("voice_notes", {
   detectedActions: jsonb("detected_actions"), // AI-detected action items from transcription
   recordedBy: varchar("recorded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_voice_notes_user_id").on(table.userId),
+  index("idx_voice_notes_job_id").on(table.jobId),
+  index("idx_voice_notes_recorded_by").on(table.recordedBy),
+]);
 
 export const insertVoiceNoteSchema = createInsertSchema(voiceNotes).omit({
   id: true,
@@ -2873,7 +3111,11 @@ export const jobNotes = pgTable("job_notes", {
   createdBy: varchar("created_by").references(() => users.id), // Team member who created the note
   createdByName: text("created_by_name"), // Denormalized for quick display
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_notes_user_id").on(table.userId),
+  index("idx_job_notes_job_id").on(table.jobId),
+  index("idx_job_notes_created_by").on(table.createdBy),
+]);
 
 export const insertJobNoteSchema = createInsertSchema(jobNotes).omit({
   id: true,
@@ -2907,7 +3149,11 @@ export const jobVariations = pgTable("job_variations", {
   notes: text("notes"), // Additional notes from client or tradie
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_variations_user_id").on(table.userId),
+  index("idx_job_variations_job_id").on(table.jobId),
+  index("idx_job_variations_created_by").on(table.createdBy),
+]);
 
 export const insertJobVariationSchema = createInsertSchema(jobVariations).omit({
   id: true,
@@ -2930,7 +3176,11 @@ export const jobDocuments = pgTable("job_documents", {
   mimeType: text("mime_type"),
   uploadedBy: varchar("uploaded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_documents_user_id").on(table.userId),
+  index("idx_job_documents_job_id").on(table.jobId),
+  index("idx_job_documents_uploaded_by").on(table.uploadedBy),
+]);
 
 export const insertJobDocumentSchema = createInsertSchema(jobDocuments).omit({
   id: true,
@@ -2951,7 +3201,10 @@ export const invoiceReminderLogs = pgTable("invoice_reminder_logs", {
   smsSent: boolean("sms_sent").default(false),
   response: text("response"), // Any client response or action taken
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_invoice_reminder_logs_invoice_id").on(table.invoiceId),
+  index("idx_invoice_reminder_logs_user_id").on(table.userId),
+]);
 
 export const insertInvoiceReminderLogSchema = createInsertSchema(invoiceReminderLogs).omit({
   id: true,
@@ -2974,7 +3227,10 @@ export const stripePayouts = pgTable("stripe_payouts", {
   failureMessage: text("failure_message"),
   arrivalDate: timestamp("arrival_date"), // Expected arrival in bank
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_stripe_payouts_user_id").on(table.userId),
+  index("idx_stripe_payouts_invoice_id").on(table.invoiceId),
+]);
 
 export const insertStripePayoutSchema = createInsertSchema(stripePayouts).omit({
   id: true,
@@ -2996,7 +3252,10 @@ export const jobChat = pgTable("job_chat", {
   readBy: jsonb("read_by").default([]), // Array of user IDs who have read this message
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_chat_job_id").on(table.jobId),
+  index("idx_job_chat_user_id").on(table.userId),
+]);
 
 export const insertJobChatSchema = createInsertSchema(jobChat).omit({
   id: true,
@@ -3020,7 +3279,10 @@ export const teamChat = pgTable("team_chat", {
   readBy: jsonb("read_by").default([]), // Array of user IDs who have read this message
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_team_chat_business_owner_id").on(table.businessOwnerId),
+  index("idx_team_chat_sender_id").on(table.senderId),
+]);
 
 export const insertTeamChatSchema = createInsertSchema(teamChat).omit({
   id: true,
@@ -3040,7 +3302,10 @@ export const directMessages = pgTable("direct_messages", {
   attachmentType: text("attachment_type"), // image, file, etc.
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_direct_messages_sender_id").on(table.senderId),
+  index("idx_direct_messages_recipient_id").on(table.recipientId),
+]);
 
 export const insertDirectMessageSchema = createInsertSchema(directMessages).omit({
   id: true,
@@ -3066,7 +3331,11 @@ export const smsConversations = pgTable("sms_conversations", {
   lastRoutingPromptAt: timestamp("last_routing_prompt_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_sms_conversations_business_owner_id").on(table.businessOwnerId),
+  index("idx_sms_conversations_client_id").on(table.clientId),
+  index("idx_sms_conversations_job_id").on(table.jobId),
+]);
 
 export const insertSmsConversationSchema = createInsertSchema(smsConversations).omit({
   id: true,
@@ -3101,7 +3370,11 @@ export const smsMessages = pgTable("sms_messages", {
   retryCount: integer("retry_count").default(0),
   nextRetryAt: timestamp("next_retry_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_sms_messages_conversation_id").on(table.conversationId),
+  index("idx_sms_messages_sender_user_id").on(table.senderUserId),
+  index("idx_sms_messages_job_created_from_sms").on(table.jobCreatedFromSms),
+]);
 
 export const insertSmsMessageSchema = createInsertSchema(smsMessages).omit({
   id: true,
@@ -3121,7 +3394,9 @@ export const automations = pgTable("automations", {
   actions: jsonb("actions").notNull().default([]), // [{ type, template, message, newStatus }]
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_automations_user_id").on(table.userId),
+]);
 
 export const insertAutomationSchema = createInsertSchema(automations).omit({
   id: true,
@@ -3140,9 +3415,10 @@ export const automationLogs = pgTable("automation_logs", {
   processedAt: timestamp("processed_at").defaultNow(),
   result: text("result"), // success, error
   errorMessage: text("error_message"),
-}, (table) => ({
-  uniqueAutomationEntity: unique().on(table.automationId, table.entityType, table.entityId),
-}));
+}, (table) => [
+  unique("uniqueAutomationEntity").on(table.automationId, table.entityType, table.entityId),
+  index("idx_automation_logs_automation_id").on(table.automationId),
+]);
 
 export const insertAutomationLogSchema = createInsertSchema(automationLogs).omit({
   id: true,
@@ -3162,7 +3438,9 @@ export const smsTemplates = pgTable("sms_templates", {
   usageCount: integer("usage_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_sms_templates_user_id").on(table.userId),
+]);
 
 export const insertSmsTemplateSchema = createInsertSchema(smsTemplates).omit({
   id: true,
@@ -3210,7 +3488,9 @@ export const quickReplies = pgTable("quick_replies", {
   body: text("body").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_quick_replies_user_id").on(table.userId),
+]);
 
 export const insertQuickReplySchema = createInsertSchema(quickReplies).omit({
   id: true,
@@ -3303,7 +3583,9 @@ export const businessTemplates = pgTable("business_templates", {
   metadata: jsonb("metadata").default({}), // { validityDays, depositPercent, warrantyMonths, etc. }
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_business_templates_user_id").on(table.userId),
+]);
 
 export const insertBusinessTemplateSchema = createInsertSchema(businessTemplates).omit({
   id: true,
@@ -3382,7 +3664,10 @@ export const smsBookingLinks = pgTable("sms_booking_links", {
   expiresAt: timestamp("expires_at").notNull(),
   respondedAt: timestamp("responded_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_sms_booking_links_job_id").on(table.jobId),
+  index("idx_sms_booking_links_business_owner_id").on(table.businessOwnerId),
+]);
 
 export const insertSmsBookingLinkSchema = createInsertSchema(smsBookingLinks).omit({
   id: true,
@@ -3408,7 +3693,11 @@ export const smsTrackingLinks = pgTable("sms_tracking_links", {
   expiresAt: timestamp("expires_at").notNull(),
   viewCount: integer("view_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_sms_tracking_links_job_id").on(table.jobId),
+  index("idx_sms_tracking_links_team_member_id").on(table.teamMemberId),
+  index("idx_sms_tracking_links_business_owner_id").on(table.businessOwnerId),
+]);
 
 export const insertSmsTrackingLinkSchema = createInsertSchema(smsTrackingLinks).omit({
   id: true,
@@ -3437,7 +3726,10 @@ export const smsAutomationRules = pgTable("sms_automation_rules", {
   triggerCount: integer("trigger_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_sms_automation_rules_user_id").on(table.userId),
+  index("idx_sms_automation_rules_template_id").on(table.templateId),
+]);
 
 export const insertSmsAutomationRuleSchema = createInsertSchema(smsAutomationRules).omit({
   id: true,
@@ -3459,9 +3751,11 @@ export const smsAutomationLogs = pgTable("sms_automation_logs", {
   status: text("status").default('sent'), // sent, failed, skipped
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-  uniqueRuleEntity: unique().on(table.ruleId, table.entityType, table.entityId),
-}));
+}, (table) => [
+  unique("uniqueRuleEntity").on(table.ruleId, table.entityType, table.entityId),
+  index("idx_sms_automation_logs_rule_id").on(table.ruleId),
+  index("idx_sms_automation_logs_message_id").on(table.messageId),
+]);
 
 export const insertSmsAutomationLogSchema = createInsertSchema(smsAutomationLogs).omit({
   id: true,
@@ -3487,7 +3781,9 @@ export const xeroConnections = pgTable("xero_connections", {
   connectedAt: timestamp("connected_at").defaultNow(),
   lastSyncAt: timestamp("last_sync_at"),
   status: varchar("status").default('active'),
-});
+}, (table) => [
+  index("idx_xero_connections_user_id").on(table.userId),
+]);
 
 export const insertXeroConnectionSchema = createInsertSchema(xeroConnections).omit({
   id: true,
@@ -3511,7 +3807,9 @@ export const xeroSyncState = pgTable("xero_sync_state", {
   durationMs: integer("duration_ms"),
   errorDetails: text("error_details"),
   startedAt: timestamp("started_at"),
-});
+}, (table) => [
+  index("idx_xero_sync_state_user_id").on(table.userId),
+]);
 
 export const insertXeroSyncStateSchema = createInsertSchema(xeroSyncState).omit({
   id: true,
@@ -3557,7 +3855,9 @@ export const myobConnections = pgTable("myob_connections", {
   connectedAt: timestamp("connected_at").defaultNow(),
   lastSyncAt: timestamp("last_sync_at"),
   status: varchar("status").default('active'),
-});
+}, (table) => [
+  index("idx_myob_connections_user_id").on(table.userId),
+]);
 
 export const insertMyobConnectionSchema = createInsertSchema(myobConnections).omit({
   id: true,
@@ -3585,7 +3885,9 @@ export const quickbooksConnections = pgTable("quickbooks_connections", {
   connectedAt: timestamp("connected_at").defaultNow(),
   lastSyncAt: timestamp("last_sync_at"),
   status: varchar("status").default('active'),
-});
+}, (table) => [
+  index("idx_quickbooks_connections_user_id").on(table.userId),
+]);
 
 export const insertQuickbooksConnectionSchema = createInsertSchema(quickbooksConnections).omit({
   id: true,
@@ -3723,7 +4025,10 @@ export const jobReminders = pgTable("job_reminders", {
   sentAt: timestamp("sent_at"),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_reminders_job_id").on(table.jobId),
+  index("idx_job_reminders_user_id").on(table.userId),
+]);
 
 export const insertJobReminderSchema = createInsertSchema(jobReminders).omit({ id: true, createdAt: true });
 export type InsertJobReminder = z.infer<typeof insertJobReminderSchema>;
@@ -3740,7 +4045,9 @@ export const jobPhotoRequirements = pgTable("job_photo_requirements", {
   fulfilledAt: timestamp("fulfilled_at"),
   photoUrl: text("photo_url"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_photo_requirements_job_id").on(table.jobId),
+]);
 
 export const insertJobPhotoRequirementSchema = createInsertSchema(jobPhotoRequirements).omit({ id: true, createdAt: true });
 export type InsertJobPhotoRequirement = z.infer<typeof insertJobPhotoRequirementSchema>;
@@ -3766,7 +4073,11 @@ export const defects = pgTable("defects", {
   warrantyClaimId: varchar("warranty_claim_id"), // Link to warranty if applicable
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_defects_job_id").on(table.jobId),
+  index("idx_defects_user_id").on(table.userId),
+  index("idx_defects_client_id").on(table.clientId),
+]);
 
 export const insertDefectSchema = createInsertSchema(defects).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertDefect = z.infer<typeof insertDefectSchema>;
@@ -3783,7 +4094,11 @@ export const timesheetApprovals = pgTable("timesheet_approvals", {
   reviewedAt: timestamp("reviewed_at"),
   reviewNotes: text("review_notes"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_timesheet_approvals_time_entry_id").on(table.timeEntryId),
+  index("idx_timesheet_approvals_submitted_by").on(table.submittedBy),
+  index("idx_timesheet_approvals_approved_by").on(table.approvedBy),
+]);
 
 export const insertTimesheetApprovalSchema = createInsertSchema(timesheetApprovals).omit({ id: true, createdAt: true });
 export type InsertTimesheetApproval = z.infer<typeof insertTimesheetApprovalSchema>;
@@ -3812,7 +4127,10 @@ export const jobMaterials = pgTable("job_materials", {
   receiptPhotoUrl: text("receipt_photo_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_materials_job_id").on(table.jobId),
+  index("idx_job_materials_user_id").on(table.userId),
+]);
 
 export const insertJobMaterialSchema = createInsertSchema(jobMaterials).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertJobMaterial = z.infer<typeof insertJobMaterialSchema>;
@@ -3833,7 +4151,11 @@ export const jobEquipment = pgTable("job_equipment", {
   wasOversized: boolean("was_oversized").default(false),
   completedAt: timestamp("completed_at"),
   assignedAt: timestamp("assigned_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_equipment_job_id").on(table.jobId),
+  index("idx_job_equipment_equipment_id").on(table.equipmentId),
+  index("idx_job_equipment_user_id").on(table.userId),
+]);
 
 export const insertJobEquipmentSchema = createInsertSchema(jobEquipment).omit({ id: true, assignedAt: true });
 export type InsertJobEquipment = z.infer<typeof insertJobEquipmentSchema>;
@@ -3902,7 +4224,9 @@ export const terminalLocations = pgTable("terminal_locations", {
   isDefault: boolean("is_default").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_terminal_locations_user_id").on(table.userId),
+]);
 
 export const insertTerminalLocationSchema = createInsertSchema(terminalLocations).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTerminalLocation = z.infer<typeof insertTerminalLocationSchema>;
@@ -3929,7 +4253,13 @@ export const terminalPayments = pgTable("terminal_payments", {
   metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow(),
   completedAt: timestamp("completed_at"),
-});
+}, (table) => [
+  index("idx_terminal_payments_user_id").on(table.userId),
+  index("idx_terminal_payments_client_id").on(table.clientId),
+  index("idx_terminal_payments_invoice_id").on(table.invoiceId),
+  index("idx_terminal_payments_job_id").on(table.jobId),
+  index("idx_terminal_payments_location_id").on(table.locationId),
+]);
 
 export const insertTerminalPaymentSchema = createInsertSchema(terminalPayments).omit({ id: true, createdAt: true });
 export type InsertTerminalPayment = z.infer<typeof insertTerminalPaymentSchema>;
@@ -3952,7 +4282,9 @@ export const tapToPayTermsAcceptance = pgTable("tap_to_pay_terms_acceptance", {
   splashShownAt: timestamp("splash_shown_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_tap_to_pay_terms_acceptance_accepted_by_user_id").on(table.acceptedByUserId),
+]);
 
 export const insertTapToPayTermsAcceptanceSchema = createInsertSchema(tapToPayTermsAcceptance).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTapToPayTermsAcceptance = z.infer<typeof insertTapToPayTermsAcceptanceSchema>;
@@ -3984,7 +4316,10 @@ export const leads = pgTable("leads", {
   wonLostReason: text("won_lost_reason"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_leads_user_id").on(table.userId),
+  index("idx_leads_client_id").on(table.clientId),
+]);
 
 export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertLead = z.infer<typeof insertLeadSchema>;
@@ -4011,7 +4346,11 @@ export const paymentSchedules = pgTable("payment_schedules", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_payment_schedules_user_id").on(table.userId),
+  index("idx_payment_schedules_invoice_id").on(table.invoiceId),
+  index("idx_payment_schedules_client_id").on(table.clientId),
+]);
 
 export const insertPaymentScheduleSchema = createInsertSchema(paymentSchedules).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertPaymentSchedule = z.infer<typeof insertPaymentScheduleSchema>;
@@ -4032,7 +4371,9 @@ export const paymentInstallments = pgTable("payment_installments", {
   reminderSentAt: timestamp("reminder_sent_at"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_payment_installments_schedule_id").on(table.scheduleId),
+]);
 
 export const insertPaymentInstallmentSchema = createInsertSchema(paymentInstallments).omit({ id: true, createdAt: true });
 export type InsertPaymentInstallment = z.infer<typeof insertPaymentInstallmentSchema>;
@@ -4047,7 +4388,9 @@ export const teamGroups = pgTable("team_groups", {
   color: varchar("color", { length: 20 }).default("#3b82f6"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_team_groups_user_id").on(table.userId),
+]);
 
 export const insertTeamGroupSchema = createInsertSchema(teamGroups).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTeamGroup = z.infer<typeof insertTeamGroupSchema>;
@@ -4060,7 +4403,10 @@ export const teamGroupMembers = pgTable("team_group_members", {
   teamMemberId: varchar("team_member_id").notNull().references(() => teamMembers.id, { onDelete: 'cascade' }),
   role: varchar("role", { length: 20 }).default("member"),
   joinedAt: timestamp("joined_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_team_group_members_group_id").on(table.groupId),
+  index("idx_team_group_members_team_member_id").on(table.teamMemberId),
+]);
 
 export const insertTeamGroupMemberSchema = createInsertSchema(teamGroupMembers).omit({ id: true, joinedAt: true });
 export type InsertTeamGroupMember = z.infer<typeof insertTeamGroupMemberSchema>;
@@ -4092,7 +4438,11 @@ export const jobInvites = pgTable("job_invites", {
   usedBy: varchar("used_by").references(() => users.id),
   status: varchar("status", { length: 20 }).default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_invites_job_id").on(table.jobId),
+  index("idx_job_invites_user_id").on(table.userId),
+  index("idx_job_invites_used_by").on(table.usedBy),
+]);
 
 export const insertJobInviteSchema = createInsertSchema(jobInvites).omit({ id: true, createdAt: true, usedAt: true, usedBy: true });
 export type InsertJobInvite = z.infer<typeof insertJobInviteSchema>;
@@ -4144,7 +4494,11 @@ export const jobPortalTokens = pgTable("job_portal_tokens", {
   showActivityFeed: boolean("show_activity_feed").default(true),
   clientMessage: text("client_message"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_portal_tokens_job_id").on(table.jobId),
+  index("idx_job_portal_tokens_assignment_id").on(table.assignmentId),
+  index("idx_job_portal_tokens_user_id").on(table.userId),
+]);
 
 export const insertJobPortalTokenSchema = createInsertSchema(jobPortalTokens).omit({ id: true, createdAt: true, accessCount: true, lastAccessedAt: true });
 export type InsertJobPortalToken = z.infer<typeof insertJobPortalTokenSchema>;
@@ -4163,7 +4517,13 @@ export const smsNotificationLog = pgTable("sms_notification_log", {
   etaMinutes: integer("eta_minutes"),
   sentAt: timestamp("sent_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_sms_notification_log_job_id").on(table.jobId),
+  index("idx_sms_notification_log_assignment_id").on(table.assignmentId),
+  index("idx_sms_notification_log_user_id").on(table.userId),
+  index("idx_sms_notification_log_sms_message_id").on(table.smsMessageId),
+  index("idx_sms_notification_log_portal_token_id").on(table.portalTokenId),
+]);
 
 export const insertSmsNotificationLogSchema = createInsertSchema(smsNotificationLog).omit({ id: true, createdAt: true, sentAt: true });
 export type InsertSmsNotificationLog = z.infer<typeof insertSmsNotificationLogSchema>;
@@ -4178,7 +4538,11 @@ export const assignmentEvents = pgTable("assignment_events", {
   eventType: text("event_type").notNull(),
   eventData: jsonb("event_data").default({}),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_assignment_events_assignment_id").on(table.assignmentId),
+  index("idx_assignment_events_job_id").on(table.jobId),
+  index("idx_assignment_events_actor_user_id").on(table.actorUserId),
+]);
 
 export const insertAssignmentEventSchema = createInsertSchema(assignmentEvents).omit({ id: true, createdAt: true });
 export type InsertAssignmentEvent = z.infer<typeof insertAssignmentEventSchema>;
@@ -4192,7 +4556,10 @@ export const locationPings = pgTable("location_pings", {
   longitude: doublePrecision("longitude").notNull(),
   accuracyMeters: doublePrecision("accuracy_meters"),
   recordedAt: timestamp("recorded_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_location_pings_assignment_id").on(table.assignmentId),
+  index("idx_location_pings_user_id").on(table.userId),
+]);
 
 export const insertLocationPingSchema = createInsertSchema(locationPings).omit({ id: true, recordedAt: true });
 export type InsertLocationPing = z.infer<typeof insertLocationPingSchema>;
@@ -4228,7 +4595,12 @@ export const subcontractorTokens = pgTable("subcontractor_tokens", {
   revokedReason: varchar("revoked_reason", { length: 40 }),
   recipientUserId: varchar("recipient_user_id").references(() => users.id, { onDelete: 'set null' }), // Linked sub user (set after they save an account, OR pre-set if phone matches existing user)
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_subcontractor_tokens_job_id").on(table.jobId),
+  index("idx_subcontractor_tokens_invite_id").on(table.inviteId),
+  index("idx_subcontractor_tokens_user_id").on(table.userId),
+  index("idx_subcontractor_tokens_recipient_user_id").on(table.recipientUserId),
+]);
 
 export const insertSubcontractorTokenSchema = createInsertSchema(subcontractorTokens).omit({ id: true, createdAt: true, lastAccessedAt: true, acceptedAt: true, revokedAt: true, codeHash: true, codeAttempts: true, codeIssuedAt: true, nameConfirmedAt: true, lastOpenedFromCity: true, lastOpenedFromIp: true, openCount: true, revokedReason: true, recipientUserId: true });
 export type InsertSubcontractorToken = z.infer<typeof insertSubcontractorTokenSchema>;
@@ -4242,7 +4614,9 @@ export const subcontractorSessions = pgTable("subcontractor_sessions", {
   phone: varchar("phone", { length: 20 }).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_subcontractor_sessions_token_id").on(table.tokenId),
+]);
 
 export const insertSubcontractorSessionSchema = createInsertSchema(subcontractorSessions).omit({ id: true, createdAt: true });
 export type InsertSubcontractorSession = z.infer<typeof insertSubcontractorSessionSchema>;
@@ -4258,7 +4632,10 @@ export const subcontractorEvents = pgTable("subcontractor_events", {
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_subcontractor_events_token_id").on(table.tokenId),
+  index("idx_subcontractor_events_job_id").on(table.jobId),
+]);
 
 export const insertSubcontractorEventSchema = createInsertSchema(subcontractorEvents).omit({ id: true, createdAt: true });
 export type InsertSubcontractorEvent = z.infer<typeof insertSubcontractorEventSchema>;
@@ -4273,7 +4650,10 @@ export const subcontractorLocationPings = pgTable("subcontractor_location_pings"
   longitude: doublePrecision("longitude").notNull(),
   accuracyMeters: doublePrecision("accuracy_meters"),
   recordedAt: timestamp("recorded_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_subcontractor_location_pings_token_id").on(table.tokenId),
+  index("idx_subcontractor_location_pings_job_id").on(table.jobId),
+]);
 
 export const insertSubcontractorLocationPingSchema = createInsertSchema(subcontractorLocationPings).omit({ id: true, recordedAt: true });
 export type InsertSubcontractorLocationPing = z.infer<typeof insertSubcontractorLocationPingSchema>;
@@ -4292,7 +4672,12 @@ export const workerRequests = pgTable("worker_requests", {
   status: text("status").default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   respondedAt: timestamp("responded_at"),
-});
+}, (table) => [
+  index("idx_worker_requests_client_id").on(table.clientId),
+  index("idx_worker_requests_business_owner_id").on(table.businessOwnerId),
+  index("idx_worker_requests_preferred_worker_id").on(table.preferredWorkerId),
+  index("idx_worker_requests_reference_job_id").on(table.referenceJobId),
+]);
 
 export const insertWorkerRequestSchema = createInsertSchema(workerRequests).omit({ id: true, createdAt: true, respondedAt: true });
 export type InsertWorkerRequest = z.infer<typeof insertWorkerRequestSchema>;
@@ -4317,7 +4702,10 @@ export const complianceDocuments = pgTable("compliance_documents", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_compliance_documents_business_owner_id").on(table.businessOwnerId),
+  index("idx_compliance_documents_holder_user_id").on(table.holderUserId),
+]);
 
 export const insertComplianceDocumentSchema = createInsertSchema(complianceDocuments).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertComplianceDocument = z.infer<typeof insertComplianceDocumentSchema>;
@@ -4343,7 +4731,12 @@ export const jobRequests = pgTable("job_requests", {
   jobId: varchar("job_id").references(() => jobs.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_requests_user_id").on(table.userId),
+  index("idx_job_requests_client_id").on(table.clientId),
+  index("idx_job_requests_reference_job_id").on(table.referenceJobId),
+  index("idx_job_requests_job_id").on(table.jobId),
+]);
 
 export const insertJobRequestSchema = createInsertSchema(jobRequests).omit({ id: true, createdAt: true, updatedAt: true, reviewedAt: true, jobId: true });
 export type InsertJobRequest = z.infer<typeof insertJobRequestSchema>;
@@ -4357,7 +4750,9 @@ export const savedFilters = pgTable("saved_filters", {
   filters: jsonb("filters").notNull(),
   entityType: text("entity_type").notNull().default('jobs'),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_saved_filters_user_id").on(table.userId),
+]);
 
 export const insertSavedFilterSchema = createInsertSchema(savedFilters).omit({ id: true, createdAt: true });
 export type InsertSavedFilter = z.infer<typeof insertSavedFilterSchema>;
@@ -4375,7 +4770,10 @@ export const paymentRecords = pgTable("payment_records", {
   recordedBy: varchar("recorded_by"),
   paidAt: timestamp("paid_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_payment_records_invoice_id").on(table.invoiceId),
+  index("idx_payment_records_user_id").on(table.userId),
+]);
 
 export const insertPaymentRecordSchema = createInsertSchema(paymentRecords).omit({ id: true, createdAt: true });
 export type InsertPaymentRecord = z.infer<typeof insertPaymentRecordSchema>;
@@ -4396,7 +4794,10 @@ export const swmsDocuments = pgTable("swms_documents", {
   status: text("status").notNull().default('draft'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_swms_documents_user_id").on(table.userId),
+  index("idx_swms_documents_job_id").on(table.jobId),
+]);
 
 export const swmsHazards = pgTable("swms_hazards", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -4411,7 +4812,9 @@ export const swmsHazards = pgTable("swms_hazards", {
   riskAfter: text("risk_after").notNull().default('low'),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_swms_hazards_swms_id").on(table.swmsId),
+]);
 
 export const swmsSignatures = pgTable("swms_signatures", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -4424,7 +4827,10 @@ export const swmsSignatures = pgTable("swms_signatures", {
   longitude: text("longitude"),
   address: text("address"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_swms_signatures_swms_id").on(table.swmsId),
+  index("idx_swms_signatures_worker_user_id").on(table.workerUserId),
+]);
 
 export const insertSwmsDocumentSchema = createInsertSchema(swmsDocuments).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertSwmsDocument = z.infer<typeof insertSwmsDocumentSchema>;
@@ -4467,7 +4873,10 @@ export const incidentReports = pgTable("incident_reports", {
   closedAt: timestamp("closed_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_incident_reports_user_id").on(table.userId),
+  index("idx_incident_reports_job_id").on(table.jobId),
+]);
 
 export const siteEmergencyInfo = pgTable("site_emergency_info", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -4488,7 +4897,10 @@ export const siteEmergencyInfo = pgTable("site_emergency_info", {
   additionalContacts: json("additional_contacts").$type<{name: string, role: string, phone: string}[]>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_site_emergency_info_user_id").on(table.userId),
+  index("idx_site_emergency_info_job_id").on(table.jobId),
+]);
 
 export const jsaDocuments = pgTable("jsa_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -4503,7 +4915,10 @@ export const jsaDocuments = pgTable("jsa_documents", {
   status: text("status").notNull().default('draft'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_jsa_documents_user_id").on(table.userId),
+  index("idx_jsa_documents_job_id").on(table.jobId),
+]);
 
 export const jsaSteps = pgTable("jsa_steps", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -4516,7 +4931,9 @@ export const jsaSteps = pgTable("jsa_steps", {
   responsiblePerson: text("responsible_person"),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_jsa_steps_jsa_id").on(table.jsaId),
+]);
 
 export const siteHazardousEnvironments = pgTable("site_hazardous_environments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -4531,7 +4948,10 @@ export const siteHazardousEnvironments = pgTable("site_hazardous_environments", 
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_site_hazardous_environments_user_id").on(table.userId),
+  index("idx_site_hazardous_environments_job_id").on(table.jobId),
+]);
 
 export const siteSafetySignage = pgTable("site_safety_signage", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -4547,7 +4967,10 @@ export const siteSafetySignage = pgTable("site_safety_signage", {
   photoUrl: text("photo_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_site_safety_signage_user_id").on(table.userId),
+  index("idx_site_safety_signage_job_id").on(table.jobId),
+]);
 
 export const insertIncidentReportSchema = createInsertSchema(incidentReports).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertIncidentReport = z.infer<typeof insertIncidentReportSchema>;
@@ -4592,7 +5015,10 @@ export const hazardReports = pgTable("hazard_reports", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_hazard_reports_user_id").on(table.userId),
+  index("idx_hazard_reports_job_id").on(table.jobId),
+]);
 
 export const insertHazardReportSchema = createInsertSchema(hazardReports).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertHazardReport = z.infer<typeof insertHazardReportSchema>;
@@ -4618,7 +5044,10 @@ export const ppeChecklists = pgTable("ppe_checklists", {
   supervisorName: text("supervisor_name"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_ppe_checklists_user_id").on(table.userId),
+  index("idx_ppe_checklists_job_id").on(table.jobId),
+]);
 
 export const insertPpeChecklistSchema = createInsertSchema(ppeChecklists).omit({ id: true, createdAt: true });
 export type InsertPpeChecklist = z.infer<typeof insertPpeChecklistSchema>;
@@ -4639,7 +5068,9 @@ export const trainingRecords = pgTable("training_records", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_training_records_user_id").on(table.userId),
+]);
 
 export const insertTrainingRecordSchema = createInsertSchema(trainingRecords).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTrainingRecord = z.infer<typeof insertTrainingRecordSchema>;
