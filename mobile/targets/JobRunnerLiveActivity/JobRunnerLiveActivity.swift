@@ -135,10 +135,11 @@ struct JobRunnerLiveActivity: Widget {
             }
             .keylineTint(Color.brandBlue)
             // Tighten the iOS-default content margins inside the
-            // expanded bubble — default is ~16-20pt all around, which
-            // produced the leftover space at the edges. 8pt all sides
-            // lets our content sit closer to the pill edges.
-            .contentMargins(.all, 8, for: .expanded)
+            // expanded bubble. Default is ~16-20pt all around (leaves
+            // dead space at the edges); 8pt was too tight (content
+            // kissed the bubble edges); 12pt sits right between —
+            // breathing room without empty perimeter.
+            .contentMargins(.all, 12, for: .expanded)
         }
     }
 }
