@@ -7,11 +7,11 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  Modal,
   Platform,
   Dimensions,
 } from 'react-native';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 let MapView: any;
 let Marker: any;
 type Region = { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
@@ -197,15 +197,21 @@ export default function DispatchBoardScreen() {
       } catch { /* ignore */ }
     });
 
-    let conflicts = 0;
-    for (let i = 0; i < slots.length; i++) {
-      for (let k = i + 1; k < slots.length; k++) {
-        if (slots[i].userId === slots[k].userId &&
-            slots[i].start < slots[k].end && slots[k].start < slots[i].end) {
-          conflicts++;
-        }
-      }
+    // Group slots per user, sort by start, then linear sweep — O(N log N).
+    const byUser = new Map<string, { start: number; end: number }[]>();
+    for (const s of slots) {
+      if (!s.userId) continue;
+      const arr = byUser.get(s.userId);
+      if (arr) arr.push({ start: s.start, end: s.end });
+      else byUser.set(s.userId, [{ start: s.start, end: s.end }]);
     }
+    let conflicts = 0;
+    byUser.forEach((arr) => {
+      arr.sort((a, b) => a.start - b.start);
+      for (let i = 1; i < arr.length; i++) {
+        if (arr[i].start < arr[i - 1].end) conflicts++;
+      }
+    });
 
     return {
       conflicts,
@@ -664,20 +670,13 @@ export default function DispatchBoardScreen() {
     }
 
     return (
-      <Modal
+      <AppBottomSheet
         visible
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setSelectedMapJob(null)}
+        onDismiss={() => setSelectedMapJob(null)}
+        title={job.title}
+        showCloseButton
       >
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{job.title}</Text>
-            <PressableRow onPress={() => setSelectedMapJob(null)}>
-              <Feather name="x" size={24} color={colors.foreground} />
-            </PressableRow>
-          </View>
-          <ScrollView style={styles.modalContent}>
+        <View>
             <View style={[styles.statusPillSheet, { backgroundColor: `${sc}22` }]}>
               <Text style={[styles.statusPillSheetText, { color: sc }]}>{getStatusLabel(job.status)}</Text>
             </View>
@@ -741,27 +740,19 @@ export default function DispatchBoardScreen() {
                 {job.assignedTo ? 'Reassign' : 'Assign'}
               </Text>
             </PressableRow>
-          </ScrollView>
         </View>
-      </Modal>
+      </AppBottomSheet>
     );
   };
 
   const renderAssignModal = () => (
-    <Modal
+    <AppBottomSheet
       visible={showAssignModal}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => { setShowAssignModal(false); setAssigningJob(null); }}
+      onDismiss={() => { setShowAssignModal(false); setAssigningJob(null); }}
+      title={assigningJob?.assignedTo ? 'Reassign Job' : 'Assign Job'}
+      showCloseButton
     >
-      <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>{assigningJob?.assignedTo ? 'Reassign Job' : 'Assign Job'}</Text>
-          <PressableRow onPress={() => { setShowAssignModal(false); setAssigningJob(null); }}>
-            <Feather name="x" size={24} color={colors.foreground} />
-          </PressableRow>
-        </View>
-        <ScrollView style={styles.modalContent}>
+      <View>
           {assigningJob && (
             <View style={styles.assignJobInfo}>
               <Text style={styles.assignJobInfoTitle}>{assigningJob.title}</Text>
@@ -808,9 +799,8 @@ export default function DispatchBoardScreen() {
               <Text style={styles.assignLoadingText}>Assigning...</Text>
             </View>
           )}
-        </ScrollView>
       </View>
-    </Modal>
+    </AppBottomSheet>
   );
 
   if (loading) {

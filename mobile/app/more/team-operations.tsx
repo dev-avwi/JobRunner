@@ -7,10 +7,10 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  Modal,
   TextInput,
 } from 'react-native';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { router, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -843,21 +843,14 @@ export default function TeamOperationsScreen() {
         </View>
       </View>
 
-      {/* Time Off Modal — kept reachable through pending list actions only; preserved for future use */}
-      <Modal
+      {/* Time Off sheet — reachable through pending list actions */}
+      <AppBottomSheet
         visible={showTimeOffModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowTimeOffModal(false)}
+        onDismiss={() => setShowTimeOffModal(false)}
+        title="Request Time Off"
+        showCloseButton
       >
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Request Time Off</Text>
-            <PressableRow onPress={() => setShowTimeOffModal(false)}>
-              <Feather name="x" size={24} color={colors.foreground} />
-            </PressableRow>
-          </View>
-          <ScrollView style={styles.modalContent}>
+        <View>
             <Text style={styles.inputLabel}>Start Date (YYYY-MM-DD)</Text>
             <TextInput
               style={styles.textInput}
@@ -900,30 +893,17 @@ export default function TeamOperationsScreen() {
             <PressableRow style={[styles.submitButton, { backgroundColor: colors.primary }]} onPress={handleRequestTimeOff}>
               <Text style={[styles.submitButtonText, { color: colors.primaryForeground || colors.white }]}>Submit Request</Text>
             </PressableRow>
-          </ScrollView>
         </View>
-      </Modal>
+      </AppBottomSheet>
 
-      {/* Assign Job Modal */}
-      <Modal
+      {/* Assign Job sheet */}
+      <AppBottomSheet
         visible={showAssignModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => { setShowAssignModal(false); setAssigningToMember(null); }}
+        onDismiss={() => { setShowAssignModal(false); setAssigningToMember(null); }}
+        title={assigningToMember ? `Assign to ${assigningToMember.firstName ?? ''} ${assigningToMember.lastName ?? ''}`.trim() : 'Assign a Job'}
+        showCloseButton
       >
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={styles.modalHeader}>
-            <View>
-              <Text style={styles.modalTitle}>Assign a Job</Text>
-              {assigningToMember && (
-                <Text style={styles.modalSubtitle}>To {assigningToMember.firstName} {assigningToMember.lastName}</Text>
-              )}
-            </View>
-            <PressableRow onPress={() => { setShowAssignModal(false); setAssigningToMember(null); }}>
-              <Feather name="x" size={24} color={colors.foreground} />
-            </PressableRow>
-          </View>
-          <ScrollView style={styles.modalContent}>
+        <View>
             {unassignedJobs.length === 0 ? (
               <View style={styles.emptyBox}>
                 <Feather name="check-circle" size={40} color={colors.mutedForeground} />
@@ -948,9 +928,8 @@ export default function TeamOperationsScreen() {
                 </PressableRow>
               ))
             )}
-          </ScrollView>
         </View>
-      </Modal>
+      </AppBottomSheet>
     </>
   );
 }
