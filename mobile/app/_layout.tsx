@@ -590,6 +590,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const globalSearchParams = useGlobalSearchParams<{ resume?: string }>();
   const isChatScreen = pathname?.includes('/chat') || pathname?.includes('/direct-messages') || pathname?.includes('/sms-conversation') || pathname?.includes('/team-chat');
   const isOnboardingScreen = segments.includes('(onboarding)' as never) || pathname === '/setup';
+  const isOpsScreen = pathname === '/more/dispatch-board' || pathname === '/more/team-operations';
   const firstSegment = segments[0] as string || '';
   const isAuthScreen = firstSegment === '(auth)' || (firstSegment === '' && !isAuthenticated);
 
@@ -610,7 +611,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, isOnboardingScreen, globalSearchParams?.resume, businessSettings?.onboardingCompleted]);
-  const showFab = !isChatScreen && !isOnboardingScreen;
+  const showFab = !isChatScreen && !isOnboardingScreen && !isOpsScreen;
   const isTeamOwner = isOwner() && hasActiveTeam();
 
   if (!isAuthenticated || isAuthScreen) {

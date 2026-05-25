@@ -264,7 +264,7 @@ export default function DispatchBoardScreen() {
   const mapRegion = useMemo((): Region => {
     const points = geocodedJobs.map(g => ({ lat: g.lat, lng: g.lng }));
     if (points.length === 0) {
-      return { latitude: -33.8688, longitude: 151.2093, latitudeDelta: 0.1, longitudeDelta: 0.1 };
+      return { latitude: -16.9186, longitude: 145.7781, latitudeDelta: 0.15, longitudeDelta: 0.15 };
     }
     if (points.length === 1) {
       return { latitude: points[0].lat, longitude: points[0].lng, latitudeDelta: 0.02, longitudeDelta: 0.02 };
@@ -321,12 +321,6 @@ export default function DispatchBoardScreen() {
   const openAssignModal = (job: JobData) => {
     setAssigningJob(job);
     setShowAssignModal(true);
-  };
-
-  const navigateDateBy = (days: number) => {
-    const d = new Date(selectedDate);
-    d.setDate(d.getDate() + days);
-    setSelectedDate(d);
   };
 
   const formatTime = (dateStr?: string) => {
@@ -521,14 +515,9 @@ export default function DispatchBoardScreen() {
         })}
       </ScrollView>
 
-      <View style={styles.dateNavRow}>
-        <PressableRow style={styles.dateNavBtn} onPress={() => navigateDateBy(-1)}>
-          <Feather name="chevron-left" size={iconSizes.sm} color={colors.foreground} />
-        </PressableRow>
-        <Text style={styles.dateNavTitle}>{format(selectedDate, 'EEEE, d MMM')}</Text>
-        <PressableRow style={styles.dateNavBtn} onPress={() => navigateDateBy(1)}>
-          <Feather name="chevron-right" size={iconSizes.sm} color={colors.foreground} />
-        </PressableRow>
+      <View style={styles.scheduleHeaderRow}>
+        <Text style={styles.scheduleHeaderTitle}>{format(selectedDate, 'EEEE, d MMM')}</Text>
+        <Text style={styles.scheduleHeaderCount}>{scheduleJobs.length} job{scheduleJobs.length === 1 ? '' : 's'}</Text>
       </View>
 
       {scheduleJobs.length === 0 ? (
@@ -943,14 +932,17 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     alignItems: 'center',
   },
   statBarValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
   statBarLabel: {
-    ...typography.label,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
     color: colors.mutedForeground,
-    marginTop: 2,
+    marginTop: 3,
   },
   statBarDivider: {
     width: 1,
@@ -1032,29 +1024,24 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderRadius: 2,
   },
 
-  dateNavRow: {
+  scheduleHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
     marginBottom: spacing.sm,
   },
-  dateNavBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateNavTitle: {
+  scheduleHeaderTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: colors.foreground,
   },
-
+  scheduleHeaderCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
   // Inner left accent strips (avoid borderLeftWidth on rounded cards)
   cardAccentXL: {
     position: 'absolute',

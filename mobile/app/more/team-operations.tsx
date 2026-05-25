@@ -13,7 +13,6 @@ import {
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { router, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import MapView, { Marker, Region, PROVIDER_DEFAULT, MapStyleElement } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, shadows, typography, sizes, iconSizes, usePageShell } from '../../src/lib/design-tokens';
@@ -23,14 +22,6 @@ import { useAuthStore } from '../../src/lib/store';
 import { formatDistanceToNow, format, isAfter, isToday, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 import { useIsTablet, useContentWidth } from '../../src/lib/device';
 import { useUserRole } from '../../src/hooks/use-user-role';
-
-const DARK_MAP_STYLE: MapStyleElement[] = [
-  { elementType: 'geometry', stylers: [{ color: '#1d2c4d' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#1a3646' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e1626' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#304a7d' }] },
-];
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: keyof typeof Feather.glyphMap }> = {
   online: { color: '#22c55e', label: 'Online', icon: 'circle' },
@@ -135,15 +126,7 @@ interface TeamMemberTimeOff {
 }
 
 type TabType = 'live' | 'scheduling' | 'performance';
-type LiveViewMode = 'status' | 'activity' | 'map';
 type PerfPeriod = 'today' | 'week' | 'month';
-
-const DEFAULT_REGION: Region = {
-  latitude: -16.9203,
-  longitude: 145.7710,
-  latitudeDelta: 0.1,
-  longitudeDelta: 0.1,
-};
 
 function safeDateDistance(dateStr: string | undefined | null): string {
   if (!dateStr) return '';
@@ -184,12 +167,10 @@ export default function TeamOperationsScreen() {
   const isTabletDevice = useIsTablet();
   const styles = useMemo(() => createStyles(colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice, isDark), [colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice, isDark]);
   const { user } = useAuthStore();
-  const mapRef = useRef<MapView | null>(null);
 
   const { hasTeamSubscription, hasProSubscription, subscriptionTier } = useUserRole();
 
   const [activeTab, setActiveTab] = useState<TabType>('live');
-  const [liveViewMode, setLiveViewMode] = useState<LiveViewMode>('status');
   const [perfPeriod, setPerfPeriod] = useState<PerfPeriod>('week');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -304,28 +285,6 @@ export default function TeamOperationsScreen() {
       return { ...member, presence, assignedJobs };
     });
   }, [acceptedMembers, teamPresence, jobs]);
-
-  // Center map on members with locations
-  useEffect(() => {
-    if (liveViewMode !== 'map') return;
-    const membersWithLocations = membersWithDetails.filter(
-      m => m.presence?.lastLocationLat && m.presence?.lastLocationLng
-    );
-    if (membersWithLocations.length > 0 && mapRef.current) {
-      const lats = membersWithLocations.map(m => m.presence!.lastLocationLat!);
-      const lngs = membersWithLocations.map(m => m.presence!.lastLocationLng!);
-      const minLat = Math.min(...lats);
-      const maxLat = Math.max(...lats);
-      const minLng = Math.min(...lngs);
-      const maxLng = Math.max(...lngs);
-      mapRef.current.animateToRegion({
-        latitude: (minLat + maxLat) / 2,
-        longitude: (minLng + maxLng) / 2,
-        latitudeDelta: Math.max(0.05, (maxLat - minLat) * 1.5),
-        longitudeDelta: Math.max(0.05, (maxLng - minLng) * 1.5),
-      }, 500);
-    }
-  }, [membersWithDetails, liveViewMode]);
 
   const memberStats = useMemo(() => {
     const start = new Date();
@@ -514,31 +473,6 @@ export default function TeamOperationsScreen() {
     </View>
   );
 
-  const renderLiveSubToggle = () => {
-    const opts: { key: LiveViewMode; icon: keyof typeof Feather.glyphMap; label: string }[] = [
-      { key: 'status', icon: 'users', label: 'Status' },
-      { key: 'activity', icon: 'clock', label: 'Activity' },
-      { key: 'map', icon: 'map', label: 'Map' },
-    ];
-    return (
-      <View style={styles.subToggleRow}>
-        {opts.map(o => {
-          const active = liveViewMode === o.key;
-          return (
-            <PressableRow
-              key={o.key}
-              style={[styles.subTogglePill, active ? styles.subTogglePillActive : styles.subTogglePillInactive]}
-              onPress={() => setLiveViewMode(o.key)}
-            >
-              <Feather name={o.icon} size={12} color={active ? (colors.primaryForeground || colors.white) : colors.mutedForeground} />
-              <Text style={[styles.subTogglePillText, { color: active ? (colors.primaryForeground || colors.white) : colors.mutedForeground }]}>{o.label}</Text>
-            </PressableRow>
-          );
-        })}
-      </View>
-    );
-  };
-
   const renderMemberCard = (member: MemberWithDetails) => {
     const ws = workerStates.find((w: any) => w.userId === member.userId);
     const wsState = ws?.state || member.presence?.status || 'offline';
@@ -632,57 +566,21 @@ export default function TeamOperationsScreen() {
         </PressableRow>
       )}
 
-      {renderLiveSubToggle()}
-
-      {liveViewMode === 'status' && (
-        <>
-          <Text style={styles.sectionEyebrow}>On Shift</Text>
-          {membersWithDetails.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Feather name="users" size={iconSizes['2xl']} color={colors.mutedForeground} />
-              <Text style={styles.emptyText}>No team members yet</Text>
-            </View>
-          ) : (
-            membersWithDetails.map(renderMemberCard)
-          )}
-        </>
-      )}
-
-      {liveViewMode === 'activity' && (
-        <>
-          <Text style={styles.sectionEyebrow}>Recent Activity</Text>
-          {activityFeed.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Feather name="clock" size={iconSizes['2xl']} color={colors.mutedForeground} />
-              <Text style={styles.emptyText}>No recent activity</Text>
-            </View>
-          ) : (
-            activityFeed.slice(0, 20).map(renderActivityItem)
-          )}
-        </>
-      )}
-
-      {liveViewMode === 'map' && (
-        <View style={styles.mapCard}>
-          <MapView
-            ref={mapRef}
-            provider={PROVIDER_DEFAULT}
-            style={styles.map}
-            initialRegion={DEFAULT_REGION}
-            customMapStyle={isDark ? DARK_MAP_STYLE : []}
-          >
-            {membersWithDetails
-              .filter(m => m.presence?.lastLocationLat && m.presence?.lastLocationLng)
-              .map(m => (
-                <Marker
-                  key={m.id}
-                  coordinate={{ latitude: m.presence!.lastLocationLat!, longitude: m.presence!.lastLocationLng! }}
-                  title={`${m.firstName} ${m.lastName}`}
-                />
-              ))
-            }
-          </MapView>
+      <Text style={styles.sectionEyebrow}>On Shift</Text>
+      {membersWithDetails.length === 0 ? (
+        <View style={styles.emptyBox}>
+          <Feather name="users" size={iconSizes['2xl']} color={colors.mutedForeground} />
+          <Text style={styles.emptyText}>No team members yet</Text>
         </View>
+      ) : (
+        membersWithDetails.map(renderMemberCard)
+      )}
+
+      {activityFeed.length > 0 && (
+        <>
+          <Text style={[styles.sectionEyebrow, { marginTop: spacing.lg }]}>Recent Activity</Text>
+          {activityFeed.slice(0, 5).map(renderActivityItem)}
+        </>
       )}
     </ScrollView>
   );
@@ -844,11 +742,11 @@ export default function TeamOperationsScreen() {
       { key: 'week', label: 'This Week' },
       { key: 'month', label: 'This Month' },
     ];
-    const metrics: { value: string | number; label: string; color: string; icon: keyof typeof Feather.glyphMap }[] = [
-      { value: totalCompleted, label: 'Total Completed', color: colors.success, icon: 'check-circle' },
-      { value: totalInProgress, label: 'In Progress', color: colors.info || colors.primary, icon: 'clock' },
-      { value: `${avgCompletionRate}%`, label: 'Avg Completion', color: colors.foreground, icon: 'trending-up' },
-      { value: unassignedJobs.length, label: 'Unassigned', color: colors.warning, icon: 'briefcase' },
+    const metrics: { value: string | number; label: string; color: string }[] = [
+      { value: totalCompleted, label: 'Done', color: colors.success },
+      { value: totalInProgress, label: 'Active', color: colors.info || colors.primary },
+      { value: `${avgCompletionRate}%`, label: 'Avg Rate', color: colors.foreground },
+      { value: unassignedJobs.length, label: 'Open', color: colors.warning },
     ];
 
     return (
@@ -872,17 +770,7 @@ export default function TeamOperationsScreen() {
           })}
         </View>
 
-        <View style={styles.metricGrid}>
-          {metrics.map(m => (
-            <View key={m.label} style={styles.metricCard}>
-              <View style={[styles.metricIcon, { backgroundColor: `${m.color}20` }]}>
-                <Feather name={m.icon} size={iconSizes.md} color={m.color} />
-              </View>
-              <Text style={[styles.metricValue, { color: m.color }]}>{m.value}</Text>
-              <Text style={styles.metricLabel}>{m.label}</Text>
-            </View>
-          ))}
-        </View>
+        {renderStatBar(metrics.map(m => ({ value: m.value, label: m.label, color: m.color })))}
 
         <Text style={[styles.sectionEyebrow, { marginTop: spacing.lg }]}>Individual</Text>
         {memberStats.length === 0 ? (
@@ -912,11 +800,11 @@ export default function TeamOperationsScreen() {
                     {m.roleName ? <Text style={styles.perfRole} numberOfLines={1}>{m.roleName}</Text> : null}
                   </View>
                   <Text style={[styles.perfRate, { color: barColor }]}>
-                    {m.totalJobs > 0 ? `${m.completionRate}%` : '—'}
+                    {m.totalJobs > 0 ? `${m.completionRate}%` : '0%'}
                   </Text>
                 </View>
                 <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { width: `${m.completionRate}%`, backgroundColor: barColor }]} />
+                  <View style={[styles.barFill, { width: m.totalJobs > 0 ? `${Math.max(m.completionRate, 4)}%` : '0%', backgroundColor: barColor }]} />
                 </View>
                 <Text style={styles.perfStats}>
                   {m.completedJobs} done · {m.inProgressJobs} active · {m.totalJobs} total
@@ -1155,7 +1043,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     alignItems: 'center',
   },
   statBarValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
@@ -1197,32 +1085,6 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     fontSize: 12,
     color: colors.mutedForeground,
     marginTop: 2,
-  },
-
-  subToggleRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  subTogglePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.pill,
-  },
-  subTogglePillActive: {
-    backgroundColor: colors.primary,
-  },
-  subTogglePillInactive: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  subTogglePillText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
 
   sectionEyebrow: {
@@ -1328,18 +1190,6 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginTop: 4,
   },
 
-  // Map
-  mapCard: {
-    height: 320,
-    borderRadius: radius['2xl'],
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  map: {
-    flex: 1,
-  },
-
   // Scheduling
   weekStripRow: {
     flexDirection: 'row',
@@ -1382,19 +1232,19 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
 
   scheduleMemberRow: {
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.card,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    marginBottom: spacing.sm,
-    ...shadows.sm,
+    marginBottom: spacing.xs,
   },
   scheduleMemberHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   scheduleMemberName: {
     flex: 1,
@@ -1520,41 +1370,6 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   periodPillText: {
     fontSize: 12,
     fontWeight: '600',
-  },
-
-  metricGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  metricCard: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    padding: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: radius['2xl'],
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    ...shadows.sm,
-  },
-  metricIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  metricValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  metricLabel: {
-    ...typography.label,
-    color: colors.mutedForeground,
-    marginTop: 2,
   },
 
   perfCard: {
