@@ -1248,37 +1248,33 @@ const createEmailVerificationEmail = (user: any, verificationToken: string) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Verify Your Email - JobRunner</title>
       </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.7; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #f9fafb;">
-        <div style="background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); padding: 40px 32px; border-radius: 16px 16px 0 0; text-align: center;">
-          <img src="${logoUrl}" alt="JobRunner" style="max-width: 140px; height: auto; margin-bottom: 20px;" />
-          <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.5px;">Welcome to JobRunner!</h1>
-          <p style="color: rgba(255,255,255,0.85); margin: 12px 0 0 0; font-size: 15px; font-weight: 400;">Your business management platform</p>
-        </div>
-        
-        <div style="background: white; padding: 32px; border-radius: 0 0 16px 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-          <h2 style="color: #111827; margin: 0 0 16px 0; font-size: 20px; font-weight: 600;">Hi ${user.firstName || 'there'},</h2>
-          <p style="margin: 0 0 16px 0; color: #4b5563;">Thanks for signing up for JobRunner! We're excited to help you streamline your trade business operations.</p>
-          <p style="margin: 0 0 24px 0; color: #4b5563;">To get started, please verify your email address by clicking the button below:</p>
-          
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${verificationUrl}" style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 600; font-size: 15px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);">Verify Email Address</a>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f4f5f7;">
+        <div style="max-width: 560px; margin: 0 auto; padding: 32px 16px;">
+          <div style="background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb;">
+            <div style="padding: 36px 32px 12px 32px; text-align: center; background: #ffffff;">
+              <img src="${logoUrl}" alt="JobRunner" style="max-width: 132px; height: auto; display: inline-block;" />
+            </div>
+            <div style="height: 3px; background: #F59E0B; margin: 0 32px;"></div>
+
+            <div style="padding: 28px 32px 8px 32px;">
+              <h1 style="color: #111827; margin: 0 0 8px 0; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">Verify your email</h1>
+              <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 15px;">Hi ${user.firstName || 'there'}, thanks for signing up. Tap the button below to confirm this is you and finish setting up your JobRunner account.</p>
+
+              <div style="text-align: center; margin: 28px 0 8px 0;">
+                <a href="${verificationUrl}" style="background: #2563EB; color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 600; font-size: 15px;">Verify email</a>
+              </div>
+
+              <p style="margin: 24px 0 0 0; font-size: 13px; color: #6b7280; text-align: center;">This link expires in 24 hours.</p>
+            </div>
+
+            <div style="padding: 20px 32px 28px 32px; border-top: 1px solid #f1f2f4; margin-top: 20px;">
+              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                If you didn't create a JobRunner account, you can safely ignore this email.
+              </p>
+            </div>
           </div>
-          
-          <p style="color: #6b7280; font-size: 13px; margin: 24px 0 8px 0;">If the button doesn't work, copy and paste this link into your browser:</p>
-          <p style="background: #f3f4f6; padding: 12px 16px; border-radius: 8px; font-size: 13px; word-break: break-all; color: #374151; margin: 0;">${verificationUrl}</p>
-        </div>
-        
-        <div style="margin-top: 24px; padding: 24px; color: #6b7280; font-size: 13px;">
-          <p style="margin: 0 0 12px 0; font-weight: 600; color: #374151;">Why verify your email?</p>
-          <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
-            <li>Secure your account and data</li>
-            <li>Receive notifications about quotes and invoices</li>
-            <li>Enable password recovery options</li>
-          </ul>
-          
-          <p style="margin: 24px 0 8px 0; font-size: 12px; color: #9ca3af;">This verification link will expire in 24 hours. If you didn't create this account, you can safely ignore this email.</p>
-          
-          <p style="margin: 24px 0 0 0; text-align: center; color: #9ca3af; font-size: 12px;">
+
+          <p style="margin: 20px 0 0 0; text-align: center; color: #9ca3af; font-size: 12px;">
             <strong style="color: #6b7280;">JobRunner</strong> &bull; Built for Australian tradies
           </p>
           ${UNSUBSCRIBE_FOOTER}
@@ -1448,35 +1444,34 @@ export const sendPasswordResetEmail = async (user: any, resetToken: string) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Reset Your Password - JobRunner</title>
       </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-          <img src="${logoUrl}" alt="JobRunner" style="max-width: 160px; height: auto; margin-bottom: 15px;" />
-          <h1 style="color: white; margin: 0; font-size: 28px;">Password Reset Request</h1>
-        </div>
-        
-        <div style="background: #f8f9fa; padding: 30px; border-radius: 8px; margin-bottom: 20px;">
-          <h2 style="color: #333; margin-top: 0;">Hi ${user.firstName || 'there'},</h2>
-          <p>We received a request to reset the password for your JobRunner account.</p>
-          <p>Click the button below to create a new password:</p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" style="background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">Reset Password</a>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f4f5f7;">
+        <div style="max-width: 560px; margin: 0 auto; padding: 32px 16px;">
+          <div style="background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb;">
+            <div style="padding: 36px 32px 12px 32px; text-align: center; background: #ffffff;">
+              <img src="${logoUrl}" alt="JobRunner" style="max-width: 132px; height: auto; display: inline-block;" />
+            </div>
+            <div style="height: 3px; background: #F59E0B; margin: 0 32px;"></div>
+
+            <div style="padding: 28px 32px 8px 32px;">
+              <h1 style="color: #111827; margin: 0 0 8px 0; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">Reset your password</h1>
+              <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 15px;">Hi ${user.firstName || 'there'}, we got a request to reset your JobRunner password. Tap the button below to create a new one.</p>
+
+              <div style="text-align: center; margin: 28px 0 8px 0;">
+                <a href="${resetUrl}" style="background: #2563EB; color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 600; font-size: 15px;">Reset password</a>
+              </div>
+
+              <p style="margin: 24px 0 0 0; font-size: 13px; color: #6b7280; text-align: center;">This link expires in 1 hour.</p>
+            </div>
+
+            <div style="padding: 20px 32px 28px 32px; border-top: 1px solid #f1f2f4; margin-top: 20px;">
+              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                Didn't ask for this? You can safely ignore this email — your password won't change until you create a new one.
+              </p>
+            </div>
           </div>
-          
-          <p style="color: #666; font-size: 14px;">If the button doesn't work, you can also copy and paste this link into your browser:</p>
-          <p style="background: #e5e7eb; padding: 10px; border-radius: 4px; font-size: 14px; word-break: break-all;">${resetUrl}</p>
-        </div>
-        
-        <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; color: #666; font-size: 14px;">
-          <p><strong>Important security information:</strong></p>
-          <ul>
-            <li>This password reset link will expire in 1 hour</li>
-            <li>If you didn't request this reset, you can safely ignore this email</li>
-            <li>Your password won't change until you create a new one</li>
-          </ul>
-          
-          <p style="margin-top: 30px; text-align: center; color: #999;">
-            Powered by <strong>JobRunner</strong> | The business management platform for Australian tradies
+
+          <p style="margin: 20px 0 0 0; text-align: center; color: #9ca3af; font-size: 12px;">
+            <strong style="color: #6b7280;">JobRunner</strong> &bull; Built for Australian tradies
           </p>
           ${UNSUBSCRIBE_FOOTER}
         </div>
