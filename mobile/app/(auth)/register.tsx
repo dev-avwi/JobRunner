@@ -42,6 +42,7 @@ export default function RegisterScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
   
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -100,6 +101,7 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     setError(null);
+    setErrorCode(null);
 
     const response = await api.register({
       firstName: firstName.trim(),
@@ -114,6 +116,8 @@ export default function RegisterScreen() {
 
     if (response.error) {
       setError(response.error);
+      const code = (response.data as any)?.code;
+      setErrorCode(typeof code === 'string' ? code : null);
       return;
     }
 
@@ -486,6 +490,15 @@ export default function RegisterScreen() {
                 {error ? (
                   <View style={styles.errorContainer}>
                     <Text style={styles.errorText}>{error}</Text>
+                    {errorCode && errorCode.startsWith('email_in_use_') && errorCode !== 'email_in_use_invitation' ? (
+                      <TouchableOpacity
+                        onPress={() => router.replace({ pathname: '/(auth)/login', params: { email: email.trim() } } as any)}
+                        style={styles.errorActionButton}
+                        testID="button-error-signin"
+                      >
+                        <Text style={styles.errorActionText}>Sign in instead</Text>
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
                 ) : null}
               </View>
@@ -758,6 +771,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderLeftColor: colors.destructive,
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 10,
   },
   errorText: {
@@ -765,6 +779,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.destructive,
     fontSize: 14,
     fontWeight: '500',
+  },
+  errorActionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: colors.destructive,
+  },
+  errorActionText: {
+    color: colors.primaryForeground,
+    fontSize: 13,
+    fontWeight: '600',
   },
   spacer: {
     flex: 1,

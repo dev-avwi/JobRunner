@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Mail, RefreshCw, ArrowLeft, CheckCircle, Edit3, ExternalLink, LifeBuoy } from 'lucide-react-native';
+import { Mail, RefreshCw, ArrowLeft, CheckCircle, Edit3, ExternalLink, LifeBuoy, AlertCircle } from 'lucide-react-native';
 import api from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -23,6 +23,7 @@ export default function VerifyEmailPendingScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const { colors } = useTheme();
   const bottomInset = useBottomInset(24);
@@ -51,15 +52,23 @@ export default function VerifyEmailPendingScreen() {
     if (!email || resending || cooldown > 0) return;
     setResending(true);
     setResendSuccess(false);
+    setResendError(null);
     try {
       const response = await api.post('/api/auth/resend-verification', { email });
-      if (!response.error) {
+      if (response.error) {
+        setResendError(response.error);
+        // Light cooldown on rate-limit so user can't hammer the button.
+        const code = (response.data as any)?.code;
+        if (code === 'rate_limited' || /too many|try again/i.test(response.error)) {
+          setCooldown(RESEND_COOLDOWN_SEC);
+        }
+      } else {
         setResendSuccess(true);
         setCooldown(RESEND_COOLDOWN_SEC);
         setTimeout(() => setResendSuccess(false), 4000);
       }
     } catch (error) {
-      console.error('Failed to resend verification email:', error);
+      setResendError('Could not send the email right now. Please try again.');
     } finally {
       setResending(false);
     }
@@ -132,10 +141,21 @@ export default function VerifyEmailPendingScreen() {
           Tap the link in the email, then come back here. The link expires in 24 hours.
         </Text>
 
+        <Text style={styles.spamHint}>
+          Can't find it? Check your spam or promotions folder.
+        </Text>
+
         {resendSuccess && (
           <View style={styles.successMessage}>
             <CheckCircle size={18} color={colors.success} />
             <Text style={styles.successText}>Verification email sent</Text>
+          </View>
+        )}
+
+        {resendError && (
+          <View style={styles.errorMessage}>
+            <AlertCircle size={18} color={colors.destructive} />
+            <Text style={styles.errorMessageText}>{resendError}</Text>
           </View>
         )}
 
@@ -266,6 +286,32 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     color: colors.success,
     fontWeight: '500',
+  },
+  errorMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.destructive + '15',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.destructive + '40',
+    width: '100%',
+  },
+  errorMessageText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.destructive,
+    fontWeight: '500',
+  },
+  spamHint: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    marginBottom: 16,
+    fontStyle: 'italic',
   },
   primaryButton: {
     flexDirection: 'row',

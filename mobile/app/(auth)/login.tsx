@@ -47,6 +47,14 @@ export default function LoginScreen() {
   const styles = createStyles(colors);
   const params = useLocalSearchParams();
 
+  // Seed email from route params (e.g. "Sign in instead" link from register).
+  useEffect(() => {
+    const emailParam = typeof params.email === 'string' ? params.email : Array.isArray(params.email) ? params.email[0] : '';
+    if (emailParam && !email) {
+      setEmail(emailParam);
+    }
+  }, [params.email]);
+
   // Check if Apple Authentication is available
   // On iOS, always show the button - we'll handle errors when pressed
   useEffect(() => {
