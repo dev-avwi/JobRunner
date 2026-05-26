@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/lib/can";
 import { 
   Star,
   X,
@@ -30,6 +31,7 @@ export default function QuickCreateFAB({
 }: QuickCreateFABProps) {
   const [isOpen, setIsOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
+  const { can } = useCan();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -50,35 +52,39 @@ export default function QuickCreateFAB({
   }, [isOpen]);
 
   const quickActions = [
-    { 
-      label: "New Job", 
-      icon: Briefcase, 
-      onClick: onCreateJob, 
+    {
+      label: "New Job",
+      icon: Briefcase,
+      onClick: onCreateJob,
       color: 'hsl(var(--trade))',
-      bgColor: 'hsl(var(--trade) / 0.12)'
+      bgColor: 'hsl(var(--trade) / 0.12)',
+      allowed: can("job.create"),
     },
-    { 
-      label: "New Quote", 
-      icon: FileText, 
-      onClick: onCreateQuote, 
+    {
+      label: "New Quote",
+      icon: FileText,
+      onClick: onCreateQuote,
       color: 'hsl(217, 91%, 60%)',
-      bgColor: 'hsl(217, 91%, 60% / 0.12)'
+      bgColor: 'hsl(217, 91%, 60% / 0.12)',
+      allowed: can("quote.create"),
     },
-    { 
-      label: "New Invoice", 
-      icon: DollarSign, 
-      onClick: onCreateInvoice, 
+    {
+      label: "New Invoice",
+      icon: DollarSign,
+      onClick: onCreateInvoice,
       color: 'hsl(142, 76%, 36%)',
-      bgColor: 'hsl(142, 76%, 36% / 0.12)'
+      bgColor: 'hsl(142, 76%, 36% / 0.12)',
+      allowed: can("invoice.create"),
     },
-    { 
-      label: "New Client", 
-      icon: Users, 
-      onClick: onCreateClient, 
+    {
+      label: "New Client",
+      icon: Users,
+      onClick: onCreateClient,
       color: 'hsl(262, 83%, 58%)',
-      bgColor: 'hsl(262, 83%, 58% / 0.12)'
+      bgColor: 'hsl(262, 83%, 58% / 0.12)',
+      allowed: can("client.create"),
     },
-  ].filter(a => a.onClick);
+  ].filter(a => a.onClick && a.allowed);
 
   const secondaryActions = [
     {
@@ -86,16 +92,22 @@ export default function QuickCreateFAB({
       icon: Sparkles,
       onClick: onOpenAIAssistant,
       variant: "outline" as const,
-      color: 'hsl(var(--trade))'
+      color: 'hsl(var(--trade))',
+      allowed: true,
     },
     {
       label: "Collect Payment",
       icon: CreditCard,
       onClick: onCollectPayment,
       variant: "outline" as const,
-      color: 'hsl(142, 76%, 36%)'
+      color: 'hsl(142, 76%, 36%)',
+      allowed: can("payment.collect"),
     },
-  ].filter(a => a.onClick);
+  ].filter(a => a.onClick && a.allowed);
+
+  if (quickActions.length === 0 && secondaryActions.length === 0) {
+    return null;
+  }
 
   const handleAction = (action: (() => void) | undefined) => {
     if (action) {

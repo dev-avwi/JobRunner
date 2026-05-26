@@ -6,6 +6,7 @@ import StatusBadge from "./StatusBadge";
 import XeroRibbon from "./XeroRibbon";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useCan } from "@/lib/can";
 
 type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
 
@@ -70,6 +71,10 @@ export default function JobCard({
   onViewExpenses
 }: JobCardProps) {
   const [, setLocation] = useLocation();
+  const { can } = useCan();
+  const canChangeStatus = can("job.changeStatus", { assignedToUserId: undefined });
+  const canMakeQuote = can("quote.create");
+  const canMakeInvoice = can("invoice.create");
   
   // Fetch time entries for this job
   const { data: timeEntries = [] } = useQuery<TimeEntry[]>({
@@ -232,7 +237,7 @@ export default function JobCard({
               View
             </Button>
             
-            {status !== 'done' && status !== 'invoiced' && (
+            {status !== 'done' && status !== 'invoiced' && canChangeStatus && (
               <Button 
                 variant="outline" 
                 size="sm"
@@ -280,18 +285,20 @@ export default function JobCard({
             
             {(status === 'done' || status === 'in_progress' || status === 'scheduled') && (
               <>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setLocation(`/quotes/new?jobId=${id}`)}
-                  data-testid={`button-new-quote-${id}`}
-                  className="text-xs"
-                >
-                  <FileText className="h-3 w-3 mr-1" />
-                  Quote
-                </Button>
+                {canMakeQuote && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setLocation(`/quotes/new?jobId=${id}`)}
+                    data-testid={`button-new-quote-${id}`}
+                    className="text-xs"
+                  >
+                    <FileText className="h-3 w-3 mr-1" />
+                    Quote
+                  </Button>
+                )}
                 
-                {status === 'done' && (
+                {status === 'done' && canMakeInvoice && (
                   <Button 
                     variant="ghost" 
                     size="sm"

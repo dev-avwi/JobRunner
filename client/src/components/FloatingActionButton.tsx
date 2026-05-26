@@ -1,6 +1,7 @@
 import { X, Briefcase, FileText, DollarSign, Star, Users, CreditCard } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/lib/can";
 
 // Detect if device is a mobile/tablet - not just based on screen size
 function useIsTouchDevice() {
@@ -46,6 +47,7 @@ export default function FloatingActionButton({
   const [isOpen, setIsOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const isTouchDevice = useIsTouchDevice();
+  const { can } = useCan();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,15 +73,20 @@ export default function FloatingActionButton({
   }
 
   const quickActions = [
-    { label: "New Job", icon: Briefcase, onClick: onCreateJob, color: 'hsl(var(--trade))', bgColor: 'hsl(var(--trade) / 0.12)' },
-    { label: "New Quote", icon: FileText, onClick: onCreateQuote, color: 'hsl(217, 91%, 60%)', bgColor: 'hsl(217, 91%, 60% / 0.12)' },
-    { label: "New Invoice", icon: DollarSign, onClick: onCreateInvoice, color: 'hsl(142, 76%, 36%)', bgColor: 'hsl(142, 76%, 36% / 0.12)' },
-    { label: "New Client", icon: Users, onClick: onCreateClient, color: 'hsl(262, 83%, 58%)', bgColor: 'hsl(262, 83%, 58% / 0.12)' },
-  ].filter(a => a.onClick);
+    { label: "New Job", icon: Briefcase, onClick: onCreateJob, color: 'hsl(var(--trade))', bgColor: 'hsl(var(--trade) / 0.12)', allowed: can("job.create") },
+    { label: "New Quote", icon: FileText, onClick: onCreateQuote, color: 'hsl(217, 91%, 60%)', bgColor: 'hsl(217, 91%, 60% / 0.12)', allowed: can("quote.create") },
+    { label: "New Invoice", icon: DollarSign, onClick: onCreateInvoice, color: 'hsl(142, 76%, 36%)', bgColor: 'hsl(142, 76%, 36% / 0.12)', allowed: can("invoice.create") },
+    { label: "New Client", icon: Users, onClick: onCreateClient, color: 'hsl(262, 83%, 58%)', bgColor: 'hsl(262, 83%, 58% / 0.12)', allowed: can("client.create") },
+  ].filter(a => a.onClick && a.allowed);
 
   const secondaryActions = [
-    { label: "Collect Payment", icon: CreditCard, onClick: onCollectPayment, color: 'hsl(142, 76%, 36%)' },
-  ].filter(a => a.onClick);
+    { label: "Collect Payment", icon: CreditCard, onClick: onCollectPayment, color: 'hsl(142, 76%, 36%)', allowed: can("payment.collect") },
+  ].filter(a => a.onClick && a.allowed);
+
+  // Hide the FAB entirely if the user can't do any of the quick actions
+  if (quickActions.length === 0 && secondaryActions.length === 0) {
+    return null;
+  }
 
   const handleAction = (action: (() => void) | undefined) => {
     if (action) {
