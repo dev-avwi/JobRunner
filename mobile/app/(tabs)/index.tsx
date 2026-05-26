@@ -3116,11 +3116,19 @@ function OwnerDashboardScreen() {
           <View style={styles.headerLeft}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' }}>
               <Text style={styles.headerTitle}>{getGreeting()}, {userName}</Text>
-              <View style={[styles.roleBadge, { backgroundColor: colorWithOpacity(colors.primary, 0.1) }]}>
-                <Text style={[styles.roleBadgeText, { color: colors.primary }]}>
-                  {isSubcontractorUser ? 'Subcontractor' : isOwner() ? 'Owner' : roleInfo?.roleName === 'OWNER' ? 'Owner' : roleInfo?.roleName || 'Staff'}
-                </Text>
-              </View>
+              {roleResolved && (
+                <View style={[styles.roleBadge, { backgroundColor: colorWithOpacity(colors.primary, 0.1) }]}>
+                  <Text style={[styles.roleBadgeText, { color: colors.primary }]}>
+                    {isSubcontractorUser
+                      ? 'Subcontractor'
+                      : isOwnerUser || roleInfo?.roleName === 'OWNER'
+                        ? 'Owner'
+                        : (roleInfo?.roleName && roleInfo.roleName !== 'STAFF')
+                          ? roleInfo.roleName
+                          : 'Team member'}
+                  </Text>
+                </View>
+              )}
               {workerState.state !== 'available' && !(workerState.state === 'on_job' && !activeTimer) && (
                 <View style={{
                   flexDirection: 'row',
