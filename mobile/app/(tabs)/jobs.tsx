@@ -160,11 +160,13 @@ function JobCard({
   onPress,
   onQuickAction,
   onShowActionSheet,
+  canCreateInvoices = true,
 }: { 
   job: any;
   onPress: () => void;
   onQuickAction?: (action: string, jobId: string) => void;
   onShowActionSheet?: (job: any) => void;
+  canCreateInvoices?: boolean;
 }) {
   const { colors } = useTheme();
   const contentWidth = useContentWidth();
@@ -278,7 +280,7 @@ function JobCard({
           </View>
         </View>
 
-        {job.status === 'done' && (
+        {job.status === 'done' && canCreateInvoices && (
           <Pressable
             style={{ alignSelf: 'flex-start', marginTop: spacing.sm }}
             onPress={(e) => e.stopPropagation()}
@@ -323,9 +325,11 @@ export default function JobsScreen() {
     ? (roleInfo.isOwner || roleInfo.roleName?.toLowerCase() === 'manager' || roleInfo.roleName?.toLowerCase() === 'admin')
     : false;
   const isSoloOwner = user && businessSettings && (!roleInfo || roleInfo.isOwner);
-  const canWriteJobs = isOwnerOrManager || isSoloOwner;
-  const canCreateQuotes = isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_quotes'));
-  const canCreateInvoices = isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_invoices'));
+  const subRole = roleInfo?.roleName?.toLowerCase();
+  const isSubcontractor = subRole === 'subcontractor' || subRole === 'sub_contractor';
+  const canWriteJobs = !isSubcontractor && (isOwnerOrManager || isSoloOwner);
+  const canCreateQuotes = !isSubcontractor && (isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_quotes')));
+  const canCreateInvoices = !isSubcontractor && (isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_invoices')));
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState(params.filter || 'all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -1314,6 +1318,7 @@ export default function JobsScreen() {
             onPress={handlePress}
             onQuickAction={handleQuickAction}
             onShowActionSheet={setActionSheetJob}
+            canCreateInvoices={canCreateInvoices}
           />
         </View>
       );

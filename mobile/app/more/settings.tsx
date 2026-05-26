@@ -1012,9 +1012,21 @@ export default function SettingsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const { user, refreshUser } = useAuthStore();
+  const { user, refreshUser, roleInfo } = useAuthStore();
+  const subRoleName = roleInfo?.roleName?.toLowerCase();
+  const isSubcontractor = subRoleName === 'subcontractor' || subRoleName === 'sub_contractor';
+  const visibleTabs = useMemo(() => (
+    isSubcontractor
+      ? SETTINGS_TABS.filter(t => t.key === 'account' || t.key === 'alerts' || t.key === 'help')
+      : SETTINGS_TABS
+  ), [isSubcontractor]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('account');
+  useEffect(() => {
+    if (!visibleTabs.some(t => t.key === activeTab)) {
+      setActiveTab('account');
+    }
+  }, [visibleTabs, activeTab]);
   const [showTour, setShowTour] = useState(false);
   
   // Account tab - Geofence settings
@@ -1652,20 +1664,22 @@ export default function SettingsScreen() {
             )}
           </View>
 
-          <TouchableOpacity 
-            style={styles.subscriptionLink}
-            onPress={() => router.push('/more/subscription')}
-            data-testid="button-manage-subscription"
-          >
-            <View style={styles.subscriptionLinkContent}>
-              <Feather name="award" size={20} color={colors.primary} />
-              <View style={styles.subscriptionLinkText}>
-                <Text style={styles.subscriptionLinkTitle}>Business Plan</Text>
-                <Text style={styles.subscriptionLinkSubtitle}>View plan details and usage</Text>
+          {!isSubcontractor && (
+            <TouchableOpacity 
+              style={styles.subscriptionLink}
+              onPress={() => router.push('/more/subscription')}
+              data-testid="button-manage-subscription"
+            >
+              <View style={styles.subscriptionLinkContent}>
+                <Feather name="award" size={20} color={colors.primary} />
+                <View style={styles.subscriptionLinkText}>
+                  <Text style={styles.subscriptionLinkTitle}>Business Plan</Text>
+                  <Text style={styles.subscriptionLinkSubtitle}>View plan details and usage</Text>
+                </View>
               </View>
-            </View>
-            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-          </TouchableOpacity>
+              <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          )}
 
           <ScrollView 
             horizontal 
@@ -1673,7 +1687,7 @@ export default function SettingsScreen() {
             style={styles.tabsScroll}
             contentContainerStyle={styles.tabsContent}
           >
-            {SETTINGS_TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const isActive = activeTab === tab.key;
               return (
                 <TouchableOpacity

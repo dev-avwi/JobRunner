@@ -1438,14 +1438,18 @@ export default function ChatHubScreen() {
             <Feather name="users" size={18} color={colors.primaryForeground} />
             <Text style={[styles.quickActionText, styles.quickActionTextPrimary]}>Team Chat</Text>
           </PressableRow>
-          <PressableRow style={[styles.quickActionButton, styles.quickActionButtonSuccess]} onPress={() => router.push('/more/new-sms-conversation' as any)} >
-            <Feather name="edit-3" size={18} color={colors.white} />
-            <Text style={[styles.quickActionText, styles.quickActionTextSuccess]}>New SMS</Text>
-          </PressableRow>
-          <PressableRow style={[styles.quickActionButton, styles.quickActionButtonSecondary]} onPress={() => router.push('/more/clients')} >
-            <Feather name="user" size={18} color={colors.foreground} />
-            <Text style={[styles.quickActionText, styles.quickActionTextSecondary]}>Clients</Text>
-          </PressableRow>
+          {!isSubcontractor && (
+            <>
+              <PressableRow style={[styles.quickActionButton, styles.quickActionButtonSuccess]} onPress={() => router.push('/more/new-sms-conversation' as any)} >
+                <Feather name="edit-3" size={18} color={colors.white} />
+                <Text style={[styles.quickActionText, styles.quickActionTextSuccess]}>New SMS</Text>
+              </PressableRow>
+              <PressableRow style={[styles.quickActionButton, styles.quickActionButtonSecondary]} onPress={() => router.push('/more/clients')} >
+                <Feather name="user" size={18} color={colors.foreground} />
+                <Text style={[styles.quickActionText, styles.quickActionTextSecondary]}>Clients</Text>
+              </PressableRow>
+            </>
+          )}
         </View>
         
         <View style={styles.searchContainer}>

@@ -540,7 +540,7 @@ export function filterNavItems(items: NavItem[], options: FilterOptions): NavIte
     }
 
     if (item.requiresProPlan && options.hasProSubscription === false) {
-      if (item.showLockedIfNoAccess) {
+      if (item.showLockedIfNoAccess && !options.isSubcontractor) {
         item.locked = true;
         item.lockReason = 'Available on the Pro plan. Upgrade in Subscription settings.';
         item.badge = 'Pro';
@@ -550,7 +550,7 @@ export function filterNavItems(items: NavItem[], options: FilterOptions): NavIte
     }
 
     if (item.requiresTeamPlan && options.hasTeamSubscription === false) {
-      if (item.showLockedIfNoAccess) {
+      if (item.showLockedIfNoAccess && !options.isSubcontractor) {
         item.locked = true;
         item.lockReason = 'Available on the Team plan. Upgrade in Subscription settings.';
         item.badge = 'Team';
@@ -560,7 +560,7 @@ export function filterNavItems(items: NavItem[], options: FilterOptions): NavIte
     }
     
     if (item.requiresTeam && !options.isTeam) {
-      if (item.showLockedIfNoAccess) {
+      if (item.showLockedIfNoAccess && !options.isSubcontractor) {
         item.locked = true;
         item.lockReason = 'Available on the Team plan. Upgrade in Subscription settings.';
         item.badge = 'Team';

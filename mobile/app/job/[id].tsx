@@ -6183,7 +6183,7 @@ export default function JobDetailScreen() {
         <PressableRow 
  
           style={styles.card}
-          onPress={() => {
+          onPress={isSubcontractorUser ? undefined : () => {
             setScheduleDate(new Date(job.scheduledAt!));
             setShowScheduleModal(true);
           }}
@@ -6197,12 +6197,14 @@ export default function JobDetailScreen() {
               {formatDate(job.scheduledAt)} at {formatTime(job.scheduledAt)}
             </Text>
           </View>
-          <Feather 
-            name="edit-2" 
-            size={iconSizes.lg} 
-            color={colors.primary} 
-            style={styles.cardActionIcon}
-          />
+          {!isSubcontractorUser && (
+            <Feather 
+              name="edit-2" 
+              size={iconSizes.lg} 
+              color={colors.primary} 
+              style={styles.cardActionIcon}
+            />
+          )}
         </PressableRow>
       )}
 
