@@ -115,8 +115,7 @@ export default function ResetPassword() {
         <div className="flex items-center justify-center gap-3 mb-8">
           <img src={appIconUrl} alt="JobRunner" className="h-8 w-auto" />
           <span className="text-xl font-bold">
-            <span className="text-foreground">Job</span>
-            <span className="text-primary">Runner</span>
+            <span className="text-foreground">JobRunner</span>
           </span>
         </div>
 
