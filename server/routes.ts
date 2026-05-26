@@ -29144,6 +29144,26 @@ Respond with JSON in this format:
         return res.status(500).json({ error: 'Could not determine role for invite code. The business owner needs to set up roles first.' });
       }
 
+      // Idempotency check FIRST — if this user is already on this owner's
+      // team, short-circuit BEFORE consuming a seat or burning a code use.
+      // Fail closed: storage errors return 500 rather than silently treating
+      // the user as a new member.
+      const existingMemberships = await storage.getAllTeamMembershipsByMemberId(userId);
+      const alreadyOnThisTeam = (existingMemberships || []).find(
+        (m: any) => m.businessOwnerId === inviteCode.businessOwnerId && m.inviteStatus === 'accepted'
+      );
+
+      if (alreadyOnThisTeam) {
+        const existingBusinessSettings = await storage.getBusinessSettings(inviteCode.businessOwnerId);
+        await storage.updateUser(userId, { activeBusinessId: inviteCode.businessOwnerId } as any);
+        return res.json({
+          success: true,
+          alreadyMember: true,
+          businessName: existingBusinessSettings?.businessName || 'Business',
+          roleType: inviteCode.roleType,
+        });
+      }
+
       const seatCheck = await checkTeamSeatLimit(inviteCode.businessOwnerId, inviteOwner, inviteOwnerSettings);
       if (!seatCheck.allowed) {
         return res.status(403).json({
@@ -29167,18 +29187,35 @@ Respond with JSON in this format:
         return res.status(400).json({ error: 'This invite code is no longer available' });
       }
 
-      await storage.createTeamMember({
-        businessOwnerId: inviteCode.businessOwnerId,
-        memberId: userId,
-        roleId,
-        email: user.email || '',
-        firstName: user.firstName || undefined,
-        lastName: user.lastName || undefined,
-        phone: phone || undefined,
-        inviteStatus: 'accepted',
-        inviteAcceptedAt: new Date(),
-        isActive: true,
-      });
+      try {
+        await storage.createTeamMember({
+          businessOwnerId: inviteCode.businessOwnerId,
+          memberId: userId,
+          roleId,
+          email: user.email || '',
+          firstName: user.firstName || undefined,
+          lastName: user.lastName || undefined,
+          phone: phone || undefined,
+          inviteStatus: 'accepted',
+          inviteAcceptedAt: new Date(),
+          isActive: true,
+        });
+      } catch (createErr: any) {
+        // Race-loser path: a concurrent redeem already created the membership.
+        // Roll the consumed seat/usage back so the code isn't double-charged.
+        const raced = await storage.getAllTeamMembershipsByMemberId(userId).catch(() => []);
+        const nowOnTeam = (raced || []).find(
+          (m: any) => m.businessOwnerId === inviteCode.businessOwnerId && m.inviteStatus === 'accepted'
+        );
+        if (nowOnTeam) {
+          await db.update(inviteCodes)
+            .set({ usedCount: sql`GREATEST(used_count - 1, 0)` })
+            .where(eq(inviteCodes.id, inviteCode.id))
+            .catch(() => undefined);
+        } else {
+          throw createErr;
+        }
+      }
 
       const businessSettingsData = await storage.getBusinessSettings(inviteCode.businessOwnerId);
 

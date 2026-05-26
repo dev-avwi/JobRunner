@@ -3199,7 +3199,7 @@ function OwnerDashboardScreen() {
 
       {/* Worker State Quick Set */}
       {isStaffUser && (
-        <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm }}>
+        <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.md }}>
           <View style={{
             flexDirection: 'row',
             gap: spacing.xs,
@@ -4289,7 +4289,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
 
   section: {
-    marginBottom: spacing['3xl'] + 4,
+    marginBottom: spacing.xl,
   },
   sectionLabel: {
     ...typography.label,
@@ -4969,11 +4969,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.card,
-    borderRadius: radius.xl,
-    borderWidth: 2,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     borderColor: colors.cardBorder,
     padding: spacing.lg,
-    ...shadows.md,
+    ...shadows.sm,
   },
   timeTrackingWidgetActive: {
     borderColor: colors.primary,
