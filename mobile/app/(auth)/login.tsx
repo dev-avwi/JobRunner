@@ -22,6 +22,7 @@ import { Button } from '../../src/components/ui/Button';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import api, { API_URL } from '../../src/lib/api';
+import { spacing } from '../../src/lib/design-tokens';
 
 // Conditionally import Apple Authentication - only available in dev/production builds, not Expo Go
 let AppleAuthentication: any = null;
@@ -333,21 +334,13 @@ export default function LoginScreen() {
       >
         <View style={[styles.content, { paddingBottom: bottomInset }]}>
           <View style={styles.header}>
-            <View style={styles.logoGradientContainer}>
-              <View style={styles.logoInner}>
-                <Image 
-                  source={require('../../assets/jobrunner-logo.png')}
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
-            <View style={styles.appNameContainer}>
-              <Text style={styles.appNameBlue}>Job</Text>
-              <Text style={styles.appNameOrange}>Runner</Text>
-            </View>
-            <Text style={styles.tagline}>Welcome back!</Text>
-            <Text style={styles.taglineSubtext}>Sign in to manage your trade business</Text>
+            <Image
+              source={require('../../assets/jobrunner-logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.tagline}>Welcome back</Text>
+            <Text style={styles.taglineSubtext}>Sign in to keep things moving.</Text>
           </View>
 
           <Card>
@@ -557,59 +550,25 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingHorizontal: spacing['2xl'],
+    paddingTop: spacing['4xl'],
+    paddingBottom: spacing['4xl'],
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
-  },
-  logoGradientContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    padding: 3,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    backgroundColor: '#E8862E',
-  },
-  logoInner: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    marginBottom: spacing['2xl'],
   },
   logo: {
-    width: 100,
-    height: 100,
-  },
-  appNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  appNameBlue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#2563eb',
-  },
-  appNameOrange: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#E8862E',
+    width: 96,
+    height: 96,
+    marginBottom: spacing.lg,
   },
   tagline: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: 26,
+    fontWeight: '700',
     color: colors.foreground,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
+    letterSpacing: -0.3,
   },
   taglineSubtext: {
     fontSize: 15,

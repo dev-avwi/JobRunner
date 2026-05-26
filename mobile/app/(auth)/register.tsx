@@ -22,6 +22,7 @@ import { Card, CardContent } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { spacing } from '../../src/lib/design-tokens';
 
 // Conditionally import Apple Authentication - only available in dev/production builds, not Expo Go
 let AppleAuthentication: any = null;
@@ -37,7 +38,6 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [businessName, setBusinessName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -89,13 +89,15 @@ export default function RegisterScreen() {
   }, []);
 
   const handleRegister = async () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !businessName.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
+      setError('Please fill in all fields');
+      setErrorCode(null);
       return;
     }
 
     if (password.length < 8 || !/[A-Z]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
-      Alert.alert('Error', 'Password must be at least 8 characters with one uppercase letter and one special character');
+      setError('Password needs 8 characters, one uppercase, and one special character');
+      setErrorCode(null);
       return;
     }
 
@@ -108,8 +110,6 @@ export default function RegisterScreen() {
       lastName: lastName.trim(),
       email: email.trim(),
       password,
-      businessName: businessName.trim(),
-      tradeType: 'general',
     });
 
     setIsLoading(false);
@@ -274,31 +274,13 @@ export default function RegisterScreen() {
       >
         <View style={[styles.content, { paddingBottom: bottomInset }]}>
           <View style={styles.header}>
-            <View style={styles.logoGradientContainer}>
-              <View style={styles.logoInner}>
-                <Image 
-                  source={require('../../assets/jobrunner-logo.png')}
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
-            <View style={styles.appNameContainer}>
-              <Text style={styles.appNameBlue}>Job</Text>
-              <Text style={styles.appNameOrange}>Runner</Text>
-            </View>
-            <Text style={styles.title}>Set Up Your Business</Text>
-            <Text style={styles.subtitle}>Manage your trade business from your pocket</Text>
-          </View>
-
-          <View style={styles.trialInfoCard}>
-            <Text style={styles.trialInfoTitle}>Built for Aussie Tradies</Text>
-            <Text style={styles.trialInfoText}>
-              Jobs, quotes, invoices, and team management in one app.
-            </Text>
-            <Text style={styles.trialInfoSubtext}>
-              Get started in under 2 minutes
-            </Text>
+            <Image
+              source={require('../../assets/jobrunner-logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.title}>Create your account</Text>
+            <Text style={styles.subtitle}>Track jobs, send quotes, get paid.</Text>
           </View>
 
           <Card>
@@ -389,26 +371,6 @@ export default function RegisterScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Business Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Smith Electrical"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={businessName}
-                  onChangeText={(text) => {
-                    setBusinessName(text);
-                    setError(null);
-                  }}
-                  autoCapitalize="words"
-                  textContentType="organizationName"
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  enablesReturnKeyAutomatically={false}
-                  testID="input-business"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
                 <TextInput
                   style={styles.input}
@@ -478,7 +440,7 @@ export default function RegisterScreen() {
                       <Ionicons
                         name={r.met ? 'checkmark' : 'ellipse-outline'}
                         size={12}
-                        color={r.met ? '#15803d' : colors.mutedForeground}
+                        color={r.met ? colors.successDark : colors.mutedForeground}
                       />
                       <Text style={[styles.pwChipText, r.met && styles.pwChipTextMet]}>{r.label}</Text>
                     </View>
@@ -554,65 +516,30 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 40,
+    paddingHorizontal: spacing['2xl'],
+    paddingTop: spacing['4xl'],
+    paddingBottom: spacing['4xl'],
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
-  },
-  logoGradientContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    padding: 3,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    backgroundColor: '#E8862E',
-    borderWidth: 2,
-    borderColor: '#2563eb',
-  },
-  logoInner: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    marginBottom: spacing['2xl'],
   },
   logo: {
-    width: 100,
-    height: 100,
-  },
-  appNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  appNameBlue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#2563eb',
-  },
-  appNameOrange: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#E8862E',
+    width: 96,
+    height: 96,
+    marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: 26,
+    fontWeight: '700',
     color: colors.foreground,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.mutedForeground,
-    marginTop: 4,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
   cardContent: {
     paddingTop: 20,
@@ -747,8 +674,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   pwChipMet: {
-    backgroundColor: '#dcfce7',
-    borderColor: '#86efac',
+    backgroundColor: colors.successLight,
+    borderColor: colors.success + '60',
   },
   pwChipText: {
     fontSize: 12,
@@ -756,7 +683,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.mutedForeground,
   },
   pwChipTextMet: {
-    color: '#15803d',
+    color: colors.successDark,
     fontWeight: '600',
   },
   messageContainer: {
@@ -822,32 +749,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.primaryForeground,
     fontSize: 16,
     fontWeight: '600',
-  },
-  trialInfoCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  trialInfoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.foreground,
-    marginBottom: 4,
-  },
-  trialInfoText: {
-    fontSize: 14,
-    color: colors.primary,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  trialInfoSubtext: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    textAlign: 'center',
   },
   termsNotice: {
     fontSize: 12,
