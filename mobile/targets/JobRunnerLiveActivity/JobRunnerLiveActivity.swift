@@ -110,7 +110,15 @@ struct JobRunnerLiveActivity: Widget {
                             .fixedSize()
                         }
                     }
-                    .padding(.horizontal, 10)
+                    // Inner horizontal padding overrides whatever
+                    // contentMargins(.all, 12, for: .expanded) actually
+                    // applies — iOS doesn't honour that modifier
+                    // consistently on the .bottom region. 16pt inside
+                    // here gives visible breathing room from the bubble
+                    // edges regardless of system behaviour, so the
+                    // STARTED time and timer never crowd the right
+                    // side and the pill never kisses the left.
+                    .padding(.horizontal, 16)
                     .padding(.vertical, 4)
                 }
             } compactLeading: {
