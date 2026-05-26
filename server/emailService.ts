@@ -1240,6 +1240,14 @@ const createEmailVerificationEmail = (user: any, verificationToken: string) => {
     },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: 'Verify Your Email Address - JobRunner',
+    // Disable SendGrid click tracking so the verify link stays on the real
+    // jobrunner.com.au domain (not the urlXXXX.jobrunner.com.au tracking
+    // subdomain, which can fail TLS and trigger a browser security warning).
+    trackingSettings: {
+      clickTracking: { enable: false, enableText: false },
+      openTracking: { enable: true },
+      subscriptionTracking: { enable: false },
+    },
     html: `
       <!DOCTYPE html>
       <html>
@@ -1436,6 +1444,13 @@ export const sendPasswordResetEmail = async (user: any, resetToken: string) => {
     },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: 'Reset Your Password - JobRunner',
+    // Disable click tracking — reset links must hit jobrunner.com.au directly
+    // (the SendGrid tracking subdomain can break under TLS/HSTS).
+    trackingSettings: {
+      clickTracking: { enable: false, enableText: false },
+      openTracking: { enable: true },
+      subscriptionTracking: { enable: false },
+    },
     html: `
       <!DOCTYPE html>
       <html>
