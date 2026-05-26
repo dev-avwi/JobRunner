@@ -15,11 +15,14 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 import { validateABN, formatABN } from '../../src/lib/format';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const ONBOARDING_DRAFT_KEY = 'onboarding:owner-draft:v1';
 
 type OnboardingRole = 'owner' | 'worker' | 'subcontractor' | null;
 
@@ -103,13 +106,40 @@ export default function OnboardingSetupScreen() {
   const subValidateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [demoDataSeeded, setDemoDataSeeded] = useState(false);
+  const [hasHydratedDraft, setHasHydratedDraft] = useState(false);
 
   const searchParams = useLocalSearchParams<{ resume?: string }>();
   const isResuming = searchParams?.resume === '1';
 
+  // Autosave owner-step entries (business name, trade, phone, ABN, etc.) to
+  // AsyncStorage so a force-quit mid-wizard doesn't lose them. Server-side
+  // settings still win on next mount — this only fills the gaps.
+  useEffect(() => {
+    if (!hasHydratedDraft) return;
+    const timer = setTimeout(() => {
+      AsyncStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify(businessData)).catch(() => {});
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [businessData, hasHydratedDraft]);
+
+  const clearOnboardingDraft = () => {
+    AsyncStorage.removeItem(ONBOARDING_DRAFT_KEY).catch(() => {});
+  };
+
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
+        // Hydrate any local draft FIRST so server values overlay on top of
+        // it (server wins for fields it has, draft fills the rest).
+        try {
+          const raw = await AsyncStorage.getItem(ONBOARDING_DRAFT_KEY);
+          if (raw) {
+            const draft = JSON.parse(raw);
+            if (draft && typeof draft === 'object') {
+              setBusinessData(prev => ({ ...prev, ...draft }));
+            }
+          }
+        } catch {}
         await fetchBusinessSettings();
         const settings = useAuthStore.getState().businessSettings;
 
@@ -210,6 +240,7 @@ export default function OnboardingSetupScreen() {
         console.error('Error checking onboarding status:', error);
       } finally {
         setIsCheckingSettings(false);
+        setHasHydratedDraft(true);
       }
     };
     checkOnboardingStatus();
@@ -323,6 +354,7 @@ export default function OnboardingSetupScreen() {
     const saved = await handleSaveBusinessSettings();
     if (!saved) return;
     await markOnboardingComplete();
+    clearOnboardingDraft();
     setOwnerStep('complete');
   };
 
