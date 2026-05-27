@@ -367,7 +367,7 @@ import { logSystemEvent } from "../systemEventService";
           // contain customer addresses). The name-confirm gate on the landing page
           // handles "is this for you?" without leaking anything via SMS.
           const smsMessage = `JobRunner: A contractor has sent you a job. Tap to view: ${webLink}`;
-          const { sendSMS: twilioSend } = await import('./twilioClient');
+          const { sendSMS: twilioSend } = await import('../twilioClient');
           const smsResult = await twilioSend({
             to: contactPhone,
             message: smsMessage,
@@ -381,7 +381,7 @@ import { logSystemEvent } from "../systemEventService";
 
       if (sendViaEmail && contactEmail) {
         try {
-          const { sendEmail: emailSend } = await import('./emailService');
+          const { sendEmail: emailSend } = await import('../emailService');
           await emailSend({
             to: contactEmail,
             subject: `JobRunner: A contractor has sent you a job`,
@@ -483,7 +483,7 @@ import { logSystemEvent } from "../systemEventService";
       const jobId = req.params.jobId;
       const userId = userContext.effectiveUserId;
 
-      const { generateJobProofPackPDF } = await import('./pdfService');
+      const { generateJobProofPackPDF } = await import('../pdfService');
       const data = await buildProofPackData(jobId, userId, req.query);
       const html = generateJobProofPackPDF(data);
 
@@ -502,7 +502,7 @@ import { logSystemEvent } from "../systemEventService";
       const jobId = req.params.jobId;
       const userId = userContext.effectiveUserId;
 
-      const { generateJobProofPackPDF, generatePDFBuffer } = await import('./pdfService');
+      const { generateJobProofPackPDF, generatePDFBuffer } = await import('../pdfService');
       const data = await buildProofPackData(jobId, userId, req.query);
       const html = generateJobProofPackPDF(data);
 
@@ -535,7 +535,7 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       // Get photos with signed URLs
-      const { getJobPhotos } = await import('./photoService');
+      const { getJobPhotos } = await import('../photoService');
       const photos = await getJobPhotos(jobId, userContext.effectiveUserId);
       
       if (!photos.length) {
@@ -576,7 +576,7 @@ import { logSystemEvent } from "../systemEventService";
       const client = job.clientId ? await storage.getClient(job.clientId, userContext.effectiveUserId) : null;
       
       // Stream the AI analysis
-      const { streamPhotoAnalysis } = await import('./ai');
+      const { streamPhotoAnalysis } = await import('../ai');
       
       const jobContext = {
         title: job.title,
@@ -648,7 +648,7 @@ import { logSystemEvent } from "../systemEventService";
       const daysSinceCreated = Math.floor((Date.now() - new Date(job.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24));
       const daysSinceLastUpdate = Math.floor((Date.now() - new Date(job.updatedAt || job.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24));
       
-      const { generateJobNextAction } = await import('./ai');
+      const { generateJobNextAction } = await import('../ai');
       
       const nextAction = await generateJobNextAction({
         jobStatus: job.status,
@@ -680,7 +680,7 @@ import { logSystemEvent } from "../systemEventService";
       const invoices = await storage.getInvoices(userContext.effectiveUserId);
       const clients = await storage.getClients(userContext.effectiveUserId);
       
-      const { generateJobNextAction } = await import('./ai');
+      const { generateJobNextAction } = await import('../ai');
       
       const nextActions: Record<string, any> = {};
       
@@ -775,7 +775,7 @@ import { logSystemEvent } from "../systemEventService";
         return sum;
       }, 0);
       
-      const { calculateJobProfit } = await import('./ai');
+      const { calculateJobProfit } = await import('../ai');
       
       const profitData = calculateJobProfit({
         invoiceTotal,
@@ -1095,7 +1095,7 @@ import { logSystemEvent } from "../systemEventService";
             if (photos && photos.length > 0) {
               const firstPhoto = photos[0];
               if (firstPhoto.objectStorageKey) {
-                const { generateSignedDownloadUrl } = await import('./objectStorage');
+                const { generateSignedDownloadUrl } = await import('../objectStorage');
                 const signedUrl = await generateSignedDownloadUrl(firstPhoto.objectStorageKey, 3600);
                 photoMap[job.id] = signedUrl;
                 // Cache for 30 minutes
@@ -2318,7 +2318,7 @@ import { logSystemEvent } from "../systemEventService";
       // Auto-sync to Google Calendar if user is connected and job is scheduled
       if (job.scheduledAt) {
         try {
-          const { syncJobToCalendar, isGoogleCalendarConnected } = await import('./googleCalendarClient');
+          const { syncJobToCalendar, isGoogleCalendarConnected } = await import('../googleCalendarClient');
           const connected = await isGoogleCalendarConnected(effectiveUserId);
           if (connected) {
             const result = await syncJobToCalendar(effectiveUserId, {
@@ -2635,7 +2635,7 @@ import { logSystemEvent } from "../systemEventService";
         try {
           const user = await storage.getUser(req.userId);
           const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown' : 'Unknown';
-          const { broadcastJobFieldUpdate } = await import('./websocket');
+          const { broadcastJobFieldUpdate } = await import('../websocket');
           broadcastJobFieldUpdate(effectiveUserId, {
             jobId: req.params.id,
             updatedFields: changedFields,
@@ -2687,7 +2687,7 @@ import { logSystemEvent } from "../systemEventService";
       const scheduleChanged = data.scheduledAt || data.title || data.address || data.description || data.notes || data.status;
       if (scheduleChanged && job.scheduledAt) {
         try {
-          const { syncJobToCalendar, isGoogleCalendarConnected } = await import('./googleCalendarClient');
+          const { syncJobToCalendar, isGoogleCalendarConnected } = await import('../googleCalendarClient');
           const connected = await isGoogleCalendarConnected(effectiveUserId);
           if (connected) {
             const client = job.clientId ? await storage.getClient(job.clientId, effectiveUserId) : null;
@@ -2858,7 +2858,7 @@ import { logSystemEvent } from "../systemEventService";
       
       // Broadcast real-time job status change to all connected users
       if (status !== existingJob.status) {
-        const { broadcastJobStatusChange } = await import('./websocket');
+        const { broadcastJobStatusChange } = await import('../websocket');
         broadcastJobStatusChange(effectiveUserId, {
           jobId: job.id,
           status,
@@ -2927,7 +2927,7 @@ import { logSystemEvent } from "../systemEventService";
           .catch(err => console.error('[Automations] Error processing job status change:', err));
         
         if (status === 'done' || status === 'completed') {
-          const { processReviewRequestAutomation } = await import('./automationService');
+          const { processReviewRequestAutomation } = await import('../automationService');
           processReviewRequestAutomation(effectiveUserId, job.id)
             .catch(err => console.error('[Automations] Error processing review request:', err));
         }
@@ -3639,7 +3639,7 @@ import { logSystemEvent } from "../systemEventService";
       const message = `${baseMessage}\n\nTrack your job: ${trackingUrl}`;
       
       // Send SMS via smsService to properly track in conversations/Chat Hub
-      const { sendSmsToClient } = await import('./services/smsService');
+      const { sendSmsToClient } = await import('../services/smsService');
       let smsResult: any = { success: false };
       try {
         const smsMessage = await sendSmsToClient({
@@ -3707,7 +3707,7 @@ import { logSystemEvent } from "../systemEventService";
 
   app.post("/api/jobs/:jobId/assignments/:assignmentId/on-my-way", requireAuth, async (req: any, res) => {
     try {
-      const { handleOnMyWay } = await import('./services/assignmentWorkflowService');
+      const { handleOnMyWay } = await import('../services/assignmentWorkflowService');
       const baseUrl = getProductionBaseUrl(req);
       
       const result = await handleOnMyWay({
@@ -3732,7 +3732,7 @@ import { logSystemEvent } from "../systemEventService";
 
   app.patch("/api/jobs/:jobId/assignments/:assignmentId/status", requireAuth, async (req: any, res) => {
     try {
-      const { handleWorkerStatusChange } = await import('./services/assignmentWorkflowService');
+      const { handleWorkerStatusChange } = await import('../services/assignmentWorkflowService');
       const { status } = req.body;
       
       if (!['arrived', 'in_progress', 'completed'].includes(status)) {
@@ -3761,7 +3761,7 @@ import { logSystemEvent } from "../systemEventService";
 
   app.post("/api/jobs/:jobId/assignments/:assignmentId/delayed", requireAuth, async (req: any, res) => {
     try {
-      const { handleDelayedNotification } = await import('./services/assignmentWorkflowService');
+      const { handleDelayedNotification } = await import('../services/assignmentWorkflowService');
       const { newEtaMinutes } = req.body;
       
       if (!newEtaMinutes || typeof newEtaMinutes !== 'number' || newEtaMinutes < 1) {
@@ -4032,7 +4032,7 @@ import { logSystemEvent } from "../systemEventService";
       const message = baseMessage;
       
       // Send SMS via dedicated/shared number (customer-facing)
-      const { sendCustomerReply: sendCustReply } = await import('./services/smsService');
+      const { sendCustomerReply: sendCustReply } = await import('../services/smsService');
       const smsResult = await sendCustReply(client.phone, message, userContext.effectiveUserId);
 
       // Log activity
@@ -4161,7 +4161,7 @@ import { logSystemEvent } from "../systemEventService";
             if (client.phone) {
               const business = await storage.getBusinessSettings(userContext.effectiveUserId);
               const message = `Hi ${client.firstName || 'there'}, here's your payment link for ${job.title || 'your recent job'} from ${business?.businessName || 'your tradesperson'}: ${session.url}. Amount: $${parseFloat(amount).toFixed(2)}`;
-              const { sendCustomerReply: sendCR } = await import('./services/smsService');
+              const { sendCustomerReply: sendCR } = await import('../services/smsService');
               await sendCR(client.phone, message, userContext.effectiveUserId);
             }
 
@@ -4354,7 +4354,7 @@ import { logSystemEvent } from "../systemEventService";
         const baseUrl = getProductionBaseUrl(req);
 
         if (workerStatus === 'on_my_way') {
-          const { handleOnMyWay } = await import('./services/assignmentWorkflowService');
+          const { handleOnMyWay } = await import('../services/assignmentWorkflowService');
           const result = await handleOnMyWay({
             jobId: req.params.id,
             assignmentId: assignment.id,
@@ -4369,7 +4369,7 @@ import { logSystemEvent } from "../systemEventService";
           const updatedJob = await storage.getJob(req.params.id, effectiveUserId);
 
           try {
-            const { broadcastJobStatusChange } = await import('./websocket');
+            const { broadcastJobStatusChange } = await import('../websocket');
             broadcastJobStatusChange(effectiveUserId, {
               jobId: updatedJob!.id,
               status: updatedJob!.status,
@@ -4389,7 +4389,7 @@ import { logSystemEvent } from "../systemEventService";
 
           return res.json(updatedJob);
         } else if (['arrived', 'in_progress', 'completed'].includes(workerStatus)) {
-          const { handleWorkerStatusChange } = await import('./services/assignmentWorkflowService');
+          const { handleWorkerStatusChange } = await import('../services/assignmentWorkflowService');
           const result = await handleWorkerStatusChange({
             jobId: req.params.id,
             assignmentId: assignment.id,
@@ -4403,7 +4403,7 @@ import { logSystemEvent } from "../systemEventService";
           const updatedJob = await storage.getJob(req.params.id, effectiveUserId);
 
           try {
-            const { broadcastJobStatusChange } = await import('./websocket');
+            const { broadcastJobStatusChange } = await import('../websocket');
             broadcastJobStatusChange(effectiveUserId, {
               jobId: updatedJob!.id,
               status: updatedJob!.status,
@@ -4499,7 +4499,7 @@ import { logSystemEvent } from "../systemEventService";
       
       const updatedJob = await storage.updateJob(req.params.id, effectiveUserId, updateData);
       
-      const { clearWorkerTravelLocation } = await import('./websocket');
+      const { clearWorkerTravelLocation } = await import('../websocket');
       if (workerStatus === 'arrived' || workerStatus === 'completed') {
         clearWorkerTravelLocation(req.params.id);
       }
@@ -4510,7 +4510,7 @@ import { logSystemEvent } from "../systemEventService";
           const businessSettingsData = await storage.getBusinessSettingsByUserId(effectiveUserId);
           
           if (client?.phone) {
-            const { sendSmsToClient } = await import('./services/smsService');
+            const { sendSmsToClient } = await import('../services/smsService');
             const businessName = businessSettingsData?.businessName || 'Your tradesperson';
             
             let workerName = 'Your tradesperson';
@@ -4614,7 +4614,7 @@ import { logSystemEvent } from "../systemEventService";
         return res.status(400).json({ error: 'Travel tracking only active during on_my_way status' });
       }
       
-      const { updateWorkerTravelLocation } = await import('./websocket');
+      const { updateWorkerTravelLocation } = await import('../websocket');
       updateWorkerTravelLocation(req.params.id, latitude, longitude, speed, heading);
       
       let etaMinutes: number | null = null;
@@ -4801,7 +4801,7 @@ import { logSystemEvent } from "../systemEventService";
       const baseUrl = getProductionBaseUrl(req);
       const portalUrl = `${baseUrl}/p/${activeToken.token}`;
 
-      const { sendCustomerReply: sendCustReply2 } = await import('./services/smsService');
+      const { sendCustomerReply: sendCustReply2 } = await import('../services/smsService');
       const smsResult = await sendCustReply2(client.phone, `Hi ${client.name}, track your job "${job.title}" live here: ${portalUrl}\n- ${businessName}`, effectiveUserId);
 
       if (!smsResult.success) {
@@ -4845,7 +4845,7 @@ import { logSystemEvent } from "../systemEventService";
       const baseUrl = getProductionBaseUrl(req);
       const portalUrl = `${baseUrl}/p/${activeToken.token}`;
 
-      const { sendEmail } = await import('./emailService');
+      const { sendEmail } = await import('../emailService');
       const emailResult = await sendEmail({
         to: client.email,
         subject: `Track your job: ${job.title} - ${escapeHtml(businessName)}`,
@@ -5224,7 +5224,7 @@ import { logSystemEvent } from "../systemEventService";
       // Get user context to properly scope to business for team members
       const userContext = await getUserContext(userId);
       
-      const { getJobPhotos } = await import('./photoService');
+      const { getJobPhotos } = await import('../photoService');
       // Use effectiveUserId to see all photos uploaded by any team member for this job
       const photos = await getJobPhotos(jobId, userContext.effectiveUserId);
       
@@ -5256,7 +5256,7 @@ import { logSystemEvent } from "../systemEventService";
       
       const fileBuffer = Buffer.from(fileBase64, 'base64');
       
-      const { uploadJobPhoto } = await import('./photoService');
+      const { uploadJobPhoto } = await import('../photoService');
       // Use effectiveUserId so all team uploads are visible to everyone on the team
       const result = await uploadJobPhoto(userContext.effectiveUserId, jobId, fileBuffer, {
         fileName,
@@ -5304,7 +5304,7 @@ import { logSystemEvent } from "../systemEventService";
       const validLat = parsedLat != null && !isNaN(parsedLat) && parsedLat >= -90 && parsedLat <= 90 ? parsedLat : undefined;
       const validLng = parsedLng != null && !isNaN(parsedLng) && parsedLng >= -180 && parsedLng <= 180 ? parsedLng : undefined;
       
-      const { uploadJobPhoto } = await import('./photoService');
+      const { uploadJobPhoto } = await import('../photoService');
       // Use effectiveUserId so all team uploads are visible to everyone on the team
       const result = await uploadJobPhoto(userContext.effectiveUserId, jobId, file.buffer, {
         fileName: file.originalname,
@@ -5366,7 +5366,7 @@ import { logSystemEvent } from "../systemEventService";
       // Get user context to properly scope to business for team members
       const userContext = await getUserContext(userId);
       
-      const { updatePhotoMetadata } = await import('./photoService');
+      const { updatePhotoMetadata } = await import('../photoService');
       const result = await updatePhotoMetadata(photoId, userContext.effectiveUserId, { category, caption, sortOrder });
       
       if (!result.success) {
@@ -5388,7 +5388,7 @@ import { logSystemEvent } from "../systemEventService";
       // Get user context to properly scope to business for team members
       const userContext = await getUserContext(userId);
       
-      const { deleteJobPhoto } = await import('./photoService');
+      const { deleteJobPhoto } = await import('../photoService');
       const result = await deleteJobPhoto(photoId, userContext.effectiveUserId);
       
       if (!result.success) {
@@ -5499,7 +5499,7 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       // Get signed URL and redirect to it
-      const { getSignedPhotoUrl } = await import('./photoService');
+      const { getSignedPhotoUrl } = await import('../photoService');
       const { url, error } = await getSignedPhotoUrl(photo.objectStorageKey);
       
       if (error || !url) {
@@ -5529,7 +5529,7 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       // Get signed URL
-      const { getSignedPhotoUrl } = await import('./photoService');
+      const { getSignedPhotoUrl } = await import('../photoService');
       const { url, error } = await getSignedPhotoUrl(photo.objectStorageKey);
       
       if (error || !url) {
@@ -5565,7 +5565,7 @@ import { logSystemEvent } from "../systemEventService";
       // Get user context to properly scope to business for team members
       const userContext = await getUserContext(userId);
       
-      const { getJobVoiceNotes } = await import('./voiceNoteService');
+      const { getJobVoiceNotes } = await import('../voiceNoteService');
       // Use effectiveUserId to see all voice notes from any team member for this job
       const voiceNotes = await getJobVoiceNotes(jobId, userContext.effectiveUserId);
       
@@ -5597,7 +5597,7 @@ import { logSystemEvent } from "../systemEventService";
       const fileBuffer = Buffer.from(base64Data, 'base64');
       console.log('[VoiceNote Upload] Buffer size:', fileBuffer.length);
       
-      const { uploadVoiceNote } = await import('./voiceNoteService');
+      const { uploadVoiceNote } = await import('../voiceNoteService');
       // Use effectiveUserId so all team uploads are visible to everyone on the team
       const result = await uploadVoiceNote(userContext.effectiveUserId, jobId, fileBuffer, {
         fileName: fileName || `voice-note-${Date.now()}.webm`,
@@ -5652,7 +5652,7 @@ import { logSystemEvent } from "../systemEventService";
       // Get user context to properly scope to business for team members
       const userContext = await getUserContext(userId);
       
-      const { updateVoiceNoteTitle } = await import('./voiceNoteService');
+      const { updateVoiceNoteTitle } = await import('../voiceNoteService');
       const result = await updateVoiceNoteTitle(voiceNoteId, userContext.effectiveUserId, title);
       
       if (!result.success) {
@@ -5674,7 +5674,7 @@ import { logSystemEvent } from "../systemEventService";
       // Get user context to properly scope to business for team members
       const userContext = await getUserContext(userId);
       
-      const { transcribeVoiceNote } = await import('./voiceNoteService');
+      const { transcribeVoiceNote } = await import('../voiceNoteService');
       const result = await transcribeVoiceNote(voiceNoteId, userContext.effectiveUserId);
       
       if (!result.success) {
@@ -5796,7 +5796,7 @@ import { logSystemEvent } from "../systemEventService";
       // Get user context to properly scope to business for team members
       const userContext = await getUserContext(userId);
       
-      const { deleteVoiceNote } = await import('./voiceNoteService');
+      const { deleteVoiceNote } = await import('../voiceNoteService');
       const result = await deleteVoiceNote(voiceNoteId, userContext.effectiveUserId);
       
       if (!result.success) {
@@ -5825,7 +5825,7 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       // Get signed URL and redirect to it
-      const { getSignedVoiceNoteUrl } = await import('./voiceNoteService');
+      const { getSignedVoiceNoteUrl } = await import('../voiceNoteService');
       const { url, error } = await getSignedVoiceNoteUrl(voiceNote.objectStorageKey);
       
       if (error || !url) {
@@ -5855,7 +5855,7 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       // Get signed URL
-      const { getSignedVoiceNoteUrl } = await import('./voiceNoteService');
+      const { getSignedVoiceNoteUrl } = await import('../voiceNoteService');
       const { url, error } = await getSignedVoiceNoteUrl(voiceNote.objectStorageKey);
       
       if (error || !url) {
@@ -6661,7 +6661,7 @@ import { logSystemEvent } from "../systemEventService";
       // Enrich with user info
       const user = await storage.getUser(userId);
 
-      const { broadcastChatMessage } = await import('./websocket');
+      const { broadcastChatMessage } = await import('../websocket');
       const userContext = await getUserContext(userId);
       broadcastChatMessage(userContext.effectiveUserId, {
         chatType: 'job',
@@ -6734,7 +6734,7 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       // Upload file to object storage
-      const { ObjectStorageService } = await import('./objectStorage');
+      const { ObjectStorageService } = await import('../objectStorage');
       const objectStorageService = new ObjectStorageService();
       
       const timestamp = Date.now();
@@ -7024,7 +7024,7 @@ import { logSystemEvent } from "../systemEventService";
         const client = await storage.getClient(job.clientId, userId);
         if (client?.phone) {
           const businessSettings = await storage.getBusinessSettings(userId);
-          const { sendSmsToClient, parseSmsTemplate } = await import('./services/smsService');
+          const { sendSmsToClient, parseSmsTemplate } = await import('../services/smsService');
           
           // Get template or use default
           let templateBody = 'Hi {client_name}, your booking with {business_name} is confirmed for {scheduled_date} at {scheduled_time}. Confirm here: {booking_link}';
