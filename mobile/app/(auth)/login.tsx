@@ -335,11 +335,13 @@ export default function LoginScreen() {
       >
         <View style={styles.hero}>
           <View style={styles.heroInner}>
-            <Image
-              source={require('../../assets/jobrunner-logo.png')}
-              style={styles.heroLogo}
-              resizeMode="contain"
-            />
+            <View style={styles.heroLogoTile}>
+              <Image
+                source={require('../../assets/jobrunner-logo.png')}
+                style={styles.heroLogo}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.heroWordmark}>JobRunner</Text>
             <Text style={styles.heroTagline}>Welcome back</Text>
             <Text style={styles.heroSubtext}>Sign in to keep things moving.</Text>
@@ -544,39 +546,55 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   hero: {
-    paddingTop: 88,
-    paddingBottom: spacing['2xl'],
+    paddingTop: 64,
+    paddingBottom: spacing['3xl'],
     paddingHorizontal: spacing['2xl'],
     backgroundColor: colors.background,
+    alignItems: 'center',
   },
   heroInner: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    width: '100%',
+  },
+  heroLogoTile: {
+    width: 96,
+    height: 96,
+    borderRadius: 24,
+    backgroundColor: colors.foreground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing['2xl'],
+    shadowColor: colors.foreground,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 8,
   },
   heroLogo: {
-    width: 56,
-    height: 56,
-    marginBottom: spacing['2xl'],
+    width: 64,
+    height: 64,
   },
   heroWordmark: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.mutedForeground,
-    letterSpacing: 2,
+    letterSpacing: 3,
     textTransform: 'uppercase',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   heroTagline: {
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: '700',
     color: colors.foreground,
     marginBottom: spacing.sm,
-    letterSpacing: -0.8,
-    lineHeight: 40,
+    letterSpacing: -0.6,
+    textAlign: 'center',
   },
   heroSubtext: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.mutedForeground,
-    lineHeight: 24,
+    lineHeight: 22,
+    textAlign: 'center',
   },
   sheet: {
     backgroundColor: colors.background,
