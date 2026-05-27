@@ -334,11 +334,13 @@ export default function LoginScreen() {
       >
         <View style={[styles.content, { paddingBottom: bottomInset }]}>
           <View style={styles.header}>
-            <Image
-              source={require('../../assets/jobrunner-logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <View style={styles.logoFrame}>
+              <Image
+                source={require('../../assets/jobrunner-logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.tagline}>Welcome back</Text>
             <Text style={styles.taglineSubtext}>Sign in to keep things moving.</Text>
           </View>
@@ -558,10 +560,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing['2xl'],
   },
-  logo: {
-    width: 96,
-    height: 96,
+  logoFrame: {
+    width: 104,
+    height: 104,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.lg,
+  },
+  logo: {
+    width: 72,
+    height: 72,
   },
   tagline: {
     fontSize: 26,
