@@ -344,8 +344,12 @@ export default function LoginScreen() {
                 />
               </View>
             </View>
-            <Text style={styles.tagline}>Welcome back</Text>
-            <Text style={styles.taglineSubtext}>Sign in to keep things moving.</Text>
+            <Text style={styles.wordmark}>
+              <Text style={styles.wordmarkJob}>Job</Text>
+              <Text style={styles.wordmarkRunner}>Runner</Text>
+            </Text>
+            <Text style={styles.tagline}>Welcome back!</Text>
+            <Text style={styles.taglineSubtext}>Sign in to manage your trade business</Text>
           </View>
 
           <Card>
@@ -564,29 +568,45 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing['2xl'],
   },
   logoOuterRing: {
-    width: 104,
-    height: 104,
-    borderRadius: 24,
-    borderWidth: 1.5,
+    width: 96,
+    height: 96,
+    borderRadius: 22,
+    borderWidth: 2.5,
     borderColor: '#F28C28',
     padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   logoInnerRing: {
     flex: 1,
     width: '100%',
-    borderRadius: 18,
-    borderWidth: 1.5,
+    borderRadius: 16,
+    borderWidth: 2,
     borderColor: '#2B7DE9',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 56,
+    height: 56,
+  },
+  wordmark: {
+    fontSize: 30,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: spacing.sm,
+  },
+  wordmarkJob: {
+    color: '#2B7DE9',
+    fontSize: 30,
+    fontWeight: '800',
+  },
+  wordmarkRunner: {
+    color: '#F28C28',
+    fontSize: 30,
+    fontWeight: '800',
   },
   tagline: {
     fontSize: 26,
