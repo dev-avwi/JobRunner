@@ -331,25 +331,24 @@ export default function LoginScreen() {
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
-          <View style={styles.heroInner}>
-            <View style={styles.heroLogoTile}>
-              <Image
-                source={require('../../assets/jobrunner-logo.png')}
-                style={styles.heroLogo}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={styles.heroTagline}>Welcome back</Text>
-            <Text style={styles.heroSubtext}>Sign in to keep things moving.</Text>
+        <View style={[styles.content, { paddingBottom: bottomInset }]}>
+          <View style={styles.header}>
+            <Image
+              source={require('../../assets/jobrunner-logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.tagline}>Welcome back</Text>
+            <Text style={styles.taglineSubtext}>Sign in to keep things moving.</Text>
           </View>
-        </View>
 
-        <View style={[styles.sheet, { paddingBottom: bottomInset }]}>
-          <View style={styles.sheetHandle} />
-          <View style={styles.sheetInner}>
+          <Card>
+            <CardHeader>
+              <CardTitle>Sign In</CardTitle>
+              <CardDescription>Enter your email and password to continue</CardDescription>
+            </CardHeader>
+            <CardContent>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
                 <TextInput
@@ -510,25 +509,30 @@ export default function LoginScreen() {
                   )}
                 </View>
               )}
-            <Text style={styles.termsNotice}>
-              By signing in, you agree to our{' '}
-              <Text style={styles.termsLink} onPress={() => router.push('/more/terms-of-service' as any)}>
-                Terms of Service
-              </Text>{' '}and{' '}
-              <Text style={styles.termsLink} onPress={() => router.push('/more/privacy-policy' as any)}>
-                Privacy Policy
-              </Text>
-            </Text>
+            </CardContent>
+          </Card>
 
-            <View style={styles.signUpContainer}>
-              <Text style={styles.signUpText}>Don't have an account? </Text>
-              <Link href="/(auth)/register" asChild>
-                <TouchableOpacity testID="link-signup">
-                  <Text style={styles.signUpLink}>Sign Up</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
+          <Text style={styles.termsNotice}>
+            By signing in, you agree to our{' '}
+            <Text style={styles.termsLink} onPress={() => router.push('/more/terms-of-service' as any)}>
+              Terms of Service
+            </Text>{' '}and{' '}
+            <Text style={styles.termsLink} onPress={() => router.push('/more/privacy-policy' as any)}>
+              Privacy Policy
+            </Text>
+          </Text>
+
+          <View style={styles.spacer} />
+
+          <View style={styles.signUpContainer}>
+            <Text style={styles.signUpText}>Don't have an account? </Text>
+            <Link href="/(auth)/register" asChild>
+              <TouchableOpacity testID="link-signup">
+                <Text style={styles.signUpLink}>Sign Up</Text>
+              </TouchableOpacity>
+            </Link>
           </View>
+
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -538,65 +542,38 @@ export default function LoginScreen() {
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  hero: {
-    paddingTop: 56,
-    paddingBottom: spacing.xl,
-    paddingHorizontal: spacing['2xl'],
-    backgroundColor: '#F2F2F7',
-    alignItems: 'center',
-  },
-  heroInner: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  heroLogoTile: {
-    width: 88,
-    height: 88,
-    borderRadius: 22,
-    backgroundColor: '#FFE9D6',
-    alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xl,
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 6,
   },
-  heroLogo: {
-    width: 60,
-    height: 60,
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing['2xl'],
+    paddingTop: spacing['4xl'],
+    paddingBottom: spacing['4xl'],
   },
-  heroTagline: {
-    fontSize: 32,
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing['2xl'],
+  },
+  logo: {
+    width: 96,
+    height: 96,
+    marginBottom: spacing.lg,
+  },
+  tagline: {
+    fontSize: 26,
     fontWeight: '700',
     color: colors.foreground,
-    marginBottom: spacing.sm,
-    letterSpacing: -0.6,
-    textAlign: 'center',
+    marginBottom: spacing.xs,
+    letterSpacing: -0.3,
   },
-  heroSubtext: {
+  taglineSubtext: {
     fontSize: 15,
     color: colors.mutedForeground,
-    lineHeight: 22,
     textAlign: 'center',
-  },
-  sheet: {
-    backgroundColor: '#F2F2F7',
-    paddingTop: spacing.lg,
-    paddingHorizontal: spacing['2xl'],
-  },
-  sheetHandle: {
-    height: 0,
-  },
-  sheetInner: {
-    paddingTop: 0,
   },
   inputGroup: {
     marginBottom: 16,
@@ -610,9 +587,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   input: {
     height: 52,
     paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.cardBorder,
     borderRadius: 12,
     color: colors.foreground,
     fontSize: 16,
@@ -620,9 +597,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.cardBorder,
     borderRadius: 12,
   },
   passwordInput: {
@@ -713,9 +690,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.cardBorder,
     borderRadius: 12,
     height: 56,
     paddingHorizontal: 24,
@@ -746,15 +723,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#2B7DE9',
+    backgroundColor: colors.primary + '12',
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
     borderRadius: 12,
     height: 52,
     paddingHorizontal: 24,
   },
   demoButtonText: {
-    color: '#2B7DE9',
+    color: colors.primary,
     fontSize: 15,
     fontWeight: '600',
   },
