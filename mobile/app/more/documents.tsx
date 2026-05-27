@@ -947,7 +947,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.lg,
   },
   pageTitle: {
-    ...typography.sectionTitle,
+    ...typography.pageTitle,
     color: colors.foreground,
     marginBottom: spacing.xs,
   },

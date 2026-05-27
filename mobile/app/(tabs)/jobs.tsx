@@ -820,12 +820,9 @@ export default function JobsScreen() {
             >{null}</Button>
           </View>
           {canWriteJobs && (
-            <Button
-              size="icon"
-              variant="default"
-              onPress={navigateToCreateJob}
-              icon={<Feather name="plus" size={iconSizes.lg} color={colors.white} />}
-            >{null}</Button>
+            <PressableRow style={styles.headerAddButton} onPress={navigateToCreateJob}>
+              <Feather name="plus" size={20} color={colors.white} />
+            </PressableRow>
           )}
         </View>
       </View>
@@ -1542,11 +1539,20 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   pageTitle: {
     ...typography.pageTitle,
     color: colors.foreground,
+    marginBottom: spacing.xs,
   },
   pageSubtitle: {
-    ...typography.caption,
+    ...typography.body,
     color: colors.mutedForeground,
-    marginTop: spacing.xs,
+  },
+  headerAddButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 40,
+    minHeight: 40,
   },
   newJobButton: {
     flexDirection: 'row',

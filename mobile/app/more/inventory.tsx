@@ -562,6 +562,32 @@ export default function InventoryScreen() {
     </ScrollView>
   );
 
+  const renderPageHeader = () => {
+    let onAddPress: (() => void) | null = null;
+    if (activeTab === 'items') onAddPress = openCreateItem;
+    else if (activeTab === 'categories') onAddPress = () => setShowCategoryModal(true);
+    else if (activeTab === 'purchaseOrders') onAddPress = () => setShowPOModal(true);
+
+    const subtitle = activeTab === 'items' ? `${items.length} items total` :
+      activeTab === 'categories' ? `${categories.length} categories` :
+      activeTab === 'lowStock' ? `${lowStockItems.length} low stock items` :
+      `${purchaseOrders.length} purchase orders`;
+
+    return (
+      <View style={styles.pageHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.pageTitle}>Inventory</Text>
+          <Text style={styles.pageSubtitle}>{subtitle}</Text>
+        </View>
+        {onAddPress && (
+          <PressableRow style={styles.pageHeaderAdd} onPress={onAddPress}>
+            <Feather name="plus" size={20} color={colors.white} />
+          </PressableRow>
+        )}
+      </View>
+    );
+  };
+
   const renderSummaryCards = () => {
     const totalItems = items.length;
     const totalValue = items.reduce((sum, i) => sum + ((i.currentStock ?? 0) * parseFloat(i.costPrice || '0')), 0);
@@ -1377,28 +1403,7 @@ export default function InventoryScreen() {
     </AppBottomSheet>
   );
 
-  const renderFab = () => {
-    let onPress: () => void;
-    let icon: keyof typeof Feather.glyphMap;
-    if (activeTab === 'items') {
-      onPress = openCreateItem;
-      icon = 'plus';
-    } else if (activeTab === 'categories') {
-      onPress = () => setShowCategoryModal(true);
-      icon = 'plus';
-    } else if (activeTab === 'purchaseOrders') {
-      onPress = () => setShowPOModal(true);
-      icon = 'plus';
-    } else {
-      return null;
-    }
-
-    return (
-      <TouchableOpacity style={styles.fab} onPress={onPress} activeOpacity={0.8} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Feather name={icon} size={24} color={colors.white} />
-      </TouchableOpacity>
-    );
-  };
+  const renderFab = () => null;
 
   if (isLoading) {
     return (
@@ -1430,6 +1435,7 @@ export default function InventoryScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
+        {renderPageHeader()}
         {renderSummaryCards()}
         {renderTabBar()}
 
@@ -1889,17 +1895,30 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     ...typography.button,
     color: colors.primaryForeground || colors.white,
   },
-  fab: {
-    position: 'absolute',
-    bottom: spacing['3xl'],
-    right: spacing.lg,
-    width: sizes.fabSize,
-    height: sizes.fabSize,
-    borderRadius: sizes.fabSize / 2,
+  pageHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  pageTitle: {
+    ...typography.pageTitle,
+    color: colors.foreground,
+    marginBottom: spacing.xs,
+  },
+  pageSubtitle: {
+    ...typography.body,
+    color: colors.mutedForeground,
+  },
+  pageHeaderAdd: {
     backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    padding: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.lg,
+    minWidth: 40,
+    minHeight: 40,
   },
   modalContainer: {
     flex: 1,
