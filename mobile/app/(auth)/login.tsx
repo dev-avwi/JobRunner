@@ -23,7 +23,6 @@ import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import api, { API_URL } from '../../src/lib/api';
 import { spacing } from '../../src/lib/design-tokens';
-import { LinearGradient } from 'expo-linear-gradient';
 
 // Conditionally import Apple Authentication - only available in dev/production builds, not Expo Go
 let AppleAuthentication: any = null;
@@ -334,14 +333,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <LinearGradient
-          colors={['#1E3A8A', '#2563EB', '#3B5BDB']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          <View style={styles.heroOrbTopRight} />
-          <View style={styles.heroOrbBottomLeft} />
+        <View style={styles.hero}>
           <View style={styles.heroInner}>
             <Image
               source={require('../../assets/jobrunner-logo.png')}
@@ -352,7 +344,7 @@ export default function LoginScreen() {
             <Text style={styles.heroTagline}>Welcome back</Text>
             <Text style={styles.heroSubtext}>Sign in to keep things moving.</Text>
           </View>
-        </LinearGradient>
+        </View>
 
         <View style={[styles.sheet, { paddingBottom: bottomInset }]}>
           <View style={styles.sheetHandle} />
@@ -549,82 +541,53 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: '#1E3A8A',
+    backgroundColor: colors.background,
   },
   hero: {
-    paddingTop: 72,
-    paddingBottom: 96,
+    paddingTop: 88,
+    paddingBottom: spacing['2xl'],
     paddingHorizontal: spacing['2xl'],
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  heroOrbTopRight: {
-    position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    top: -120,
-    right: -100,
-  },
-  heroOrbBottomLeft: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    bottom: -80,
-    left: -80,
+    backgroundColor: colors.background,
   },
   heroInner: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   heroLogo: {
-    width: 88,
-    height: 88,
-    marginBottom: spacing.md,
+    width: 56,
+    height: 56,
+    marginBottom: spacing['2xl'],
   },
   heroWordmark: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.6,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
     marginBottom: spacing.lg,
   },
   heroTagline: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.5,
-    textAlign: 'center',
+    color: colors.foreground,
+    marginBottom: spacing.sm,
+    letterSpacing: -0.8,
+    lineHeight: 40,
   },
   heroSubtext: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.78)',
-    textAlign: 'center',
-    lineHeight: 22,
+    fontSize: 16,
+    color: colors.mutedForeground,
+    lineHeight: 24,
   },
   sheet: {
-    flex: 1,
     backgroundColor: colors.background,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    marginTop: -32,
-    paddingTop: spacing.sm,
+    paddingTop: spacing['2xl'],
     paddingHorizontal: spacing['2xl'],
   },
   sheetHandle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.cardBorder,
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
+    height: 0,
   },
   sheetInner: {
-    paddingTop: spacing.sm,
+    paddingTop: 0,
   },
   inputGroup: {
     marginBottom: 16,
