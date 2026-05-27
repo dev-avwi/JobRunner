@@ -23,6 +23,7 @@ import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import api, { API_URL } from '../../src/lib/api';
 import { spacing } from '../../src/lib/design-tokens';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Conditionally import Apple Authentication - only available in dev/production builds, not Expo Go
 let AppleAuthentication: any = null;
@@ -331,27 +332,31 @@ export default function LoginScreen() {
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.content, { paddingBottom: bottomInset }]}>
-          <View style={styles.header}>
-            <View style={styles.logoBadge}>
-              <Image
-                source={require('../../assets/jobrunner-logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={styles.wordmark}>JobRunner</Text>
-            <Text style={styles.tagline}>Welcome back</Text>
-            <Text style={styles.taglineSubtext}>Sign in to keep things moving.</Text>
+        <LinearGradient
+          colors={['#1E3A8A', '#2563EB', '#3B5BDB']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroOrbTopRight} />
+          <View style={styles.heroOrbBottomLeft} />
+          <View style={styles.heroInner}>
+            <Image
+              source={require('../../assets/jobrunner-logo.png')}
+              style={styles.heroLogo}
+              resizeMode="contain"
+            />
+            <Text style={styles.heroWordmark}>JobRunner</Text>
+            <Text style={styles.heroTagline}>Welcome back</Text>
+            <Text style={styles.heroSubtext}>Sign in to keep things moving.</Text>
           </View>
+        </LinearGradient>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Sign In</CardTitle>
-              <CardDescription>Enter your email and password to continue</CardDescription>
-            </CardHeader>
-            <CardContent>
+        <View style={[styles.sheet, { paddingBottom: bottomInset }]}>
+          <View style={styles.sheetHandle} />
+          <View style={styles.sheetInner}>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
                 <TextInput
@@ -512,30 +517,25 @@ export default function LoginScreen() {
                   )}
                 </View>
               )}
-            </CardContent>
-          </Card>
-
-          <Text style={styles.termsNotice}>
-            By signing in, you agree to our{' '}
-            <Text style={styles.termsLink} onPress={() => router.push('/more/terms-of-service' as any)}>
-              Terms of Service
-            </Text>{' '}and{' '}
-            <Text style={styles.termsLink} onPress={() => router.push('/more/privacy-policy' as any)}>
-              Privacy Policy
+            <Text style={styles.termsNotice}>
+              By signing in, you agree to our{' '}
+              <Text style={styles.termsLink} onPress={() => router.push('/more/terms-of-service' as any)}>
+                Terms of Service
+              </Text>{' '}and{' '}
+              <Text style={styles.termsLink} onPress={() => router.push('/more/privacy-policy' as any)}>
+                Privacy Policy
+              </Text>
             </Text>
-          </Text>
 
-          <View style={styles.spacer} />
-
-          <View style={styles.signUpContainer}>
-            <Text style={styles.signUpText}>Don't have an account? </Text>
-            <Link href="/(auth)/register" asChild>
-              <TouchableOpacity testID="link-signup">
-                <Text style={styles.signUpLink}>Sign Up</Text>
-              </TouchableOpacity>
-            </Link>
+            <View style={styles.signUpContainer}>
+              <Text style={styles.signUpText}>Don't have an account? </Text>
+              <Link href="/(auth)/register" asChild>
+                <TouchableOpacity testID="link-signup">
+                  <Text style={styles.signUpLink}>Sign Up</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
           </View>
-
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -549,56 +549,82 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    backgroundColor: '#1E3A8A',
   },
-  content: {
-    flex: 1,
+  hero: {
+    paddingTop: 72,
+    paddingBottom: 96,
     paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing['4xl'],
-    paddingBottom: spacing['4xl'],
+    overflow: 'hidden',
+    position: 'relative',
   },
-  header: {
+  heroOrbTopRight: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    top: -120,
+    right: -100,
+  },
+  heroOrbBottomLeft: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    bottom: -80,
+    left: -80,
+  },
+  heroInner: {
     alignItems: 'center',
-    marginBottom: spacing['2xl'],
   },
-  logoBadge: {
-    width: 112,
-    height: 112,
-    borderRadius: 28,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-  },
-  wordmark: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.foreground,
-    letterSpacing: -0.5,
+  heroLogo: {
+    width: 88,
+    height: 88,
     marginBottom: spacing.md,
   },
-  tagline: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: colors.foreground,
-    marginBottom: spacing.xs,
-    letterSpacing: -0.3,
+  heroWordmark: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.6,
+    marginBottom: spacing.lg,
   },
-  taglineSubtext: {
-    fontSize: 15,
-    color: colors.mutedForeground,
+  heroTagline: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: spacing.xs,
+    letterSpacing: -0.5,
     textAlign: 'center',
+  },
+  heroSubtext: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.78)',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  sheet: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: -32,
+    paddingTop: spacing.sm,
+    paddingHorizontal: spacing['2xl'],
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.cardBorder,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  sheetInner: {
+    paddingTop: spacing.sm,
   },
   inputGroup: {
     marginBottom: 16,
