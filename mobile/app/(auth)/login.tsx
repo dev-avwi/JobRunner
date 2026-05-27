@@ -342,7 +342,6 @@ export default function LoginScreen() {
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.heroWordmark}>JobRunner</Text>
             <Text style={styles.heroTagline}>Welcome back</Text>
             <Text style={styles.heroSubtext}>Sign in to keep things moving.</Text>
           </View>
@@ -539,17 +538,17 @@ export default function LoginScreen() {
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F2F2F7',
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F2F2F7',
   },
   hero: {
-    paddingTop: 64,
-    paddingBottom: spacing['3xl'],
+    paddingTop: 56,
+    paddingBottom: spacing.xl,
     paddingHorizontal: spacing['2xl'],
-    backgroundColor: colors.background,
+    backgroundColor: '#F2F2F7',
     alignItems: 'center',
   },
   heroInner: {
@@ -557,13 +556,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     width: '100%',
   },
   heroLogoTile: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
+    width: 88,
+    height: 88,
+    borderRadius: 22,
     backgroundColor: colors.foreground,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing['2xl'],
+    marginBottom: spacing.xl,
     shadowColor: colors.foreground,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.18,
@@ -571,16 +570,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     elevation: 8,
   },
   heroLogo: {
-    width: 64,
-    height: 64,
-  },
-  heroWordmark: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.mutedForeground,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    marginBottom: spacing.md,
+    width: 58,
+    height: 58,
   },
   heroTagline: {
     fontSize: 32,
@@ -597,8 +588,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     textAlign: 'center',
   },
   sheet: {
-    backgroundColor: colors.background,
-    paddingTop: spacing['2xl'],
+    backgroundColor: '#F2F2F7',
+    paddingTop: spacing.lg,
     paddingHorizontal: spacing['2xl'],
   },
   sheetHandle: {
@@ -619,9 +610,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   input: {
     height: 52,
     paddingHorizontal: 16,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderColor: '#E0E0E0',
     borderRadius: 12,
     color: colors.foreground,
     fontSize: 16,
@@ -629,9 +620,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderColor: '#E0E0E0',
     borderRadius: 12,
   },
   passwordInput: {
@@ -722,9 +713,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderColor: '#E0E0E0',
     borderRadius: 12,
     height: 56,
     paddingHorizontal: 24,
@@ -755,15 +746,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary + '12',
-    borderWidth: 1,
-    borderColor: colors.primary + '40',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#2B7DE9',
     borderRadius: 12,
     height: 52,
     paddingHorizontal: 24,
   },
   demoButtonText: {
-    color: colors.primary,
+    color: '#2B7DE9',
     fontSize: 15,
     fontWeight: '600',
   },
