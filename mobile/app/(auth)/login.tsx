@@ -595,8 +595,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   logo: {
-    width: 52,
-    height: 52,
+    width: 72,
+    height: 72,
   },
   wordmark: {
     fontSize: 30,
