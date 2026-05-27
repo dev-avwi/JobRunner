@@ -335,20 +335,15 @@ export default function LoginScreen() {
       >
         <View style={[styles.content, { paddingBottom: bottomInset }]}>
           <View style={styles.header}>
-            <LinearGradient
-              colors={['#F28C28', '#2B7DE9']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.logoGradientBorder}
-            >
-              <View style={styles.logoFrame}>
+            <View style={styles.logoOuterRing}>
+              <View style={styles.logoInnerRing}>
                 <Image
                   source={require('../../assets/jobrunner-logo.png')}
                   style={styles.logo}
                   resizeMode="contain"
                 />
               </View>
-            </LinearGradient>
+            </View>
             <Text style={styles.tagline}>Welcome back</Text>
             <Text style={styles.taglineSubtext}>Sign in to keep things moving.</Text>
           </View>
@@ -568,23 +563,30 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing['2xl'],
   },
-  logoGradientBorder: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    padding: 1.5,
-    marginBottom: spacing.lg,
-  },
-  logoFrame: {
-    flex: 1,
-    borderRadius: 18.5,
-    backgroundColor: colors.background,
+  logoOuterRing: {
+    width: 104,
+    height: 104,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#F28C28',
+    padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  logoInnerRing: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: '#2B7DE9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
   },
   logo: {
-    width: 64,
-    height: 64,
+    width: 80,
+    height: 80,
   },
   tagline: {
     fontSize: 26,
