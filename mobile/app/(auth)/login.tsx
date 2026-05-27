@@ -338,7 +338,7 @@ export default function LoginScreen() {
             <View style={styles.logoOuterRing}>
               <View style={styles.logoInnerRing}>
                 <Image
-                  source={require('../../assets/jobrunner-logo.png')}
+                  source={require('../../assets/jobrunner-logo-header.png')}
                   style={styles.logo}
                   resizeMode="contain"
                 />
@@ -595,8 +595,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   logo: {
-    width: 72,
-    height: 72,
+    width: 80,
+    height: 80,
   },
   wordmark: {
     fontSize: 30,
