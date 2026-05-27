@@ -23,6 +23,7 @@ import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import api, { API_URL } from '../../src/lib/api';
 import { spacing } from '../../src/lib/design-tokens';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Conditionally import Apple Authentication - only available in dev/production builds, not Expo Go
 let AppleAuthentication: any = null;
@@ -334,13 +335,20 @@ export default function LoginScreen() {
       >
         <View style={[styles.content, { paddingBottom: bottomInset }]}>
           <View style={styles.header}>
-            <View style={styles.logoFrame}>
-              <Image
-                source={require('../../assets/jobrunner-logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </View>
+            <LinearGradient
+              colors={['#F28C28', '#2B7DE9']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoGradientBorder}
+            >
+              <View style={styles.logoFrame}>
+                <Image
+                  source={require('../../assets/jobrunner-logo.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
+            </LinearGradient>
             <Text style={styles.tagline}>Welcome back</Text>
             <Text style={styles.taglineSubtext}>Sign in to keep things moving.</Text>
           </View>
@@ -560,20 +568,23 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing['2xl'],
   },
-  logoFrame: {
+  logoGradientBorder: {
     width: 80,
     height: 80,
     borderRadius: 20,
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#E0E0E0',
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 1.5,
     marginBottom: spacing.lg,
   },
+  logoFrame: {
+    flex: 1,
+    borderRadius: 18.5,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   logo: {
-    width: 56,
-    height: 56,
+    width: 64,
+    height: 64,
   },
   tagline: {
     fontSize: 26,
