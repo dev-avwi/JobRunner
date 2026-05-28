@@ -794,6 +794,15 @@ export default function JobsScreen() {
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Work</Text>
         <View style={styles.headerRight}>
+          {completedJobs.length > 0 && (
+            <TouchableOpacity
+              style={[styles.headerIconBtn, batchMode && styles.headerIconBtnActive]}
+              onPress={toggleBatchMode}
+              activeOpacity={0.7}
+            >
+              <Feather name="check-square" size={20} color={batchMode ? colors.white : colors.foreground} />
+            </TouchableOpacity>
+          )}
           <View style={styles.headerViewToggle}>
             <TouchableOpacity
               style={[styles.headerViewToggleBtn, viewMode === 'grid' && styles.headerViewToggleBtnActive]}
@@ -811,39 +820,13 @@ export default function JobsScreen() {
             </TouchableOpacity>
           </View>
           {canWriteJobs && (
-            <PressableRow style={styles.headerAddButton} onPress={navigateToCreateJob}>
-              <Feather name="plus" size={18} color={colors.white} />
-              <Text style={styles.headerAddButtonText}>New Job</Text>
-            </PressableRow>
-          )}
-        </View>
-      </View>
-      <View style={styles.subHeader}>
-        <Text style={[styles.pageSubtitle, { flex: 1 }]}>Manage and track all your jobs</Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}
-            onPress={() => setAdvancedOpen(prev => !prev)}
-            activeOpacity={0.7}
-          >
-            <Feather name="sliders" size={20} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.foreground} />
-            {activeFilterCount > 0 && (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          {completedJobs.length > 0 && (
-            <TouchableOpacity
-              style={[styles.headerIconBtn, batchMode && styles.headerIconBtnActive]}
-              onPress={toggleBatchMode}
-              activeOpacity={0.7}
-            >
-              <Feather name="check-square" size={20} color={batchMode ? colors.white : colors.foreground} />
+            <TouchableOpacity style={styles.headerAddIcon} onPress={navigateToCreateJob} activeOpacity={0.85}>
+              <Feather name="plus" size={22} color={colors.white} />
             </TouchableOpacity>
           )}
         </View>
       </View>
+      <Text style={styles.pageSubtitleInline}>{sortedJobs.length} {sortedJobs.length === 1 ? 'job' : 'jobs'} total</Text>
 
       <UsageLimitBanner />
 
@@ -858,6 +841,18 @@ export default function JobsScreen() {
             onChangeText={setSearchQuery}
           />
         </View>
+        <TouchableOpacity
+          style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}
+          onPress={() => setAdvancedOpen(prev => !prev)}
+          activeOpacity={0.7}
+        >
+          <Feather name="sliders" size={20} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.foreground} />
+          {activeFilterCount > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       {savedFilters.length > 0 && (
@@ -1516,14 +1511,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: spacing.sm,
-    marginBottom: spacing.xs,
+    marginBottom: 4,
     gap: spacing.sm,
   },
-  subHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
+  pageSubtitleInline: {
+    fontSize: 14,
+    color: colors.mutedForeground,
     marginBottom: spacing.md,
   },
   subHeaderLeft: {
@@ -1629,6 +1622,14 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     height: 40,
+  },
+  headerAddIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerAddButtonText: {
     color: colors.white,
