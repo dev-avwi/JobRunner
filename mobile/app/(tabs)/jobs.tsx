@@ -797,28 +797,6 @@ export default function JobsScreen() {
           <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
         </View>
         <View style={styles.headerRight}>
-          {completedJobs.length > 0 && (
-            <Button
-              size="icon"
-              variant={batchMode ? 'default' : 'ghost'}
-              onPress={toggleBatchMode}
-              icon={<Feather name="check-square" size={iconSizes.md} color={batchMode ? colors.white : colors.mutedForeground} />}
-            >{null}</Button>
-          )}
-          <View style={styles.viewToggle}>
-            <Button
-              size="icon"
-              variant="ghost"
-              onPress={() => setViewMode('grid')}
-              icon={<Feather name="grid" size={iconSizes.md} color={viewMode === 'grid' ? colors.primary : colors.mutedForeground} />}
-            >{null}</Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onPress={() => setViewMode('list')}
-              icon={<Feather name="list" size={iconSizes.md} color={viewMode === 'list' ? colors.primary : colors.mutedForeground} />}
-            >{null}</Button>
-          </View>
           {canWriteJobs && (
             <PressableRow style={styles.headerAddButton} onPress={navigateToCreateJob}>
               <Feather name="plus" size={18} color={colors.white} />
@@ -856,6 +834,28 @@ export default function JobsScreen() {
             </View>
           )}
         </PressableRow>
+        <View style={styles.viewToggle}>
+          <Button
+            size="icon"
+            variant="ghost"
+            onPress={() => setViewMode('grid')}
+            icon={<Feather name="grid" size={iconSizes.md} color={viewMode === 'grid' ? colors.primary : colors.mutedForeground} />}
+          >{null}</Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onPress={() => setViewMode('list')}
+            icon={<Feather name="list" size={iconSizes.md} color={viewMode === 'list' ? colors.primary : colors.mutedForeground} />}
+          >{null}</Button>
+        </View>
+        {completedJobs.length > 0 && (
+          <Button
+            size="icon"
+            variant={batchMode ? 'default' : 'ghost'}
+            onPress={toggleBatchMode}
+            icon={<Feather name="check-square" size={iconSizes.md} color={batchMode ? colors.white : colors.mutedForeground} />}
+          >{null}</Button>
+        )}
       </View>
 
       {savedFilters.length > 0 && (
