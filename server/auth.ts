@@ -253,19 +253,21 @@ export class AuthService {
         return { success: false, error: 'Account is deactivated. Please contact support.' };
       }
 
-      // Check if email is verified (allow demo users to bypass)
-      const isDemoUser = user.email === 'demo@jobrunner.com.au';
-      if (!user.emailVerified && !isDemoUser) {
-        return { success: false, error: 'Please verify your email address before logging in. Check your email for verification instructions.' };
-      }
-
-      // Verify password (user.password could be null for OAuth users)
+      // Verify password FIRST so we don't leak account existence to attackers
+      // via the "please verify your email" branch (B1 — account enumeration).
+      // OAuth-only users (no password set) also get the generic error.
       if (!user.password) {
-        return { success: false, error: 'Please login with Google or reset your password' };
+        return { success: false, error: 'Invalid email or password' };
       }
       const isValidPassword = await this.verifyPassword(validatedCredentials.password, user.password);
       if (!isValidPassword) {
         return { success: false, error: 'Invalid email or password' };
+      }
+
+      // Only AFTER credentials are confirmed do we surface verification status.
+      const isDemoUser = user.email === 'demo@jobrunner.com.au';
+      if (!user.emailVerified && !isDemoUser) {
+        return { success: false, error: 'Please verify your email address before logging in. Check your email for verification instructions.' };
       }
 
       // Return user without password

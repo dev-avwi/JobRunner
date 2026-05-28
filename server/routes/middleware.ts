@@ -8,13 +8,66 @@ import { getUserContext, requireOnboarding } from "../permissions";
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-export const authRateLimiter = rateLimit({
+// Demo account is bypassed so a hostile visitor can't lock the "Try the Demo"
+// button for everyone by spamming wrong passwords.
+const isDemoLoginAttempt = (req: any): boolean => {
+  const email = (req.body?.email || '').toString().toLowerCase().trim();
+  return email === 'demo@jobrunner.com.au';
+};
+
+// Login: keyed by email+IP so one hostile IP can't lock out a victim by
+// flooding their email, and one user behind CGNAT can't lock the whole NAT.
+// Generous on success (we only count failures via skipSuccessfulRequests).
+export const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  keyGenerator: (req: any) => {
+    const email = (req.body?.email || '').toString().toLowerCase().trim();
+    const ip = ipKeyGenerator(req.ip || '', 56);
+    return email ? `login:${email}:${ip}` : `login::${ip}`;
+  },
+  skip: isDemoLoginAttempt,
+  skipSuccessfulRequests: true,
+  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Registration: per-IP cap to stop bot signup floods, but high enough that
+// a small office NAT (~20 staff signing up) doesn't get blocked.
+export const registerRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  keyGenerator: (req: any) => ipKeyGenerator(req.ip || '', 56),
+  message: { error: 'Too many sign-up attempts from this network. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Email/token verification: cheap server work but worth limiting to blunt
+// token brute-forcing. Demo account exempted.
+export const verifyRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  keyGenerator: (req: any) => ipKeyGenerator(req.ip || '', 56),
+  skip: isDemoLoginAttempt,
+  message: { error: 'Too many verification attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Back-compat alias — existing routes still import `authRateLimiter`. Routes
+// migrate to the specific limiter above as we touch them; meanwhile this
+// keeps a sensible default that won't lock the demo account.
+export const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  keyGenerator: (req: any) => ipKeyGenerator(req.ip || '', 56),
+  skip: isDemoLoginAttempt,
   message: { error: 'Too many attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: false,
+  skipSuccessfulRequests: true,
 });
 
 export const passwordResetLimiter = rateLimit({

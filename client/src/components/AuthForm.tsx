@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, setSessionToken } from "@/lib/queryClient";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, User, Mail, AlertCircle, CheckCircle, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -68,6 +69,7 @@ export default function AuthForm({ onLogin }: AuthFormProps) {
     lastName: '',
     tradeType: ''
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const tradeTypes = [
     { value: 'plumbing', label: 'Plumbing' },
@@ -219,9 +221,28 @@ export default function AuthForm({ onLogin }: AuthFormProps) {
     setError('');
     setSuccess('');
 
+    // Validate names
+    if (!registerData.firstName.trim()) {
+      setError('First name is required');
+      setIsLoading(false);
+      return;
+    }
+    if (!registerData.lastName.trim()) {
+      setError('Last name is required');
+      setIsLoading(false);
+      return;
+    }
+
     // Validate passwords match
     if (registerData.password !== registerData.confirmPassword) {
       setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    // Terms must be accepted (AU consumer-law requirement)
+    if (!acceptedTerms) {
+      setError('You must agree to the Terms of Service and Privacy Policy');
       setIsLoading(false);
       return;
     }
@@ -611,17 +632,26 @@ export default function AuthForm({ onLogin }: AuthFormProps) {
                   )}
                 </div>
                 
-                <p className="text-xs text-muted-foreground text-center">
-                  By creating an account, you agree to our{' '}
-                  <a href="/terms" className="underline" target="_blank" rel="noopener noreferrer">Terms of Service</a>
-                  {' '}and acknowledge our{' '}
-                  <a href="/privacy" className="underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
-                </p>
+                <div className="flex items-start gap-2 pt-1">
+                  <Checkbox
+                    id="register-terms"
+                    checked={acceptedTerms}
+                    onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                    data-testid="checkbox-register-terms"
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="register-terms" className="text-xs text-muted-foreground font-normal leading-relaxed cursor-pointer">
+                    I agree to the{' '}
+                    <a href="/terms" className="underline text-foreground" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                    {' '}and{' '}
+                    <a href="/privacy" className="underline text-foreground" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                  </Label>
+                </div>
 
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isLoading}
+                  disabled={isLoading || !acceptedTerms}
                   data-testid="button-register"
                 >
                   {isLoading ? (

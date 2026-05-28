@@ -10,9 +10,30 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, ArrowRight, Building2, CheckCircle2 } from "lucide-react";
 import { tradeCatalog, getTradeDefinition } from "@shared/tradeCatalog";
 
+// ATO ABN checksum: strip non-digits, must be 11 digits, subtract 1 from the
+// leading digit, multiply each digit by its position weight, sum mod 89 == 0.
+// Reference: https://abr.business.gov.au/Help/AbnFormat
+function isValidAbn(input: string): boolean {
+  const digits = input.replace(/\s+/g, '');
+  if (!/^\d{11}$/.test(digits)) return false;
+  const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+  const nums = digits.split('').map((d, i) => {
+    const n = parseInt(d, 10);
+    return i === 0 ? n - 1 : n;
+  });
+  const sum = nums.reduce((acc, n, i) => acc + n * weights[i], 0);
+  return sum % 89 === 0;
+}
+
 const businessProfileSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
-  abn: z.string().optional(),
+  abn: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || v.trim() === '' || isValidAbn(v),
+      "Enter a valid 11-digit Australian Business Number",
+    ),
   contactEmail: z.string().email("Please enter a valid email address"),
   contactPhone: z.string().min(1, "Phone number is required"),
   address: z.string().optional(), // Made optional - can add later in Settings

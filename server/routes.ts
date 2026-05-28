@@ -16,6 +16,9 @@ import {
   requirePaidTierForSms,
   requireDevelopment,
   authRateLimiter,
+  registerRateLimiter,
+  loginRateLimiter,
+  verifyRateLimiter,
   passwordResetLimiter,
   paymentRateLimiter,
   messageSendLimiter,
@@ -3161,11 +3164,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================
 
   // Registration endpoint
-  app.post("/api/auth/register", authRateLimiter, async (req: any, res) => {
+  app.post("/api/auth/register", registerRateLimiter, async (req: any, res) => {
     try {
-      const { password } = req.body;
+      const { password, firstName, lastName } = req.body || {};
+      // Required-field checks BEFORE password rules so users see all problems,
+      // not just the password one (audit B4).
+      if (!firstName || typeof firstName !== 'string' || firstName.trim().length === 0) {
+        return res.status(400).json({ error: "First name is required", field: 'firstName' });
+      }
+      if (!lastName || typeof lastName !== 'string' || lastName.trim().length === 0) {
+        return res.status(400).json({ error: "Last name is required", field: 'lastName' });
+      }
       if (!password || typeof password !== 'string' || password.length < 8 || !/[A-Z]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
-        return res.status(400).json({ error: "Password must be at least 8 characters with one uppercase letter and one special character" });
+        return res.status(400).json({ error: "Password must be at least 8 characters with one uppercase letter and one special character", field: 'password' });
       }
       // Auto-generate username from email if not provided (web signup no longer
       // collects username — see AuthForm.tsx). Mirrors the OAuth flow in auth.ts.
@@ -3257,7 +3268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Login endpoint
-  app.post("/api/auth/login", authRateLimiter, async (req: any, res) => {
+  app.post("/api/auth/login", loginRateLimiter, async (req: any, res) => {
     try {
       const loginData = loginSchema.parse(req.body);
       const result = await AuthService.login(loginData);
@@ -4186,7 +4197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST endpoint for actual verification (used by both web and mobile)
-  app.post("/api/auth/verify-email", authRateLimiter, async (req: any, res) => {
+  app.post("/api/auth/verify-email", verifyRateLimiter, async (req: any, res) => {
     try {
       const { token } = req.body;
       if (!token) {

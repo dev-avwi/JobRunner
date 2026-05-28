@@ -373,6 +373,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
 }).extend({
   password: z.string().min(8, "Password must be at least 8 characters").regex(/[A-Z]/, "Password must include an uppercase letter").regex(/[^A-Za-z0-9]/, "Password must include a special character").optional(),
   email: z.string().email("Invalid email address").optional(),
+  firstName: z.string().trim().min(1, "First name is required").max(100, "First name is too long"),
+  lastName: z.string().trim().min(1, "Last name is required").max(100, "Last name is too long"),
   intendedTier: z.enum(['free', 'pro', 'team']).optional(),
 });
 
