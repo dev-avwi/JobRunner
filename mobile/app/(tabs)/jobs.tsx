@@ -808,7 +808,7 @@ export default function JobsScreen() {
             onPress={() => setAdvancedOpen(prev => !prev)}
             activeOpacity={0.7}
           >
-            <Feather name="sliders" size={18} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.mutedForeground} />
+            <Feather name="sliders" size={20} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.foreground} />
             {activeFilterCount > 0 && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
@@ -821,14 +821,14 @@ export default function JobsScreen() {
               onPress={() => setViewMode('grid')}
               activeOpacity={0.7}
             >
-              <Feather name="grid" size={16} color={viewMode === 'grid' ? colors.primary : colors.mutedForeground} />
+              <Feather name="grid" size={18} color={viewMode === 'grid' ? colors.primary : colors.foreground} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.headerViewToggleBtn, viewMode === 'list' && styles.headerViewToggleBtnActive]}
               onPress={() => setViewMode('list')}
               activeOpacity={0.7}
             >
-              <Feather name="list" size={16} color={viewMode === 'list' ? colors.primary : colors.mutedForeground} />
+              <Feather name="list" size={18} color={viewMode === 'list' ? colors.primary : colors.foreground} />
             </TouchableOpacity>
           </View>
           {completedJobs.length > 0 && (
@@ -837,7 +837,7 @@ export default function JobsScreen() {
               onPress={toggleBatchMode}
               activeOpacity={0.7}
             >
-              <Feather name="check-square" size={18} color={batchMode ? colors.white : colors.mutedForeground} />
+              <Feather name="check-square" size={20} color={batchMode ? colors.white : colors.foreground} />
             </TouchableOpacity>
           )}
         </View>
