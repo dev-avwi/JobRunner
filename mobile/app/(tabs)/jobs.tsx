@@ -819,13 +819,7 @@ export default function JobsScreen() {
         </View>
       </View>
       <View style={styles.subHeader}>
-        <View style={styles.subHeaderLeft}>
-          <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
-          <View style={styles.countChip}>
-            <View style={styles.countDot} />
-            <Text style={styles.countChipText}>{sortedJobs.length} {sortedJobs.length === 1 ? 'job' : 'jobs'}</Text>
-          </View>
-        </View>
+        <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}
