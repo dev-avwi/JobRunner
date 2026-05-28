@@ -793,28 +793,7 @@ export default function JobsScreen() {
     <View>
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Work</Text>
-        {canWriteJobs && (
-          <PressableRow style={styles.headerAddButton} onPress={navigateToCreateJob}>
-            <Feather name="plus" size={18} color={colors.white} />
-            <Text style={styles.headerAddButtonText}>New Job</Text>
-          </PressableRow>
-        )}
-      </View>
-      <View style={styles.subHeader}>
-        <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}
-            onPress={() => setAdvancedOpen(prev => !prev)}
-            activeOpacity={0.7}
-          >
-            <Feather name="sliders" size={20} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.foreground} />
-            {activeFilterCount > 0 && (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
           <View style={styles.headerViewToggle}>
             <TouchableOpacity
               style={[styles.headerViewToggleBtn, viewMode === 'grid' && styles.headerViewToggleBtnActive]}
@@ -831,6 +810,29 @@ export default function JobsScreen() {
               <Feather name="list" size={18} color={viewMode === 'list' ? colors.primary : colors.foreground} />
             </TouchableOpacity>
           </View>
+          {canWriteJobs && (
+            <PressableRow style={styles.headerAddButton} onPress={navigateToCreateJob}>
+              <Feather name="plus" size={18} color={colors.white} />
+              <Text style={styles.headerAddButtonText}>New Job</Text>
+            </PressableRow>
+          )}
+        </View>
+      </View>
+      <View style={styles.subHeader}>
+        <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}
+            onPress={() => setAdvancedOpen(prev => !prev)}
+            activeOpacity={0.7}
+          >
+            <Feather name="sliders" size={20} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.foreground} />
+            {activeFilterCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
           {completedJobs.length > 0 && (
             <TouchableOpacity
               style={[styles.headerIconBtn, batchMode && styles.headerIconBtnActive]}
