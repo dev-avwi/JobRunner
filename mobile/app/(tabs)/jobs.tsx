@@ -793,6 +793,12 @@ export default function JobsScreen() {
     <View>
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Work</Text>
+        {canWriteJobs && (
+          <PressableRow style={styles.headerAddButton} onPress={navigateToCreateJob}>
+            <Feather name="plus" size={18} color={colors.white} />
+            <Text style={styles.headerAddButtonText}>New Job</Text>
+          </PressableRow>
+        )}
       </View>
       <View style={styles.subHeader}>
         <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
@@ -825,12 +831,6 @@ export default function JobsScreen() {
             >
               <Feather name="check-square" size={16} color={batchMode ? colors.white : colors.mutedForeground} />
             </TouchableOpacity>
-          )}
-          {canWriteJobs && (
-            <PressableRow style={styles.headerAddButton} onPress={navigateToCreateJob}>
-              <Feather name="plus" size={16} color={colors.white} />
-              <Text style={styles.headerAddButtonText}>New</Text>
-            </PressableRow>
           )}
         </View>
       </View>
@@ -1502,14 +1502,18 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
 
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: spacing.sm,
     marginBottom: spacing.xs,
+    gap: spacing.sm,
   },
   subHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.sm,
+    gap: spacing.md,
     marginBottom: spacing.md,
   },
   headerLeft: {
@@ -1575,11 +1579,11 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: spacing.xs,
     backgroundColor: colors.primary,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-    height: 32,
+    paddingHorizontal: spacing.md,
+    height: 40,
   },
   headerAddButtonText: {
     color: colors.white,
