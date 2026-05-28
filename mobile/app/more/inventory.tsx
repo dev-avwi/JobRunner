@@ -564,24 +564,21 @@ export default function InventoryScreen() {
 
   const renderPageHeader = () => {
     let onAddPress: (() => void) | null = null;
-    if (activeTab === 'items') onAddPress = openCreateItem;
-    else if (activeTab === 'categories') onAddPress = () => setShowCategoryModal(true);
-    else if (activeTab === 'purchaseOrders') onAddPress = () => setShowPOModal(true);
-
-    const subtitle = activeTab === 'items' ? `${items.length} items total` :
-      activeTab === 'categories' ? `${categories.length} categories` :
-      activeTab === 'lowStock' ? `${lowStockItems.length} low stock items` :
-      `${purchaseOrders.length} purchase orders`;
+    let addLabel = '';
+    if (activeTab === 'items') { onAddPress = openCreateItem; addLabel = 'Add Item'; }
+    else if (activeTab === 'categories') { onAddPress = () => setShowCategoryModal(true); addLabel = 'Add Category'; }
+    else if (activeTab === 'purchaseOrders') { onAddPress = () => setShowPOModal(true); addLabel = 'New Order'; }
 
     return (
       <View style={styles.pageHeader}>
         <View style={{ flex: 1 }}>
           <Text style={styles.pageTitle}>Inventory</Text>
-          <Text style={styles.pageSubtitle}>{subtitle}</Text>
+          <Text style={styles.pageSubtitle}>Track stock, categories, and orders</Text>
         </View>
         {onAddPress && (
           <PressableRow style={styles.pageHeaderAdd} onPress={onAddPress}>
-            <Feather name="plus" size={20} color={colors.white} />
+            <Feather name="plus" size={18} color={colors.white} />
+            <Text style={styles.pageHeaderAddText}>{addLabel}</Text>
           </PressableRow>
         )}
       </View>
@@ -1915,12 +1912,20 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     color: colors.mutedForeground,
   },
   pageHeaderAdd: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    width: 44,
-    height: 44,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 40,
+  },
+  pageHeaderAddText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   modalContainer: {
     flex: 1,

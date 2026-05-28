@@ -794,7 +794,7 @@ export default function JobsScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.pageTitle}>Work</Text>
-          <Text style={styles.pageSubtitle}>{jobs.length} jobs total</Text>
+          <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
         </View>
         <View style={styles.headerRight}>
           {completedJobs.length > 0 && (
@@ -821,7 +821,8 @@ export default function JobsScreen() {
           </View>
           {canWriteJobs && (
             <PressableRow style={styles.headerAddButton} onPress={navigateToCreateJob}>
-              <Feather name="plus" size={20} color={colors.white} />
+              <Feather name="plus" size={18} color={colors.white} />
+              <Text style={styles.headerAddButtonText}>New Job</Text>
             </PressableRow>
           )}
         </View>
@@ -1549,12 +1550,20 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     color: colors.mutedForeground,
   },
   headerAddButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    width: 44,
-    height: 44,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 40,
+  },
+  headerAddButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   newJobButton: {
     flexDirection: 'row',

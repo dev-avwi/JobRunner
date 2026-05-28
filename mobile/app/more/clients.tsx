@@ -397,10 +397,11 @@ export default function ClientsScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.pageTitle}>Clients</Text>
-          <Text style={styles.pageSubtitle}>{clients.length} clients total</Text>
+          <Text style={styles.pageSubtitle}>All your clients in one place</Text>
         </View>
         <PressableRow style={styles.newButton} onPress={handleCreateClient} >
-          <Feather name="plus" size={20} color={colors.white} />
+          <Feather name="plus" size={18} color={colors.white} />
+          <Text style={styles.newButtonText}>New Client</Text>
         </PressableRow>
       </View>
 
@@ -601,16 +602,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.mutedForeground,
   },
   newButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    width: 44,
-    height: 44,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 40,
   },
   newButtonText: {
-    color: colors.primaryForeground,
-    ...typography.caption,
+    color: colors.white,
+    fontSize: 14,
     fontWeight: '600',
   },
 

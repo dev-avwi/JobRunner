@@ -308,11 +308,7 @@ export default function DocumentsScreen() {
     <View style={styles.headerRow}>
       <View>
         <Text style={styles.pageTitle}>Documents</Text>
-        <Text style={styles.pageSubtitle}>
-          {activeTab === 'quotes' ? `${quotes.length} total quotes` :
-           activeTab === 'invoices' ? `${invoices.length} total invoices` :
-           `${receipts.length} total receipts`}
-        </Text>
+        <Text style={styles.pageSubtitle}>Quotes, invoices, and receipts</Text>
       </View>
       <View style={styles.headerActions}>
         <View style={styles.viewToggle}>
@@ -325,6 +321,7 @@ export default function DocumentsScreen() {
         </View>
         <PressableRow style={styles.addButton} onPress={() => { if (activeTab === 'quotes') router.push('/more/quote/new'); else if (activeTab === 'invoices') router.push('/more/invoice/new'); }} >
           <Feather name="plus" size={18} color={colors.white} />
+          <Text style={styles.addButtonText}>New</Text>
         </PressableRow>
       </View>
     </View>
@@ -978,12 +975,20 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     backgroundColor: colors.primaryLight,
   },
   addButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    width: 44,
-    height: 44,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 40,
+  },
+  addButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   kpiRow: {
     flexDirection: 'row',
