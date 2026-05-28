@@ -792,10 +792,10 @@ export default function JobsScreen() {
   const listHeaderComponent = useMemo(() => (
     <View>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.pageTitle}>Work</Text>
-          <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
-        </View>
+        <Text style={styles.pageTitle}>Work</Text>
+      </View>
+      <View style={styles.subHeader}>
+        <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}
@@ -1502,11 +1502,15 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
 
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
     paddingTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  subHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   headerLeft: {
     flex: 1,
