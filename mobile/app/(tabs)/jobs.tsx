@@ -819,7 +819,7 @@ export default function JobsScreen() {
         </View>
       </View>
       <View style={styles.subHeader}>
-        <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
+        <Text style={[styles.pageSubtitle, { flex: 1 }]}>Manage and track all your jobs</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}
