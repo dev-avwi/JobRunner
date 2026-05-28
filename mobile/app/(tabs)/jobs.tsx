@@ -808,7 +808,7 @@ export default function JobsScreen() {
             onPress={() => setAdvancedOpen(prev => !prev)}
             activeOpacity={0.7}
           >
-            <Feather name="sliders" size={16} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.mutedForeground} />
+            <Feather name="sliders" size={18} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.mutedForeground} />
             {activeFilterCount > 0 && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
@@ -816,11 +816,19 @@ export default function JobsScreen() {
             )}
           </TouchableOpacity>
           <View style={styles.headerViewToggle}>
-            <TouchableOpacity style={styles.headerViewToggleBtn} onPress={() => setViewMode('grid')} activeOpacity={0.7}>
-              <Feather name="grid" size={14} color={viewMode === 'grid' ? colors.primary : colors.mutedForeground} />
+            <TouchableOpacity
+              style={[styles.headerViewToggleBtn, viewMode === 'grid' && styles.headerViewToggleBtnActive]}
+              onPress={() => setViewMode('grid')}
+              activeOpacity={0.7}
+            >
+              <Feather name="grid" size={16} color={viewMode === 'grid' ? colors.primary : colors.mutedForeground} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.headerViewToggleBtn} onPress={() => setViewMode('list')} activeOpacity={0.7}>
-              <Feather name="list" size={14} color={viewMode === 'list' ? colors.primary : colors.mutedForeground} />
+            <TouchableOpacity
+              style={[styles.headerViewToggleBtn, viewMode === 'list' && styles.headerViewToggleBtnActive]}
+              onPress={() => setViewMode('list')}
+              activeOpacity={0.7}
+            >
+              <Feather name="list" size={16} color={viewMode === 'list' ? colors.primary : colors.mutedForeground} />
             </TouchableOpacity>
           </View>
           {completedJobs.length > 0 && (
@@ -829,7 +837,7 @@ export default function JobsScreen() {
               onPress={toggleBatchMode}
               activeOpacity={0.7}
             >
-              <Feather name="check-square" size={16} color={batchMode ? colors.white : colors.mutedForeground} />
+              <Feather name="check-square" size={18} color={batchMode ? colors.white : colors.mutedForeground} />
             </TouchableOpacity>
           )}
         </View>
@@ -1514,7 +1522,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   headerLeft: {
     flex: 1,
@@ -1531,8 +1539,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     padding: 2,
   },
   headerIconBtn: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: radius.md,
     backgroundColor: colors.muted,
     alignItems: 'center',
@@ -1546,15 +1554,19 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     flexDirection: 'row',
     backgroundColor: colors.muted,
     borderRadius: radius.md,
-    padding: 2,
-    height: 32,
+    padding: 3,
+    height: 40,
   },
   headerViewToggleBtn: {
-    width: 26,
-    height: 28,
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,
+  },
+  headerViewToggleBtnActive: {
+    backgroundColor: colors.background,
+    ...shadows.sm,
   },
   viewToggleBtn: {
     padding: spacing.sm,
