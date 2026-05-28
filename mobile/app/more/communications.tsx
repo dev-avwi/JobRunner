@@ -94,15 +94,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   pageTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
     color: colors.foreground,
     letterSpacing: -0.5,
+    marginBottom: spacing.xs,
   },
   pageSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
+    lineHeight: 20,
     color: colors.mutedForeground,
-    marginTop: 2,
   },
   statsRow: {
     flexDirection: 'row',
@@ -670,7 +671,7 @@ export default function CommunicationsScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      <View style={[styles.heroSection, { paddingTop: insets.top + spacing.md }]}>
+      <View style={styles.heroSection}>
         <View style={styles.heroLeft}>
           <Text style={styles.pageTitle}>Communications</Text>
           <Text style={styles.pageSubtitle}>Emails & SMS history</Text>

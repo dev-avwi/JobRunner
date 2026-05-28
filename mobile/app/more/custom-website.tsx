@@ -202,11 +202,6 @@ export default function CustomWebsitePage() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.heroSection}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: spacing.xs }}>
-              <View style={styles.heroIconWrap}>
-                <Feather name="globe" size={16} color={colors.primary} />
-              </View>
-            </View>
             <Text style={styles.pageTitle}>Custom Website</Text>
             <Text style={styles.pageSubtitle}>
               Professional site built for your trade — designed, hosted & integrated with JobRunner.

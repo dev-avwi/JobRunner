@@ -1387,11 +1387,6 @@ export default function WhsHubScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.heroSection}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: spacing.xs }}>
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center' }}>
-                  <Feather name="shield" size={16} color={colors.primary} />
-                </View>
-              </View>
               <Text style={styles.pageTitle}>WHS Safety</Text>
               <Text style={styles.pageSubtitle}>
                 Incidents, JSAs & site compliance all in one place.
