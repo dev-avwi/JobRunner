@@ -819,7 +819,13 @@ export default function JobsScreen() {
         </View>
       </View>
       <View style={styles.subHeader}>
-        <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
+        <View style={styles.subHeaderLeft}>
+          <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
+          <View style={styles.countChip}>
+            <View style={styles.countDot} />
+            <Text style={styles.countChipText}>{sortedJobs.length} {sortedJobs.length === 1 ? 'job' : 'jobs'}</Text>
+          </View>
+        </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}
@@ -1525,6 +1531,33 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     justifyContent: 'space-between',
     gap: spacing.md,
     marginBottom: spacing.md,
+  },
+  subHeaderLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  countChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.sm,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: `${colors.primary}10`,
+  },
+  countDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+  },
+  countChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
   },
   headerLeft: {
     flex: 1,
