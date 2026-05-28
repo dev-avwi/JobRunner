@@ -797,10 +797,39 @@ export default function JobsScreen() {
           <Text style={styles.pageSubtitle}>Manage and track all your jobs</Text>
         </View>
         <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}
+            onPress={() => setAdvancedOpen(prev => !prev)}
+            activeOpacity={0.7}
+          >
+            <Feather name="sliders" size={16} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.mutedForeground} />
+            {activeFilterCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <View style={styles.headerViewToggle}>
+            <TouchableOpacity style={styles.headerViewToggleBtn} onPress={() => setViewMode('grid')} activeOpacity={0.7}>
+              <Feather name="grid" size={14} color={viewMode === 'grid' ? colors.primary : colors.mutedForeground} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.headerViewToggleBtn} onPress={() => setViewMode('list')} activeOpacity={0.7}>
+              <Feather name="list" size={14} color={viewMode === 'list' ? colors.primary : colors.mutedForeground} />
+            </TouchableOpacity>
+          </View>
+          {completedJobs.length > 0 && (
+            <TouchableOpacity
+              style={[styles.headerIconBtn, batchMode && styles.headerIconBtnActive]}
+              onPress={toggleBatchMode}
+              activeOpacity={0.7}
+            >
+              <Feather name="check-square" size={16} color={batchMode ? colors.white : colors.mutedForeground} />
+            </TouchableOpacity>
+          )}
           {canWriteJobs && (
             <PressableRow style={styles.headerAddButton} onPress={navigateToCreateJob}>
-              <Feather name="plus" size={18} color={colors.white} />
-              <Text style={styles.headerAddButtonText}>New Job</Text>
+              <Feather name="plus" size={16} color={colors.white} />
+              <Text style={styles.headerAddButtonText}>New</Text>
             </PressableRow>
           )}
         </View>
@@ -819,46 +848,6 @@ export default function JobsScreen() {
             onChangeText={setSearchQuery}
           />
         </View>
-        <PressableRow
-
-          style={[
-            styles.advancedFilterBtn,
-            (advancedOpen || hasAdvancedFilters) && styles.advancedFilterBtnActive,
-          ]}
-          onPress={() => setAdvancedOpen(prev => !prev)}
-        >
-          <Feather name="sliders" size={iconSizes.md} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.mutedForeground} />
-          {activeFilterCount > 0 && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-            </View>
-          )}
-        </PressableRow>
-      </View>
-
-      <View style={styles.toolbarRow}>
-        <View style={styles.viewToggle}>
-          <Button
-            size="icon"
-            variant="ghost"
-            onPress={() => setViewMode('grid')}
-            icon={<Feather name="grid" size={iconSizes.md} color={viewMode === 'grid' ? colors.primary : colors.mutedForeground} />}
-          >{null}</Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onPress={() => setViewMode('list')}
-            icon={<Feather name="list" size={iconSizes.md} color={viewMode === 'list' ? colors.primary : colors.mutedForeground} />}
-          >{null}</Button>
-        </View>
-        {completedJobs.length > 0 && (
-          <Button
-            size="icon"
-            variant={batchMode ? 'default' : 'ghost'}
-            onPress={toggleBatchMode}
-            icon={<Feather name="check-square" size={iconSizes.md} color={batchMode ? colors.white : colors.mutedForeground} />}
-          >{null}</Button>
-        )}
       </View>
 
       {savedFilters.length > 0 && (
@@ -1533,12 +1522,31 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     borderRadius: radius.md,
     padding: 2,
   },
-  toolbarRow: {
-    flexDirection: 'row',
+  headerIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.md,
+    backgroundColor: colors.muted,
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  headerIconBtnActive: {
+    backgroundColor: colors.primary,
+  },
+  headerViewToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.muted,
+    borderRadius: radius.md,
+    padding: 2,
+    height: 32,
+  },
+  headerViewToggleBtn: {
+    width: 26,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
   },
   viewToggleBtn: {
     padding: spacing.sm,
@@ -1563,12 +1571,11 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: 4,
     backgroundColor: colors.primary,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 40,
+    paddingHorizontal: spacing.sm,
+    height: 32,
   },
   headerAddButtonText: {
     color: colors.white,
