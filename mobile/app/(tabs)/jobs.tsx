@@ -834,6 +834,9 @@ export default function JobsScreen() {
             </View>
           )}
         </PressableRow>
+      </View>
+
+      <View style={styles.toolbarRow}>
         <View style={styles.viewToggle}>
           <Button
             size="icon"
@@ -1529,6 +1532,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     backgroundColor: colors.muted,
     borderRadius: radius.md,
     padding: 2,
+  },
+  toolbarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   viewToggleBtn: {
     padding: spacing.sm,
