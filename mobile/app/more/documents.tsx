@@ -947,12 +947,15 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.lg,
   },
   pageTitle: {
-    ...typography.pageTitle,
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.foreground,
+    letterSpacing: -0.5,
     marginBottom: spacing.xs,
   },
   pageSubtitle: {
-    ...typography.body,
+    fontSize: 14,
+    lineHeight: 20,
     color: colors.mutedForeground,
   },
   headerActions: {
@@ -977,7 +980,10 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   addButton: {
     backgroundColor: colors.primary,
     borderRadius: radius.md,
-    padding: spacing.sm,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   kpiRow: {
     flexDirection: 'row',
