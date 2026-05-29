@@ -468,7 +468,14 @@ const darkColors: ThemeColors = {
 
 function getShadows(isDark: boolean): ThemeShadows {
   const shadowColor = isDark ? '#030508' : '#c6ccd4';
-  
+  const isAndroid = Platform.OS === 'android';
+
+  // Android renders `elevation` as a noticeably heavier/wider/darker shadow than
+  // the equivalent soft iOS shadow (shadowOffset/Opacity/Radius). Keeping the iOS
+  // values but using much lower Android elevation brings the two platforms to the
+  // same subtle, premium card shadow. The light `shadowColor` is also respected on
+  // Android API 28+ to tint the shadow softer rather than pure black.
+
   return {
     none: {
       shadowColor: 'transparent',
@@ -482,21 +489,21 @@ function getShadows(isDark: boolean): ThemeShadows {
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: isDark ? 0.5 : 0.4,
       shadowRadius: 2,
-      elevation: 1,
+      elevation: isAndroid ? 0 : 1,
     },
     sm: {
       shadowColor,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: isDark ? 0.5 : 0.4,
       shadowRadius: 3,
-      elevation: 2,
+      elevation: isAndroid ? 1 : 2,
     },
     md: {
       shadowColor,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: isDark ? 0.5 : 0.4,
       shadowRadius: 6,
-      elevation: 4,
+      elevation: isAndroid ? 2 : 4,
     },
   };
 }

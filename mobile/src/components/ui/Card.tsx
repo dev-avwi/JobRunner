@@ -45,7 +45,7 @@ function getVariantStyle(
         borderWidth: 0,
         ...Platform.select<ViewStyle>({
           ios: shadows.md as ViewStyle,
-          android: { elevation: shadows.md.elevation },
+          android: { elevation: shadows.md.elevation, shadowColor: shadows.md.shadowColor },
         }),
       };
     case 'outlined':
@@ -66,7 +66,7 @@ function getVariantStyle(
         borderColor: colors.cardBorder,
         ...Platform.select<ViewStyle>({
           ios: shadows.sm as ViewStyle,
-          android: { elevation: shadows.sm.elevation },
+          android: { elevation: shadows.sm.elevation, shadowColor: shadows.sm.shadowColor },
         }),
       };
   }
