@@ -9,7 +9,7 @@ packages = ["jq", "glib", "nss", "nspr", "at-spi2-atk", "cups", "libdrm", "libxk
 [deployment]
 deploymentTarget = "autoscale"
 build = ["sh", "-c", "npm run build && (rm -rf .git .local .cache mobile attached_assets artifacts docs tests exports *.md *.png || true)"]
-run = ["sh", "-c", "PORT=23636 NODE_ENV=production exec node dist/index.js"]
+run = ["npm", "run", "start"]
 
 [env]
 PORT = "5000"
@@ -72,6 +72,7 @@ ADMIN_PHONE = "+61458300051"
 [userenv.production]
 ENABLE_DEMO_DATA = "true"
 ANDROID_APP_LINKS_SHA256_FINGERPRINTS = "D5:00:60:3F:BC:FB:09:82:FA:03:90:09:F6:D8:DF:4E:D8:39:31:53:D9:2A:25:7D:C0:A4:03:34:AD:8C:15:D2,61:67:90:38:9A:32:B1:5B:B5:AB:3A:9D:89:80:F4:E8:7A:57:9A:0C:4F:3B:1B:E5:BA:28:C1:28:E9:7D:F5:0B"
+PORT = "23636"
 
 [userenv.development]
 
