@@ -274,11 +274,15 @@ export default function RegisterScreen() {
       >
         <View style={[styles.content, { paddingBottom: bottomInset }]}>
           <View style={styles.header}>
-            <Image
-              source={require('../../assets/jobrunner-logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <View style={styles.logoOuterRing}>
+              <View style={styles.logoInnerRing}>
+                <Image
+                  source={require('../../assets/jobrunner-logo-header.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
             <Text style={styles.title}>Create your account</Text>
             <Text style={styles.subtitle}>Track jobs, send quotes, get paid.</Text>
           </View>
@@ -524,10 +528,36 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing['2xl'],
   },
+  logoOuterRing: {
+    width: 84,
+    height: 84,
+    borderRadius: 20,
+    borderWidth: 2.5,
+    borderColor: '#2B7DE9',
+    padding: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  logoInnerRing: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#F28C28',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
   logo: {
-    width: 96,
-    height: 96,
-    marginBottom: spacing.lg,
+    width: 44,
+    height: 44,
   },
   title: {
     fontSize: 26,
