@@ -55,6 +55,9 @@ import {
   Inter_900Black,
 } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
+import { applyGlobalInterFont } from '../src/lib/global-font';
+
+applyGlobalInterFont();
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
