@@ -6212,7 +6212,7 @@ export default function JobDetailScreen() {
       {(job.status === 'scheduled' || job.status === 'in_progress') && (availableForms.some(isSafetyForm) || swmsDocuments.length > 0 || hasNoSafetyDocs) && (
         <View style={[
           styles.card, 
-          (pendingSafetyForms.length > 0 || hasIncompleteSwms || hasNoSafetyDocs) && { borderColor: colors.warning, borderWidth: 2, backgroundColor: `${colors.warning}05` }
+          (pendingSafetyForms.length > 0 || hasIncompleteSwms || hasNoSafetyDocs) && { borderColor: colors.warning, borderWidth: 1.5, backgroundColor: isDark ? '#231c10' : '#fdf4e6' }
         ]}>
           <View style={[styles.cardIconContainer, { backgroundColor: (pendingSafetyForms.length > 0 || hasIncompleteSwms || hasNoSafetyDocs) ? `${colors.warning}15` : `${colors.success}15` }]}>
             <Feather 
