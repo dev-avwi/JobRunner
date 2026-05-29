@@ -130,7 +130,12 @@ if (process.env.DATABASE_URL) {
     const webhookBaseUrl = process.env.APP_DOMAIN 
       ? `https://${process.env.APP_DOMAIN}`
       : 'https://jobrunner.com.au';
-    await configureTwilioWebhook(webhookBaseUrl);
+    // Fire-and-forget: configuring the upstream Twilio webhook is a network call.
+    // It must not block startup, or it can delay server.listen() past the
+    // deployment health probe and cause a promote timeout.
+    configureTwilioWebhook(webhookBaseUrl).catch((err) => {
+      console.error('[Twilio] Failed to configure webhook (non-fatal):', err);
+    });
   }
   
   // Register Stripe webhook route BEFORE express.json()
@@ -560,17 +565,11 @@ if (process.env.DATABASE_URL) {
   // Demo data seeding - only run in development or when explicitly enabled for Apple review
   // Set ENABLE_DEMO_DATA=true in production only during App Store review periods
   const enableDemoData = process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_DATA === 'true';
-  if (enableDemoData) {
-    // This creates/updates demo@jobrunner.com.au with password demo123
-    await createDemoUserAndData();
-    await createVisitorUser();
-    
-    // Create demo team members with realistic Australian data and live locations
-    await createDemoTeamMembers();
-    await createDemoSubcontractorsAndInviteCodes();
-    console.log('[Demo] Demo data seeding enabled');
-  }
-  
+  // NOTE: demo data seeding is intentionally DEFERRED until after the HTTP port
+  // is open (see the server.listen callback below). On a cold production database
+  // this seeding does heavy DB/network work that can be slow or fail; running it
+  // before listen() blocks the deployment health probe and causes promote timeouts.
+
   const server = await registerRoutes(app);
   httpServer = server;
 
@@ -628,7 +627,24 @@ if (process.env.DATABASE_URL) {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
-    
+
+    // Seed demo data AFTER the port is open so it can never block the deployment
+    // health probe. Non-essential and safe to fail; demo@jobrunner.com.au is only
+    // needed for App Store review, not for serving real traffic.
+    if (enableDemoData) {
+      (async () => {
+        try {
+          await createDemoUserAndData();
+          await createVisitorUser();
+          await createDemoTeamMembers();
+          await createDemoSubcontractorsAndInviteCodes();
+          console.log('[Demo] Demo data seeding complete');
+        } catch (err) {
+          console.error('[Demo] Demo data seeding failed (non-fatal):', err);
+        }
+      })();
+    }
+
     // Start background schedulers with staggered delays to prevent connection pool stampede
     const stagger = (fn: () => void, delayMs: number) => setTimeout(fn, delayMs);
 
