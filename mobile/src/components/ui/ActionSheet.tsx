@@ -63,21 +63,24 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
         onDismiss={dismiss}
         scrollable={false}
         contentPadding={0}
+        title={opts?.title}
+        showCloseButton
       >
-        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.sm }}>
-          {opts?.title ? (
-            <Text style={[typography.cardTitle, { color: colors.foreground, marginBottom: opts.message ? 4 : spacing.sm }]} numberOfLines={2}>
-              {opts.title}
-            </Text>
-          ) : null}
-          {opts?.message ? (
-            <Text style={[typography.caption, { color: colors.mutedForeground, marginBottom: spacing.sm }]}>
+        {opts?.message ? (
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
+            <Text style={[typography.caption, { color: colors.mutedForeground }]}>
               {opts.message}
             </Text>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
         <View>
-          {visibleActions.map((action, idx) => {
+          {visibleActions.length === 0 ? (
+            <View style={{ paddingHorizontal: spacing.xl, paddingVertical: spacing.lg }}>
+              <Text style={[typography.body, { color: colors.mutedForeground }]}>
+                No actions available
+              </Text>
+            </View>
+          ) : visibleActions.map((action, idx) => {
             const isDestructive = action.style === 'destructive';
             const isCancel = action.style === 'cancel';
             const tint = isDestructive

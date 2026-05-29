@@ -4170,7 +4170,7 @@ class OfflineStorageService {
         pendingSync: true,
       };
     } catch (err) {
-      if (__DEV__) console.error('[OfflineStorage] getActiveLocalTimeEntry failed:', err);
+      if (__DEV__) console.warn('[OfflineStorage] getActiveLocalTimeEntry unavailable (using server state):', err);
       return null;
     }
   }

@@ -3891,16 +3891,15 @@ export default function JobDetailScreen() {
     } else {
       showActionSheet({
         title: 'Job Actions',
-        actions: options
-          .map((label, i) => {
-            if (label === 'Cancel') return null;
-            return {
-              label,
-              style: (label === 'Delete Job' ? 'destructive' : 'default') as 'destructive' | 'default',
-              onPress: actions[i],
-            };
-          })
-          .filter((a): a is { label: string; style: 'destructive' | 'default'; onPress: () => void } => a !== null),
+        actions: options.map((label, i) => ({
+          label,
+          style: (label === 'Cancel'
+            ? 'cancel'
+            : label === 'Delete Job'
+              ? 'destructive'
+              : 'default') as 'cancel' | 'destructive' | 'default',
+          onPress: label === 'Cancel' ? undefined : actions[i],
+        })),
       });
     }
   };
@@ -5960,6 +5959,26 @@ export default function JobDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: '',
+            headerBackVisible: false,
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.primary,
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+              >
+                <Feather name="chevron-left" size={17} color={colors.primary} />
+                <Text style={{ fontSize: 16, color: colors.primary, marginLeft: -1 }}>Back</Text>
+              </Pressable>
+            ),
+          }}
+        />
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -9148,40 +9167,6 @@ export default function JobDetailScreen() {
           </>
         )}
       </ScrollView>
-
-      {/* Floating Voice Dictation FAB */}
-      <Animated.View
-        style={{
-          position: 'absolute',
-          bottom: 24,
-          right: 20,
-          transform: [{ scale: fabPulseAnim }],
-          zIndex: 999,
-        }}
-      >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => {
-            setShowFABVoiceModal(true);
-          }}
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            backgroundColor: isFABRecording ? colors.destructive : colors.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-            ...shadows.lg,
-            elevation: 8,
-            shadowColor: isFABRecording ? colors.destructive : colors.primary,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-          }}
-        >
-          <Feather name="mic" size={24} color={colors.primaryForeground} />
-        </TouchableOpacity>
-      </Animated.View>
 
       </View>
 
