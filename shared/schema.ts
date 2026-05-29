@@ -1850,7 +1850,7 @@ export const teamMembers = pgTable("team_members", {
 export const inviteCodes = pgTable("invite_codes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   businessOwnerId: varchar("business_owner_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  code: varchar("code", { length: 8 }).notNull().unique(),
+  code: varchar("code", { length: 8 }).notNull().unique("invite_codes_code_key"),
   roleType: text("role_type").notNull().default('worker'),
   roleId: varchar("role_id").references(() => userRoles.id, { onDelete: 'set null' }),
   maxUses: integer("max_uses").notNull().default(10),
