@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { ArrowLeft, ArrowRight, Palette, Upload, Image, X } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import ColorThief from "colorthief";
 
 const brandingSchema = z.object({
@@ -49,14 +50,9 @@ export default function BrandingStep({
   });
 
   const handleGetUploadParameters = async () => {
-    const response = await fetch("/api/objects/upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to get upload parameters");
-    }
+    // apiRequest attaches the Bearer-token fallback so this works when the
+    // secure cookie is unavailable (iOS/Safari, plain HTTP).
+    const response = await apiRequest("POST", "/api/objects/upload", {});
 
     const uploadData = await response.json();
     return {

@@ -43,7 +43,7 @@ import {
   Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import jobrunnerLogo from "@assets/jobrunner-logo-cropped.png";
 import { tradeCatalog } from "@shared/tradeCatalog";
@@ -330,7 +330,9 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
   useEffect(() => {
     const checkExistingSettings = async () => {
       try {
-        const res = await fetch('/api/business-settings', { credentials: 'include' });
+        // Use apiRequest so the Bearer-token fallback is sent — raw fetch only
+        // sends the cookie, which fails on iOS/Safari and over plain HTTP.
+        const res = await apiRequest('GET', '/api/business-settings');
         if (res.ok) {
           const settings = await res.json();
           if (!settings.onboardingCompleted) {
@@ -372,22 +374,28 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
   };
 
   const autoSaveTrade = async (tradeType: string) => {
+    // PATCH first (apiRequest sends the Bearer fallback). Only create a new row
+    // on an explicit 404 — a transient 401/network/500 must NOT trigger a POST,
+    // since create is a plain insert and would error on a duplicate.
     try {
-      const res = await fetch('/api/business-settings', { credentials: 'include' });
-      if (res.ok) {
-        await apiRequest('PATCH', '/api/business-settings', {
-          tradeType,
-          onboardingCompleted: false,
-        });
-      } else if (res.status === 404) {
-        await apiRequest('POST', '/api/business-settings', {
-          tradeType,
-          onboardingCompleted: false,
-          businessName: '',
-        });
-      }
+      await apiRequest('PATCH', '/api/business-settings', {
+        tradeType,
+        onboardingCompleted: false,
+      });
     } catch (e) {
-      // Silent fail - auto-save is best effort
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.startsWith('404')) {
+        try {
+          await apiRequest('POST', '/api/business-settings', {
+            tradeType,
+            onboardingCompleted: false,
+            businessName: '',
+          });
+        } catch {
+          // Best effort - auto-save only
+        }
+      }
+      // Other errors (auth/network) are swallowed; not safe to create.
     }
   };
 
@@ -619,10 +627,14 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
     }
     
     try {
+      // FormData uploads can't go through apiRequest (it sets a JSON
+      // content-type), so attach the Bearer-token fallback by hand.
+      const token = getSessionToken();
       const res = await fetch('/api/import/preview', {
         method: 'POST',
         body: formDataUpload,
         credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) throw new Error('Failed to parse file');
       const data = await res.json();
