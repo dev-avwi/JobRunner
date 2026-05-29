@@ -9,7 +9,7 @@ packages = ["jq", "glib", "nss", "nspr", "at-spi2-atk", "cups", "libdrm", "libxk
 [deployment]
 deploymentTarget = "autoscale"
 build = ["sh", "-c", "npm run build && (rm -rf .git .local .cache mobile attached_assets artifacts docs tests exports *.md *.png || true)"]
-run = ["npm", "run", "start"]
+run = ["bash", "-c", "NODE_ENV=production node dist/index.js"]
 
 [env]
 PORT = "5000"
