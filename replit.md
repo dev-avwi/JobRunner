@@ -73,17 +73,18 @@ command finished with error [sh -c PORT=23636 NODE_ENV=production exec node dist
 crash loop detected
 ```
 
-**TRUE cause (proven by build `172c08bc`, 2026-05-29, runtime logs):** the deploy runtime resolves **`node`** (the `nodejs-20` module's primary binary) as a run-command argv[0], but does **NOT** resolve `npm`, `npx`, `sh`, or `bash`-spawned lookups. Every failing form proved this in `fetchDeploymentLogs()`:
-- `["npm","run","start"]` → `failed to start command [npm run start]: exec: "npm": executable file not found in $PATH`
-- `["sh","-c","...node..."]` / `["bash","-c","...glob /nix/store... node..."]` → `node: not found` / exit 127 (the spawned shell does not inherit the module PATH)
+**TRUE cause (proven by builds `172c08bc` + `138fe2de`, 2026-05-29, runtime logs):** the **build-command `rm -rf` image-shrink cleanup broke the deploy runtime PATH** so that NEITHER `npm` NOR `node` resolved at startup. The cleanup (`npm run build && rm -rf .git .local .cache mobile attached_assets artifacts docs tests exports *.md *.png`) ran during the build phase and deleted files the deployed Repl layer needs to put the `nodejs-20` module on the runtime PATH. Both run forms failed identically in `fetchDeploymentLogs()`:
+- `["npm","run","start"]` (cleanup present) → `failed to start command [npm run start]: exec: "npm": executable file not found in $PATH`
+- `["node","dist/index.js"]` (cleanup present) → `failed to start command [node dist/index.js]: exec: "node": executable file not found in $PATH`
 
-(NOTE: the earlier runbook claim that `npm run start` works because `75f29a8b` used it was WRONG for the *current* environment — whatever resolved `npm` on 2026-05-26 no longer does. Do not trust git history over live runtime logs here.)
+The fact that **both interpreters vanished together** (not just one) is the tell that the *whole module PATH* was destroyed by the cleanup — not a node-vs-npm resolution quirk. (Earlier runbook revisions this session wrongly theorized "npm not resolvable / node resolvable"; that was wrong — the cleanup was the real cause.) The last SUCCESSFUL deploy (`75f29a8b`, 2026-05-26) had **no** such cleanup in its build command.
 
 **WORKING fix (verified config):**
 ```
-run = ["node", "dist/index.js"]      # node IS resolvable; npm/npx/sh/bash are NOT
+build = ["npm", "run", "build"]       # NO rm -rf cleanup — that broke the runtime PATH
+run   = ["npm", "run", "start"]       # matches the 2026-05-26 known-good; sets NODE_ENV=production inline
 ```
-Because bare `node` does not run the `npm start` script, it does **not** set `NODE_ENV=production` inline. The app needs `NODE_ENV==='production'` (server/index.ts L617 `app.get("env")` gates `serveStatic` vs `setupVite`; L623 reads `PORT`). So `NODE_ENV=production` is set in the **production** env store via `setEnvVars({values:{NODE_ENV:"production"},environment:"production"})`. Build command left as `npm run build && rm -rf <cleanup>` (build phase HAS npm — it runs `npm install`/`npm run build` fine; only the *run* phase lacks npm).
+The image-shrink cleanup was a premature optimization added during debugging — 05-26 deployed fine without it. Do NOT re-add any `rm -rf` of `.cache`/`.local`/etc to the build command. `npm run start` runs `NODE_ENV=production node dist/index.js` (sets NODE_ENV inline). The app needs `NODE_ENV==='production'` (server/index.ts L617 `app.get("env")` gates `serveStatic` vs `setupVite`; L623 reads `PORT`). `NODE_ENV=production` is ALSO set in the production env store (redundant-but-harmless backstop).
 
 **Ports / PORT:** the orphan `[[ports]] 23636 -> 80` mapping is the autoscale HTTP port; Replit injects `PORT` and the app binds `process.env.PORT` (server/index.ts L623). `PORT=23636` is also explicitly set in the prod env store (matches the injected value — harmless, keep it).
 
