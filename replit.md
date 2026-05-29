@@ -73,16 +73,19 @@ command finished with error [sh -c PORT=23636 NODE_ENV=production exec node dist
 crash loop detected
 ```
 
-**TRUE cause (proven from git history):** the publish failures were self-inflicted. The last **successful** build (`75f29a8b`, 2026-05-26) used the simple, correct config — recovered via `git show f8be3324:.replit`:
-```
-build = ["sh", "-c", "npm run build && npx drizzle-kit push --force"]
-run   = ["npm", "run", "start"]
-```
-During debugging, the `[deployment] run` was repeatedly changed AWAY from `["npm","run","start"]` into shell-wrapped forms (`["sh","-c","...node..."]`, `["bash","-c","...glob /nix/store... node..."]`). Those wrappers crash-looped with `node: not found` / exit 127 because **a spawned `bash`/`sh` does not inherit the `nodejs-20` module's PATH** — only the Replit pid1 runner does, and it resolves `node`/`npm` for you when they are argv[0]. So `["npm","run","start"]` (or `["node","dist/index.js"]`) works, but `bash -c "... node ..."` does not. The "npm not found" claim from an earlier agent was a **misdiagnosis** — `npm run start` is empirically proven to deploy (it built `75f29a8b`).
+**TRUE cause (proven by build `172c08bc`, 2026-05-29, runtime logs):** the deploy runtime resolves **`node`** (the `nodejs-20` module's primary binary) as a run-command argv[0], but does **NOT** resolve `npm`, `npx`, `sh`, or `bash`-spawned lookups. Every failing form proved this in `fetchDeploymentLogs()`:
+- `["npm","run","start"]` → `failed to start command [npm run start]: exec: "npm": executable file not found in $PATH`
+- `["sh","-c","...node..."]` / `["bash","-c","...glob /nix/store... node..."]` → `node: not found` / exit 127 (the spawned shell does not inherit the module PATH)
 
-**Fix applied (config only):** restored `run = ["npm","run","start"]` via `deployConfig()`. Build command left as the current `npm run build && rm -rf <cleanup>` (it builds fine; the cleanup just shrinks the image).
+(NOTE: the earlier runbook claim that `npm run start` works because `75f29a8b` used it was WRONG for the *current* environment — whatever resolved `npm` on 2026-05-26 no longer does. Do not trust git history over live runtime logs here.)
 
-**Ports / PORT:** the orphan `[[ports]] 23636 -> 80` mapping ALREADY existed in the 05-26 working config, with **no** `PORT` var in `[userenv.production]` — Replit autoscale injects `PORT` automatically (= the localPort mapped to externalPort 80 = 23636) and the app binds `process.env.PORT`. The `PORT=23636` I later set in the prod env store is therefore redundant-but-harmless (same value Replit injects). It can be deleted to match the exact 05-26 state; leaving it does no harm.
+**WORKING fix (verified config):**
+```
+run = ["node", "dist/index.js"]      # node IS resolvable; npm/npx/sh/bash are NOT
+```
+Because bare `node` does not run the `npm start` script, it does **not** set `NODE_ENV=production` inline. The app needs `NODE_ENV==='production'` (server/index.ts L617 `app.get("env")` gates `serveStatic` vs `setupVite`; L623 reads `PORT`). So `NODE_ENV=production` is set in the **production** env store via `setEnvVars({values:{NODE_ENV:"production"},environment:"production"})`. Build command left as `npm run build && rm -rf <cleanup>` (build phase HAS npm — it runs `npm install`/`npm run build` fine; only the *run* phase lacks npm).
+
+**Ports / PORT:** the orphan `[[ports]] 23636 -> 80` mapping is the autoscale HTTP port; Replit injects `PORT` and the app binds `process.env.PORT` (server/index.ts L623). `PORT=23636` is also explicitly set in the prod env store (matches the injected value — harmless, keep it).
 
 **Deliberately NOT re-added:** `npx drizzle-kit push --force` in the build command. The 05-26 build had it, but the current schema vs the live prod DB (57 real users) includes potentially **destructive** column drops (`users.role`, `users.password_reset_expires`, `jobs.assigned_team_member_id`) and an orphaned-FK situation on `sms_messages.job_created_from_sms`. Pushing with `--force` could drop real data or fail on FK creation. This is a **separate, user-gated decision** — do NOT auto-run it as part of fixing the publish. If schema does need to ship, first run the orphan-cleanup SQL (`scripts/cleanup-orphans.sql`) and confirm app code no longer reads the dropped columns. Also: do NOT use "Copy development database to production" — it would wipe the 57 prod users.
 
