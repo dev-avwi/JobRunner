@@ -17,6 +17,7 @@ import {
   Wind,
   Building2,
   ArrowRight,
+  Clock,
   ArrowLeft,
   CheckCircle,
   Sparkles,
@@ -46,6 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import jobrunnerLogo from "@assets/jobrunner-logo-cropped.png";
+import roleShowcaseScreenshot from "@assets/appstore_screenshots/01_dashboard.png";
 import { tradeCatalog } from "@shared/tradeCatalog";
 
 interface SimpleOnboardingProps {
@@ -1852,58 +1854,118 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
 
   if (selectedRole === null) {
     return (
-      <div className="min-h-screen bg-[#F2F4F8]" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-role">
-        <div className="max-w-lg mx-auto p-4 md:p-6 min-h-screen flex flex-col justify-center">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
-            <span className="text-xl font-bold">
-              <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
-            </span>
+      <div className="min-h-screen bg-white flex" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-role">
+        {/* Left — role selection */}
+        <div className="flex-1 flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-16">
+          <div className="w-full max-w-md mx-auto">
+            <div className="flex items-center gap-2 mb-10">
+              <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
+              <span className="text-xl font-bold">
+                <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
+              </span>
+            </div>
+
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">How will you use JobRunner?</h2>
+            <p className="text-gray-500 mb-8">Choose your role to get the right setup.</p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => setSelectedRole('owner')}
+                className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover:border-[#2B7DE9] hover-elevate transition-colors text-left"
+                data-testid="role-owner"
+              >
+                <div className="p-2.5 rounded-md bg-[#2B7DE9]/10 shrink-0">
+                  <Briefcase className="h-5 w-5 text-[#2B7DE9]" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900">Business Owner</p>
+                  <p className="text-sm text-gray-500">I run my own trade business</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-gray-300 ml-auto shrink-0" />
+              </button>
+              <button
+                onClick={() => setSelectedRole('worker')}
+                className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover:border-[#2B7DE9] hover-elevate transition-colors text-left"
+                data-testid="role-worker"
+              >
+                <div className="p-2.5 rounded-md bg-green-100 shrink-0">
+                  <Users className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900">Team Member</p>
+                  <p className="text-sm text-gray-500">I have an invite code from my employer</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-gray-300 ml-auto shrink-0" />
+              </button>
+              <button
+                onClick={() => setSelectedRole('subcontractor')}
+                className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover:border-[#2B7DE9] hover-elevate transition-colors text-left"
+                data-testid="role-subcontractor"
+              >
+                <div className="p-2.5 rounded-md bg-[#F28C28]/10 shrink-0">
+                  <Wrench className="h-5 w-5 text-[#F28C28]" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900">Subcontractor</p>
+                  <p className="text-sm text-gray-500">I have an invite code to join a team</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-gray-300 ml-auto shrink-0" />
+              </button>
+            </div>
           </div>
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-foreground text-center mb-2">How will you use JobRunner?</h2>
-              <p className="text-sm text-muted-foreground text-center mb-6">Choose your role to get the right setup</p>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setSelectedRole('owner')}
-                  className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover-elevate transition-colors text-left"
-                >
-                  <div className="p-2.5 rounded-md bg-[#2B7DE9]/10">
-                    <Briefcase className="h-5 w-5 text-[#2B7DE9]" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">Business Owner</p>
-                    <p className="text-sm text-muted-foreground">I run my own trade business</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setSelectedRole('worker')}
-                  className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover-elevate transition-colors text-left"
-                >
-                  <div className="p-2.5 rounded-md bg-green-100">
-                    <Users className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">Team Member</p>
-                    <p className="text-sm text-muted-foreground">I have an invite code from my employer</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setSelectedRole('subcontractor')}
-                  className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover-elevate transition-colors text-left"
-                >
-                  <div className="p-2.5 rounded-md bg-[#F28C28]/10">
-                    <Wrench className="h-5 w-5 text-[#F28C28]" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">Subcontractor</p>
-                    <p className="text-sm text-muted-foreground">I have an invite code to join a team</p>
-                  </div>
-                </button>
+        </div>
+
+        {/* Right — brand showcase (matches signup) */}
+        <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-brand via-brand-dark to-brand-accent relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="role-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#role-grid)" />
+            </svg>
+          </div>
+
+          <div className="relative z-10 flex flex-col justify-center items-center w-full p-12">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+              <Sparkles className="w-4 h-4 text-yellow-300" />
+              <span className="text-sm font-semibold text-white">Free for early users</span>
+            </div>
+
+            <h2 className="text-3xl xl:text-4xl font-bold text-white text-center mb-4">
+              Run your trade business
+              <br />smarter, not harder.
+            </h2>
+            <p className="text-white/80 text-center text-lg mb-8 max-w-md">
+              Join Australian trade professionals who save hours every week with JobRunner
+            </p>
+
+            <div className="relative w-[260px] xl:w-[280px]">
+              <div className="relative bg-gray-900 rounded-[2.5rem] p-[6px] shadow-2xl">
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-20" />
+                <div className="relative bg-white rounded-[2.25rem] overflow-hidden" style={{ aspectRatio: '9/19.5' }}>
+                  <img src={roleShowcaseScreenshot} alt="JobRunner app" className="absolute inset-0 w-full h-full object-cover" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-br from-orange-400/30 via-transparent to-blue-400/30 rounded-full blur-3xl" />
+            </div>
+
+            <div className="mt-8 grid grid-cols-2 gap-3 max-w-md">
+              {[
+                { icon: FileText, text: "Clear records of every job" },
+                { icon: Clock, text: "Track time as it happens" },
+                { icon: CreditCard, text: "Quote, invoice, get paid" },
+                { icon: Users, text: "Know what was agreed" },
+              ].map((feature, index) => (
+                <div key={index} className="flex items-center gap-2 text-white/90 text-sm">
+                  <feature.icon className="w-4 h-4 text-yellow-300 shrink-0" />
+                  <span>{feature.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
