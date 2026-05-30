@@ -34,7 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { tradeCatalog } from "@shared/tradeCatalog";
-import logoWhite from "@assets/jobrunner-logo-white.png";
+import logoWhite from "@assets/jobrunner-logo-white-mark.png";
 
 interface SimpleOnboardingProps {
   onComplete: () => void;
@@ -159,17 +159,14 @@ function LeftPanel() {
     "Built for Australian tradies",
   ];
   return (
-    <div
-      className="hidden md:flex md:w-[42%] lg:w-[44%] flex-col justify-between p-10 lg:p-14"
-      style={{ backgroundColor: BRAND_BLUE }}
-    >
+    <div className="hidden md:flex md:w-[42%] lg:w-[44%] flex-col justify-between p-10 lg:p-14 bg-gradient-to-br from-brand via-brand-dark to-brand-accent">
       <div className="flex items-center gap-3">
         <img
           src={logoWhite}
           alt="JobRunner"
-          width="48"
-          height="48"
-          className="h-12 w-12 object-contain"
+          width="44"
+          height="44"
+          className="h-11 w-11 object-contain"
         />
         <Wordmark light />
       </div>
