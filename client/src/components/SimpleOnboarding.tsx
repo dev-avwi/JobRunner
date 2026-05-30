@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { tradeCatalog } from "@shared/tradeCatalog";
+import logoWhite from "@assets/jobrunner-logo-white.png";
 
 interface SimpleOnboardingProps {
   onComplete: () => void;
@@ -162,7 +163,16 @@ function LeftPanel() {
       className="hidden md:flex md:w-[42%] lg:w-[44%] flex-col justify-between p-10 lg:p-14"
       style={{ backgroundColor: BRAND_BLUE }}
     >
-      <Wordmark light />
+      <div className="flex items-center gap-3">
+        <img
+          src={logoWhite}
+          alt="JobRunner"
+          width="48"
+          height="48"
+          className="h-12 w-12 object-contain"
+        />
+        <Wordmark light />
+      </div>
 
       <div className="max-w-md">
         <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.05] tracking-tight mb-5">
