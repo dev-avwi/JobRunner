@@ -8,7 +8,7 @@ packages = ["jq", "glib", "nss", "nspr", "at-spi2-atk", "cups", "libdrm", "libxk
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["npm", "run", "build"]
+build = ["bash", "-c", "npm run build && rm -rf attached_assets mobile .git docs tests exports artifacts"]
 run = ["npm", "run", "start"]
 
 [env]
