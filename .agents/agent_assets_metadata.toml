@@ -107,3 +107,21 @@ id = "fzBHC_Tprb1-9hDpaNT27"
 uri = "file://.local/JOBRUNNER_DEEP_BRIEF.md"
 type = "text"
 title = "JobRunner — Complete Application Deep Brief"
+
+[[outputs]]
+id = "pXgqHQshNS8HXmzhSbNiV"
+uri = "file://attached_assets/screenshots/ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp_worf_replit_dev_mockup_preview_signup-screen_OptionA.png"
+type = "image"
+title = "Option A — Calm Minimal"
+
+[[outputs]]
+id = "i7P5RSMcy7rJVoKBfE9Sj"
+uri = "file://attached_assets/screenshots/ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp_worf_replit_dev_mockup_preview_signup-screen_OptionB.png"
+type = "image"
+title = "Option B — Bold Brand"
+
+[[outputs]]
+id = "b37NjfC0BQejrTD7HlIH3"
+uri = "file://attached_assets/screenshots/ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp_worf_replit_dev_mockup_preview_signup-screen_OptionC.png"
+type = "image"
+title = "Option C — Warm Human"

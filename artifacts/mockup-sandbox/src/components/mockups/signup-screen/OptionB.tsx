@@ -1,0 +1,128 @@
+import React, { useState } from 'react';
+import { Hammer, Users, Briefcase, ArrowRight } from 'lucide-react';
+
+export function OptionB() {
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+
+  const roles = [
+    {
+      id: 'owner',
+      title: 'Business Owner',
+      description: 'I run my own trade business',
+      icon: Briefcase,
+    },
+    {
+      id: 'team',
+      title: 'Team Member',
+      description: "I've got an invite code from my boss",
+      icon: Users,
+    },
+    {
+      id: 'sub',
+      title: 'Subcontractor',
+      description: "I've got an invite code to join a team",
+      icon: Hammer,
+    }
+  ];
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row bg-white font-sans text-slate-900">
+      {/* Left Pane - Bold Brand */}
+      <div className="hidden md:flex w-5/12 bg-[#2B7DE9] relative overflow-hidden flex-col justify-center items-center p-12">
+        {/* Abstract background elements */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-10">
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-white blur-[100px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#F28C28] blur-[120px]" />
+        </div>
+        
+        <div className="relative z-10 w-full max-w-md">
+          <h1 className="text-5xl font-black text-white leading-tight mb-6 tracking-tight">
+            Build your trade empire, faster.
+          </h1>
+          <p className="text-blue-100 text-lg mb-12 font-medium">
+            The platform built for Australian tradies who want to spend less time on admin and more time on the tools.
+          </p>
+          
+          {/* Dashboard preview */}
+          <div className="relative w-full aspect-[4/3] rounded-t-2xl overflow-hidden shadow-2xl border-4 border-white/20 transform translate-y-12 rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+            <img src="/__mockup/images/dashboard.png" alt="JobRunner Dashboard" className="w-full h-full object-cover object-left-top" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#2B7DE9] via-transparent to-transparent opacity-40" />
+          </div>
+        </div>
+      </div>
+
+      {/* Right Pane - Form */}
+      <div className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 relative overflow-y-auto">
+        <div className="w-full max-w-xl mx-auto">
+          {/* Logo */}
+          <div className="text-4xl font-black tracking-tighter mb-16">
+            <span className="text-[#F28C28]">Job</span>
+            <span className="text-[#2B7DE9]">Runner</span>
+          </div>
+
+          <h2 className="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">Let's get to work.</h2>
+          <p className="text-slate-500 text-lg mb-8 font-medium">How will you be using JobRunner today?</p>
+
+          <div className="space-y-4 mb-10">
+            {roles.map((role) => {
+              const Icon = role.icon;
+              const isSelected = selectedRole === role.id;
+              
+              return (
+                <button
+                  key={role.id}
+                  onClick={() => setSelectedRole(role.id)}
+                  className={`w-full text-left p-6 rounded-2xl border-2 transition-all duration-200 group flex items-start gap-5 ${
+                    isSelected 
+                      ? 'border-[#2B7DE9] bg-blue-50/50 shadow-sm ring-4 ring-blue-500/10' 
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className={`p-4 rounded-xl flex-shrink-0 transition-all duration-300 ${
+                    isSelected ? 'bg-[#2B7DE9] text-white shadow-md shadow-blue-500/20 scale-110' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700'
+                  }`}>
+                    <Icon size={28} strokeWidth={isSelected ? 2.5 : 2} />
+                  </div>
+                  <div className="flex-1 pt-1">
+                    <h3 className={`text-xl font-bold mb-1 transition-colors ${isSelected ? 'text-[#2B7DE9]' : 'text-slate-900'}`}>
+                      {role.title}
+                    </h3>
+                    <p className={`text-base transition-colors ${isSelected ? 'text-blue-700' : 'text-slate-500'}`}>
+                      {role.description}
+                    </p>
+                  </div>
+                  
+                  {/* Radio indicator */}
+                  <div className={`w-6 h-6 rounded-full border-2 mt-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                    isSelected ? 'border-[#2B7DE9]' : 'border-slate-300 group-hover:border-slate-400'
+                  }`}>
+                    {isSelected && <div className="w-3 h-3 rounded-full bg-[#2B7DE9]" />}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          <button 
+            disabled={!selectedRole}
+            className={`w-full py-5 rounded-xl text-lg font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
+              selectedRole 
+                ? 'bg-[#F28C28] hover:bg-[#E57A1F] text-white shadow-xl shadow-orange-500/20 transform hover:-translate-y-0.5' 
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            Continue
+            <ArrowRight size={20} className={selectedRole ? "animate-pulse" : ""} />
+          </button>
+
+          <p className="mt-8 text-center text-slate-500 font-medium">
+            Already have an account?{' '}
+            <button className="text-[#2B7DE9] hover:text-blue-800 font-bold hover:underline transition-colors">
+              Log in
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
