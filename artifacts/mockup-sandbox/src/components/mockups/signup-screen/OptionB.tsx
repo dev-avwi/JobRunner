@@ -35,18 +35,21 @@ export function OptionB() {
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#F28C28] blur-[120px]" />
         </div>
         
-        <div className="relative z-10 w-full max-w-md">
-          <h1 className="text-5xl font-black text-white leading-tight mb-6 tracking-tight">
+        <div className="relative z-10 w-full max-w-md flex flex-col items-start">
+          <h1 className="text-4xl font-black text-white leading-tight mb-4 tracking-tight">
             Build your trade empire, faster.
           </h1>
-          <p className="text-blue-100 text-lg mb-12 font-medium">
+          <p className="text-blue-100 text-base mb-8 font-medium">
             The platform built for Australian tradies who want to spend less time on admin and more time on the tools.
           </p>
-          
-          {/* Dashboard preview */}
-          <div className="relative w-full aspect-[4/3] rounded-t-2xl overflow-hidden shadow-2xl border-4 border-white/20 transform translate-y-12 rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
-            <img src="/__mockup/images/dashboard.png" alt="JobRunner Dashboard" className="w-full h-full object-cover object-left-top" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#2B7DE9] via-transparent to-transparent opacity-40" />
+
+          {/* Real app screenshot in a phone frame */}
+          <div className="relative mx-auto w-[210px] transform rotate-[-3deg] hover:rotate-0 transition-transform duration-500">
+            <div className="bg-black p-2 rounded-[2.2rem] shadow-2xl ring-1 ring-white/20">
+              <div className="rounded-[1.8rem] overflow-hidden aspect-[9/19] bg-white">
+                <img src="/__mockup/images/dashboard.png" alt="JobRunner dashboard" className="w-full h-full object-cover object-top" />
+              </div>
+            </div>
           </div>
         </div>
       </div>

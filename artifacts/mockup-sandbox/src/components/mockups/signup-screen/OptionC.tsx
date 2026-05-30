@@ -115,28 +115,12 @@ export function OptionC() {
         <div className="relative w-full max-w-[340px] z-10 transform rotate-[-2deg] hover:rotate-0 transition-transform duration-700 ease-out">
           <div className="absolute -inset-4 bg-white/40 rounded-[3rem] blur-xl opacity-50"></div>
           <div className="relative bg-white p-3 rounded-[2.5rem] shadow-[0_20px_60px_rgb(0,0,0,0.08)] border border-white/50">
-            <div className="rounded-[2rem] overflow-hidden bg-black aspect-[9/19] relative ring-1 ring-black/5">
+            <div className="rounded-[2rem] overflow-hidden bg-white aspect-[9/19] relative ring-1 ring-black/5">
               <img 
                 src="/__mockup/images/dashboard.png" 
-                alt="JobRunner Dashboard" 
-                className="w-full h-full object-cover"
+                alt="JobRunner dashboard" 
+                className="w-full h-full object-cover object-top"
               />
-              
-              {/* Fake UI Overlay elements for more depth */}
-              <div className="absolute top-0 inset-x-0 h-14 bg-gradient-to-b from-black/20 to-transparent pointer-events-none"></div>
-              
-              {/* Floating notification badge */}
-              <div className="absolute top-20 -left-6 bg-white rounded-2xl p-4 shadow-xl border border-black/5 animate-bounce" style={{ animationDuration: '3s' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#e8f2fc] rounded-full flex items-center justify-center text-[#2B7DE9]">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900">New team member</div>
-                    <div className="text-xs text-gray-500">Joined 2 mins ago</div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

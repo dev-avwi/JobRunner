@@ -118,10 +118,10 @@ title = "Option A — Calm Minimal"
 id = "i7P5RSMcy7rJVoKBfE9Sj"
 uri = "file://attached_assets/screenshots/ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp_worf_replit_dev_mockup_preview_signup-screen_OptionB.png"
 type = "image"
-title = "Option B — Bold Brand"
+title = "Option B — Bold Brand (real screenshot)"
 
 [[outputs]]
 id = "b37NjfC0BQejrTD7HlIH3"
 uri = "file://attached_assets/screenshots/ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp_worf_replit_dev_mockup_preview_signup-screen_OptionC.png"
 type = "image"
-title = "Option C — Warm Human"
+title = "Option C — Warm Human (real screenshot)"
