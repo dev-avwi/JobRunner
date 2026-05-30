@@ -1,52 +1,38 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
-import { 
-  Wrench, 
-  Zap, 
-  Droplets, 
-  Hammer, 
-  Paintbrush, 
-  Home, 
-  Wind,
-  Building2,
-  ArrowRight,
-  Clock,
-  ArrowLeft,
-  CheckCircle,
-  Sparkles,
-  User,
-  Users,
+import {
   Briefcase,
+  Users,
+  Hammer,
+  Wrench,
+  Zap,
+  Droplets,
+  Building2,
+  Paintbrush,
+  Wind,
+  Home,
+  Trees,
+  Fence,
+  Sprout,
+  LayoutGrid,
+  ArrowRight,
+  ArrowLeft,
+  Check,
+  Loader2,
   Phone,
   Mail,
   MapPin,
-  Gift,
-  Loader2,
-  MessageSquarePlus,
-  FileText,
-  Receipt,
-  CreditCard,
-  Eye,
-  Check,
-  ExternalLink,
-  Info,
   DollarSign,
-  Camera,
-  X,
-  Plus,
-  Download
+  Smartphone,
+  ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
-import jobrunnerLogo from "@assets/jobrunner-logo-cropped.png";
-import roleShowcaseScreenshot from "@assets/appstore_screenshots/01_dashboard.png";
 import { tradeCatalog } from "@shared/tradeCatalog";
 
 interface SimpleOnboardingProps {
@@ -54,62 +40,65 @@ interface SimpleOnboardingProps {
   onSkip?: () => void;
 }
 
-const TRADE_OPTIONS = Object.entries(tradeCatalog).map(([id, trade]) => ({
-  id,
-  name: trade.name,
-  description: trade.description,
-}));
+const BRAND_BLUE = "#2B7DE9";
+const BRAND_BLUE_TINT = "#EEF5FF";
+const BRAND_ORANGE = "#F28C28";
 
-const TRADE_CATEGORIES = [
+type OnboardingRole = "owner" | "worker" | "subcontractor" | null;
+
+const ROLES: {
+  id: Exclude<OnboardingRole, null>;
+  title: string;
+  description: string;
+  icon: typeof Briefcase;
+}[] = [
   {
-    label: "Electrical & Mechanical",
-    trades: ['electrical', 'hvac'],
+    id: "owner",
+    title: "I run my own business",
+    description: "Quotes, jobs and getting paid",
+    icon: Briefcase,
   },
   {
-    label: "Plumbing & Water",
-    trades: ['plumbing'],
+    id: "worker",
+    title: "I'm on a team",
+    description: "I have an invite code from my boss",
+    icon: Users,
   },
   {
-    label: "Building & Construction",
-    trades: ['building', 'concreting', 'roofing', 'fencing'],
-  },
-  {
-    label: "Interior & Finishing",
-    trades: ['painting', 'tiling'],
-  },
-  {
-    label: "Outdoor & Landscaping",
-    trades: ['landscaping', 'grounds_maintenance'],
-  },
-  {
-    label: "Specialty Services",
-    trades: ['cleaning', 'handyman'],
+    id: "subcontractor",
+    title: "I'm a subbie",
+    description: "I have an invite code to join a team",
+    icon: Hammer,
   },
 ];
 
-const getStepsForPlan = (plan: string) => {
-  const baseSteps = [
-    { id: 'trade', title: 'Trade', description: 'What kind of work do you do?' },
-    { id: 'business', title: 'Business', description: 'Quick business setup' },
-    { id: 'payments', title: 'Payments', description: 'Get paid faster' },
-    { id: 'import', title: 'Import', description: 'Bring your data' },
-  ];
-  
-  if (plan === 'team') {
-    return [
-      ...baseSteps,
-      { id: 'team', title: 'Team', description: 'Set up your team structure' },
-      { id: 'portal', title: 'Preview', description: 'See your client portal' },
-      { id: 'done', title: 'Done', description: 'You\'re ready to go' },
-    ];
-  }
-  
-  return [
-    ...baseSteps,
-    { id: 'portal', title: 'Preview', description: 'See your client portal' },
-    { id: 'done', title: 'Done', description: 'You\'re ready to go' },
-  ];
+const TRADE_OPTIONS = Object.entries(tradeCatalog).map(([id, trade]) => ({
+  id,
+  name: trade.name,
+}));
+
+const TRADE_ICONS: Record<string, typeof Wrench> = {
+  electrical: Zap,
+  plumbing: Droplets,
+  building: Building2,
+  landscaping: Trees,
+  painting: Paintbrush,
+  hvac: Wind,
+  roofing: Home,
+  tiling: LayoutGrid,
+  concreting: Hammer,
+  fencing: Fence,
+  cleaning: ShieldCheck,
+  handyman: Wrench,
+  grounds_maintenance: Sprout,
 };
+
+const FREE_PLAN_FEATURES = [
+  "Unlimited jobs and clients",
+  "Quotes and invoices with GST",
+  "Photo records on every job",
+  "Get paid online with Stripe",
+];
 
 // Onboarding always renders in the light brand theme to match the marketing
 // site. These vars override any dark values applied inline to the root element.
@@ -132,345 +121,132 @@ const ONBOARDING_LIGHT_VARS = {
   "--ring": "217 91% 53%",
 } as React.CSSProperties;
 
-function StepIndicator({ steps, currentStep }: { steps: { id: string; title: string }[]; currentStep: number }) {
+function Wordmark({ light = false }: { light?: boolean }) {
   return (
-    <div className="w-full max-w-lg mx-auto mb-6">
-      <div className="flex items-center justify-between relative">
-        {steps.map((step, index) => {
-          const isCompleted = index < currentStep;
-          const isActive = index === currentStep;
-
-          return (
-            <div key={step.id} className="flex flex-col items-center relative z-10" style={{ flex: index === 0 || index === steps.length - 1 ? '0 0 auto' : '1' }}>
-              <div
-                className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
-                  isCompleted
-                    ? 'bg-[#2B7DE9] text-white'
-                    : isActive
-                    ? 'bg-[#2B7DE9] text-white ring-4 ring-[#2B7DE9]/15'
-                    : 'bg-white text-gray-400 border-2 border-gray-200'
-                }`}
-              >
-                {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
-              </div>
-              <span className={`mt-1.5 text-[10px] md:text-xs font-medium whitespace-nowrap transition-colors ${
-                isCompleted || isActive ? 'text-gray-900' : 'text-gray-400'
-              }`}>
-                {step.title}
-              </span>
-            </div>
-          );
-        })}
-        <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-0" style={{ marginLeft: '16px', marginRight: '16px' }}>
-          <div
-            className="h-full bg-[#2B7DE9] transition-all duration-500"
-            style={{ width: `${currentStep === 0 ? 0 : (currentStep / (steps.length - 1)) * 100}%` }}
-          />
-        </div>
-      </div>
+    <div className="text-3xl font-black tracking-tighter">
+      <span style={{ color: light ? "#FFFFFF" : "#0F172A" }}>Job</span>
+      <span style={{ color: BRAND_ORANGE }}>Runner</span>
     </div>
   );
 }
 
-function VerticalSteps({ steps, currentStep, onDark = false }: { steps: { id: string; title: string }[]; currentStep: number; onDark?: boolean }) {
+function StepDots({ total, current }: { total: number; current: number }) {
   return (
-    <div className="flex flex-col">
-      {steps.map((step, index) => {
-        const isCompleted = index < currentStep;
-        const isActive = index === currentStep;
-        const isLast = index === steps.length - 1;
-        const circleClass = onDark
-          ? (isCompleted
-              ? 'bg-white text-[#2B7DE9]'
-              : isActive
-              ? 'bg-white text-[#2B7DE9] ring-4 ring-white/25'
-              : 'bg-white/10 text-white/70 border-2 border-white/30')
-          : (isCompleted
-              ? 'bg-[#2B7DE9] text-white'
-              : isActive
-              ? 'bg-[#2B7DE9] text-white ring-4 ring-[#2B7DE9]/15'
-              : 'bg-white text-gray-400 border-2 border-gray-200');
-        const connectorClass = index < currentStep
-          ? (onDark ? 'bg-white' : 'bg-[#2B7DE9]')
-          : (onDark ? 'bg-white/25' : 'bg-gray-200');
-        const titleClass = onDark
-          ? (isActive ? 'text-white' : isCompleted ? 'text-white/90' : 'text-white/50')
-          : (isActive ? 'text-gray-900' : isCompleted ? 'text-gray-600' : 'text-gray-400');
+    <div className="flex items-center gap-2" data-testid="onboarding-step-dots">
+      {Array.from({ length: total }).map((_, i) => {
+        const isActive = i === current;
+        const isComplete = i < current;
         return (
-          <div key={step.id} className="flex gap-3">
-            <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${circleClass}`}>
-                {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
-              </div>
-              {!isLast && (
-                <div className={`w-0.5 flex-1 min-h-[18px] my-1 rounded-full ${connectorClass}`} />
-              )}
-            </div>
-            <div className={`pt-1.5 ${isLast ? '' : 'pb-2'}`}>
-              <p className={`text-sm font-medium transition-colors ${titleClass}`}>
-                {step.title}
-              </p>
-            </div>
-          </div>
+          <span
+            key={i}
+            className="h-2 rounded-full transition-all duration-300"
+            style={{
+              width: isActive ? 28 : 8,
+              backgroundColor: isActive || isComplete ? BRAND_BLUE : "#D8DEE8",
+            }}
+          />
         );
       })}
     </div>
   );
 }
 
-function BrandShowcase() {
+function LeftPanel() {
+  const signals = [
+    "Free plan, no credit card",
+    "iOS app — live on the App Store",
+    "Built for Australian tradies",
+  ];
   return (
-    <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-brand via-brand-dark to-brand-accent relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10">
-        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="showcase-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#showcase-grid)" />
-        </svg>
-      </div>
+    <div
+      className="hidden md:flex md:w-[42%] lg:w-[44%] flex-col justify-between p-10 lg:p-14"
+      style={{ backgroundColor: BRAND_BLUE }}
+    >
+      <Wordmark light />
 
-      <div className="relative z-10 flex flex-col justify-center items-center w-full p-12">
-        <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-          <Sparkles className="w-4 h-4 text-yellow-300" />
-          <span className="text-sm font-semibold text-white">Free for early users</span>
-        </div>
-
-        <h2 className="text-3xl xl:text-4xl font-bold text-white text-center mb-4">
-          Run your trade business
-          <br />smarter, not harder.
-        </h2>
-        <p className="text-white/80 text-center text-lg mb-8 max-w-md">
-          Join Australian trade professionals who save hours every week with JobRunner
+      <div className="max-w-md">
+        <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.05] tracking-tight mb-5">
+          Built for how jobs actually run.
+        </h1>
+        <p className="text-blue-100 text-lg leading-relaxed">
+          Quotes, jobs, invoices and payments — all in one place. Tradies across
+          Australia are saving hours every week.
         </p>
-
-        <div className="relative w-[260px] xl:w-[280px]">
-          <div className="relative bg-gray-900 rounded-[2.5rem] p-[6px] shadow-2xl">
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-20" />
-            <div className="relative bg-white rounded-[2.25rem] overflow-hidden" style={{ aspectRatio: '9/19.5' }}>
-              <img src={roleShowcaseScreenshot} alt="JobRunner app" className="absolute inset-0 w-full h-full object-cover" />
-            </div>
-          </div>
-          <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-br from-orange-400/30 via-transparent to-blue-400/30 rounded-full blur-3xl" />
-        </div>
-
-        <div className="mt-8 grid grid-cols-2 gap-3 max-w-md">
-          {[
-            { icon: FileText, text: "Clear records of every job" },
-            { icon: Clock, text: "Track time as it happens" },
-            { icon: CreditCard, text: "Quote, invoice, get paid" },
-            { icon: Users, text: "Know what was agreed" },
-          ].map((feature, index) => (
-            <div key={index} className="flex items-center gap-2 text-white/90 text-sm">
-              <feature.icon className="w-4 h-4 text-yellow-300 shrink-0" />
-              <span>{feature.text}</span>
-            </div>
-          ))}
-        </div>
       </div>
+
+      <ul className="space-y-3">
+        {signals.map((s) => (
+          <li key={s} className="flex items-center gap-3">
+            <span
+              className="h-2 w-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: BRAND_ORANGE }}
+            />
+            <span className="text-white/90 font-medium">{s}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-type OnboardingRole = 'owner' | 'worker' | 'subcontractor' | null;
-
-export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardingProps) {
+export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) {
   const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<OnboardingRole>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [stripeConnecting, setStripeConnecting] = useState(false);
-  const [resumeChecked, setResumeChecked] = useState(false);
-  const [inviteCode, setInviteCode] = useState('');
-  const [inviteValidation, setInviteValidation] = useState<{ valid: boolean; businessName?: string; roleType?: string; ownerName?: string; error?: string } | null>(null);
+
+  const [inviteCode, setInviteCode] = useState("");
+  const [inviteValidation, setInviteValidation] = useState<{
+    valid: boolean;
+    businessName?: string;
+    error?: string;
+  } | null>(null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
-  const [workerName, setWorkerName] = useState('');
-  const [workerLastName, setWorkerLastName] = useState('');
-  const [workerPhone, setWorkerPhone] = useState('');
+  const [workerName, setWorkerName] = useState("");
+  const [workerLastName, setWorkerLastName] = useState("");
+  const [workerPhone, setWorkerPhone] = useState("");
+  const [joinedBusiness, setJoinedBusiness] = useState("");
   const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
-  const { data: user, isLoading: userLoading } = useQuery<{
-    id: string;
-    intendedTier?: string;
-    [key: string]: any;
-  }>({
-    queryKey: ['/api/auth/me'],
+
+  const [formData, setFormData] = useState({
+    tradeType: "",
+    businessName: "",
+    abn: "",
+    phone: "",
+    email: "",
+    address: "",
+    gstRegistered: true,
+    hourlyRate: "85",
   });
-  
+
+  const { data: user } = useQuery<{ id: string; firstName?: string; lastName?: string; intendedTier?: string; [key: string]: any }>({
+    queryKey: ["/api/auth/me"],
+  });
+
   useEffect(() => {
     if (user) {
-      setWorkerName(user.firstName || '');
-      setWorkerLastName(user.lastName || '');
+      setWorkerName((prev) => prev || user.firstName || "");
+      setWorkerLastName((prev) => prev || user.lastName || "");
     }
   }, [user]);
 
-  const validateInviteCodeWeb = async (code: string) => {
-    if (code.length !== 6) {
-      setInviteValidation(null);
-      return;
-    }
-    setIsValidatingCode(true);
-    try {
-      const res = await fetch(`/api/team/invite-code/validate/${code.toUpperCase()}`, { credentials: 'include' });
-      const data = await res.json();
-      setInviteValidation(data);
-    } catch {
-      setInviteValidation({ valid: false, error: 'Failed to validate code' });
-    } finally {
-      setIsValidatingCode(false);
-    }
-  };
-
-  const handleInviteCodeChange = (text: string) => {
-    const clean = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-    setInviteCode(clean);
-    if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
-    if (clean.length === 6) {
-      validateTimerRef.current = setTimeout(() => validateInviteCodeWeb(clean), 300);
-    } else {
-      setInviteValidation(null);
-    }
-  };
-
-  const handleWorkerRedeem = async () => {
-    if (!inviteValidation?.valid) {
-      toast({ title: 'Invalid Code', description: 'Please enter a valid 6-character invite code', variant: 'destructive' });
-      return;
-    }
-    if (!workerName.trim()) {
-      toast({ title: 'Missing Info', description: 'Please enter your first name', variant: 'destructive' });
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const redeemRes = await apiRequest('POST', '/api/team/invite-code/redeem', {
-        code: inviteCode,
-        phone: workerPhone || undefined,
-      });
-      const redeemData = await redeemRes.json();
-      if (redeemData.error) {
-        toast({ title: 'Error', description: redeemData.error, variant: 'destructive' });
-        return;
-      }
-      if (workerName.trim() || workerLastName.trim()) {
-        await apiRequest('PATCH', '/api/user/profile', {
-          firstName: workerName.trim(),
-          lastName: workerLastName.trim(),
-        });
-      }
-      await apiRequest('POST', '/api/onboarding/complete', {}).catch(() => {});
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
-      toast({ title: 'Welcome!', description: `You've joined ${redeemData.businessName || 'the team'}` });
-      onComplete();
-    } catch (error: any) {
-      const raw = error?.message || '';
-      // Strip our protocol prefixes (team_plan_required:, session_expired:, etc.)
-      // so the toast shows the user-friendly text instead of the internal code.
-      const friendly = raw.startsWith('team_plan_required:')
-        ? raw.replace(/^team_plan_required:\s*/, '')
-        : raw || 'Failed to join team';
-      toast({ title: raw.startsWith('team_plan_required:') ? "Owner's plan inactive" : 'Error', description: friendly, variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const selectedPlan = user?.intendedTier || 'free';
-  const isTeamPlan = selectedPlan === 'team';
-  const isProPlan = selectedPlan === 'pro';
-  
-  const STEPS = getStepsForPlan(selectedPlan);
-  
-  const [formData, setFormData] = useState({
-    tradeType: '',
-    businessName: '',
-    abn: '',
-    phone: '',
-    email: '',
-    address: '',
-    gstRegistered: true,
-    hourlyRate: '85',
-    teamSize: 'solo',
-  });
-
-  useEffect(() => {
-    if (user?.intendedTier === 'team') {
-      setFormData(prev => ({ ...prev, teamSize: 'small' }));
-    }
-  }, [user?.intendedTier]);
-
-  useEffect(() => {
-    if (currentStep !== 1) return;
-
-    const savedDraft = localStorage.getItem('jobrunner_onboarding_business_draft');
-    if (savedDraft) {
-      try {
-        const draftData = JSON.parse(savedDraft);
-        setFormData(prev => ({ ...prev, ...draftData }));
-      } catch {
-        localStorage.removeItem('jobrunner_onboarding_business_draft');
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (currentStep !== 1) return;
-
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      const businessDraftData = {
-        businessName: formData.businessName,
-        phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
-        abn: formData.abn,
-        gstRegistered: formData.gstRegistered,
-        hourlyRate: formData.hourlyRate,
-      };
-      localStorage.setItem('jobrunner_onboarding_business_draft', JSON.stringify(businessDraftData));
-    }, 3000);
-
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [formData, currentStep]);
-
-  useEffect(() => {
-    if (!resumeChecked) return;
-    const stepId = STEPS[currentStep]?.id;
-    if (stepId) {
-      trackEvent('onboarding_step_viewed', { step: stepId });
-    }
-  }, [currentStep, resumeChecked]);
-
   // Force the light brand theme for the whole onboarding flow, regardless of the
-  // user's saved dark/light preference, so it matches the marketing site.
-  // ThemeProvider re-writes the root class + inline CSS vars whenever theme/brand
-  // changes (e.g. settings load mid-onboarding), so a one-shot flip isn't enough.
-  // We snapshot the root, re-assert light via a MutationObserver, and apply the
-  // light vars at the ROOT so portaled menus (Select/Popover) also render light.
+  // user's saved dark/light preference. ThemeProvider re-writes the root class +
+  // inline CSS vars whenever theme/brand changes, so a one-shot flip isn't enough:
+  // snapshot the root, re-assert light via a MutationObserver, restore on unmount.
   useEffect(() => {
     const root = document.documentElement;
-    const snapshotClass = root.getAttribute('class');
-    const snapshotStyle = root.getAttribute('style');
+    const snapshotClass = root.getAttribute("class");
+    const snapshotStyle = root.getAttribute("style");
     const lightVars = ONBOARDING_LIGHT_VARS as Record<string, string>;
 
-    // Guard so re-asserting (which mutates the root) doesn't recurse forever.
     let applying = false;
     const forceLight = () => {
       if (applying) return;
       applying = true;
       try {
-        if (root.classList.contains('dark')) root.classList.remove('dark');
-        if (!root.classList.contains('light')) root.classList.add('light');
+        if (root.classList.contains("dark")) root.classList.remove("dark");
+        if (!root.classList.contains("light")) root.classList.add("light");
         for (const [name, value] of Object.entries(lightVars)) {
           if (root.style.getPropertyValue(name) !== value) {
             root.style.setProperty(name, value);
@@ -483,1637 +259,679 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
 
     forceLight();
     const observer = new MutationObserver(forceLight);
-    observer.observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
+    observer.observe(root, { attributes: true, attributeFilter: ["class", "style"] });
 
     return () => {
       observer.disconnect();
-      if (snapshotClass === null) root.removeAttribute('class');
-      else root.setAttribute('class', snapshotClass);
-      if (snapshotStyle === null) root.removeAttribute('style');
-      else root.setAttribute('style', snapshotStyle);
+      if (snapshotClass === null) root.removeAttribute("class");
+      else root.setAttribute("class", snapshotClass);
+      if (snapshotStyle === null) root.removeAttribute("style");
+      else root.setAttribute("style", snapshotStyle);
     };
   }, []);
 
+  // Prefill from any partially-saved business settings (resume).
   useEffect(() => {
-    const checkExistingSettings = async () => {
+    const checkExisting = async () => {
       try {
-        // Use apiRequest so the Bearer-token fallback is sent — raw fetch only
-        // sends the cookie, which fails on iOS/Safari and over plain HTTP.
-        const res = await apiRequest('GET', '/api/business-settings');
-        if (res.ok) {
-          const settings = await res.json();
-          if (!settings.onboardingCompleted) {
-            if (settings.tradeType) {
-              setFormData(prev => ({
-                ...prev,
-                tradeType: settings.tradeType || '',
-                businessName: settings.businessName || '',
-                abn: settings.abn || '',
-                phone: settings.phone || '',
-                gstRegistered: settings.gstEnabled ?? true,
-                hourlyRate: String(settings.defaultHourlyRate || '85'),
-              }));
-              if (settings.businessName) {
-                setCurrentStep(2);
-              } else {
-                setCurrentStep(1);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        // No existing settings, start fresh
-      } finally {
-        setResumeChecked(true);
+        const res = await apiRequest("GET", "/api/business-settings");
+        if (!res.ok) return;
+        const s = await res.json();
+        if (s.onboardingCompleted) return;
+        setFormData((prev) => ({
+          ...prev,
+          tradeType: s.tradeType || prev.tradeType,
+          businessName: s.businessName || prev.businessName,
+          abn: s.abn || prev.abn,
+          phone: s.phone || prev.phone,
+          gstRegistered: s.gstEnabled ?? prev.gstRegistered,
+          hourlyRate: s.defaultHourlyRate ? String(s.defaultHourlyRate) : prev.hourlyRate,
+        }));
+      } catch {
+        // No existing settings — start fresh.
       }
     };
-    checkExistingSettings();
+    checkExisting();
   }, []);
 
-  const handleTradeSelect = (tradeId: string) => {
-    setFormData(prev => ({ ...prev, tradeType: tradeId }));
+  const steps = useMemo<string[]>(() => {
+    if (selectedRole === "owner") return ["role", "trade", "business", "done"];
+    if (selectedRole === "worker" || selectedRole === "subcontractor")
+      return ["role", "join", "done"];
+    return ["role"];
+  }, [selectedRole]);
+
+  const stepId = steps[currentStep] ?? "role";
+
+  useEffect(() => {
+    trackEvent("onboarding_step_viewed", { step: stepId });
+  }, [stepId]);
+
+  const setField = (field: string, value: string | boolean) =>
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
+  const validateInviteCode = async (code: string) => {
+    if (code.length !== 6) {
+      setInviteValidation(null);
+      return;
+    }
+    setIsValidatingCode(true);
+    try {
+      const res = await fetch(`/api/team/invite-code/validate/${code.toUpperCase()}`, {
+        credentials: "include",
+      });
+      setInviteValidation(await res.json());
+    } catch {
+      setInviteValidation({ valid: false, error: "Failed to validate code" });
+    } finally {
+      setIsValidatingCode(false);
+    }
   };
 
-  const userTradeKey = formData.tradeType || 'general';
+  const handleInviteCodeChange = (text: string) => {
+    const clean = text.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    setInviteCode(clean);
+    if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
+    if (clean.length === 6) {
+      validateTimerRef.current = setTimeout(() => validateInviteCode(clean), 300);
+    } else {
+      setInviteValidation(null);
+    }
+  };
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const goNext = () => setCurrentStep((s) => s + 1);
+  const goBack = () => {
+    if (currentStep === 0) return;
+    if (currentStep === 1) setSelectedRole(null);
+    setCurrentStep((s) => s - 1);
   };
 
   const autoSaveTrade = async (tradeType: string) => {
-    // PATCH first (apiRequest sends the Bearer fallback). Only create a new row
-    // on an explicit 404 — a transient 401/network/500 must NOT trigger a POST,
-    // since create is a plain insert and would error on a duplicate.
     try {
-      await apiRequest('PATCH', '/api/business-settings', {
+      await apiRequest("PATCH", "/api/business-settings", {
         tradeType,
         onboardingCompleted: false,
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      if (msg.startsWith('404')) {
+      const msg = e instanceof Error ? e.message : "";
+      if (msg.startsWith("404")) {
         try {
-          await apiRequest('POST', '/api/business-settings', {
+          await apiRequest("POST", "/api/business-settings", {
             tradeType,
             onboardingCompleted: false,
-            businessName: '',
+            businessName: formData.businessName || "",
           });
         } catch {
-          // Best effort - auto-save only
+          // Best effort.
         }
       }
-      // Other errors (auth/network) are swallowed; not safe to create.
     }
   };
 
-  const getStepIndexById = (id: string) => STEPS.findIndex(s => s.id === id);
-
-  const handleNext = async () => {
-    const stepId = STEPS[currentStep]?.id;
-
-    if (stepId === 'trade') {
-      if (!formData.tradeType) {
-        toast({ variant: "destructive", title: "Please select your trade" });
-        return;
-      }
-      autoSaveTrade(formData.tradeType);
-      setCurrentStep(prev => prev + 1);
+  const handleBusinessNext = async () => {
+    if (!formData.businessName.trim()) {
+      toast({ variant: "destructive", title: "Business name is required" });
       return;
     }
-    
-    if (stepId === 'business') {
-      if (!formData.businessName.trim()) {
-        toast({ variant: "destructive", title: "Business name is required" });
-        return;
-      }
-      
-      setIsSubmitting(true);
-      try {
-        await apiRequest('POST', '/api/business-settings', {
-          businessName: formData.businessName,
-          abn: formData.abn,
-          phone: formData.phone,
-          email: formData.email,
-          address: formData.address,
-          tradeType: formData.tradeType,
-          gstEnabled: formData.gstRegistered,
-          defaultHourlyRate: parseFloat(formData.hourlyRate) || 85,
-          calloutFee: 90,
-          teamSize: isTeamPlan ? 'small' : 'solo',
-          onboardingCompleted: false,
-          logoUrl: logoPreview || undefined,
-        });
-        
-        localStorage.removeItem('jobrunner_onboarding_business_draft');
-        await queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
-        setCurrentStep(prev => prev + 1);
-      } catch (error) {
-        toast({ 
-          variant: "destructive", 
-          title: "Error saving settings", 
-          description: error instanceof Error ? error.message : "Please try again" 
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
-      return;
-    }
-
-    if (stepId === 'payments') {
-      setCurrentStep(prev => prev + 1);
-      return;
-    }
-
-    if (stepId === 'import') {
-      setCurrentStep(prev => prev + 1);
-      return;
-    }
-    
-    if (stepId === 'team') {
-      setIsSubmitting(true);
-      try {
-        await apiRequest('PATCH', '/api/business-settings', {
-          onboardingCompleted: false,
-        });
-        await queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
-        setCurrentStep(prev => prev + 1);
-      } catch (error) {
-        toast({ 
-          variant: "destructive", 
-          title: "Error saving settings", 
-          description: error instanceof Error ? error.message : "Please try again" 
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
-      return;
-    }
-
-    if (stepId === 'portal') {
-      setCurrentStep(prev => prev + 1);
-      return;
-    }
-    
-    if (stepId === 'done') {
-      await completeOnboarding();
-      return;
-    }
-    
-    setCurrentStep(prev => prev + 1);
-  };
-
-  const completeOnboarding = async (redirectTo?: string) => {
     setIsSubmitting(true);
+    const payload = {
+      businessName: formData.businessName,
+      abn: formData.abn,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      tradeType: formData.tradeType,
+      gstEnabled: formData.gstRegistered,
+      defaultHourlyRate: parseFloat(formData.hourlyRate) || 85,
+      calloutFee: 90,
+      teamSize: "solo",
+      onboardingCompleted: false,
+    };
     try {
-      if (teamInviteEmails.length > 0) {
-        for (const email of teamInviteEmails) {
-          try {
-            await apiRequest('POST', '/api/team/invite', { email, role: 'tradie' });
-          } catch (error) {
-            console.log('Failed to send invite to:', email);
-          }
-        }
-      }
-
-      if (seedDemoData) {
-        try {
-          // Task #115: opt-in "Try with sample data". Creates 3 sample clients,
-          // 2 quotes, 2 invoices, 1 scheduled + 1 in-progress job (all flagged
-          // isSample=true so accounting integrations skip them, and one tap
-          // removes everything from Dashboard or Settings).
-          await apiRequest('POST', '/api/onboarding/seed-sample-data', { tradeType: userTradeKey });
-          await queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
-          await queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
-          await queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });
-          await queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
-          await queryClient.invalidateQueries({ queryKey: ['/api/onboarding/sample-data'] });
-        } catch (error) {
-          console.log('Sample data seeding skipped:', error);
-        }
-      }
-
-      if (isProPlan || isTeamPlan) {
-        try {
-          await apiRequest('POST', '/api/subscription/trial', {});
-          await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-          await queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
-        } catch (error) {
-          console.error('Failed to start trial:', error);
-          toast({
-            title: "Trial activation pending",
-            description: "You can activate your trial from the subscription settings.",
-          });
-        }
-      }
-
+      // A business_settings row usually already exists by now (created when the
+      // trade step auto-saved, or at registration), so update in place. Only
+      // create a fresh row on an explicit 404 — the POST path also seeds
+      // trade-specific templates because it carries tradeType.
       try {
-        await apiRequest('PATCH', '/api/business-settings', { onboardingCompleted: true });
-        await queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
-      } catch (e) {}
-
-      trackEvent('onboarding_completed');
-      onComplete();
-
-      if (redirectTo) {
-        setTimeout(() => { window.location.href = redirectTo; }, 100);
+        await apiRequest("PATCH", "/api/business-settings", payload);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "";
+        if (msg.startsWith("404")) {
+          await apiRequest("POST", "/api/business-settings", payload);
+        } else {
+          throw e;
+        }
       }
+      await queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      goNext();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error saving settings",
+        description: error instanceof Error ? error.message : "Please try again",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
-    }
-  };
-
-  const handleStripeConnect = async () => {
-    setStripeConnecting(true);
-    try {
-      const res = await apiRequest('POST', '/api/stripe-connect/onboard', {});
-      const data = await res.json();
-      if (data.onboardingUrl || data.url) {
-        window.location.href = data.onboardingUrl || data.url;
-      } else {
-        toast({ variant: "destructive", title: "Could not start Stripe setup", description: "Please try again later." });
-      }
-    } catch (error) {
-      toast({ 
-        variant: "destructive", 
-        title: "Stripe connection failed", 
-        description: error instanceof Error ? error.message : "Please try again later or skip for now." 
-      });
-    } finally {
-      setStripeConnecting(false);
-    }
-  };
-
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  // Task #115: opt-in sample data toggle. Default OFF — most users prefer
-  // an empty workspace they can populate with their own jobs straight away.
-  const [seedDemoData, setSeedDemoData] = useState(false);
-  const [importMode, setImportMode] = useState<'none' | 'clients' | 'catalog' | 'tradify' | 'servicem8'>('none');
-  const [importPreview, setImportPreview] = useState<{ headers: string[]; rows: any[]; totalRows: number; suggestedMappings: Record<string, string>; detectedType?: string; detectedPlatform?: string; duplicateCount?: number; duplicates?: { row: number; reason: string }[]; formatWarning?: string } | null>(null);
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
-  const importFileRef = useRef<HTMLInputElement>(null);
-  const [teamInviteEmails, setTeamInviteEmails] = useState<string[]>([]);
-  const [currentInviteEmail, setCurrentInviteEmail] = useState('');
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ variant: "destructive", title: "File too large", description: "Please upload an image under 5MB" });
+  const handleTradeNext = () => {
+    if (!formData.tradeType) {
+      toast({ variant: "destructive", title: "Please pick your trade" });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setLogoPreview(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    autoSaveTrade(formData.tradeType);
+    goNext();
   };
 
-  const handleImportFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImportFile(file);
-    setImportResult(null);
-    
-    const formDataUpload = new FormData();
-    formDataUpload.append('file', file);
-    const isCompetitor = importMode === 'tradify' || importMode === 'servicem8';
-    if (isCompetitor) {
-      formDataUpload.append('platform', importMode);
-    } else {
-      formDataUpload.append('type', importMode);
-    }
-    
-    try {
-      // FormData uploads can't go through apiRequest (it sets a JSON
-      // content-type), so attach the Bearer-token fallback by hand.
-      const token = getSessionToken();
-      const res = await fetch('/api/import/preview', {
-        method: 'POST',
-        body: formDataUpload,
-        credentials: 'include',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      if (!res.ok) throw new Error('Failed to parse file');
-      const data = await res.json();
-      setImportPreview(data);
-    } catch (error) {
-      toast({ variant: "destructive", title: "Could not read that file", description: "Make sure it's a CSV file with headers in the first row." });
-      setImportFile(null);
-    }
-  };
-
-  const handleExecuteImport = async () => {
-    if (!importPreview) return;
-    setIsImporting(true);
-    try {
-      const isCompetitor = importMode === 'tradify' || importMode === 'servicem8';
-      const importType = isCompetitor ? (importPreview.detectedType || 'clients') : importMode;
-      const res = await apiRequest('POST', '/api/import/execute', {
-        type: importType,
-        data: importPreview.rows,
-        mappings: importPreview.suggestedMappings,
-        platform: isCompetitor ? importMode : 'generic',
-        skipDuplicates: true,
-      });
-      const result = await res.json();
-      setImportResult(result);
-      if (result.imported > 0) {
-        const keys = ['/api/clients', '/api/jobs', '/api/quotes', '/api/invoices', '/api/catalog'];
-        for (const k of keys) {
-          await queryClient.invalidateQueries({ queryKey: [k] });
-        }
-        const typeLabels: Record<string, string> = { clients: 'clients', catalog: 'items', jobs: 'jobs', quotes: 'quotes', invoices: 'invoices' };
-        toast({ title: `Imported ${result.imported} ${typeLabels[importType] || 'records'}` });
-      }
-    } catch (error) {
-      toast({ variant: "destructive", title: "Import failed", description: "Please check your file and try again." });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  const handleDownloadTemplate = (type: string) => {
-    window.open(`/api/import/templates/${type}`, '_blank');
-  };
-
-  const resetImport = () => {
-    setImportMode('none');
-    setImportPreview(null);
-    setImportFile(null);
-    setImportResult(null);
-  };
-
-  const [showTradeRequest, setShowTradeRequest] = useState(false);
-  const [requestedTrade, setRequestedTrade] = useState('');
-
-  const handleRequestTrade = async () => {
-    if (!requestedTrade.trim()) {
-      toast({ variant: "destructive", title: "Please enter your trade type" });
+  const handleWorkerRedeem = async () => {
+    if (!inviteValidation?.valid) {
+      toast({ variant: "destructive", title: "Enter a valid 6-character invite code" });
       return;
     }
-    
+    if (!workerName.trim()) {
+      toast({ variant: "destructive", title: "Please enter your first name" });
+      return;
+    }
+    setIsSubmitting(true);
     try {
-      await apiRequest('POST', '/api/trade-requests', {
-        tradeName: requestedTrade.trim(),
+      const redeemRes = await apiRequest("POST", "/api/team/invite-code/redeem", {
+        code: inviteCode,
+        phone: workerPhone || undefined,
       });
-      
+      const redeemData = await redeemRes.json();
+      if (redeemData.error) {
+        toast({ variant: "destructive", title: "Error", description: redeemData.error });
+        return;
+      }
+      if (workerName.trim() || workerLastName.trim()) {
+        // Non-blocking: the redeem already succeeded, so a profile-name failure
+        // must not error the user out of a team they've already joined.
+        await apiRequest("PATCH", "/api/profile/me", {
+          firstName: workerName.trim(),
+          lastName: workerLastName.trim(),
+          phone: workerPhone || undefined,
+        }).catch(() => {});
+      }
+      await apiRequest("POST", "/api/onboarding/complete", {}).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      setJoinedBusiness(redeemData.businessName || "the team");
+      goNext();
+    } catch (error: any) {
+      const raw = error?.message || "";
+      const friendly = raw.startsWith("team_plan_required:")
+        ? raw.replace(/^team_plan_required:\s*/, "")
+        : raw || "Failed to join team";
       toast({
-        title: "Trade request submitted",
-        description: "We'll add your trade soon! For now, you'll use the General category.",
+        variant: "destructive",
+        title: raw.startsWith("team_plan_required:") ? "Owner's plan inactive" : "Error",
+        description: friendly,
       });
-      
-      handleTradeSelect('general');
-      setShowTradeRequest(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    setIsSubmitting(true);
+    try {
+      await apiRequest("POST", "/api/onboarding/complete", {});
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      onComplete();
     } catch (error) {
-      handleTradeSelect('general');
-      setShowTradeRequest(false);
       toast({
-        title: "Request noted",
-        description: "Using General category for now. We'll add your trade soon!",
+        variant: "destructive",
+        title: "Something went wrong",
+        description: error instanceof Error ? error.message : "Please try again",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const renderTradeStep = () => {
-    const selectedTrade = formData.tradeType ? tradeCatalog[formData.tradeType] : null;
-    
-    return (
-      <div className="space-y-6">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            What's your trade?
-          </h2>
-          <p className="text-muted-foreground">
-            We'll set up your workspace with the right templates, pricing, and job types
-          </p>
-        </div>
-        
-        <div className="max-w-md mx-auto space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="trade-select" className="flex items-center gap-2">
-              <Wrench className="h-4 w-4" />
-              Trade Category
-            </Label>
-            <Select
-              value={formData.tradeType}
-              onValueChange={handleTradeSelect}
-            >
-              <SelectTrigger id="trade-select" className="w-full h-12" data-testid="select-trade">
-                <SelectValue placeholder="Select your trade..." />
-              </SelectTrigger>
-              <SelectContent>
-                {TRADE_CATEGORIES.map((category) => (
-                  <SelectGroup key={category.label}>
-                    <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      {category.label}
-                    </SelectLabel>
-                    {category.trades.map((tradeId) => {
-                      const trade = tradeCatalog[tradeId];
-                      if (!trade) return null;
-                      return (
-                        <SelectItem key={tradeId} value={tradeId} data-testid={`trade-${tradeId}`}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: trade.color }}
-                            />
-                            <span>{trade.name}</span>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectGroup>
-                ))}
-                <SelectGroup>
-                  <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Other
-                  </SelectLabel>
-                  <SelectItem value="general" data-testid="trade-general">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gray-500" />
-                      <span>General Trade Services</span>
-                    </div>
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {selectedTrade && (
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <div className="flex items-center gap-2 mb-2">
-                <div 
-                  className="w-4 h-4 rounded-full" 
-                  style={{ backgroundColor: selectedTrade.color }}
-                />
-                <span className="font-medium">{selectedTrade.name}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">{selectedTrade.description}</p>
-              {selectedTrade.typicalJobs && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {selectedTrade.typicalJobs.slice(0, 4).map((job) => (
-                    <span key={job} className="text-xs bg-background px-2 py-0.5 rounded-full border">
-                      {job}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {!showTradeRequest ? (
-            <button
-              type="button"
-              onClick={() => setShowTradeRequest(true)}
-              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-            >
-              <MessageSquarePlus className="h-4 w-4" />
-              Can't find your trade? Request it
-            </button>
-          ) : (
-            <div className="p-4 rounded-lg border bg-muted/30 space-y-3">
-              <Label htmlFor="request-trade">Request a new trade category</Label>
-              <Input
-                id="request-trade"
-                placeholder="e.g. Glazier, Pool Technician..."
-                value={requestedTrade}
-                onChange={(e) => setRequestedTrade(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => setShowTradeRequest(false)}>
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleRequestTrade}>
-                  Submit & Continue with General
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                We'll notify you when your trade category is added. For now, you'll use the General category.
-              </p>
-            </div>
-          )}
-        </div>
-        
-        <div className="flex justify-end pt-4">
-          <Button 
-            onClick={handleNext} 
-            disabled={!formData.tradeType}
-            size="lg"
-            data-testid="button-next"
-          >
-            Continue
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderBusinessStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Tell us about your business
-        </h2>
-        <p className="text-muted-foreground">
-          This goes on your quotes and invoices - takes 30 seconds
-        </p>
-      </div>
-      
-      <div className="space-y-4 max-w-md mx-auto">
-        <div className="flex flex-col items-center mb-4">
-          <button
-            type="button"
-            onClick={() => logoInputRef.current?.click()}
-            className="w-20 h-20 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center overflow-hidden transition-all"
-          >
-            {logoPreview ? (
-              <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
-            ) : (
-              <Camera className="h-6 w-6 text-muted-foreground/50" />
-            )}
-          </button>
-          <input
-            ref={logoInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleLogoSelect}
-            className="hidden"
-          />
-          <p className="text-xs text-muted-foreground mt-2">Add your logo (optional)</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="businessName" className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4" />
-            Business Name *
-          </Label>
-          <Input
-            id="businessName"
-            placeholder="e.g. Smith Electrical"
-            value={formData.businessName}
-            onChange={(e) => handleInputChange('businessName', e.target.value)}
-            data-testid="input-business-name"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="phone" className="flex items-center gap-2">
-            <Phone className="h-4 w-4" />
-            Phone Number
-          </Label>
-          <Input
-            id="phone"
-            placeholder="0400 000 000"
-            value={formData.phone}
-            onChange={(e) => handleInputChange('phone', e.target.value)}
-            data-testid="input-phone"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Email
-          </Label>
-          <Input
-            id="email"
-            placeholder="hello@yourbusiness.com.au"
-            value={formData.email}
-            onChange={(e) => handleInputChange('email', e.target.value)}
-            data-testid="input-email"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="address" className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            Address
-          </Label>
-          <Input
-            id="address"
-            placeholder="123 Main St, Sydney NSW 2000"
-            value={formData.address}
-            onChange={(e) => handleInputChange('address', e.target.value)}
-            data-testid="input-address"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="abn" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            ABN (optional)
-          </Label>
-          <Input
-            id="abn"
-            placeholder="XX XXX XXX XXX"
-            value={formData.abn}
-            onChange={(e) => handleInputChange('abn', e.target.value)}
-            data-testid="input-abn"
-          />
-        </div>
-        
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-          <div>
-            <Label htmlFor="gst" className="font-medium">GST Registered</Label>
-            <p className="text-xs text-muted-foreground">Add 10% GST to quotes and invoices</p>
-          </div>
-          <Switch
-            id="gst"
-            checked={formData.gstRegistered}
-            onCheckedChange={(checked) => handleInputChange('gstRegistered', checked)}
-            data-testid="switch-gst"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="hourlyRate" className="flex items-center gap-2">
-            Default Hourly Rate
-          </Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-            <Input
-              id="hourlyRate"
-              type="number"
-              placeholder="85"
-              value={formData.hourlyRate}
-              onChange={(e) => handleInputChange('hourlyRate', e.target.value)}
-              className="pl-7"
-              data-testid="input-hourly-rate"
-            />
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={handleBack} data-testid="button-back">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <Button 
-          onClick={handleNext} 
-          disabled={isSubmitting || !formData.businessName.trim()}
-          size="lg"
-          data-testid="button-next"
-        >
-          {isSubmitting ? 'Saving...' : 'Continue'}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderPaymentsStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Get Paid Faster
-        </h2>
-        <p className="text-gray-600 max-w-sm mx-auto">
-          Clients can pay your invoices online with one tap. No chasing, no delays.
-        </p>
-      </div>
-      
-      <div className="max-w-md mx-auto space-y-4">
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#2B7DE9]/10 flex items-center justify-center flex-shrink-0">
-              <CreditCard className="h-4 w-4 text-[#2B7DE9]" />
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900">Accept card payments</h4>
-              <p className="text-sm text-gray-600">Clients pay invoices directly online</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#F28C28]/10 flex items-center justify-center flex-shrink-0">
-              <ExternalLink className="h-4 w-4 text-[#F28C28]" />
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900">Send payment links</h4>
-              <p className="text-sm text-gray-600">One-click payment links via SMS or email</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-              <DollarSign className="h-4 w-4 text-green-600" />
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900">Fast deposits</h4>
-              <p className="text-sm text-gray-600">Funds deposited directly to your bank</p>
-            </div>
-          </div>
-        </div>
-
-        <Button 
-          onClick={handleStripeConnect}
-          disabled={stripeConnecting}
-          size="lg"
-          className="w-full"
-        >
-          {stripeConnecting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Connecting...
-            </>
-          ) : (
-            <>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Connect Stripe
-            </>
-          )}
-        </Button>
-
-        <div className="flex items-start gap-2 px-1">
-          <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground">
-            You can always connect Stripe later from Settings
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={handleBack} data-testid="button-back">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <Button 
-          variant="ghost"
-          onClick={handleNext}
-          data-testid="button-skip-stripe"
-        >
-          Skip for now
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderImportStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Switching from another app?
-        </h2>
-        <p className="text-muted-foreground max-w-sm mx-auto">
-          Bring your data across in seconds. We auto-detect Tradify and ServiceM8 exports.
-        </p>
-      </div>
-      
-      {importMode === 'none' && !importResult && (
-        <div className="max-w-md mx-auto space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Import from competitor</p>
-          <div 
-            className="p-4 rounded-xl border hover-elevate cursor-pointer transition-all"
-            onClick={() => setImportMode('tradify')}
-            data-testid="import-tradify-option"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
-                <Download className="h-5 w-5 text-orange-600" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white">Import from Tradify</p>
-                <p className="text-sm text-muted-foreground">Clients, jobs, quotes & invoices</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </div>
-          
-          <div 
-            className="p-4 rounded-xl border hover-elevate cursor-pointer transition-all"
-            onClick={() => setImportMode('servicem8')}
-            data-testid="import-servicem8-option"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
-                <Download className="h-5 w-5 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white">Import from ServiceM8</p>
-                <p className="text-sm text-muted-foreground">Clients, jobs, quotes & invoices</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </div>
-          
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1 pt-2">Or upload a generic CSV</p>
-          <div 
-            className="p-4 rounded-xl border hover-elevate cursor-pointer transition-all"
-            onClick={() => setImportMode('clients')}
-            data-testid="import-clients-option"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white">Import Clients</p>
-                <p className="text-sm text-muted-foreground">Upload a CSV with your client list</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </div>
-          
-          <div 
-            className="p-4 rounded-xl border hover-elevate cursor-pointer transition-all"
-            onClick={() => setImportMode('catalog')}
-            data-testid="import-catalog-option"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#F28C28]/10 flex items-center justify-center flex-shrink-0">
-                <FileText className="h-5 w-5 text-[#F28C28]" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white">Import Price List</p>
-                <p className="text-sm text-muted-foreground">Upload your materials or service items</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </div>
-          
-          <p className="text-xs text-center text-muted-foreground pt-2">
-            You can also import data later from Settings
-          </p>
-        </div>
-      )}
-      
-      {importMode !== 'none' && !importResult && (
-        <div className="max-w-md mx-auto space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium text-gray-900 dark:text-white">
-              {importMode === 'tradify' ? 'Import from Tradify' : importMode === 'servicem8' ? 'Import from ServiceM8' : importMode === 'clients' ? 'Import Clients' : 'Import Price List'}
-            </h3>
-            <Button variant="ghost" size="sm" onClick={resetImport}>
-              <X className="h-4 w-4 mr-1" />
-              Cancel
-            </Button>
-          </div>
-          
-          {!importPreview && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {(importMode === 'tradify' || importMode === 'servicem8') 
-                  ? `Upload any CSV exported from ${importMode === 'tradify' ? 'Tradify' : 'ServiceM8'}. We'll auto-detect whether it's clients, jobs, quotes, or invoices.`
-                  : `Upload a CSV file with your ${importMode === 'clients' ? 'client list' : 'price list'}.`
-                }
-              </p>
-              <div 
-                className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors hover:border-muted-foreground/40"
-                onClick={() => importFileRef.current?.click()}
-              >
-                <FileText className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Drop your CSV file here</p>
-                <p className="text-xs text-muted-foreground mt-1">or click to browse</p>
-              </div>
-              <input
-                ref={importFileRef}
-                type="file"
-                accept=".csv"
-                onChange={handleImportFileSelect}
-                className="hidden"
-              />
-              {(importMode === 'clients' || importMode === 'catalog') && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => handleDownloadTemplate(importMode === 'clients' ? 'clients' : 'catalog')}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Download CSV template
-                </Button>
-              )}
-            </div>
-          )}
-          
-          {importPreview && (
-            <div className="space-y-3">
-              <div className="bg-muted/30 rounded-lg p-3">
-                <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                  <p className="text-sm font-medium">{importFile?.name}</p>
-                  <div className="flex gap-1 flex-wrap">
-                    {importPreview.detectedType && (importMode === 'tradify' || importMode === 'servicem8') && (
-                      <Badge variant="secondary" className="capitalize">{importPreview.detectedType}</Badge>
-                    )}
-                    <Badge variant="outline">{importPreview.totalRows} rows</Badge>
-                  </div>
-                </div>
-                {importPreview.formatWarning && (
-                  <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded p-2 mb-2">
-                    <p className="font-medium">{importPreview.formatWarning}</p>
-                  </div>
-                )}
-                {(importPreview.duplicateCount || 0) > 0 && (
-                  <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded p-2 mb-2 space-y-0.5">
-                    <p className="font-medium">{importPreview.duplicateCount} duplicate{importPreview.duplicateCount !== 1 ? 's' : ''} will be skipped:</p>
-                    {importPreview.duplicates?.slice(0, 3).map((d, i) => (
-                      <p key={i}>{d.reason}</p>
-                    ))}
-                    {(importPreview.duplicates?.length || 0) > 3 && (
-                      <p>...and {(importPreview.duplicates?.length || 0) - 3} more</p>
-                    )}
-                  </div>
-                )}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr>
-                        {importPreview.headers.slice(0, 4).map((h, i) => (
-                          <th key={i} className="text-left p-1 font-medium text-muted-foreground">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {importPreview.rows.slice(0, 3).map((row, i) => (
-                        <tr key={i} className="border-t border-border/50">
-                          {importPreview.headers.slice(0, 4).map((h, j) => (
-                            <td key={j} className="p-1 truncate max-w-[120px]">{row[h] || '-'}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {importPreview.totalRows > 3 && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    ...and {importPreview.totalRows - 3} more rows
-                  </p>
-                )}
-              </div>
-              
-              <Button 
-                onClick={handleExecuteImport} 
-                disabled={isImporting}
-                className="w-full"
-                data-testid="button-execute-import"
-              >
-                {isImporting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Import {importPreview.totalRows - (importPreview.duplicateCount || 0)} {(importMode === 'tradify' || importMode === 'servicem8') ? (importPreview.detectedType || 'records') : importMode === 'clients' ? 'clients' : 'items'}
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {importResult && (
-        <div className="max-w-md mx-auto space-y-4">
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 text-center">
-            <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="font-medium text-green-900 dark:text-green-100">
-              {importResult.imported} records imported
-            </p>
-            {importResult.skipped > 0 && (
-              <p className="text-sm text-green-700 dark:text-green-300">
-                {importResult.skipped} skipped (duplicates or missing required fields)
-              </p>
-            )}
-          </div>
-          <Button variant="outline" className="w-full" onClick={resetImport}>
-            Import more data
-          </Button>
-        </div>
-      )}
-      
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={handleBack} data-testid="button-back">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <Button 
-          onClick={() => { resetImport(); handleNext(); }}
-          size="lg"
-          data-testid="button-next"
-        >
-          {importResult ? 'Continue' : 'Skip for now'}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderPortalStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Professional from Day One
-        </h2>
-        <p className="text-gray-600 max-w-sm mx-auto">
-          This is what your clients see. Clean, professional, and branded with your business.
-        </p>
-      </div>
-      
-      <div className="max-w-sm mx-auto">
-        <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
-          <div className="bg-[#2B7DE9] px-4 py-3">
-            <p className="text-white font-semibold text-sm">
-              {formData.businessName || 'Your Business'}
-            </p>
-            <p className="text-blue-100 text-xs">Client Portal</p>
-          </div>
-          
-          <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Quote #1024</p>
-                <p className="text-sm font-semibold text-gray-900">Kitchen Renovation</p>
-              </div>
-              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                Pending
-              </span>
-            </div>
-            
-            <div className="border-t pt-3 space-y-2">
-              <div className="flex justify-between text-xs text-gray-600">
-                <span>Demolition & prep work</span>
-                <span className="font-medium">$850.00</span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-600">
-                <span>New cabinetry install</span>
-                <span className="font-medium">$2,400.00</span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-600">
-                <span>Benchtop & splashback</span>
-                <span className="font-medium">$1,200.00</span>
-              </div>
-              <div className="border-t pt-2 flex justify-between text-sm font-semibold text-gray-900">
-                <span>Total (inc. GST)</span>
-                <span>$4,895.00</span>
-              </div>
-            </div>
-            
-            <div className="flex gap-2 pt-1">
-              <div className="flex-1 bg-green-600 text-white text-center text-xs font-medium py-2 rounded-md">
-                Accept Quote
-              </div>
-              <div className="flex-1 bg-blue-600 text-white text-center text-xs font-medium py-2 rounded-md">
-                Pay Invoice
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <p className="text-xs text-center text-muted-foreground mt-3">
-          Clients receive a link to view and accept quotes or pay invoices online
-        </p>
-      </div>
-      
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={handleBack} data-testid="button-back">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <Button 
-          onClick={handleNext}
-          size="lg"
-          data-testid="button-next"
-        >
-          Continue
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderTeamStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          You're the Team Owner
-        </h2>
-        <p className="text-muted-foreground">
-          As the owner, you'll manage your team and assign jobs to your workers
-        </p>
-      </div>
-      
-      <div className="bg-muted/50 rounded-xl p-5 max-w-md mx-auto space-y-4">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-primary font-bold text-sm">1</span>
-          </div>
-          <div>
-            <h4 className="font-medium text-gray-900 dark:text-white">Free trial started</h4>
-            <p className="text-sm text-muted-foreground">All Team features unlocked — add a payment method before the trial ends to keep them.</p>
-          </div>
-        </div>
-        
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-primary font-bold text-sm">2</span>
-          </div>
-          <div>
-            <h4 className="font-medium text-gray-900 dark:text-white">Invite your workers</h4>
-            <p className="text-sm text-muted-foreground">They'll get an email to join your team</p>
-          </div>
-        </div>
-        
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-primary font-bold text-sm">3</span>
-          </div>
-          <div>
-            <h4 className="font-medium text-gray-900 dark:text-white">Assign jobs & track progress</h4>
-            <p className="text-sm text-muted-foreground">Live GPS tracking and team chat included</p>
-          </div>
-        </div>
-      </div>
-      
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4 max-w-md mx-auto">
-        <div className="flex items-center gap-2 mb-2">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          <span className="font-semibold text-green-900 dark:text-green-100">Team Features Ready</span>
-        </div>
-        <p className="text-sm text-green-700 dark:text-green-300">
-          After setup, go to Team Management to invite your first team member.
-        </p>
-      </div>
-
-      <div className="max-w-md mx-auto space-y-3">
-        <Label className="flex items-center gap-2">
-          <Mail className="h-4 w-4" />
-          Invite Team Members (optional)
-        </Label>
-        <div className="flex gap-2">
-          <Input
-            placeholder="team@example.com"
-            type="email"
-            value={currentInviteEmail}
-            onChange={(e) => setCurrentInviteEmail(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                if (currentInviteEmail.trim() && currentInviteEmail.includes('@')) {
-                  setTeamInviteEmails(prev => [...prev, currentInviteEmail.trim()]);
-                  setCurrentInviteEmail('');
-                }
-              }
-            }}
-            data-testid="input-team-invite-email"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (currentInviteEmail.trim() && currentInviteEmail.includes('@')) {
-                setTeamInviteEmails(prev => [...prev, currentInviteEmail.trim()]);
-                setCurrentInviteEmail('');
-              }
-            }}
-            disabled={!currentInviteEmail.trim() || !currentInviteEmail.includes('@')}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-        {teamInviteEmails.length > 0 && (
-          <div className="space-y-1">
-            {teamInviteEmails.map((email, index) => (
-              <div key={index} className="flex items-center justify-between bg-muted/50 rounded-md px-3 py-1.5 text-sm">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-3 w-3 text-muted-foreground" />
-                  <span>{email}</span>
-                </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setTeamInviteEmails(prev => prev.filter((_, i) => i !== index))}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-            <p className="text-xs text-muted-foreground">
-              Invites will be sent when you complete setup
-            </p>
-          </div>
-        )}
-      </div>
-      
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={handleBack} data-testid="button-back">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <Button 
-          onClick={handleNext} 
-          disabled={isSubmitting}
-          size="lg"
-          data-testid="button-next"
-        >
-          {isSubmitting ? 'Saving...' : 'Continue'}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-
-  const selectedTradeName = tradeCatalog[userTradeKey]?.name || 'your trade';
-  const selectedTradeJobs = tradeCatalog[userTradeKey]?.typicalJobs?.slice(0, 3) || ['Service call', 'Repair job', 'New installation'];
-
-  const renderDoneStep = () => (
-    <div className="text-center py-6 space-y-5">
-      <div className="mx-auto w-16 h-16 bg-green-50 border border-green-200 rounded-full flex items-center justify-center">
-        <CheckCircle className="h-8 w-8 text-green-600" />
-      </div>
-      
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          You're all set!
-        </h2>
-        <p className="text-muted-foreground max-w-sm mx-auto">
-          Start quoting, invoicing, and getting paid. Everything you need is right here.
-        </p>
-      </div>
-
-      <div className="max-w-sm mx-auto space-y-3">
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-medium text-gray-900">Your first job journey</p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <div className="w-5 h-5 rounded-full bg-[#2B7DE9] text-white flex items-center justify-center text-[10px] font-bold">1</div>
-              <span>Create a Job</span>
-            </div>
-            <ArrowRight className="h-3 w-3 shrink-0" />
-            <div className="flex items-center gap-1">
-              <div className="w-5 h-5 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-[10px] font-bold">2</div>
-              <span>Send a Quote</span>
-            </div>
-            <ArrowRight className="h-3 w-3 shrink-0" />
-            <div className="flex items-center gap-1">
-              <div className="w-5 h-5 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-[10px] font-bold">3</div>
-              <span>Invoice</span>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Step 1 of 3: Create your first {selectedTradeName} job — we'll pre-fill it with a sample client and address so you can see the workflow.
-          </p>
-          <Button
-            type="button"
-            className="w-full gap-2"
-            disabled={isSubmitting}
-            onClick={() => {
-              const firstJob = selectedTradeJobs[0] || 'New Job';
-              const sampleAddress = '15 Sheridan Street, Cairns QLD 4870';
-              const sampleClient = 'Sarah Mitchell';
-              completeOnboarding(`/jobs/new?title=${encodeURIComponent(firstJob)}&address=${encodeURIComponent(sampleAddress)}&clientName=${encodeURIComponent(sampleClient)}`);
-            }}
-            data-testid="button-create-first-demo-job"
-          >
-            {isSubmitting ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Wrench className="h-4 w-4 shrink-0" />}
-            Create My First Demo Job
-          </Button>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1">
-            <p className="text-xs font-medium">Try with sample data</p>
-            <p className="text-xs text-muted-foreground">Loads a few example clients, quotes &amp; invoices so you can explore. Remove any time.</p>
-          </div>
-          <Switch
-            checked={seedDemoData}
-            onCheckedChange={setSeedDemoData}
-            data-testid="switch-try-sample-data"
-          />
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          disabled={isSubmitting}
-          onClick={() => completeOnboarding()}
-          data-testid="button-go-to-dashboard"
-        >
-          Go to Dashboard
-        </Button>
-      </div>
-      
-      {isTeamPlan ? (
-        <>
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 max-w-sm mx-auto">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Gift className="h-5 w-5 text-green-600" />
-              <span className="font-semibold text-green-900 dark:text-green-100">Team Plan Active</span>
-            </div>
-            <p className="text-sm text-green-700 dark:text-green-300 mb-3">
-              You're the Team Owner! All Team features are unlocked.
-            </p>
-            <a href="/team" className="text-sm font-medium text-green-600 hover:text-green-700 dark:text-green-400">
-              Go to Team Management →
-            </a>
-          </div>
-        </>
-      ) : isProPlan ? (
-        <>
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-sm mx-auto">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Gift className="h-5 w-5 text-orange-500" />
-              <span className="font-semibold text-blue-900 dark:text-blue-100">Pro Features Unlocked</span>
-            </div>
-            <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-              You're on a free trial — unlimited jobs, invoices and AI while it's active.
-            </p>
-            <a href="/subscription" className="text-sm font-medium text-orange-600 hover:text-orange-700 dark:text-orange-400">
-              View Plans →
-            </a>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="bg-muted/50 rounded-xl p-4 max-w-sm mx-auto">
-            <h3 className="font-medium mb-3">Free Plan Includes:</h3>
-            <ul className="text-sm text-muted-foreground space-y-2 text-left">
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                Unlimited quotes
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                25 jobs per month
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                25 invoices per month
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                50 clients
-              </li>
-            </ul>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-sm mx-auto">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Gift className="h-5 w-5 text-orange-500" />
-              <span className="font-semibold text-blue-900 dark:text-blue-100">Want Unlimited Access?</span>
-            </div>
-            <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-              Upgrade to Pro for unlimited jobs, invoices, clients and AI assistant.
-            </p>
-            <a href="/subscription" className="text-sm font-medium text-orange-600 hover:text-orange-700 dark:text-orange-400">
-              View Plans →
-            </a>
-          </div>
-        </>
-      )}
-      
-    </div>
-  );
-
-  const renderCurrentStep = () => {
-    const stepId = STEPS[currentStep]?.id;
-    switch (stepId) {
-      case 'trade':
-        return renderTradeStep();
-      case 'business':
-        return renderBusinessStep();
-      case 'payments':
-        return renderPaymentsStep();
-      case 'import':
-        return renderImportStep();
-      case 'team':
-        return renderTeamStep();
-      case 'portal':
-        return renderPortalStep();
-      case 'done':
-        return renderDoneStep();
-      default:
-        return null;
-    }
-  };
-
-  if (userLoading || !resumeChecked) {
-    return (
-      <div className="min-h-screen bg-[#F2F4F8] flex items-center justify-center" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-loading">
-        <div className="flex flex-col items-center gap-4">
-          <img src={jobrunnerLogo} alt="JobRunner" className="h-10 w-auto" />
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
-          <span className="text-muted-foreground text-sm">Loading your setup...</span>
-        </div>
-      </div>
-    );
-  }
-
-  const currentStepId = STEPS[currentStep]?.id;
-  const isDoneStep = currentStepId === 'done';
-
-  if (selectedRole === null) {
-    return (
-      <div className="min-h-screen bg-white flex" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-role">
-        {/* Left — role selection */}
-        <div className="flex-1 flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-16">
-          <div className="w-full max-w-md mx-auto">
-            <div className="flex items-center gap-2 mb-10">
-              <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
-              <span className="text-xl font-bold">
-                <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
-              </span>
-            </div>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">How will you use JobRunner?</h2>
-            <p className="text-gray-500 mb-8">Choose your role to get the right setup.</p>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => setSelectedRole('owner')}
-                className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover:border-[#2B7DE9] hover-elevate transition-colors text-left"
-                data-testid="role-owner"
-              >
-                <div className="p-2.5 rounded-md bg-[#2B7DE9]/10 shrink-0">
-                  <Briefcase className="h-5 w-5 text-[#2B7DE9]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">Business Owner</p>
-                  <p className="text-sm text-gray-500">I run my own trade business</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-300 ml-auto shrink-0" />
-              </button>
-              <button
-                onClick={() => setSelectedRole('worker')}
-                className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover:border-[#2B7DE9] hover-elevate transition-colors text-left"
-                data-testid="role-worker"
-              >
-                <div className="p-2.5 rounded-md bg-green-100 shrink-0">
-                  <Users className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">Team Member</p>
-                  <p className="text-sm text-gray-500">I have an invite code from my employer</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-300 ml-auto shrink-0" />
-              </button>
-              <button
-                onClick={() => setSelectedRole('subcontractor')}
-                className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover:border-[#2B7DE9] hover-elevate transition-colors text-left"
-                data-testid="role-subcontractor"
-              >
-                <div className="p-2.5 rounded-md bg-[#F28C28]/10 shrink-0">
-                  <Wrench className="h-5 w-5 text-[#F28C28]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">Subcontractor</p>
-                  <p className="text-sm text-gray-500">I have an invite code to join a team</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-300 ml-auto shrink-0" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Right — brand showcase (matches signup) */}
-        <BrandShowcase />
-      </div>
-    );
-  }
-
-  if (selectedRole === 'worker' || selectedRole === 'subcontractor') {
-    const roleLabel = selectedRole === 'worker' ? 'Team Member' : 'Subcontractor';
-    return (
-      <div className="min-h-screen bg-white flex" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-invite">
-        {/* Left — invite form */}
-        <div className="flex-1 flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-16">
-          <div className="w-full max-w-md mx-auto">
-            <div className="flex items-center gap-2 mb-10">
-              <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
-              <span className="text-xl font-bold">
-                <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
-              </span>
-            </div>
-
-            <button onClick={() => setSelectedRole(null)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6" data-testid="invite-back">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </button>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Join as {roleLabel}</h2>
-            <p className="text-gray-500 mb-8">Enter the invite code from your employer to join their team.</p>
-
-            <div className="space-y-4">
-              <div>
-                <Label>Invite Code</Label>
-                <Input
-                  value={inviteCode}
-                  onChange={(e) => handleInviteCodeChange(e.target.value)}
-                  placeholder="e.g. MIKE42"
-                  className="text-center text-lg tracking-widest font-mono uppercase mt-1"
-                  maxLength={6}
-                />
-                {isValidatingCode && <p className="text-sm text-gray-500 mt-1">Checking...</p>}
-                {inviteValidation?.valid && (
-                  <div className="flex items-center gap-2 mt-2 p-2.5 rounded-md bg-green-50 border border-green-200">
-                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-green-700">Joining <strong>{inviteValidation.businessName}</strong> as {inviteValidation.roleType}</span>
-                  </div>
-                )}
-                {inviteValidation && !inviteValidation.valid && (
-                  <p className="text-sm text-red-500 mt-1">{inviteValidation.error}</p>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>First Name</Label>
-                  <Input value={workerName} onChange={(e) => setWorkerName(e.target.value)} placeholder="First name" className="mt-1" />
-                </div>
-                <div>
-                  <Label>Last Name</Label>
-                  <Input value={workerLastName} onChange={(e) => setWorkerLastName(e.target.value)} placeholder="Last name" className="mt-1" />
-                </div>
-              </div>
-              <div>
-                <Label>Phone (optional)</Label>
-                <Input value={workerPhone} onChange={(e) => setWorkerPhone(e.target.value)} placeholder="+61 4XX XXX XXX" className="mt-1" />
-              </div>
-              <Button
-                className="w-full"
-                onClick={handleWorkerRedeem}
-                disabled={!inviteValidation?.valid || !workerName.trim() || isSubmitting}
-              >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Join Team
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Right — brand showcase (matches signup) */}
-        <BrandShowcase />
-      </div>
-    );
-  }
+  const primaryBtnStyle = { backgroundColor: BRAND_BLUE, color: "#FFFFFF", borderColor: BRAND_BLUE };
 
   return (
-    <div className="min-h-screen bg-white flex" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding">
-      {/* Left — step content */}
-      <div className="flex-1 min-w-0 flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-16">
-        <div className="w-full max-w-xl mx-auto">
-          <div className="flex items-center gap-2 mb-8">
-            <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
-            <span className="text-xl font-bold">
-              <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
-            </span>
+    <div className="min-h-screen w-full flex bg-white" style={ONBOARDING_LIGHT_VARS}>
+      <LeftPanel />
+
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        <div className="md:hidden px-6 pt-6">
+          <Wordmark />
+        </div>
+
+        <div className="flex-1 flex flex-col justify-center px-6 sm:px-10 lg:px-16 py-10">
+          <div className="w-full max-w-xl mx-auto">
+            <div className="mb-10">
+              <StepDots total={steps.length} current={currentStep} />
+            </div>
+
+            {/* ---------------- Role ---------------- */}
+            {stepId === "role" && (
+              <div data-testid="step-role">
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                  Let's get to work.
+                </h2>
+                <p className="text-slate-500 text-lg mb-8">How will you be using JobRunner?</p>
+
+                <div className="space-y-3">
+                  {ROLES.map((role) => {
+                    const isSelected = selectedRole === role.id;
+                    const Icon = role.icon;
+                    return (
+                      <button
+                        key={role.id}
+                        onClick={() => setSelectedRole(role.id)}
+                        data-testid={`role-${role.id}`}
+                        className="w-full text-left rounded-xl border-2 p-4 flex items-center gap-4 transition-all duration-200"
+                        style={{
+                          borderColor: isSelected ? BRAND_BLUE : "#E2E8F0",
+                          backgroundColor: isSelected ? BRAND_BLUE_TINT : "#FFFFFF",
+                        }}
+                      >
+                        <div
+                          className="h-12 w-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{
+                            backgroundColor: isSelected ? BRAND_BLUE : BRAND_BLUE_TINT,
+                            color: isSelected ? "#FFFFFF" : BRAND_BLUE,
+                          }}
+                        >
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-900">{role.title}</p>
+                          <p className="text-sm text-slate-500">{role.description}</p>
+                        </div>
+                        <span
+                          className="h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                          style={{ borderColor: isSelected ? BRAND_BLUE : "#CBD5E1" }}
+                        >
+                          {isSelected && (
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: BRAND_BLUE }}
+                            />
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  onClick={goNext}
+                  disabled={!selectedRole}
+                  data-testid="button-role-continue"
+                  className="w-full mt-8 border"
+                  size="xl"
+                  style={selectedRole ? primaryBtnStyle : undefined}
+                >
+                  Continue <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* ---------------- Business ---------------- */}
+            {stepId === "business" && (
+              <div data-testid="step-business">
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                  Your business details
+                </h2>
+                <p className="text-slate-500 text-lg mb-8">
+                  This appears on your quotes and invoices. You can change it later.
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="businessName">Business name</Label>
+                    <Input
+                      id="businessName"
+                      data-testid="input-business-name"
+                      value={formData.businessName}
+                      onChange={(e) => setField("businessName", e.target.value)}
+                      placeholder="e.g. Coastal Electrical"
+                      className="mt-1.5"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="abn">ABN</Label>
+                      <Input
+                        id="abn"
+                        data-testid="input-abn"
+                        value={formData.abn}
+                        onChange={(e) => setField("abn", e.target.value)}
+                        placeholder="12 345 678 901"
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone</Label>
+                      <div className="relative mt-1.5">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          id="phone"
+                          data-testid="input-phone"
+                          value={formData.phone}
+                          onChange={(e) => setField("phone", e.target.value)}
+                          placeholder="0400 000 000"
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative mt-1.5">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="email"
+                        data-testid="input-email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setField("email", e.target.value)}
+                        placeholder="you@business.com.au"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="address">Business address</Label>
+                    <div className="relative mt-1.5">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="address"
+                        data-testid="input-address"
+                        value={formData.address}
+                        onChange={(e) => setField("address", e.target.value)}
+                        placeholder="Suburb, State"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="hourlyRate">Default hourly rate</Label>
+                    <div className="relative mt-1.5">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="hourlyRate"
+                        data-testid="input-hourly-rate"
+                        type="number"
+                        value={formData.hourlyRate}
+                        onChange={(e) => setField("hourlyRate", e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+                    <div>
+                      <p className="font-medium text-slate-900">Registered for GST</p>
+                      <p className="text-sm text-slate-500">Adds 10% GST to your invoices</p>
+                    </div>
+                    <Switch
+                      data-testid="switch-gst"
+                      checked={formData.gstRegistered}
+                      onCheckedChange={(v) => setField("gstRegistered", v)}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-8">
+                  <Button variant="outline" size="xl" onClick={goBack} data-testid="button-back">
+                    <ArrowLeft className="h-4 w-4" /> Back
+                  </Button>
+                  <Button
+                    onClick={handleBusinessNext}
+                    disabled={isSubmitting}
+                    data-testid="button-business-continue"
+                    className="flex-1 border"
+                    size="xl"
+                    style={primaryBtnStyle}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        Continue <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ---------------- Trade ---------------- */}
+            {stepId === "trade" && (
+              <div data-testid="step-trade">
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                  What's your trade?
+                </h2>
+                <p className="text-slate-500 text-lg mb-8">
+                  We'll set up the app for the way your trade works.
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {TRADE_OPTIONS.map((trade) => {
+                    const isSelected = formData.tradeType === trade.id;
+                    const Icon = TRADE_ICONS[trade.id] || Wrench;
+                    return (
+                      <button
+                        key={trade.id}
+                        onClick={() => setField("tradeType", trade.id)}
+                        data-testid={`trade-${trade.id}`}
+                        className="rounded-xl border-2 p-4 flex flex-col items-center justify-center gap-2 text-center transition-all duration-200"
+                        style={{
+                          borderColor: isSelected ? BRAND_BLUE : "#E2E8F0",
+                          backgroundColor: isSelected ? BRAND_BLUE_TINT : "#FFFFFF",
+                          color: isSelected ? BRAND_BLUE : "#475569",
+                        }}
+                      >
+                        <Icon className="h-6 w-6" />
+                        <span className="text-sm font-semibold text-slate-900">{trade.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-3 mt-8">
+                  <Button variant="outline" size="xl" onClick={goBack} data-testid="button-back">
+                    <ArrowLeft className="h-4 w-4" /> Back
+                  </Button>
+                  <Button
+                    onClick={handleTradeNext}
+                    disabled={!formData.tradeType}
+                    data-testid="button-trade-continue"
+                    className="flex-1 border"
+                    size="xl"
+                    style={formData.tradeType ? primaryBtnStyle : undefined}
+                  >
+                    Continue <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ---------------- Join (worker / subbie) ---------------- */}
+            {stepId === "join" && (
+              <div data-testid="step-join">
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                  Join your team
+                </h2>
+                <p className="text-slate-500 text-lg mb-8">
+                  Enter the 6-character invite code you were given.
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="inviteCode">Invite code</Label>
+                    <Input
+                      id="inviteCode"
+                      data-testid="input-invite-code"
+                      value={inviteCode}
+                      onChange={(e) => handleInviteCodeChange(e.target.value)}
+                      placeholder="ABC123"
+                      className="mt-1.5 uppercase tracking-[0.3em] font-semibold"
+                      maxLength={6}
+                    />
+                    {isValidatingCode && (
+                      <p className="text-sm text-slate-500 mt-1.5 flex items-center gap-1.5">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking code…
+                      </p>
+                    )}
+                    {inviteValidation && !isValidatingCode && (
+                      <p
+                        className="text-sm mt-1.5 font-medium"
+                        style={{ color: inviteValidation.valid ? "#15803D" : "#DC2626" }}
+                        data-testid="text-invite-status"
+                      >
+                        {inviteValidation.valid
+                          ? `Joining ${inviteValidation.businessName || "the team"}`
+                          : inviteValidation.error || "Invalid code"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="workerName">First name</Label>
+                      <Input
+                        id="workerName"
+                        data-testid="input-worker-name"
+                        value={workerName}
+                        onChange={(e) => setWorkerName(e.target.value)}
+                        placeholder="First name"
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="workerLastName">Last name</Label>
+                      <Input
+                        id="workerLastName"
+                        data-testid="input-worker-lastname"
+                        value={workerLastName}
+                        onChange={(e) => setWorkerLastName(e.target.value)}
+                        placeholder="Last name"
+                        className="mt-1.5"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="workerPhone">Phone (optional)</Label>
+                    <div className="relative mt-1.5">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="workerPhone"
+                        data-testid="input-worker-phone"
+                        value={workerPhone}
+                        onChange={(e) => setWorkerPhone(e.target.value)}
+                        placeholder="0400 000 000"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-8">
+                  <Button variant="outline" size="xl" onClick={goBack} data-testid="button-back">
+                    <ArrowLeft className="h-4 w-4" /> Back
+                  </Button>
+                  <Button
+                    onClick={handleWorkerRedeem}
+                    disabled={isSubmitting || !inviteValidation?.valid}
+                    data-testid="button-join-team"
+                    className="flex-1 border"
+                    size="xl"
+                    style={inviteValidation?.valid ? primaryBtnStyle : undefined}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        Join team <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ---------------- Done ---------------- */}
+            {stepId === "done" && (
+              <div data-testid="step-done">
+                <div
+                  className="h-14 w-14 rounded-xl flex items-center justify-center mb-6"
+                  style={{ backgroundColor: BRAND_BLUE }}
+                >
+                  <Check className="h-8 w-8 text-white" strokeWidth={3} />
+                </div>
+
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                  {selectedRole === "owner" ? "You're all set." : `Welcome to ${joinedBusiness}.`}
+                </h2>
+                <p className="text-slate-500 text-lg mb-8">
+                  {selectedRole === "owner"
+                    ? "Your free plan is ready. Here's what's included:"
+                    : "You've joined the team. Jump in and get started."}
+                </p>
+
+                {selectedRole === "owner" && (
+                  <>
+                    <ul className="space-y-3 mb-8">
+                      {FREE_PLAN_FEATURES.map((f) => (
+                        <li key={f} className="flex items-center gap-3">
+                          <span
+                            className="h-6 w-6 rounded-md flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: BRAND_BLUE_TINT, color: BRAND_BLUE }}
+                          >
+                            <Check className="h-4 w-4" strokeWidth={3} />
+                          </span>
+                          <span className="text-slate-700">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div
+                      className="rounded-xl p-4 flex items-start gap-3 mb-8"
+                      style={{ backgroundColor: "#FFF6EC", border: `1px solid ${BRAND_ORANGE}33` }}
+                    >
+                      <Smartphone className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: BRAND_ORANGE }} />
+                      <div>
+                        <p className="font-semibold text-slate-900">Want more grunt?</p>
+                        <p className="text-sm text-slate-600">
+                          Go Pro for AI quotes, automatic payment reminders and team scheduling — upgrade anytime in Settings.
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <Button
+                  onClick={handleComplete}
+                  disabled={isSubmitting}
+                  data-testid="button-finish"
+                  className="w-full border"
+                  size="xl"
+                  style={primaryBtnStyle}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      Go to dashboard <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
-
-          {!isDoneStep && (
-            <div className="lg:hidden -mt-1 mb-7">
-              <StepIndicator steps={STEPS} currentStep={currentStep} />
-            </div>
-          )}
-          {renderCurrentStep()}
-
-          {onSkip && !isDoneStep && (
-            <div className="text-center pt-6">
-              <Button
-                variant="ghost"
-                onClick={onSkip}
-                className="text-muted-foreground"
-                data-testid="button-skip"
-              >
-                Skip for now
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Right — branded progress rail (matches signup split) */}
-      <div className="hidden lg:flex w-[40%] xl:w-1/2 bg-gradient-to-br from-brand via-brand-dark to-brand-accent relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="onboarding-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#onboarding-grid)" />
-          </svg>
-        </div>
-
-        <div className="relative z-10 flex flex-col justify-center w-full p-12 xl:p-16">
-          <h2 className="text-2xl xl:text-3xl font-bold text-white mb-2">
-            {isDoneStep ? "You're all set." : "Let's set up your business."}
-          </h2>
-          <p className="text-white/80 mb-10 max-w-sm">
-            {isDoneStep
-              ? "Everything's ready. You can change anything later in Settings."
-              : "A few quick steps and you'll be ready to run jobs, send quotes, and get paid."}
-          </p>
-
-          <VerticalSteps steps={STEPS} currentStep={currentStep} onDark />
         </div>
       </div>
     </div>

@@ -2,3 +2,4 @@
 - [Mobile dev sync model](mobile-dev-sync-model.md) — user runs Metro on their own Mac clone; agent edits go to GitHub origin/main but DON'T reach device until they `git pull` + reload. Identical-looking "still broken" screenshots = stale local code, not a bad fix.
 - [Mobile confirm dialogs](mobile-confirm-dialogs.md) — use existing useConfirmDialog() hook (iOS native Alert, Android/web branded centered modal); don't write new Alert.alert or dialog components.
 - [Force light theme on one route](theme-force-light-route.md) — ThemeProvider writes inline CSS vars on documentElement + re-runs; lock a route light via root var override + MutationObserver, not a one-shot class flip.
+- [Onboarding business-settings + seeding](onboarding-business-settings.md) — trade templates seed ONLY on POST /api/business-settings carrying tradeType; create is non-idempotent (PATCH-then-POST-on-404); profile = /api/profile/me, non-blocking.
