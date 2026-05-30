@@ -126,7 +126,7 @@ function Wordmark({ light = false }: { light?: boolean }) {
   return (
     <div className="text-3xl font-black tracking-tighter">
       <span style={{ color: light ? "#FFFFFF" : "#0F172A" }}>Job</span>
-      <span style={{ color: BRAND_ORANGE }}>Runner</span>
+      <span style={{ color: light ? "#FFFFFF" : BRAND_ORANGE }}>Runner</span>
     </div>
   );
 }
@@ -159,7 +159,10 @@ function LeftPanel() {
     "Built for Australian tradies",
   ];
   return (
-    <div className="hidden md:flex md:w-[42%] lg:w-[44%] flex-col justify-between p-10 lg:p-14 bg-gradient-to-br from-brand via-brand-dark to-brand-accent relative overflow-hidden">
+    <div
+      className="hidden md:flex md:w-[42%] lg:w-[44%] flex-col justify-between p-10 lg:p-14 relative overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #2563EB 0%, #1E293B 58%, #B45309 100%)" }}
+    >
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
