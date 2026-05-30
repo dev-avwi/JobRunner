@@ -37,14 +37,14 @@ export function OptionB() {
         
         <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
           <h1 className="text-3xl font-black text-white leading-tight mb-2 tracking-tight">
-            Less admin. More tools down.
+            Built for how jobs actually run.
           </h1>
           <p className="text-blue-100 text-base mb-8 font-medium max-w-sm">
-            Built for Aussie tradies to quote, run jobs and get paid.
+            Quote, run jobs and get paid — made for Aussie tradies.
           </p>
 
           {/* Real app screenshot in a phone frame */}
-          <div className="relative mx-auto w-[235px] transform rotate-[-3deg] hover:rotate-0 transition-transform duration-500">
+          <div className="relative mx-auto w-[220px] transform rotate-[-3deg] hover:rotate-0 transition-transform duration-500">
             <div className="absolute -inset-4 bg-white/20 rounded-[3rem] blur-2xl" />
             <div className="relative bg-white p-2.5 rounded-[2.5rem] shadow-2xl">
               <div className="rounded-[2rem] overflow-hidden aspect-[9/19] bg-white ring-1 ring-black/5">
@@ -60,11 +60,11 @@ export function OptionB() {
         <div className="w-full max-w-xl mx-auto">
           {/* Logo */}
           <div className="text-4xl font-black tracking-tighter mb-16">
-            <span className="text-[#F28C28]">Job</span>
-            <span className="text-[#2B7DE9]">Runner</span>
+            <span className="text-slate-900">Job</span>
+            <span className="text-[#F28C28]">Runner</span>
           </div>
 
-          <h2 className="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">Let's get to work.</h2>
+          <h2 className="text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">Let's get to work.</h2>
           <p className="text-slate-500 text-lg mb-8 font-medium">How will you be using JobRunner today?</p>
 
           <div className="space-y-4 mb-10">
@@ -78,12 +78,12 @@ export function OptionB() {
                   onClick={() => setSelectedRole(role.id)}
                   className={`w-full text-left p-6 rounded-2xl border-2 transition-all duration-200 group flex items-start gap-5 ${
                     isSelected 
-                      ? 'border-[#2B7DE9] bg-blue-50/50 shadow-sm ring-4 ring-blue-500/10' 
+                      ? 'border-[#2B7DE9] bg-[#EEF5FF] shadow-sm ring-4 ring-blue-500/10' 
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   <div className={`p-4 rounded-xl flex-shrink-0 transition-all duration-300 ${
-                    isSelected ? 'bg-[#2B7DE9] text-white shadow-md shadow-blue-500/20 scale-110' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700'
+                    isSelected ? 'bg-[#2B7DE9] text-white shadow-md shadow-blue-500/20 scale-110' : 'bg-[#EEF5FF] text-[#2B7DE9] group-hover:bg-[#E0EDFF]'
                   }`}>
                     <Icon size={28} strokeWidth={isSelected ? 2.5 : 2} />
                   </div>
