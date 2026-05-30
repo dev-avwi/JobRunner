@@ -43705,7 +43705,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       </body></html>`;
 
       const puppeteer = require('puppeteer');
-      const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+      const browser = await puppeteer.launch({ executablePath: (() => { try { return require('child_process').execSync('which chromium').toString().trim() || undefined; } catch { return undefined; } })(), headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
       const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' } });
@@ -43768,7 +43768,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       </body></html>`;
 
       const puppeteer = require('puppeteer');
-      const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+      const browser = await puppeteer.launch({ executablePath: (() => { try { return require('child_process').execSync('which chromium').toString().trim() || undefined; } catch { return undefined; } })(), headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
       const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' } });
@@ -43831,7 +43831,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       </body></html>`;
 
       const puppeteer = require('puppeteer');
-      const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+      const browser = await puppeteer.launch({ executablePath: (() => { try { return require('child_process').execSync('which chromium').toString().trim() || undefined; } catch { return undefined; } })(), headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
       const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' } });
