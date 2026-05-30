@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -173,41 +172,104 @@ function StepIndicator({ steps, currentStep }: { steps: { id: string; title: str
   );
 }
 
-function VerticalSteps({ steps, currentStep }: { steps: { id: string; title: string }[]; currentStep: number }) {
+function VerticalSteps({ steps, currentStep, onDark = false }: { steps: { id: string; title: string }[]; currentStep: number; onDark?: boolean }) {
   return (
     <div className="flex flex-col">
       {steps.map((step, index) => {
         const isCompleted = index < currentStep;
         const isActive = index === currentStep;
         const isLast = index === steps.length - 1;
+        const circleClass = onDark
+          ? (isCompleted
+              ? 'bg-white text-[#2B7DE9]'
+              : isActive
+              ? 'bg-white text-[#2B7DE9] ring-4 ring-white/25'
+              : 'bg-white/10 text-white/70 border-2 border-white/30')
+          : (isCompleted
+              ? 'bg-[#2B7DE9] text-white'
+              : isActive
+              ? 'bg-[#2B7DE9] text-white ring-4 ring-[#2B7DE9]/15'
+              : 'bg-white text-gray-400 border-2 border-gray-200');
+        const connectorClass = index < currentStep
+          ? (onDark ? 'bg-white' : 'bg-[#2B7DE9]')
+          : (onDark ? 'bg-white/25' : 'bg-gray-200');
+        const titleClass = onDark
+          ? (isActive ? 'text-white' : isCompleted ? 'text-white/90' : 'text-white/50')
+          : (isActive ? 'text-gray-900' : isCompleted ? 'text-gray-600' : 'text-gray-400');
         return (
           <div key={step.id} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
-                  isCompleted
-                    ? 'bg-[#2B7DE9] text-white'
-                    : isActive
-                    ? 'bg-[#2B7DE9] text-white ring-4 ring-[#2B7DE9]/15'
-                    : 'bg-white text-gray-400 border-2 border-gray-200'
-                }`}
-              >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${circleClass}`}>
                 {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
               </div>
               {!isLast && (
-                <div className={`w-0.5 flex-1 min-h-[18px] my-1 rounded-full ${index < currentStep ? 'bg-[#2B7DE9]' : 'bg-gray-200'}`} />
+                <div className={`w-0.5 flex-1 min-h-[18px] my-1 rounded-full ${connectorClass}`} />
               )}
             </div>
             <div className={`pt-1.5 ${isLast ? '' : 'pb-2'}`}>
-              <p className={`text-sm font-medium transition-colors ${
-                isActive ? 'text-gray-900' : isCompleted ? 'text-gray-600' : 'text-gray-400'
-              }`}>
+              <p className={`text-sm font-medium transition-colors ${titleClass}`}>
                 {step.title}
               </p>
             </div>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function BrandShowcase() {
+  return (
+    <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-brand via-brand-dark to-brand-accent relative overflow-hidden">
+      <div className="absolute inset-0 opacity-10">
+        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="showcase-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#showcase-grid)" />
+        </svg>
+      </div>
+
+      <div className="relative z-10 flex flex-col justify-center items-center w-full p-12">
+        <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+          <Sparkles className="w-4 h-4 text-yellow-300" />
+          <span className="text-sm font-semibold text-white">Free for early users</span>
+        </div>
+
+        <h2 className="text-3xl xl:text-4xl font-bold text-white text-center mb-4">
+          Run your trade business
+          <br />smarter, not harder.
+        </h2>
+        <p className="text-white/80 text-center text-lg mb-8 max-w-md">
+          Join Australian trade professionals who save hours every week with JobRunner
+        </p>
+
+        <div className="relative w-[260px] xl:w-[280px]">
+          <div className="relative bg-gray-900 rounded-[2.5rem] p-[6px] shadow-2xl">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-20" />
+            <div className="relative bg-white rounded-[2.25rem] overflow-hidden" style={{ aspectRatio: '9/19.5' }}>
+              <img src={roleShowcaseScreenshot} alt="JobRunner app" className="absolute inset-0 w-full h-full object-cover" />
+            </div>
+          </div>
+          <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-br from-orange-400/30 via-transparent to-blue-400/30 rounded-full blur-3xl" />
+        </div>
+
+        <div className="mt-8 grid grid-cols-2 gap-3 max-w-md">
+          {[
+            { icon: FileText, text: "Clear records of every job" },
+            { icon: Clock, text: "Track time as it happens" },
+            { icon: CreditCard, text: "Quote, invoice, get paid" },
+            { icon: Users, text: "Know what was agreed" },
+          ].map((feature, index) => (
+            <div key={index} className="flex items-center gap-2 text-white/90 text-sm">
+              <feature.icon className="w-4 h-4 text-yellow-300 shrink-0" />
+              <span>{feature.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1916,57 +1978,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
         </div>
 
         {/* Right — brand showcase (matches signup) */}
-        <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-brand via-brand-dark to-brand-accent relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="role-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#role-grid)" />
-            </svg>
-          </div>
-
-          <div className="relative z-10 flex flex-col justify-center items-center w-full p-12">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-              <Sparkles className="w-4 h-4 text-yellow-300" />
-              <span className="text-sm font-semibold text-white">Free for early users</span>
-            </div>
-
-            <h2 className="text-3xl xl:text-4xl font-bold text-white text-center mb-4">
-              Run your trade business
-              <br />smarter, not harder.
-            </h2>
-            <p className="text-white/80 text-center text-lg mb-8 max-w-md">
-              Join Australian trade professionals who save hours every week with JobRunner
-            </p>
-
-            <div className="relative w-[260px] xl:w-[280px]">
-              <div className="relative bg-gray-900 rounded-[2.5rem] p-[6px] shadow-2xl">
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-20" />
-                <div className="relative bg-white rounded-[2.25rem] overflow-hidden" style={{ aspectRatio: '9/19.5' }}>
-                  <img src={roleShowcaseScreenshot} alt="JobRunner app" className="absolute inset-0 w-full h-full object-cover" />
-                </div>
-              </div>
-              <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-br from-orange-400/30 via-transparent to-blue-400/30 rounded-full blur-3xl" />
-            </div>
-
-            <div className="mt-8 grid grid-cols-2 gap-3 max-w-md">
-              {[
-                { icon: FileText, text: "Clear records of every job" },
-                { icon: Clock, text: "Track time as it happens" },
-                { icon: CreditCard, text: "Quote, invoice, get paid" },
-                { icon: Users, text: "Know what was agreed" },
-              ].map((feature, index) => (
-                <div key={index} className="flex items-center gap-2 text-white/90 text-sm">
-                  <feature.icon className="w-4 h-4 text-yellow-300 shrink-0" />
-                  <span>{feature.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <BrandShowcase />
       </div>
     );
   }
@@ -1974,124 +1986,135 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
   if (selectedRole === 'worker' || selectedRole === 'subcontractor') {
     const roleLabel = selectedRole === 'worker' ? 'Team Member' : 'Subcontractor';
     return (
-      <div className="min-h-screen bg-[#F2F4F8]" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-invite">
-        <div className="max-w-lg mx-auto p-4 md:p-6 min-h-screen flex flex-col justify-center">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
-            <span className="text-xl font-bold">
-              <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
-            </span>
-          </div>
-          <Card>
-            <CardContent className="p-6">
-              <button onClick={() => setSelectedRole(null)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
-                <ArrowLeft className="h-4 w-4" /> Back
-              </button>
-              <h2 className="text-xl font-bold text-foreground mb-1">Join as {roleLabel}</h2>
-              <p className="text-sm text-muted-foreground mb-6">Enter the invite code from your employer to join their team</p>
-              <div className="space-y-4">
-                <div>
-                  <Label>Invite Code</Label>
-                  <Input
-                    value={inviteCode}
-                    onChange={(e) => handleInviteCodeChange(e.target.value)}
-                    placeholder="e.g. MIKE42"
-                    className="text-center text-lg tracking-widest font-mono uppercase mt-1"
-                    maxLength={6}
-                  />
-                  {isValidatingCode && <p className="text-sm text-muted-foreground mt-1">Checking...</p>}
-                  {inviteValidation?.valid && (
-                    <div className="flex items-center gap-2 mt-2 p-2.5 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                      <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                      <span className="text-sm text-green-700 dark:text-green-300">Joining <strong>{inviteValidation.businessName}</strong> as {inviteValidation.roleType}</span>
-                    </div>
-                  )}
-                  {inviteValidation && !inviteValidation.valid && (
-                    <p className="text-sm text-red-500 mt-1">{inviteValidation.error}</p>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>First Name</Label>
-                    <Input value={workerName} onChange={(e) => setWorkerName(e.target.value)} placeholder="First name" className="mt-1" />
+      <div className="min-h-screen bg-white flex" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-invite">
+        {/* Left — invite form */}
+        <div className="flex-1 flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-16">
+          <div className="w-full max-w-md mx-auto">
+            <div className="flex items-center gap-2 mb-10">
+              <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
+              <span className="text-xl font-bold">
+                <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
+              </span>
+            </div>
+
+            <button onClick={() => setSelectedRole(null)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6" data-testid="invite-back">
+              <ArrowLeft className="h-4 w-4" /> Back
+            </button>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Join as {roleLabel}</h2>
+            <p className="text-gray-500 mb-8">Enter the invite code from your employer to join their team.</p>
+
+            <div className="space-y-4">
+              <div>
+                <Label>Invite Code</Label>
+                <Input
+                  value={inviteCode}
+                  onChange={(e) => handleInviteCodeChange(e.target.value)}
+                  placeholder="e.g. MIKE42"
+                  className="text-center text-lg tracking-widest font-mono uppercase mt-1"
+                  maxLength={6}
+                />
+                {isValidatingCode && <p className="text-sm text-gray-500 mt-1">Checking...</p>}
+                {inviteValidation?.valid && (
+                  <div className="flex items-center gap-2 mt-2 p-2.5 rounded-md bg-green-50 border border-green-200">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-green-700">Joining <strong>{inviteValidation.businessName}</strong> as {inviteValidation.roleType}</span>
                   </div>
-                  <div>
-                    <Label>Last Name</Label>
-                    <Input value={workerLastName} onChange={(e) => setWorkerLastName(e.target.value)} placeholder="Last name" className="mt-1" />
-                  </div>
-                </div>
-                <div>
-                  <Label>Phone (optional)</Label>
-                  <Input value={workerPhone} onChange={(e) => setWorkerPhone(e.target.value)} placeholder="+61 4XX XXX XXX" className="mt-1" />
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={handleWorkerRedeem}
-                  disabled={!inviteValidation?.valid || !workerName.trim() || isSubmitting}
-                >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Join Team
-                </Button>
+                )}
+                {inviteValidation && !inviteValidation.valid && (
+                  <p className="text-sm text-red-500 mt-1">{inviteValidation.error}</p>
+                )}
               </div>
-            </CardContent>
-          </Card>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>First Name</Label>
+                  <Input value={workerName} onChange={(e) => setWorkerName(e.target.value)} placeholder="First name" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Last Name</Label>
+                  <Input value={workerLastName} onChange={(e) => setWorkerLastName(e.target.value)} placeholder="Last name" className="mt-1" />
+                </div>
+              </div>
+              <div>
+                <Label>Phone (optional)</Label>
+                <Input value={workerPhone} onChange={(e) => setWorkerPhone(e.target.value)} placeholder="+61 4XX XXX XXX" className="mt-1" />
+              </div>
+              <Button
+                className="w-full"
+                onClick={handleWorkerRedeem}
+                disabled={!inviteValidation?.valid || !workerName.trim() || isSubmitting}
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Join Team
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {/* Right — brand showcase (matches signup) */}
+        <BrandShowcase />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F2F4F8] flex items-center justify-center p-4 md:p-8" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding">
-      <div className="w-full max-w-5xl">
-        <div className="lg:hidden flex items-center justify-center gap-2 mb-5">
-          <img src={jobrunnerLogo} alt="JobRunner" className="h-7 w-auto" />
-          <span className="text-lg font-bold">
-            <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
-          </span>
+    <div className="min-h-screen bg-white flex" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding">
+      {/* Left — step content */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-16">
+        <div className="w-full max-w-xl mx-auto">
+          <div className="flex items-center gap-2 mb-8">
+            <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
+            <span className="text-xl font-bold">
+              <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
+            </span>
+          </div>
+
+          {!isDoneStep && (
+            <div className="lg:hidden -mt-1 mb-7">
+              <StepIndicator steps={STEPS} currentStep={currentStep} />
+            </div>
+          )}
+          {renderCurrentStep()}
+
+          {onSkip && !isDoneStep && (
+            <div className="text-center pt-6">
+              <Button
+                variant="ghost"
+                onClick={onSkip}
+                className="text-muted-foreground"
+                data-testid="button-skip"
+              >
+                Skip for now
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right — branded progress rail (matches signup split) */}
+      <div className="hidden lg:flex w-[40%] xl:w-1/2 bg-gradient-to-br from-brand via-brand-dark to-brand-accent relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="onboarding-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#onboarding-grid)" />
+          </svg>
         </div>
 
-        <Card className="overflow-hidden shadow-sm">
-          <div className="flex flex-col lg:flex-row">
-            <aside className="hidden lg:flex lg:flex-col lg:w-72 shrink-0 border-r border-gray-100 bg-gray-50 p-8">
-              <div className="flex items-center gap-2 mb-10">
-                <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
-                <span className="text-xl font-bold">
-                  <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
-                </span>
-              </div>
-              {!isDoneStep ? (
-                <VerticalSteps steps={STEPS} currentStep={currentStep} />
-              ) : (
-                <p className="text-sm font-medium text-gray-900">Setup complete</p>
-              )}
-              <p className="mt-auto pt-8 text-sm text-gray-500">
-                Takes about 2 minutes. You can change anything later in Settings.
-              </p>
-            </aside>
+        <div className="relative z-10 flex flex-col justify-center w-full p-12 xl:p-16">
+          <h2 className="text-2xl xl:text-3xl font-bold text-white mb-2">
+            {isDoneStep ? "You're all set." : "Let's set up your business."}
+          </h2>
+          <p className="text-white/80 mb-10 max-w-sm">
+            {isDoneStep
+              ? "Everything's ready. You can change anything later in Settings."
+              : "A few quick steps and you'll be ready to run jobs, send quotes, and get paid."}
+          </p>
 
-            <div className="flex-1 min-w-0 p-6 md:p-10">
-              {!isDoneStep && (
-                <div className="lg:hidden -mt-1 mb-7">
-                  <StepIndicator steps={STEPS} currentStep={currentStep} />
-                </div>
-              )}
-              {renderCurrentStep()}
-
-              {onSkip && !isDoneStep && (
-                <div className="text-center pt-6">
-                  <Button
-                    variant="ghost"
-                    onClick={onSkip}
-                    className="text-muted-foreground"
-                    data-testid="button-skip"
-                  >
-                    Skip for now
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </Card>
+          <VerticalSteps steps={STEPS} currentStep={currentStep} onDark />
+        </div>
       </div>
     </div>
   );
