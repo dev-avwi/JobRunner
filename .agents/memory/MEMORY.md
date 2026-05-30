@@ -1,0 +1,1 @@
+- [Mobile Android Google Maps setup](mobile-google-maps-android.md) — "API key not found" = key/project binding + prebuild-rebuild required; also user's local expo run:android workflow + emulator-only IAP/SQLite errors.
