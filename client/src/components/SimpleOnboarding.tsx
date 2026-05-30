@@ -1818,7 +1818,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
           <div className="flex items-center justify-center gap-3 mb-8">
             <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
             <span className="text-xl font-bold">
-              <span className="text-gray-900">Job</span><span className="text-[#2B7DE9]">Runner</span>
+              <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
             </span>
           </div>
           <Card>
@@ -1878,7 +1878,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
           <div className="flex items-center justify-center gap-3 mb-8">
             <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
             <span className="text-xl font-bold">
-              <span className="text-gray-900">Job</span><span className="text-[#2B7DE9]">Runner</span>
+              <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
             </span>
           </div>
           <Card>
@@ -1945,7 +1945,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
         <div className="flex items-center justify-center gap-3 mb-6 pt-4">
           <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
           <span className="text-xl font-bold">
-            <span className="text-gray-900">Job</span><span className="text-[#2B7DE9]">Runner</span>
+            <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
           </span>
         </div>
         
