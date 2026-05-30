@@ -3634,7 +3634,7 @@ class OfflineStorageService {
       useOfflineStore.getState().setLastSyncTime(Date.now());
       if (__DEV__) console.log('[OfflineStorage] Full sync complete');
     } catch (error) {
-      if (__DEV__) console.error('[OfflineStorage] Full sync failed:', error);
+      if (__DEV__) console.warn('[OfflineStorage] Full sync skipped (offline DB unavailable, using server data):', error);
     } finally {
       useOfflineStore.getState().setSyncing(false);
     }

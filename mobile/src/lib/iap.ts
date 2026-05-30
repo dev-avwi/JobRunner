@@ -50,7 +50,7 @@ export async function initIAP(): Promise<boolean> {
     console.log('[IAP] Connection initialized:', result);
     return true;
   } catch (error) {
-    console.error('[IAP] Failed to initialize:', error);
+    if (__DEV__) console.warn('[IAP] Billing unavailable (expected on emulator / no Play Store):', error);
     return false;
   }
 }
