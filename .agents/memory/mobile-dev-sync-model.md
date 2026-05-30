@@ -16,3 +16,13 @@ The Replit Agent workspace is a **separate** checkout. Agent edits + checkpoints
 **Why:** without this model you waste turns re-editing/re-styling a component that is actually correct on `origin/main`; the real blocker is the Mac never pulled. Always confirm the user has pulled before assuming a code fix failed.
 
 **How to apply:** when the user reports a mobile change "still broken" and the screenshot is identical to before your edits, suspect stale local code first. Verify `git log origin/main` here has your commit, then tell them to `git pull` + reload on the Mac before debugging further.
+
+**Stale dev-client trap (proven 2026-05-30):** pull + `expo start -c` + reconnect did NOT update the dialog because the **installed dev-client APK had old JS baked in / wasn't picking up the fresh bundle**. The tell: a component looks identical even across a Platform-level behavior change (Android dialog went from native `Alert.alert` to a themed in-app `Modal`, yet the device still rendered the native-alert layout). When pull+reload provably can't be the cause, the fix is a **full native rebuild** (`expo run:android`), which recompiles the current on-disk code. After a fresh dev build is installed + connected to Metro, later JS-only changes hot-reload normally again.
+
+**User's Mac build env (Aydens-MBP, confirmed 2026-05-30) — `expo run:android` needs all three or it fails in sequence:**
+- Repo is at `~/Documents/GitHub/JobRunner` (GitHub Desktop default), NOT `~/Documents/JobRunner`. Build runs from `…/JobRunner/mobile`.
+- `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"` (no standalone JRE installed → "Unable to locate a Java Runtime" without it).
+- `ANDROID_HOME=~/Library/Android/sdk` + `echo "sdk.dir=$ANDROID_HOME" > android/local.properties` (else gradle "SDK location not found"). Both exported into `~/.zshrc` now.
+- First build is slow (10–20 min): downloads gradle, NDK 27.x, build-tools 35. Subsequent builds fast.
+
+**Harmless dev-only noise:** `[OfflineStorage] Failed to clear cached auth data: … NativeDatabase.prepareAsync rejected / NullPointerException` on the emulator is **caught** (try/catch in `clearCachedAuthData`, logged only under `__DEV__`) and does NOT block logout. Don't chase it as a sign-out bug.
