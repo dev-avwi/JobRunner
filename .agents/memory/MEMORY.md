@@ -1,1 +1,2 @@
 - [Mobile Android Google Maps setup](mobile-google-maps-android.md) — "API key not found" = key/project binding + prebuild-rebuild required; also user's local expo run:android workflow + emulator-only IAP/SQLite errors.
+- [Mobile confirm dialogs](mobile-confirm-dialogs.md) — use existing useConfirmDialog() hook (iOS native Alert, Android/web branded centered modal); don't write new Alert.alert or dialog components.

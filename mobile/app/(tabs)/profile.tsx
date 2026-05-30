@@ -9,6 +9,7 @@ import {
   Linking,
 } from 'react-native';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/lib/store';
@@ -412,6 +413,7 @@ function mapRoleToFilterRole(role: UserRoleType): UserRole {
 export default function MoreScreen() {
   const { user, businessSettings, logout } = useAuthStore();
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const responsiveShell = usePageShell();
   const bottomInset = useBottomInset(40);
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -502,22 +504,18 @@ export default function MoreScreen() {
     return visibleCategories.filter(k => k === activeCategory);
   }, [activeCategory, visibleCategories]);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/(auth)/login');
-          }
-        }
-      ]
-    );
+  const handleLogout = async () => {
+    const ok = await confirm({
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out?',
+      confirmText: 'Sign Out',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      await logout();
+      router.replace('/(auth)/login');
+    }
   };
 
   const getInitials = () => {
