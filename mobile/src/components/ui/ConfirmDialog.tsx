@@ -109,8 +109,8 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
                   style={({ pressed }) => [
                     styles.btn,
                     {
-                      backgroundColor: pressed ? colors.elevate1 ?? colors.muted : colors.muted,
-                      borderColor: colors.border,
+                      backgroundColor: pressed ? colors.accent : colors.secondary,
+                      borderColor: colors.input,
                     },
                   ]}
                 >
@@ -195,20 +195,21 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.md,
     marginTop: spacing.sm,
   },
   btn: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 48,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
   },
   btnText: {
     ...typography.bodySemibold,
+    textAlign: 'center',
   },
 });
 
