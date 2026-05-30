@@ -7,19 +7,19 @@ export function OptionB() {
   const roles = [
     {
       id: 'owner',
-      title: 'Business Owner',
-      description: 'I run my own trade business',
+      title: 'I run my own business',
+      description: 'Quotes, jobs and getting paid',
       icon: Briefcase,
     },
     {
       id: 'team',
-      title: 'Team Member',
+      title: "I'm on a team",
       description: "I've got an invite code from my boss",
       icon: Users,
     },
     {
       id: 'sub',
-      title: 'Subcontractor',
+      title: "I'm a subbie",
       description: "I've got an invite code to join a team",
       icon: Hammer,
     }
@@ -35,18 +35,19 @@ export function OptionB() {
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#F28C28] blur-[120px]" />
         </div>
         
-        <div className="relative z-10 w-full max-w-md flex flex-col items-start">
-          <h1 className="text-4xl font-black text-white leading-tight mb-4 tracking-tight">
-            Build your trade empire, faster.
+        <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
+          <h1 className="text-3xl font-black text-white leading-tight mb-2 tracking-tight">
+            Less admin. More tools down.
           </h1>
-          <p className="text-blue-100 text-base mb-8 font-medium">
-            The platform built for Australian tradies who want to spend less time on admin and more time on the tools.
+          <p className="text-blue-100 text-base mb-8 font-medium max-w-sm">
+            Built for Aussie tradies to quote, run jobs and get paid.
           </p>
 
           {/* Real app screenshot in a phone frame */}
-          <div className="relative mx-auto w-[210px] transform rotate-[-3deg] hover:rotate-0 transition-transform duration-500">
-            <div className="bg-black p-2 rounded-[2.2rem] shadow-2xl ring-1 ring-white/20">
-              <div className="rounded-[1.8rem] overflow-hidden aspect-[9/19] bg-white">
+          <div className="relative mx-auto w-[235px] transform rotate-[-3deg] hover:rotate-0 transition-transform duration-500">
+            <div className="absolute -inset-4 bg-white/20 rounded-[3rem] blur-2xl" />
+            <div className="relative bg-white p-2.5 rounded-[2.5rem] shadow-2xl">
+              <div className="rounded-[2rem] overflow-hidden aspect-[9/19] bg-white ring-1 ring-black/5">
                 <img src="/__mockup/images/dashboard.png" alt="JobRunner dashboard" className="w-full h-full object-cover object-top" />
               </div>
             </div>
