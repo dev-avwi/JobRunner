@@ -171,6 +171,45 @@ function StepIndicator({ steps, currentStep }: { steps: { id: string; title: str
   );
 }
 
+function VerticalSteps({ steps, currentStep }: { steps: { id: string; title: string }[]; currentStep: number }) {
+  return (
+    <div className="flex flex-col">
+      {steps.map((step, index) => {
+        const isCompleted = index < currentStep;
+        const isActive = index === currentStep;
+        const isLast = index === steps.length - 1;
+        return (
+          <div key={step.id} className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                  isCompleted
+                    ? 'bg-[#2B7DE9] text-white'
+                    : isActive
+                    ? 'bg-[#2B7DE9] text-white ring-4 ring-[#2B7DE9]/15'
+                    : 'bg-white text-gray-400 border-2 border-gray-200'
+                }`}
+              >
+                {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+              </div>
+              {!isLast && (
+                <div className={`w-0.5 flex-1 min-h-[18px] my-1 rounded-full ${index < currentStep ? 'bg-[#2B7DE9]' : 'bg-gray-200'}`} />
+              )}
+            </div>
+            <div className={`pt-1.5 ${isLast ? '' : 'pb-2'}`}>
+              <p className={`text-sm font-medium transition-colors ${
+                isActive ? 'text-gray-900' : isCompleted ? 'text-gray-600' : 'text-gray-400'
+              }`}>
+                {step.title}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 type OnboardingRole = 'owner' | 'worker' | 'subcontractor' | null;
 
 export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardingProps) {
@@ -1940,37 +1979,57 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
   }
 
   return (
-    <div className="min-h-screen bg-[#F2F4F8]" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding">
-      <div className="max-w-2xl mx-auto p-4 md:p-6 min-h-screen flex flex-col">
-        <div className="flex items-center justify-center gap-3 mb-6 pt-4">
-          <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
-          <span className="text-xl font-bold">
+    <div className="min-h-screen bg-[#F2F4F8] flex items-center justify-center p-4 md:p-8" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding">
+      <div className="w-full max-w-5xl">
+        <div className="lg:hidden flex items-center justify-center gap-2 mb-5">
+          <img src={jobrunnerLogo} alt="JobRunner" className="h-7 w-auto" />
+          <span className="text-lg font-bold">
             <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
           </span>
         </div>
-        
-        {!isDoneStep && (
-          <StepIndicator steps={STEPS} currentStep={currentStep} />
-        )}
-        
-        <Card className="flex-1">
-          <CardContent className="p-6">
-            {renderCurrentStep()}
-          </CardContent>
-        </Card>
-        
-        {onSkip && !isDoneStep && (
-          <div className="text-center py-4">
-            <Button 
-              variant="ghost" 
-              onClick={onSkip}
-              className="text-muted-foreground"
-              data-testid="button-skip"
-            >
-              Skip for now
-            </Button>
+
+        <Card className="overflow-hidden shadow-sm">
+          <div className="flex flex-col lg:flex-row">
+            <aside className="hidden lg:flex lg:flex-col lg:w-72 shrink-0 border-r border-gray-100 bg-gray-50 p-8">
+              <div className="flex items-center gap-2 mb-10">
+                <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
+                <span className="text-xl font-bold">
+                  <span className="text-[#F28C28]">Job</span><span className="text-[#2B7DE9]">Runner</span>
+                </span>
+              </div>
+              {!isDoneStep ? (
+                <VerticalSteps steps={STEPS} currentStep={currentStep} />
+              ) : (
+                <p className="text-sm font-medium text-gray-900">Setup complete</p>
+              )}
+              <p className="mt-auto pt-8 text-sm text-gray-500">
+                Takes about 2 minutes. You can change anything later in Settings.
+              </p>
+            </aside>
+
+            <div className="flex-1 min-w-0 p-6 md:p-10">
+              {!isDoneStep && (
+                <div className="lg:hidden -mt-1 mb-7">
+                  <StepIndicator steps={STEPS} currentStep={currentStep} />
+                </div>
+              )}
+              {renderCurrentStep()}
+
+              {onSkip && !isDoneStep && (
+                <div className="text-center pt-6">
+                  <Button
+                    variant="ghost"
+                    onClick={onSkip}
+                    className="text-muted-foreground"
+                    data-testid="button-skip"
+                  >
+                    Skip for now
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </Card>
       </div>
     </div>
   );
