@@ -110,6 +110,27 @@ const getStepsForPlan = (plan: string) => {
   ];
 };
 
+// Onboarding always renders in the light brand theme to match the marketing
+// site. These vars override any dark values applied inline to the root element.
+const ONBOARDING_LIGHT_VARS = {
+  "--background": "210 40% 98%",
+  "--foreground": "217 33% 17%",
+  "--card": "0 0% 100%",
+  "--card-foreground": "217 33% 17%",
+  "--card-border": "217 12% 88%",
+  "--border": "217 12% 91%",
+  "--primary": "217 91% 53%",
+  "--primary-foreground": "0 0% 98%",
+  "--secondary": "217 8% 89%",
+  "--secondary-foreground": "217 20% 14%",
+  "--muted": "217 6% 93%",
+  "--muted-foreground": "217 10% 46%",
+  "--accent": "217 12% 89%",
+  "--accent-foreground": "217 20% 14%",
+  "--input": "217 12% 75%",
+  "--ring": "217 91% 53%",
+} as React.CSSProperties;
+
 function StepIndicator({ steps, currentStep }: { steps: { id: string; title: string }[]; currentStep: number }) {
   return (
     <div className="w-full max-w-lg mx-auto mb-6">
@@ -123,25 +144,25 @@ function StepIndicator({ steps, currentStep }: { steps: { id: string; title: str
               <div
                 className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
                   isCompleted
-                    ? 'bg-green-100 dark:bg-green-900/40 text-green-600'
+                    ? 'bg-[#2B7DE9] text-white'
                     : isActive
-                    ? 'bg-primary text-primary-foreground ring-4 ring-primary/20'
-                    : 'bg-muted text-muted-foreground border-2 border-border'
+                    ? 'bg-[#2B7DE9] text-white ring-4 ring-[#2B7DE9]/15'
+                    : 'bg-white text-gray-400 border-2 border-gray-200'
                 }`}
               >
                 {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
               </div>
               <span className={`mt-1.5 text-[10px] md:text-xs font-medium whitespace-nowrap transition-colors ${
-                isCompleted || isActive ? 'text-foreground' : 'text-muted-foreground'
+                isCompleted || isActive ? 'text-gray-900' : 'text-gray-400'
               }`}>
                 {step.title}
               </span>
             </div>
           );
         })}
-        <div className="absolute top-4 left-0 right-0 h-0.5 bg-border -z-0" style={{ marginLeft: '16px', marginRight: '16px' }}>
+        <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-0" style={{ marginLeft: '16px', marginRight: '16px' }}>
           <div
-            className="h-full bg-primary/60 transition-all duration-500"
+            className="h-full bg-[#2B7DE9] transition-all duration-500"
             style={{ width: `${currentStep === 0 ? 0 : (currentStep / (steps.length - 1)) * 100}%` }}
           />
         </div>
@@ -326,6 +347,49 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
       trackEvent('onboarding_step_viewed', { step: stepId });
     }
   }, [currentStep, resumeChecked]);
+
+  // Force the light brand theme for the whole onboarding flow, regardless of the
+  // user's saved dark/light preference, so it matches the marketing site.
+  // ThemeProvider re-writes the root class + inline CSS vars whenever theme/brand
+  // changes (e.g. settings load mid-onboarding), so a one-shot flip isn't enough.
+  // We snapshot the root, re-assert light via a MutationObserver, and apply the
+  // light vars at the ROOT so portaled menus (Select/Popover) also render light.
+  useEffect(() => {
+    const root = document.documentElement;
+    const snapshotClass = root.getAttribute('class');
+    const snapshotStyle = root.getAttribute('style');
+    const lightVars = ONBOARDING_LIGHT_VARS as Record<string, string>;
+
+    // Guard so re-asserting (which mutates the root) doesn't recurse forever.
+    let applying = false;
+    const forceLight = () => {
+      if (applying) return;
+      applying = true;
+      try {
+        if (root.classList.contains('dark')) root.classList.remove('dark');
+        if (!root.classList.contains('light')) root.classList.add('light');
+        for (const [name, value] of Object.entries(lightVars)) {
+          if (root.style.getPropertyValue(name) !== value) {
+            root.style.setProperty(name, value);
+          }
+        }
+      } finally {
+        applying = false;
+      }
+    };
+
+    forceLight();
+    const observer = new MutationObserver(forceLight);
+    observer.observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
+
+    return () => {
+      observer.disconnect();
+      if (snapshotClass === null) root.removeAttribute('class');
+      else root.setAttribute('class', snapshotClass);
+      if (snapshotStyle === null) root.removeAttribute('style');
+      else root.setAttribute('style', snapshotStyle);
+    };
+  }, []);
 
   useEffect(() => {
     const checkExistingSettings = async () => {
@@ -1009,44 +1073,41 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
   const renderPaymentsStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/40 dark:to-blue-900/40 rounded-full flex items-center justify-center mb-4">
-          <CreditCard className="h-8 w-8 text-purple-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
           Get Paid Faster
         </h2>
-        <p className="text-muted-foreground max-w-sm mx-auto">
+        <p className="text-gray-600 max-w-sm mx-auto">
           Clients can pay your invoices online with one tap. No chasing, no delays.
         </p>
       </div>
       
       <div className="max-w-md mx-auto space-y-4">
-        <div className="bg-muted/30 rounded-xl p-5 space-y-4">
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 space-y-4">
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-              <CreditCard className="h-4 w-4 text-purple-600" />
+            <div className="w-9 h-9 rounded-lg bg-[#2B7DE9]/10 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="h-4 w-4 text-[#2B7DE9]" />
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">Accept card payments</h4>
-              <p className="text-sm text-muted-foreground">Clients pay invoices directly online</p>
+              <h4 className="font-medium text-gray-900">Accept card payments</h4>
+              <p className="text-sm text-gray-600">Clients pay invoices directly online</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
-              <ExternalLink className="h-4 w-4 text-blue-600" />
+            <div className="w-9 h-9 rounded-lg bg-[#F28C28]/10 flex items-center justify-center flex-shrink-0">
+              <ExternalLink className="h-4 w-4 text-[#F28C28]" />
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">Send payment links</h4>
-              <p className="text-sm text-muted-foreground">One-click payment links via SMS or email</p>
+              <h4 className="font-medium text-gray-900">Send payment links</h4>
+              <p className="text-sm text-gray-600">One-click payment links via SMS or email</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
               <DollarSign className="h-4 w-4 text-green-600" />
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">Fast deposits</h4>
-              <p className="text-sm text-muted-foreground">Funds deposited directly to your bank</p>
+              <h4 className="font-medium text-gray-900">Fast deposits</h4>
+              <p className="text-sm text-gray-600">Funds deposited directly to your bank</p>
             </div>
           </div>
         </div>
@@ -1167,8 +1228,8 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
             data-testid="import-catalog-option"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-                <FileText className="h-5 w-5 text-purple-600" />
+              <div className="w-10 h-10 rounded-lg bg-[#F28C28]/10 flex items-center justify-center flex-shrink-0">
+                <FileText className="h-5 w-5 text-[#F28C28]" />
               </div>
               <div className="flex-1">
                 <p className="font-medium text-gray-900 dark:text-white">Import Price List</p>
@@ -1350,20 +1411,17 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
   const renderPortalStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-4">
-        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-full flex items-center justify-center mb-4">
-          <Eye className="h-8 w-8 text-blue-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
           Professional from Day One
         </h2>
-        <p className="text-muted-foreground max-w-sm mx-auto">
+        <p className="text-gray-600 max-w-sm mx-auto">
           This is what your clients see. Clean, professional, and branded with your business.
         </p>
       </div>
       
       <div className="max-w-sm mx-auto">
         <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3">
+          <div className="bg-[#2B7DE9] px-4 py-3">
             <p className="text-white font-semibold text-sm">
               {formData.businessName || 'Your Business'}
             </p>
@@ -1476,7 +1534,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
         </div>
       </div>
       
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 max-w-md mx-auto">
+      <div className="bg-green-50 border border-green-200 rounded-xl p-4 max-w-md mx-auto">
         <div className="flex items-center gap-2 mb-2">
           <CheckCircle className="h-5 w-5 text-green-600" />
           <span className="font-semibold text-green-900 dark:text-green-100">Team Features Ready</span>
@@ -1570,11 +1628,8 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
 
   const renderDoneStep = () => (
     <div className="text-center py-6 space-y-5">
-      <div className="relative mx-auto w-24 h-24">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full animate-pulse opacity-20" />
-        <div className="relative w-24 h-24 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-full flex items-center justify-center">
-          <CheckCircle className="h-12 w-12 text-green-600" />
-        </div>
+      <div className="mx-auto w-16 h-16 bg-green-50 border border-green-200 rounded-full flex items-center justify-center">
+        <CheckCircle className="h-8 w-8 text-green-600" />
       </div>
       
       <div>
@@ -1587,11 +1642,11 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
       </div>
 
       <div className="max-w-sm mx-auto space-y-3">
-        <div className="bg-muted/30 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-medium text-gray-900 dark:text-white">Your first job journey</p>
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-medium text-gray-900">Your first job journey</p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
-              <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold">1</div>
+              <div className="w-5 h-5 rounded-full bg-[#2B7DE9] text-white flex items-center justify-center text-[10px] font-bold">1</div>
               <span>Create a Job</span>
             </div>
             <ArrowRight className="h-3 w-3 shrink-0" />
@@ -1649,7 +1704,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
       
       {isTeamPlan ? (
         <>
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 max-w-sm mx-auto">
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 max-w-sm mx-auto">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Gift className="h-5 w-5 text-green-600" />
               <span className="font-semibold text-green-900 dark:text-green-100">Team Plan Active</span>
@@ -1664,7 +1719,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
         </>
       ) : isProPlan ? (
         <>
-          <div className="bg-gradient-to-r from-blue-50 to-orange-50 dark:from-blue-900/20 dark:to-orange-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 max-w-sm mx-auto">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-sm mx-auto">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Gift className="h-5 w-5 text-orange-500" />
               <span className="font-semibold text-blue-900 dark:text-blue-100">Pro Features Unlocked</span>
@@ -1701,7 +1756,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
             </ul>
           </div>
 
-          <div className="bg-gradient-to-r from-blue-50 to-orange-50 dark:from-blue-900/20 dark:to-orange-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 max-w-sm mx-auto">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-sm mx-auto">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Gift className="h-5 w-5 text-orange-500" />
               <span className="font-semibold text-blue-900 dark:text-blue-100">Want Unlimited Access?</span>
@@ -1743,7 +1798,7 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
 
   if (userLoading || !resumeChecked) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center" data-testid="simple-onboarding-loading">
+      <div className="min-h-screen bg-[#F2F4F8] flex items-center justify-center" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-loading">
         <div className="flex flex-col items-center gap-4">
           <img src={jobrunnerLogo} alt="JobRunner" className="h-10 w-auto" />
           <Loader2 className="h-8 w-8 text-primary animate-spin" />
@@ -1758,12 +1813,12 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
 
   if (selectedRole === null) {
     return (
-      <div className="min-h-screen bg-background" data-testid="simple-onboarding-role">
+      <div className="min-h-screen bg-[#F2F4F8]" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-role">
         <div className="max-w-lg mx-auto p-4 md:p-6 min-h-screen flex flex-col justify-center">
           <div className="flex items-center justify-center gap-3 mb-8">
             <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
             <span className="text-xl font-bold">
-              <span className="text-foreground">JobRunner</span>
+              <span className="text-gray-900">Job</span><span className="text-[#2B7DE9]">Runner</span>
             </span>
           </div>
           <Card>
@@ -1773,10 +1828,10 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
               <div className="space-y-3">
                 <button
                   onClick={() => setSelectedRole('owner')}
-                  className="w-full flex items-center gap-4 p-4 rounded-lg border-2 border-border hover-elevate transition-all text-left"
+                  className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover-elevate transition-colors text-left"
                 >
-                  <div className="p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/40">
-                    <Briefcase className="h-5 w-5 text-blue-600" />
+                  <div className="p-2.5 rounded-md bg-[#2B7DE9]/10">
+                    <Briefcase className="h-5 w-5 text-[#2B7DE9]" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">Business Owner</p>
@@ -1785,9 +1840,9 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
                 </button>
                 <button
                   onClick={() => setSelectedRole('worker')}
-                  className="w-full flex items-center gap-4 p-4 rounded-lg border-2 border-border hover-elevate transition-all text-left"
+                  className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover-elevate transition-colors text-left"
                 >
-                  <div className="p-2.5 rounded-lg bg-green-100 dark:bg-green-900/40">
+                  <div className="p-2.5 rounded-md bg-green-100">
                     <Users className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
@@ -1797,10 +1852,10 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
                 </button>
                 <button
                   onClick={() => setSelectedRole('subcontractor')}
-                  className="w-full flex items-center gap-4 p-4 rounded-lg border-2 border-border hover-elevate transition-all text-left"
+                  className="w-full flex items-center gap-4 p-4 rounded-md border border-gray-200 bg-white hover-elevate transition-colors text-left"
                 >
-                  <div className="p-2.5 rounded-lg bg-orange-100 dark:bg-orange-900/40">
-                    <Wrench className="h-5 w-5 text-orange-600" />
+                  <div className="p-2.5 rounded-md bg-[#F28C28]/10">
+                    <Wrench className="h-5 w-5 text-[#F28C28]" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">Subcontractor</p>
@@ -1818,12 +1873,12 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
   if (selectedRole === 'worker' || selectedRole === 'subcontractor') {
     const roleLabel = selectedRole === 'worker' ? 'Team Member' : 'Subcontractor';
     return (
-      <div className="min-h-screen bg-background" data-testid="simple-onboarding-invite">
+      <div className="min-h-screen bg-[#F2F4F8]" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding-invite">
         <div className="max-w-lg mx-auto p-4 md:p-6 min-h-screen flex flex-col justify-center">
           <div className="flex items-center justify-center gap-3 mb-8">
             <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
             <span className="text-xl font-bold">
-              <span className="text-foreground">JobRunner</span>
+              <span className="text-gray-900">Job</span><span className="text-[#2B7DE9]">Runner</span>
             </span>
           </div>
           <Card>
@@ -1885,12 +1940,12 @@ export default function SimpleOnboarding({ onComplete, onSkip }: SimpleOnboardin
   }
 
   return (
-    <div className="min-h-screen bg-background" data-testid="simple-onboarding">
+    <div className="min-h-screen bg-[#F2F4F8]" style={ONBOARDING_LIGHT_VARS} data-testid="simple-onboarding">
       <div className="max-w-2xl mx-auto p-4 md:p-6 min-h-screen flex flex-col">
         <div className="flex items-center justify-center gap-3 mb-6 pt-4">
           <img src={jobrunnerLogo} alt="JobRunner" className="h-8 w-auto" />
           <span className="text-xl font-bold">
-            <span className="text-foreground">JobRunner</span>
+            <span className="text-gray-900">Job</span><span className="text-[#2B7DE9]">Runner</span>
           </span>
         </div>
         

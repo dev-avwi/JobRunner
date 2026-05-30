@@ -1,3 +1,4 @@
 - [Mobile Android Google Maps setup](mobile-google-maps-android.md) — "API key not found" = key/project binding + prebuild-rebuild required; also user's local expo run:android workflow + emulator-only IAP/SQLite errors.
 - [Mobile dev sync model](mobile-dev-sync-model.md) — user runs Metro on their own Mac clone; agent edits go to GitHub origin/main but DON'T reach device until they `git pull` + reload. Identical-looking "still broken" screenshots = stale local code, not a bad fix.
 - [Mobile confirm dialogs](mobile-confirm-dialogs.md) — use existing useConfirmDialog() hook (iOS native Alert, Android/web branded centered modal); don't write new Alert.alert or dialog components.
+- [Force light theme on one route](theme-force-light-route.md) — ThemeProvider writes inline CSS vars on documentElement + re-runs; lock a route light via root var override + MutationObserver, not a one-shot class flip.
