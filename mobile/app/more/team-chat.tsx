@@ -128,7 +128,6 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: colors.mutedForeground,
   },
   messageBubble: {
-    maxWidth: '75%',
     borderRadius: 16,
     padding: 12,
   },
@@ -581,8 +580,8 @@ export default function TeamChatScreen() {
                     />
                   )}
                   
-                  <PressableRow onLongPress={handleLongPress} delayLongPress={400} style={{ maxWidth: '75%' }} >
-                    <View style={[
+                  <View style={{ maxWidth: '75%', flexShrink: 1 }}>
+                    <PressableRow onLongPress={handleLongPress} delayLongPress={400} style={[
                       styles.messageBubble,
                       isCurrentUser ? styles.messageBubbleUser : styles.messageBubbleOther,
                       msg.isPinned && styles.messageBubblePinned,
@@ -648,7 +647,7 @@ export default function TeamChatScreen() {
                           </Text>
                         </PressableRow>
                       )}
-                    </View>
+                    </PressableRow>
 
                     {showActions && (
                       <View style={[
@@ -677,7 +676,7 @@ export default function TeamChatScreen() {
                         )}
                       </View>
                     )}
-                  </PressableRow>
+                  </View>
                 </View>
               );
             })

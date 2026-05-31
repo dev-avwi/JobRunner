@@ -256,6 +256,7 @@ class LocationTrackingService {
 
         if (__DEV__) console.log('[Location] Background tracking started');
         this.updateStatus('tracking');
+        await this.sendImmediateLocation();
         return true;
       } catch (bgError: any) {
         const errorMessage = bgError?.message || '';
@@ -264,6 +265,9 @@ class LocationTrackingService {
           const location = await this.getCurrentLocation();
           if (location) {
             this.updateStatus('foreground_only');
+            this._stationaryCount = 0;
+            if (this.onLocationUpdate) this.onLocationUpdate(location);
+            await this.sendLocationToServer(location);
             return true;
           }
         }
@@ -523,6 +527,25 @@ class LocationTrackingService {
 
   getLastLocation(): LocationUpdate | null {
     return this.currentLocation;
+  }
+
+  /**
+   * Push one location to the server immediately when tracking (re)starts, so the
+   * worker shows up on the team map right away. Without this, the first ping only
+   * arrives after the OS delivers a background update — which needs ~50m of
+   * movement and is paused while stationary, so a worker who turns sharing on
+   * while standing still never appears.
+   */
+  private async sendImmediateLocation(): Promise<void> {
+    try {
+      const location = await this.getCurrentLocation();
+      if (!location) return;
+      this._stationaryCount = 0;
+      if (this.onLocationUpdate) this.onLocationUpdate(location);
+      await this.sendLocationToServer(location);
+    } catch (err: any) {
+      if (__DEV__) console.log('[Location] Immediate location send failed:', err?.message);
+    }
   }
 
   /**

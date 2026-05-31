@@ -1326,23 +1326,19 @@ export default function JobChatScreen() {
     );
   }
 
-  const isIOS = Platform.OS === 'ios';
-
   return (
     <>
-      <Stack.Screen options={{ headerShown: isIOS, headerBackTitle: 'Back' }} />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <View style={styles.headerCard}>
-          {!isIOS && (
-            <PressableRow style={styles.backButton} onPress={() => router.back()} >
-              <Feather name="chevron-left" size={20} color={colors.foreground} />
-            </PressableRow>
-          )}
+        <View style={[styles.headerCard, { paddingTop: insets.top + 8 }]}>
+          <PressableRow style={styles.backButton} onPress={() => router.back()} >
+            <Feather name="chevron-left" size={20} color={colors.foreground} />
+          </PressableRow>
           <View style={styles.headerIconContainer}>
             <Feather name="lock" size={16} color={colors.primary} />
           </View>

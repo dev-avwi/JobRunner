@@ -899,7 +899,7 @@ export default function CalendarScreen() {
                   }
                   const dateJobs = getJobsForDate(date);
                   return (
-                    <PressableRow key={index} style={[ styles.monthDay, isToday(date) && styles.monthDayToday, isSelected(date) && styles.monthDaySelected, ]} onPress={() => setSelectedDate(date)} >
+                    <TouchableOpacity key={index} activeOpacity={0.7} style={[ styles.monthDay, isToday(date) && styles.monthDayToday, isSelected(date) && styles.monthDaySelected, ]} onPress={() => setSelectedDate(date)} >
                       <Text style={[
                         styles.monthDayNumber,
                         isToday(date) && styles.monthDayNumberToday,
@@ -917,7 +917,7 @@ export default function CalendarScreen() {
                           )}
                         </View>
                       )}
-                    </PressableRow>
+                    </TouchableOpacity>
                   );
                 })}
               </View>

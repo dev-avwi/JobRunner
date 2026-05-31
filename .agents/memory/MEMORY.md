@@ -9,3 +9,5 @@
 - [Deploy publish fails — image over 8 GiB](deploy-image-size-8gib.md) — "image size is over the limit of 8 GiB" shows in the UI build log, NOT fetchDeploymentLogs. Slim via scoped build-cmd rm -rf of non-runtime dirs; NEVER .cache/.local.
 - [Invite accept vs cross-business email conflict](invite-accept-email-conflict.md) — team-invite signup 400s "Failed to create account" when email is a client/other-invite under ANOTHER business; trusted-invite token must bypass cross-business conflicts (keep existing-user block).
 - [business-settings worker sanitization](business-settings-worker-sanitization.md) — GET /api/business-settings for non-owners MUST allowlist display fields, never spread the raw owner row (it holds tokens/bank/stripe PII).
+- [PressableRow percentage collapse (iOS)](pressablerow-percentage-collapse.md) — % width/maxWidth on PressableRow double-applies and collapses; fix per call-site, don't touch the shared component.
+- [Mobile live-location first ping](mobile-live-location-first-ping.md) — enabling team location must force one immediate send; OS background task only fires after ~50m, so stationary workers never show on owner map.
