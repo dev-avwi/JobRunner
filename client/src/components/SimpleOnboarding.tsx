@@ -52,12 +52,14 @@ const ROLES: {
   title: string;
   description: string;
   icon: typeof Briefcase;
+  badge?: string;
 }[] = [
   {
     id: "owner",
     title: "I run my own business",
     description: "Quotes, jobs and getting paid",
     icon: Briefcase,
+    badge: "Most popular",
   },
   {
     id: "worker",
@@ -161,7 +163,7 @@ function LeftPanel() {
   return (
     <div
       className="hidden md:flex md:w-[42%] lg:w-[44%] flex-col justify-between p-10 lg:p-14 relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #2563EB 0%, #1E293B 58%, #B45309 100%)" }}
+      style={{ background: "linear-gradient(135deg, #2E72F0 0%, #1C3F95 48%, #0A1633 100%)" }}
     >
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -546,14 +548,17 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
                         key={role.id}
                         onClick={() => setSelectedRole(role.id)}
                         data-testid={`role-${role.id}`}
-                        className="w-full text-left rounded-xl border-2 p-4 flex items-center gap-4 transition-all duration-200"
+                        className="group w-full text-left rounded-xl border-2 p-5 flex items-center gap-4 transition-all duration-200 hover-elevate active-elevate-2"
                         style={{
                           borderColor: isSelected ? BRAND_BLUE : "#E2E8F0",
                           backgroundColor: isSelected ? BRAND_BLUE_TINT : "#FFFFFF",
+                          boxShadow: isSelected
+                            ? `0 1px 2px rgba(15,23,42,0.04), 0 0 0 4px ${BRAND_BLUE}1A`
+                            : "0 1px 2px rgba(15,23,42,0.04)",
                         }}
                       >
                         <div
-                          className="h-12 w-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                          className="h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200"
                           style={{
                             backgroundColor: isSelected ? BRAND_BLUE : BRAND_BLUE_TINT,
                             color: isSelected ? "#FFFFFF" : BRAND_BLUE,
@@ -562,19 +567,27 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
                           <Icon className="h-6 w-6" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-slate-900">{role.title}</p>
-                          <p className="text-sm text-slate-500">{role.description}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-slate-900">{role.title}</p>
+                            {role.badge && (
+                              <span
+                                className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: "#FFF1E2", color: BRAND_ORANGE }}
+                              >
+                                {role.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-500 mt-0.5">{role.description}</p>
                         </div>
                         <span
-                          className="h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                          style={{ borderColor: isSelected ? BRAND_BLUE : "#CBD5E1" }}
+                          className="h-6 w-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
+                          style={{
+                            borderColor: isSelected ? BRAND_BLUE : "#CBD5E1",
+                            backgroundColor: isSelected ? BRAND_BLUE : "transparent",
+                          }}
                         >
-                          {isSelected && (
-                            <span
-                              className="h-2.5 w-2.5 rounded-full"
-                              style={{ backgroundColor: BRAND_BLUE }}
-                            />
-                          )}
+                          {isSelected && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
                         </span>
                       </button>
                     );
