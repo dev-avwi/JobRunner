@@ -35,6 +35,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { tradeCatalog } from "@shared/tradeCatalog";
 import logoWhite from "@assets/jobrunner-logo-white-mark.png";
+import AddressAutocomplete from "@/components/ui/address-autocomplete";
 
 interface SimpleOnboardingProps {
   onComplete: () => void;
@@ -677,14 +678,15 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
                   <div>
                     <Label htmlFor="address">Business address</Label>
                     <div className="relative mt-1.5">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="address"
-                        data-testid="input-address"
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10 pointer-events-none" />
+                      <AddressAutocomplete
                         value={formData.address}
-                        onChange={(e) => setField("address", e.target.value)}
-                        placeholder="Suburb, State"
+                        onChange={(v) => setField("address", v)}
+                        onAddressSelect={(addr) => setField("address", addr)}
+                        requireSelection={false}
+                        placeholder="Start typing your address..."
                         className="pl-9"
+                        data-testid="input-address"
                       />
                     </div>
                   </div>
@@ -901,8 +903,11 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
             {stepId === "done" && (
               <div data-testid="step-done">
                 <div
-                  className="h-14 w-14 rounded-xl flex items-center justify-center mb-6"
-                  style={{ backgroundColor: BRAND_BLUE }}
+                  className="h-14 w-14 rounded-2xl flex items-center justify-center mb-6"
+                  style={{
+                    background: "linear-gradient(135deg, #2E72F0 0%, #1C4FD0 100%)",
+                    boxShadow: `0 8px 20px ${BRAND_BLUE}33, 0 0 0 6px ${BRAND_BLUE}14`,
+                  }}
                 >
                   <Check className="h-8 w-8 text-white" strokeWidth={3} />
                 </div>
@@ -918,28 +923,38 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
 
                 {selectedRole === "owner" && (
                   <>
-                    <ul className="space-y-3 mb-8">
-                      {FREE_PLAN_FEATURES.map((f) => (
-                        <li key={f} className="flex items-center gap-3">
-                          <span
-                            className="h-6 w-6 rounded-md flex items-center justify-center flex-shrink-0"
-                            style={{ backgroundColor: BRAND_BLUE_TINT, color: BRAND_BLUE }}
-                          >
-                            <Check className="h-4 w-4" strokeWidth={3} />
-                          </span>
-                          <span className="text-slate-700">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-5 mb-6">
+                      <ul className="space-y-3.5">
+                        {FREE_PLAN_FEATURES.map((f) => (
+                          <li key={f} className="flex items-center gap-3">
+                            <span
+                              className="h-6 w-6 rounded-md flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: BRAND_BLUE_TINT, color: BRAND_BLUE }}
+                            >
+                              <Check className="h-4 w-4" strokeWidth={3} />
+                            </span>
+                            <span className="text-slate-700 font-medium">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
                     <div
-                      className="rounded-xl p-4 flex items-start gap-3 mb-8"
+                      className="rounded-xl p-5 flex items-start gap-3 mb-8"
                       style={{ backgroundColor: "#FFF6EC", border: `1px solid ${BRAND_ORANGE}33` }}
                     >
                       <Smartphone className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: BRAND_ORANGE }} />
-                      <div>
-                        <p className="font-semibold text-slate-900">Want more grunt?</p>
-                        <p className="text-sm text-slate-600">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-slate-900">Want more grunt?</p>
+                          <span
+                            className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: BRAND_ORANGE, color: "#FFFFFF" }}
+                          >
+                            PRO
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-600 mt-0.5">
                           Go Pro for AI quotes, automatic payment reminders and team scheduling — upgrade anytime in Settings.
                         </p>
                       </div>
