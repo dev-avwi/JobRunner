@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CheckCircle2, Users, AlertCircle, Loader2, Building2, UserPlus, Shield, LogIn, ArrowRight, Lock, ChevronDown, ChevronUp, Send } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, UserPlus, Shield, LogIn, ArrowRight, Lock, ChevronDown, ChevronUp, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 
@@ -341,29 +341,29 @@ export default function AcceptInvite() {
   if (acceptStatus === 'success') {
     return (
       <PageShell>
-        <Card>
-          <CardContent className="py-10">
-            <div className="text-center">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle2 className="h-8 w-8 text-green-600" />
+        <Card className="overflow-hidden">
+          <div className="relative bg-gradient-to-br from-[#16a34a] to-[#15803d] px-6 pt-8 pb-7 text-center">
+            <div className="pointer-events-none absolute -top-10 -left-8 h-32 w-32 rounded-full bg-white/15 blur-3xl" />
+            <div className="relative">
+              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-white/15 ring-1 ring-white/25 flex items-center justify-center">
+                <CheckCircle2 className="h-9 w-9 text-white" />
               </div>
-              <h1 className="text-2xl font-bold">Welcome to the team!</h1>
-              <p className="text-sm text-muted-foreground mt-2">
-                You've successfully joined <span className="font-semibold text-foreground">{inviteData?.invite?.businessName}</span>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">You're in</p>
+              <h1 className="text-2xl font-bold text-white mt-1.5 leading-tight">Welcome to the team!</h1>
+              <p className="text-sm text-white/85 mt-1.5">
+                You've joined {inviteData?.invite?.businessName}
               </p>
             </div>
+          </div>
 
-            <div className="bg-muted/50 rounded-lg p-4 text-center space-y-1 mt-6">
-              <p className="text-sm text-muted-foreground">What happens next</p>
-              <p className="font-medium">You'll have access to jobs, schedules, and team features</p>
+          <CardContent className="p-6 space-y-5">
+            <div className="rounded-lg border bg-muted/40 p-4 text-center space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">What happens next</p>
+              <p className="font-medium">Access to jobs, schedules, and team features</p>
               <p className="text-sm text-muted-foreground">based on your role as <span className="font-medium text-foreground">{inviteData?.invite?.roleName}</span></p>
             </div>
 
-            <div className="text-center space-y-3 mt-6">
-              <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Redirecting to dashboard in {countdown}&hellip;</span>
-              </div>
+            <div className="space-y-3">
               <Button
                 onClick={() => setLocation('/')}
                 className="w-full"
@@ -373,6 +373,10 @@ export default function AcceptInvite() {
                 Go to Dashboard Now
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Redirecting in {countdown}&hellip;</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -385,51 +389,44 @@ export default function AcceptInvite() {
   const hasPermissions = invite.permissionsByCategory && invite.permissionsByCategory.length > 0;
   const hasAvailableToRequest = invite.availableToRequest && invite.availableToRequest.length > 0;
 
+  const businessInitial = (invite.businessName?.trim()?.[0] || 'J').toUpperCase();
+
   return (
     <PageShell>
-      <Card>
-        <CardContent className="py-8 space-y-6">
-          <div className="text-center">
-            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users className="h-8 w-8 text-primary" />
+      <Card className="overflow-hidden">
+        <div className="relative bg-gradient-to-br from-[#2563EB] to-[#1E3A8A] px-6 pt-8 pb-7 text-center">
+          <div className="pointer-events-none absolute -top-10 -right-8 h-32 w-32 rounded-full bg-[#F59E0B]/30 blur-3xl" />
+          <div className="relative">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-white/15 ring-1 ring-white/25 flex items-center justify-center">
+              <span className="text-2xl font-bold text-white" data-testid="text-business-initial">{businessInitial}</span>
             </div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary mb-1.5">You're invited</p>
-            <h1 className="text-2xl font-bold leading-tight">Join {invite.businessName}</h1>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">You're invited</p>
+            <h1 className="text-2xl font-bold text-white mt-1.5 leading-tight">Join {invite.businessName}</h1>
+            <p className="text-sm text-white/85 mt-1.5">
               {invite.inviterName} has invited you to join the team
             </p>
           </div>
+        </div>
 
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-5 space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Building2 className="h-6 w-6 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Join as</p>
-                <p className="text-xl font-semibold text-foreground">{invite.businessName}</p>
-              </div>
-            </div>
-            
-            <Separator />
-            
+        <CardContent className="p-6 space-y-5">
+          <div className="rounded-lg border bg-muted/40 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                <Shield className="h-5 w-5 text-muted-foreground" />
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Shield className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Your Role</p>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Your role</p>
                 <p className="font-semibold">{invite.roleName}</p>
-                {invite.roleDescription && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{invite.roleDescription}</p>
-                )}
               </div>
             </div>
+            {invite.roleDescription && (
+              <p className="text-sm text-muted-foreground mt-3">{invite.roleDescription}</p>
+            )}
           </div>
 
           {hasPermissions && (
             <Collapsible open={permissionsOpen} onOpenChange={setPermissionsOpen}>
-              <Card className="border">
+              <div className="rounded-lg border">
                 <CollapsibleTrigger asChild>
                   <button className="w-full p-4 flex items-center justify-between gap-3 text-left hover-elevate rounded-lg">
                     <div className="flex items-center gap-3">
@@ -481,13 +478,13 @@ export default function AcceptInvite() {
                     ))}
                   </div>
                 </CollapsibleContent>
-              </Card>
+              </div>
             </Collapsible>
           )}
 
           {hasAvailableToRequest && (
             <Collapsible open={requestAccessOpen} onOpenChange={setRequestAccessOpen}>
-              <Card className="border">
+              <div className="rounded-lg border">
                 <CollapsibleTrigger asChild>
                   <button className="w-full p-4 flex items-center justify-between gap-3 text-left hover-elevate rounded-lg">
                     <div className="flex items-center gap-3">
@@ -516,7 +513,7 @@ export default function AcceptInvite() {
                       {invite.availableToRequest.map((permission) => (
                         <div 
                           key={permission.id} 
-                          className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50"
+                          className="flex items-center space-x-3 p-2 rounded-md hover-elevate"
                         >
                           <Checkbox
                             id={`request-${permission.id}`}
@@ -568,7 +565,7 @@ export default function AcceptInvite() {
                     </p>
                   </div>
                 </CollapsibleContent>
-              </Card>
+              </div>
             </Collapsible>
           )}
 
