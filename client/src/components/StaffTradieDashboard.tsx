@@ -416,7 +416,7 @@ export default function StaffTradieDashboard({
         : `Your day is clear. Enjoy it.`;
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-28 space-y-6" data-testid="staff-tradie-dashboard">
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-28 space-y-6" data-testid="staff-tradie-dashboard">
       {/* Hero */}
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -431,6 +431,11 @@ export default function StaffTradieDashboard({
       </div>
 
       <ConnectionBanner />
+
+      {/* Desktop: two-column work surface; Mobile: single column */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* MAIN COLUMN — primary work surface */}
+        <div className="lg:col-span-2 min-w-0 space-y-6">
 
       {/* Time Tracking Widget */}
       <Card
@@ -511,46 +516,6 @@ export default function StaffTradieDashboard({
           </div>
         </CardContent>
       </Card>
-
-      {/* Weekly Summary Stats — single unified card */}
-      <section className="space-y-3" data-testid="weekly-summary-section">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.14em] flex items-center gap-2">
-          <TrendingUp className="h-3.5 w-3.5" />
-          This Week
-        </h2>
-        <Card>
-          <CardContent className="p-0">
-            <div className="grid grid-cols-3 divide-x divide-border">
-              <div className="px-3 py-5 text-center" data-testid="stat-completed">
-                <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-medium text-muted-foreground">
-                  <CheckCircle2 className="h-3.5 w-3.5" style={{ color: 'hsl(142.1 76.2% 36.3%)' }} />
-                  Completed
-                </div>
-                <p className="text-3xl font-bold tabular-nums">{weeklyStats.completedCount}</p>
-              </div>
-
-              <div className="px-3 py-5 text-center" data-testid="stat-scheduled">
-                <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-medium text-muted-foreground">
-                  <Target className="h-3.5 w-3.5" style={{ color: 'hsl(var(--trade))' }} />
-                  Scheduled
-                </div>
-                <p className="text-3xl font-bold tabular-nums">{weeklyStats.scheduledCount}</p>
-              </div>
-
-              <div className="px-3 py-5 text-center" data-testid="stat-hours">
-                <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-medium text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" />
-                  Hours
-                </div>
-                <p className="text-3xl font-bold tabular-nums">
-                  {weeklyStats.weeklyHours}
-                  <span className="text-lg font-semibold text-muted-foreground">h</span>
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
 
       {/* Quick Actions - Permission Gated */}
       {hasAnyQuickActionPermission && (
@@ -882,6 +847,52 @@ export default function StaffTradieDashboard({
           )}
         />
 
+        </div>
+        {/* end MAIN COLUMN */}
+
+        {/* SIDE COLUMN — at-a-glance numbers + secondary lists */}
+        <div className="min-w-0 space-y-6">
+
+      {/* Weekly Summary Stats — single unified card */}
+      <section className="space-y-3" data-testid="weekly-summary-section">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.14em] flex items-center gap-2">
+          <TrendingUp className="h-3.5 w-3.5" />
+          Summary
+        </h2>
+        <Card>
+          <CardContent className="p-0">
+            <div className="grid grid-cols-3 divide-x divide-border">
+              <div className="px-3 py-5 text-center" data-testid="stat-completed">
+                <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-medium text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5" style={{ color: 'hsl(142.1 76.2% 36.3%)' }} />
+                  Completed
+                </div>
+                <p className="text-3xl font-bold tabular-nums">{weeklyStats.completedCount}</p>
+              </div>
+
+              <div className="px-3 py-5 text-center" data-testid="stat-scheduled">
+                <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-medium text-muted-foreground">
+                  <Target className="h-3.5 w-3.5" style={{ color: 'hsl(var(--trade))' }} />
+                  Scheduled
+                </div>
+                <p className="text-3xl font-bold tabular-nums">{weeklyStats.scheduledCount}</p>
+              </div>
+
+              <div className="px-3 py-5 text-center" data-testid="stat-hours">
+                <div className="flex items-center justify-center gap-1.5 mb-2 text-xs font-medium text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  Hours
+                </div>
+                <p className="text-3xl font-bold tabular-nums">
+                  {weeklyStats.weeklyHours}
+                  <span className="text-lg font-semibold text-muted-foreground">h</span>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       {/* This Week Overview */}
       {thisWeeksJobs.length > 0 && (
         <section className="space-y-3" data-testid="this-week-section">
@@ -1053,6 +1064,11 @@ export default function StaffTradieDashboard({
           Team Chat
         </Button>
       )}
+
+        </div>
+        {/* end SIDE COLUMN */}
+      </div>
+      {/* end two-column grid */}
     </div>
   );
 }
