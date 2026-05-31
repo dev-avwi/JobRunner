@@ -30,7 +30,8 @@ import {
   FolderOpen,
   Zap,
   WifiOff,
-  ShieldCheck
+  ShieldCheck,
+  Wallet
 } from "lucide-react";
 
 interface StaffTradieDashboardProps {
@@ -404,15 +405,15 @@ export default function StaffTradieDashboard({
         ? `${activeJobs.length} job${activeJobs.length > 1 ? 's' : ''} coming up`
         : `Your day is clear. Enjoy it.`;
 
-  // Quick actions (permission gated) — compact, premium tiles
-  const quickActions: { key: string; label: string; icon: typeof Timer; color: string; bg: string; onClick: () => void }[] = [
-    { key: 'log-hours', label: 'Log Hours', icon: Timer, color: 'hsl(220 70% 50%)', bg: 'hsl(220 70% 50% / 0.14)', onClick: () => onNavigate?.('/time-tracking') },
-    ...(hasPermission('collect_payments') ? [{ key: 'collect-payment', label: 'Collect Pay', icon: DollarSign, color: 'hsl(142.1 76.2% 36.3%)', bg: 'hsl(142.1 76.2% 36.3% / 0.14)', onClick: () => onNavigate?.('/payments') }] : []),
-    ...(hasPermission('create_quotes') ? [{ key: 'create-quote', label: 'New Quote', icon: FileText, color: 'hsl(var(--trade))', bg: 'hsl(var(--trade) / 0.14)', onClick: () => onNavigate?.('/quotes/new') }] : []),
-    ...(hasPermission('create_invoices') ? [{ key: 'create-invoice', label: 'New Invoice', icon: Receipt, color: 'hsl(35 90% 55%)', bg: 'hsl(35 90% 55% / 0.14)', onClick: () => onNavigate?.('/invoices/new') }] : []),
-    { key: 'log-expense', label: 'Log Expense', icon: Receipt, color: 'hsl(280 60% 50%)', bg: 'hsl(280 60% 50% / 0.14)', onClick: () => onNavigate?.('/expenses') },
-    { key: 'safety-forms', label: 'Safety', icon: ShieldCheck, color: 'hsl(0 70% 50%)', bg: 'hsl(0 70% 50% / 0.14)', onClick: () => onNavigate?.('/templates') },
-    ...((hasPermission('view_invoices') || hasPermission('view_quotes')) ? [{ key: 'view-documents', label: 'Documents', icon: FolderOpen, color: 'hsl(var(--muted-foreground))', bg: 'hsl(var(--muted))', onClick: () => onNavigate?.('/documents') }] : []),
+  // Quick actions (permission gated) — uniform, formal rows (no rainbow chips)
+  const quickActions: { key: string; label: string; description: string; icon: typeof Timer; onClick: () => void }[] = [
+    { key: 'log-hours', label: 'Log Hours', description: 'Track time on a job', icon: Timer, onClick: () => onNavigate?.('/time-tracking') },
+    ...(hasPermission('collect_payments') ? [{ key: 'collect-payment', label: 'Collect Payment', description: 'Take a customer payment', icon: DollarSign, onClick: () => onNavigate?.('/payments') }] : []),
+    ...(hasPermission('create_quotes') ? [{ key: 'create-quote', label: 'New Quote', description: 'Quote a customer', icon: FileText, onClick: () => onNavigate?.('/quotes/new') }] : []),
+    ...(hasPermission('create_invoices') ? [{ key: 'create-invoice', label: 'New Invoice', description: 'Bill for work done', icon: Receipt, onClick: () => onNavigate?.('/invoices/new') }] : []),
+    { key: 'log-expense', label: 'Log Expense', description: 'Record a cost', icon: Wallet, onClick: () => onNavigate?.('/expenses') },
+    { key: 'safety-forms', label: 'Safety Forms', description: 'SWMS & checklists', icon: ShieldCheck, onClick: () => onNavigate?.('/templates') },
+    ...((hasPermission('view_invoices') || hasPermission('view_quotes')) ? [{ key: 'view-documents', label: 'Documents', description: 'Quotes & invoices', icon: FolderOpen, onClick: () => onNavigate?.('/documents') }] : []),
   ];
 
   return (
@@ -712,24 +713,25 @@ export default function StaffTradieDashboard({
                 Quick Actions
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 px-4 pb-4">
-              <div className="grid grid-cols-2 gap-2">
+            <CardContent className="pt-0 px-2 pb-2">
+              <div className="flex flex-col">
                 {quickActions.map((action) => (
-                  <Button
+                  <button
                     key={action.key}
-                    variant="outline"
-                    className="h-auto flex-col gap-2 py-3 px-2"
+                    type="button"
+                    className="group flex items-center gap-3 w-full text-left rounded-md px-2 py-2.5 hover-elevate active-elevate-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={action.onClick}
                     data-testid={`button-${action.key}`}
                   >
-                    <span
-                      className="w-9 h-9 rounded-md flex items-center justify-center"
-                      style={{ backgroundColor: action.bg }}
-                    >
-                      <action.icon className="h-4 w-4" style={{ color: action.color }} />
+                    <span className="w-9 h-9 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                      <action.icon className="h-[18px] w-[18px] text-foreground" />
                     </span>
-                    <span className="text-xs font-medium">{action.label}</span>
-                  </Button>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium leading-tight truncate">{action.label}</span>
+                      <span className="block text-xs text-muted-foreground leading-tight truncate">{action.description}</span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  </button>
                 ))}
               </div>
             </CardContent>
