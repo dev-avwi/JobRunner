@@ -32,6 +32,11 @@ interface TourStep {
   clickTargetLabel?: string;
   mobileOnly?: boolean;
   desktopRoute?: string;
+  // Free-interaction step: the page stays fully usable (e.g. filling a form).
+  // The overlay does not dim or block the page; Next/Skip are always available.
+  allowInteraction?: boolean;
+  // When the app navigates to this route (e.g. after a successful save), advance.
+  advanceOnRoute?: string;
   desktopAlternative?: {
     title: string;
     description: string;
@@ -43,23 +48,25 @@ interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     id: "welcome",
-    title: "Welcome to JobRunner!",
-    description: "This tour will guide you through the app step by step. We'll highlight each area and you'll click through to learn how it works. Ready?",
+    title: "Welcome to JobRunner",
+    description: "Your business is set up — now let's get you ready to work. I'll help you add your first client, book a job, and send a quote. You can skip any step or leave the tour whenever you like.",
     route: "/",
     icon: Sparkles
   },
   {
     id: "dashboard",
     title: "Your Dashboard",
-    description: "This is your home base. You'll see today's jobs, earnings summary, and quick actions. Everything starts here.",
+    description: "This is your home base — today's jobs, your earnings summary, and quick actions all live here. Everything starts from this screen.",
     route: "/",
     icon: LayoutDashboard,
     targetSelector: '[data-testid="dashboard-content"], main, .dashboard-container'
   },
+
+  // ---------------- Clients ----------------
   {
-    id: "nav-more-clients",
+    id: "nav-clients",
     title: "Open the More Menu",
-    description: "On mobile, some features are in the 'More' menu. Tap 'More' at the bottom to find Clients.",
+    description: "On mobile, some areas live in the 'More' menu. Tap 'More' at the bottom to find Clients.",
     route: "/",
     icon: MoreHorizontal,
     waitForClick: true,
@@ -67,16 +74,16 @@ const TOUR_STEPS: TourStep[] = [
     clickTargetLabel: "More",
     mobileOnly: true,
     desktopAlternative: {
-      title: "Navigate to Clients",
-      description: "On desktop, all navigation is in the sidebar. Click 'Clients' in the sidebar to see your customer list.",
+      title: "Go to Clients",
+      description: "Click 'Clients' in the sidebar to open your customer list.",
       clickTargetSelector: '[data-testid="sidebar-clients"], a[href="/clients"]',
       clickTargetLabel: "Clients"
     }
   },
   {
-    id: "nav-clients",
+    id: "nav-clients-mobile",
     title: "Go to Clients",
-    description: "Now tap 'Clients' to see your customer list.",
+    description: "Now tap 'Clients' to open your customer list.",
     route: "/more",
     icon: Users,
     waitForClick: true,
@@ -87,15 +94,15 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: "clients-page",
     title: "Your Client List",
-    description: "Here's where all your customers are stored. We've added 5 sample clients to get you started - try clicking one to see their details!",
+    description: "All your customers live here. We've added a few samples so you can see how it looks — now let's add your first real one.",
     route: "/clients",
     icon: Users,
     targetSelector: '[data-testid="clients-content"], [data-testid="clients-list"], main'
   },
   {
     id: "clients-add",
-    title: "Adding a New Client",
-    description: "See the '+ New Client' button? That's how you add customers. Try clicking it now.",
+    title: "Add a Client",
+    description: "See the '+ New Client' button? That's how you add a customer. Give it a click to open the form.",
     route: "/clients",
     icon: Plus,
     waitForClick: true,
@@ -103,9 +110,21 @@ const TOUR_STEPS: TourStep[] = [
     clickTargetLabel: "+ New Client"
   },
   {
+    id: "client-form",
+    title: "Fill in Their Details",
+    description: "Pop in your client's name and contact details, then tap Save. Not ready yet? Hit Skip and add them later — nothing's locked in.",
+    route: "/clients/new",
+    icon: Users,
+    allowInteraction: true,
+    targetSelector: '[data-testid="page-client-form"], main',
+    advanceOnRoute: "/clients"
+  },
+
+  // ---------------- Jobs ----------------
+  {
     id: "nav-work",
-    title: "Now Let's See Your Jobs",
-    description: "Tap 'Work' at the bottom to see how job management works.",
+    title: "Now Your Jobs",
+    description: "Tap 'Work' at the bottom to see how jobs are managed.",
     route: "/clients",
     icon: Briefcase,
     waitForClick: true,
@@ -113,8 +132,8 @@ const TOUR_STEPS: TourStep[] = [
     clickTargetLabel: "Work",
     mobileOnly: true,
     desktopAlternative: {
-      title: "Navigate to Your Jobs",
-      description: "Click 'Work' in the sidebar to see how job management works.",
+      title: "Now Your Jobs",
+      description: "Click 'Work' in the sidebar to open your job board.",
       clickTargetSelector: '[data-testid="sidebar-work"]',
       clickTargetLabel: "Work"
     }
@@ -122,15 +141,45 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: "jobs-page",
     title: "Your Job Board",
-    description: "Jobs flow through stages: Pending → Scheduled → In Progress → Done. You have 6 sample jobs in various stages - click one to see how job tracking works!",
+    description: "Jobs move through stages: Pending → Scheduled → In Progress → Done. We've added sample jobs so you can see the flow — now let's book one of your own.",
     route: "/work",
     icon: Briefcase,
     targetSelector: '[data-testid="work-content"], [data-testid="jobs-list"], main'
   },
   {
-    id: "nav-more-quotes",
-    title: "Back to More Menu",
-    description: "Tap 'More' again to find the Quotes section.",
+    id: "jobs-add",
+    title: "Book a Job",
+    description: "Click '+ New Job' to create one.",
+    route: "/work",
+    icon: Plus,
+    waitForClick: true,
+    clickTargetSelector: '[data-testid="button-create-job"]',
+    clickTargetLabel: "+ New Job"
+  },
+  {
+    id: "job-form",
+    title: "Set Up the Job",
+    description: "Give it a title, pick the client you just added, and set a date. Tap Save when you're ready — or Skip to do it later.",
+    route: "/jobs/new",
+    icon: Briefcase,
+    allowInteraction: true,
+    targetSelector: 'main',
+    advanceOnRoute: "/work"
+  },
+  {
+    id: "job-assign",
+    title: "Putting Workers on Jobs",
+    description: "Got a team? Open any job and use Assign to put a worker on it — or drag it onto the Schedule. You can change who's on a job anytime.",
+    route: "/work",
+    icon: Users,
+    targetSelector: '[data-testid="work-content"], [data-testid="jobs-list"], main'
+  },
+
+  // ---------------- Documents (quotes & invoices) ----------------
+  {
+    id: "nav-docs",
+    title: "Back to More",
+    description: "Tap 'More' again to find your quotes and invoices.",
     route: "/work",
     icon: MoreHorizontal,
     waitForClick: true,
@@ -138,16 +187,16 @@ const TOUR_STEPS: TourStep[] = [
     clickTargetLabel: "More",
     mobileOnly: true,
     desktopAlternative: {
-      title: "Navigate to Documents",
-      description: "Click 'Documents' in the sidebar to see your quotes, invoices, and receipts.",
+      title: "Quotes & Invoices",
+      description: "Click 'Documents' in the sidebar to open your quotes and invoices.",
       clickTargetSelector: '[data-testid="sidebar-documents"]',
       clickTargetLabel: "Documents"
     }
   },
   {
-    id: "nav-quotes",
-    title: "Time for Quotes",
-    description: "Now tap 'Quotes' to see how you create professional quotes for your clients.",
+    id: "nav-quotes-mobile",
+    title: "Open Quotes",
+    description: "Tap 'Quotes' to see how you bill your clients.",
     route: "/more",
     icon: FileText,
     waitForClick: true,
@@ -156,71 +205,56 @@ const TOUR_STEPS: TourStep[] = [
     mobileOnly: true
   },
   {
-    id: "quotes-page",
-    title: "Your Quotes",
-    description: "You have 3 sample quotes ready to explore. Click one to see the professional layout with GST calculated automatically. When a client accepts, convert it to an invoice with one click!",
+    id: "documents-page",
+    title: "Quotes & Invoices",
+    description: "This is where you create quotes and turn them into invoices — GST is worked out for you. We've added samples to explore. Now let's make a quote.",
     route: "/quotes",
     desktopRoute: "/documents",
     icon: FileText,
-    targetSelector: '[data-testid="quotes-content"], [data-testid="quotes-list"], main',
-    desktopAlternative: {
-      title: "Your Documents",
-      description: "Here's where all your quotes, invoices, and receipts are stored. Use the tabs at the top to switch between them. You have sample documents to explore - try clicking one!"
-    }
+    targetSelector: '[data-testid="quotes-content"], [data-testid="quotes-list"], main'
   },
   {
-    id: "nav-more-invoices",
-    title: "Back to More Menu",
-    description: "Tap 'More' to find Invoices.",
-    route: "/quotes",
-    icon: MoreHorizontal,
+    id: "quotes-add",
+    title: "Create a Quote",
+    description: "Click '+ New Quote' to start one.",
+    route: "/documents?tab=quotes",
+    icon: Plus,
     waitForClick: true,
-    clickTargetSelector: '[data-testid="bottom-nav-more"], [data-testid="nav-more"]',
-    clickTargetLabel: "More",
-    mobileOnly: true
+    clickTargetSelector: '[data-testid="button-create-quote"]',
+    clickTargetLabel: "+ New Quote"
   },
   {
-    id: "nav-invoices",
-    title: "Check Your Invoices",
-    description: "Tap 'Invoices' to see how you get paid.",
-    route: "/more",
-    icon: Receipt,
-    waitForClick: true,
-    clickTargetSelector: '[data-testid="card-invoices"], [data-testid="nav-invoices"], a[href="/invoices"]',
-    clickTargetLabel: "Invoices",
-    mobileOnly: true
+    id: "quote-form",
+    title: "Build Your Quote",
+    description: "Add your line items and price — GST is calculated automatically. Save it, or Skip for now. When a client accepts, you can turn it into an invoice in one click.",
+    route: "/quotes/new",
+    icon: FileText,
+    allowInteraction: true,
+    targetSelector: 'main'
   },
+
+  // ---------------- Settings ----------------
   {
-    id: "invoices-page",
-    title: "Getting Paid",
-    description: "You have 2 sample invoices to explore. Track pending, overdue, or paid invoices. Connect Stripe to accept card payments and get paid faster!",
-    route: "/invoices",
-    icon: Receipt,
-    targetSelector: '[data-testid="invoices-content"], [data-testid="invoices-list"], main',
-    mobileOnly: true
-  },
-  {
-    id: "nav-more-settings",
-    title: "One More Time",
+    id: "nav-settings",
+    title: "Last Stop: Settings",
     description: "Tap 'More' to find Settings.",
-    route: "/invoices",
-    desktopRoute: "/documents",
+    route: "/quotes",
     icon: MoreHorizontal,
     waitForClick: true,
     clickTargetSelector: '[data-testid="bottom-nav-more"], [data-testid="nav-more"]',
     clickTargetLabel: "More",
     mobileOnly: true,
     desktopAlternative: {
-      title: "Navigate to Settings",
-      description: "Click 'Settings' in the sidebar to customise your business profile, logo, and preferences.",
+      title: "Last Stop: Settings",
+      description: "Click 'Settings' in the sidebar to set up your business profile.",
       clickTargetSelector: '[data-testid="sidebar-settings"], a[href="/settings"]',
       clickTargetLabel: "Settings"
     }
   },
   {
-    id: "nav-settings",
-    title: "Finally, Your Settings",
-    description: "Tap 'Settings' to customise your business profile, logo, and preferences.",
+    id: "nav-settings-mobile",
+    title: "Open Settings",
+    description: "Tap 'Settings' to set up your business profile.",
     route: "/more",
     icon: Settings,
     waitForClick: true,
@@ -230,16 +264,35 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "settings-page",
-    title: "Business Settings",
-    description: "Set up your business details, upload your logo, configure email templates, and connect payment processing here.",
+    title: "Your Business Hub",
+    description: "Everything about your business lives here — your logo, ABN, GST, payments and email templates. Let's set up the important bits.",
     route: "/settings",
     icon: Settings,
     targetSelector: '[data-testid="settings-content"], [data-testid="settings-tabs"], main'
   },
   {
+    id: "settings-branding",
+    title: "Add Your Logo",
+    description: "Open the 'Branding' tab to upload your logo — it shows on every quote and invoice you send, so your business looks the part. Tap Next when you've had a look.",
+    route: "/settings",
+    icon: Settings,
+    allowInteraction: true,
+    targetSelector: '[data-testid="tab-branding"], [data-testid="settings-tabs"], main'
+  },
+  {
+    id: "settings-business",
+    title: "Business & GST",
+    description: "In the 'Business' tab, add your ABN and switch on GST so your invoices are spot on for the ATO.",
+    route: "/settings",
+    icon: Settings,
+    allowInteraction: true,
+    targetSelector: '[data-testid="tab-business"], [data-testid="settings-tabs"], main'
+  },
+
+  {
     id: "complete",
-    title: "You're All Set!",
-    description: "Great job! You've explored all the main areas. You have sample clients, jobs, quotes, and invoices to practice with. When you're ready, add your first real client!",
+    title: "You're Ready to Go",
+    description: "Nice work! You've set up a client, a job and a quote, and sorted your business details. Add your first real client whenever you're ready — you can replay this tour anytime from Settings.",
     route: "/",
     icon: CheckCircle2
   }
@@ -262,18 +315,21 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
   const [location, setLocation] = useLocation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  
+  // Tracks whether a free-form step has actually landed on its own route yet,
+  // so advanceOnRoute can't fire prematurely on step entry.
+  const freeFormReadyRef = useRef(false);
+
   // Filter out mobile-only steps on desktop (>= 768px)
   const [isMobileView, setIsMobileView] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-  
+
   useEffect(() => {
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
+
   // Transform steps based on screen size - apply desktop alternatives for mobile-only steps (memoized for stability)
-  const filteredSteps = useMemo(() => 
+  const filteredSteps = useMemo(() =>
     TOUR_STEPS.map(s => {
       if (s.mobileOnly && !isMobileView && s.desktopAlternative) {
         return {
@@ -298,14 +354,20 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     }).filter(s => !s.mobileOnly || isMobileView),
     [isMobileView]
   );
-  
+
   // Guard currentStep to stay within bounds when filteredSteps changes
   const safeCurrentStep = Math.min(currentStep, filteredSteps.length - 1);
   const step = filteredSteps[safeCurrentStep];
   const isLastStep = safeCurrentStep === filteredSteps.length - 1;
   const isFirstStep = safeCurrentStep === 0;
   const isInteractive = step.waitForClick && step.clickTargetSelector;
+  const isFreeForm = !!step.allowInteraction;
   const StepIcon = step.icon;
+
+  // Reset the free-form "entered own route" gate whenever the step changes.
+  useEffect(() => {
+    freeFormReadyRef.current = false;
+  }, [safeCurrentStep]);
 
   // Find element by trying multiple selectors
   const findElement = useCallback((selectorString: string): Element | null => {
@@ -326,7 +388,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
       const rect = element.getBoundingClientRect();
       const headerOffset = 80;
       const viewportHeight = window.innerHeight;
-      
+
       const sidebarContent = element.closest('[data-sidebar="content"]');
       if (sidebarContent) {
         const sidebarRect = sidebarContent.getBoundingClientRect();
@@ -339,7 +401,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
         setTimeout(resolve, 400);
         return;
       }
-      
+
       const isVisible = rect.top >= headerOffset && rect.bottom <= viewportHeight - 100;
       if (!isVisible) {
         const scrollTop = window.scrollY + rect.top - headerOffset - 50;
@@ -372,19 +434,19 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     }
 
     if (rect.left < 300 && spaceRight > cardWidth + padding) return 'right';
-    
+
     if (spaceBelow > cardHeight + padding) return 'bottom';
     if (spaceAbove > cardHeight + padding) return 'top';
     if (spaceRight > cardWidth + padding) return 'right';
     if (spaceLeft > cardWidth + padding) return 'left';
-    
+
     return 'bottom';
   }, []);
 
   // Measure and set up target
   const setupTarget = useCallback(async () => {
     const selector = isInteractive ? step.clickTargetSelector : step.targetSelector;
-    
+
     if (!selector) {
       setTargetRect(null);
       setCardPosition('center');
@@ -421,7 +483,8 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
 
       const currentPath = window.location.pathname;
       const targetRoute = (!isMobileView && step.desktopRoute) ? step.desktopRoute : step.route;
-      if (targetRoute !== currentPath) {
+      const targetPath = targetRoute.split('?')[0];
+      if (targetPath !== currentPath) {
         setLocation(targetRoute);
         window.scrollTo({ top: 0 });
         const mainContent = document.querySelector('main');
@@ -454,12 +517,16 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, width, height);
 
-    // Semi-transparent overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, width, height);
+    // On free-interaction steps we keep the page fully visible & usable, so
+    // we skip the dark dim and the spotlight cut-out — just draw a soft ring.
+    if (!isFreeForm) {
+      // Semi-transparent overlay
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(0, 0, width, height);
+    }
 
-    // Cut out spotlight for target
     if (targetRect && isReady) {
       const padding = 12;
       const radius = 12;
@@ -468,13 +535,15 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
       const w = targetRect.width + padding * 2;
       const h = targetRect.height + padding * 2;
 
-      // Clear the spotlight area
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.roundRect(x, y, w, h, radius);
-      ctx.fill();
+      if (!isFreeForm) {
+        // Clear the spotlight area
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, radius);
+        ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+      }
 
-      ctx.globalCompositeOperation = 'source-over';
       const borderColor = isInteractive ? 'rgba(16, 185, 129, 0.6)' : 'rgba(59, 130, 246, 0.5)';
       ctx.strokeStyle = borderColor;
       ctx.lineWidth = 2;
@@ -485,7 +554,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
       ctx.stroke();
       ctx.shadowBlur = 0;
     }
-  }, [targetRect, isReady, isInteractive]);
+  }, [targetRect, isReady, isInteractive, isFreeForm]);
 
   // Redraw on changes
   useEffect(() => {
@@ -497,57 +566,63 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
   // Handle resize
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const handleResize = () => {
       setupTarget();
       drawOverlay();
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [isOpen, setupTarget, drawOverlay]);
 
-  // Listen for clicks on interactive targets
-  useEffect(() => {
-    if (!isOpen || !isInteractive || !step.clickTargetSelector || !isReady) return;
-
-    const element = findElement(step.clickTargetSelector);
-    if (!element) return;
-
-    const handleClick = () => {
-      setTimeout(() => {
-        setCurrentStep(prev => Math.min(prev + 1, filteredSteps.length - 1));
-      }, 200);
-    };
-
-    element.addEventListener('click', handleClick);
-    return () => element.removeEventListener('click', handleClick);
-  }, [isOpen, isInteractive, step.clickTargetSelector, isReady, findElement]);
-
-  // Detect route changes for navigation-based interactive steps using wouter's location
-  // If user navigated to the next step's route, advance automatically
+  // Advance navigation (interactive) steps when the app actually routes to the next
+  // step's page. This is the SINGLE source of truth for interactive advances — there
+  // is deliberately no click listener, which removes the old double-advance bug where
+  // both a click handler and a route effect fired for one navigation (skipping steps).
+  // The "Done" button is the manual fallback if a target can't be found/clicked.
   useEffect(() => {
     if (!isOpen || !isInteractive) return;
-    
+
     const nextStep = filteredSteps[safeCurrentStep + 1];
     if (!nextStep) return;
-    
-    // If we're now at the next step's route, advance
-    if (location === nextStep.route && step.route !== nextStep.route) {
+
+    const resolvePath = (s: TourStep) =>
+      ((!isMobileView && s.desktopRoute) ? s.desktopRoute : s.route).split('?')[0];
+    const nextPath = resolvePath(nextStep);
+    const ownPath = resolvePath(step);
+
+    if (location === nextPath && ownPath !== nextPath) {
       setCurrentStep(prev => Math.min(prev + 1, filteredSteps.length - 1));
     }
-  }, [isOpen, isInteractive, location, safeCurrentStep, step.route, filteredSteps]);
+  }, [isOpen, isInteractive, location, safeCurrentStep, step, isMobileView, filteredSteps]);
+
+  // For free-interaction form steps: only AFTER we've actually landed on the form's
+  // own route do we watch for advanceOnRoute (e.g. the user saved and was returned to
+  // the list). The "landed first" gate prevents a premature skip on step entry.
+  useEffect(() => {
+    if (!isOpen || !isFreeForm || !step.advanceOnRoute) return;
+
+    const ownPath = ((!isMobileView && step.desktopRoute) ? step.desktopRoute : step.route).split('?')[0];
+    if (location === ownPath) {
+      freeFormReadyRef.current = true;
+      return;
+    }
+    if (freeFormReadyRef.current && location === step.advanceOnRoute) {
+      setCurrentStep(prev => Math.min(prev + 1, filteredSteps.length - 1));
+    }
+  }, [isOpen, isFreeForm, step.advanceOnRoute, step.route, step.desktopRoute, isMobileView, location, filteredSteps.length]);
 
   // Handle ESC key to close
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleExit();
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
@@ -560,7 +635,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     } else {
       document.body.removeAttribute('data-tour-active');
     }
-    
+
     return () => {
       document.body.removeAttribute('data-tour-active');
     };
@@ -580,8 +655,9 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
       const prevStep = filteredSteps[prevIdx];
       if (prevStep) {
         const targetRoute = (!isMobileView && prevStep.desktopRoute) ? prevStep.desktopRoute : prevStep.route;
+        const targetPath = targetRoute.split('?')[0];
         const currentPath = window.location.pathname;
-        if (targetRoute !== currentPath) {
+        if (targetPath !== currentPath) {
           setLocation(targetRoute);
         }
       }
@@ -625,7 +701,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     const isMobile = window.innerWidth < 640;
     const cardWidthPx = isMobile ? window.innerWidth - 32 : 380;
     const cardWidthStr = isMobile ? 'calc(100vw - 32px)' : '380px';
-    
+
     const base: React.CSSProperties = {
       position: 'fixed',
       width: cardWidthStr,
@@ -712,10 +788,10 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
 
     const arrowColor = 'rgba(16, 185, 129, 0.85)';
     const isLeftSide = targetRect.left < 300;
-    
+
     if (isLeftSide) {
       return (
-        <div 
+        <div
           className="fixed pointer-events-none z-[10002]"
           style={{
             left: targetRect.right + 8,
@@ -723,11 +799,11 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
           }}
         >
           <div className="flex items-center animate-pulse">
-            <div 
+            <div
               className="w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent"
               style={{ borderRightColor: arrowColor }}
             />
-            <div 
+            <div
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-white text-xs font-medium shadow-md whitespace-nowrap"
               style={{ backgroundColor: arrowColor }}
             >
@@ -737,9 +813,9 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
         </div>
       );
     }
-    
+
     return (
-      <div 
+      <div
         className="fixed pointer-events-none z-[10002]"
         style={{
           left: targetRect.left + targetRect.width / 2 - 20,
@@ -747,13 +823,13 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
         }}
       >
         <div className="flex flex-col items-center animate-pulse">
-          <div 
+          <div
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-white text-xs font-medium shadow-md whitespace-nowrap"
             style={{ backgroundColor: arrowColor }}
           >
             Click "{step.clickTargetLabel}"
           </div>
-          <div 
+          <div
             className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent mt-[-1px]"
             style={{ borderTopColor: arrowColor }}
           />
@@ -762,11 +838,16 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     );
   };
 
+  // The overlay should let the page through when the user needs to click a real
+  // target (interactive) or fill a form (free-interaction). Otherwise it captures
+  // clicks so tapping outside the card exits the tour.
+  const overlayPassThrough = (isInteractive && isReady) || isFreeForm;
+
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[9999]"
-      style={{ pointerEvents: isInteractive && isReady ? 'none' : 'auto' }}
-      onClick={isInteractive ? undefined : handleExit}
+      style={{ pointerEvents: overlayPassThrough ? 'none' : 'auto' }}
+      onClick={overlayPassThrough ? undefined : handleExit}
       data-testid="guided-tour-overlay"
     >
       {/* Canvas overlay */}
@@ -790,12 +871,12 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
         data-testid="tour-tooltip"
       >
         {/* Header */}
-        <div 
+        <div
           className="px-4 py-3 border-b bg-muted/50"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div 
+              <div
                 className="p-2 rounded-lg flex-shrink-0 bg-muted"
               >
                 <StepIcon className="h-5 w-5 text-muted-foreground" />
@@ -807,8 +888,8 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
                 <h3 className="font-semibold text-base truncate">{step.title}</h3>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
               className="h-8 w-8 flex-shrink-0"
               onClick={handleExit}
@@ -831,6 +912,16 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
               <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <span className="text-sm text-muted-foreground">
                 Click <strong className="text-foreground">"{step.clickTargetLabel}"</strong> to continue
+              </span>
+            </div>
+          )}
+
+          {/* Free-interaction prompt */}
+          {isFreeForm && isReady && (
+            <div className="flex items-center gap-2 p-2.5 rounded-md mb-4 bg-muted">
+              <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm text-muted-foreground">
+                Take your time — tap <strong className="text-foreground">Next</strong> when you're done, or <strong className="text-foreground">Skip</strong> to do it later.
               </span>
             </div>
           )}
@@ -873,8 +964,8 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
             </Button>
 
             <div className="flex items-center gap-2">
-              {/* Skip this step (for interactive steps) */}
-              {isInteractive && (
+              {/* Skip this step (for interactive & form steps) */}
+              {(isInteractive || isFreeForm) && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -899,7 +990,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
                 </Button>
               )}
 
-              {/* Next button (hidden during interactive steps) */}
+              {/* Next button (hidden during forced-click interactive steps) */}
               {!isInteractive && (
                 <Button
                   size="sm"
@@ -927,7 +1018,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
 
           {/* Exit tour link */}
           <div className="flex justify-center mt-3 pt-3 border-t">
-            <button 
+            <button
               onClick={handleExit}
               className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
               data-testid="button-exit-tour"
