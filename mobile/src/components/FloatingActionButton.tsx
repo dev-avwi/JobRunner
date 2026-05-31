@@ -217,7 +217,13 @@ interface FloatingActionButtonProps {
 export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabStyle = 'phone', bottomOffset = 0 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { colors } = useTheme();
-  const { isSubcontractor } = useUserRole();
+  const { isOwner, isManager, isSubcontractor } = useUserRole();
+  // Only owners and managers can create jobs/quotes/invoices/clients. Workers and
+  // subcontractors (in a joined business) see the tiles locked. A subcontractor in
+  // their own Personal profile is the owner, so everything is unlocked there.
+  // Lock by default until the role resolves to owner/manager — never flash an
+  // unlocked create tile to a worker during role loading.
+  const lockCreate = !isOwner && !isManager;
   const isTabletStyle = fabStyle === 'tablet';
   const styles = useMemo(() => createStyles(colors, isTabletStyle), [colors, isTabletStyle]);
   const fabInsets = useSafeAreaInsets();
@@ -253,6 +259,7 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
       icon: 'briefcase',
       label: 'New Job',
       colorKey: 'job',
+      locked: lockCreate,
       onPress: () => {
         setIsOpen(false);
         router.push('/more/create-job');
@@ -262,7 +269,7 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
       icon: 'file-text',
       label: 'New Quote',
       colorKey: 'quote',
-      locked: isSubcontractor,
+      locked: lockCreate,
       onPress: () => {
         setIsOpen(false);
         router.push('/more/quote/new');
@@ -272,7 +279,7 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
       icon: 'dollar-sign',
       label: 'New Invoice',
       colorKey: 'invoice',
-      locked: isSubcontractor,
+      locked: lockCreate,
       onPress: () => {
         setIsOpen(false);
         router.push('/more/invoice/new');
@@ -282,7 +289,7 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
       icon: 'user-plus',
       label: 'New Client',
       colorKey: 'client',
-      locked: isSubcontractor,
+      locked: lockCreate,
       onPress: () => {
         setIsOpen(false);
         router.push('/more/client/new');
@@ -397,7 +404,9 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
                       ? () => {
                           Alert.alert(
                             `${action.label} locked`,
-                            'This is managed by the business owner. Switch to your Personal profile to create your own.',
+                            isSubcontractor
+                              ? 'This is managed by the business owner. Switch to your Personal profile to create your own.'
+                              : 'This is managed by the business owner.',
                             [{ text: 'OK' }]
                           );
                         }

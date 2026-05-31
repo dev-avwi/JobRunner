@@ -13,6 +13,7 @@ import { useAuthStore } from '../../src/lib/store';
 import { spacing, radius, shadows, typography, pageShell } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { useUserRole } from '../../src/hooks/use-user-role';
 
 type FeatherIconName = React.ComponentProps<typeof Feather>['name'];
 
@@ -216,6 +217,10 @@ export default function AIReceptionistScreen() {
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
   const { user, businessSettings, fetchBusinessSettings } = useAuthStore();
+  // Only owners and managers can set up the AI Receptionist. Workers and
+  // joined-business subcontractors get a read-only "managed by owner" screen.
+  const { isOwner, isManager, isLoading: roleLoading } = useUserRole();
+  const canManageReceptionist = isOwner || isManager;
   const { configId: urlConfigId } = useLocalSearchParams<{ configId?: string }>();
   const hasDedicatedNumber = !!businessSettings?.dedicatedPhoneNumber;
   const userTier = user?.subscriptionTier || 'free';
@@ -781,11 +786,31 @@ export default function AIReceptionistScreen() {
     setTransferNumbers(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
   };
 
-  if (isLoading) {
+  if (isLoading || roleLoading) {
     return (
       <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
         <Stack.Screen options={{ headerShown: false }} />
         <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!canManageReceptionist) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl }}>
+          <Feather name="lock" size={40} color={colors.mutedForeground} />
+          <Text style={{ ...typography.body, fontWeight: '700', fontSize: 18, color: colors.foreground, marginTop: spacing.lg, textAlign: 'center' }}>
+            Managed by the business owner
+          </Text>
+          <Text style={{ ...typography.body, color: colors.mutedForeground, marginTop: spacing.sm, textAlign: 'center' }}>
+            Only the business owner or a manager can set up the AI Receptionist. You don't have access to change these settings.
+          </Text>
+          <TouchableOpacity onPress={() => router.back()} style={[styles.saveButton, { marginTop: spacing.xl, paddingHorizontal: spacing.xl }]}>
+            <Text style={styles.saveButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }

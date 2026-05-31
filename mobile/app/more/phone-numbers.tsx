@@ -74,7 +74,11 @@ export default function PhoneNumbersPage() {
   const { businessSettings, fetchBusinessSettings } = useAuthStore();
   // Subcontractors viewing a joined business get read-only access — the
   // dedicated number is owned/managed by the business owner.
-  const { isSubcontractor } = useUserRole();
+  const { isOwner, isManager, isLoading: roleLoading } = useUserRole();
+  // Only owners and managers manage phone numbers / AI Receptionist provisioning.
+  // Workers and joined-business subcontractors get a read-only view. Default to
+  // read-only until the role resolves so privileged controls never flash.
+  const readOnly = !isOwner && !isManager;
 
   const [numbers, setNumbers] = useState<AvailableNumber[]>([]);
   const [loading, setLoading] = useState(false);
@@ -392,7 +396,7 @@ export default function PhoneNumbersPage() {
   }, []);
 
   useEffect(() => {
-    if (isSubcontractor) {
+    if (readOnly) {
       // Read-only: only need to display the active number/config.
       fetchAiConfigs();
       return;
@@ -413,7 +417,7 @@ export default function PhoneNumbersPage() {
   };
 
   useEffect(() => {
-    if (isSubcontractor) return;
+    if (readOnly) return;
     if (!currentNumber && aiConfigs.length === 0) searchNumbers();
   }, [aiConfigs]);
 
@@ -425,10 +429,21 @@ export default function PhoneNumbersPage() {
     return phone;
   };
 
-  // Read-only view for subcontractors in a joined business. They can see the
-  // active number(s)/AI Receptionist status, but cannot buy, release, port,
-  // relabel, or change SMS attribution — those belong to the business owner.
-  if (isSubcontractor) {
+  // While the role is still resolving, show a spinner rather than flashing
+  // either the owner controls or the read-only view.
+  if (roleLoading) {
+    return (
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // Read-only view for workers and subcontractors in a joined business. They can
+  // see the active number(s)/AI Receptionist status, but cannot buy, release,
+  // port, relabel, or change SMS attribution — those belong to the business owner.
+  if (readOnly) {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />

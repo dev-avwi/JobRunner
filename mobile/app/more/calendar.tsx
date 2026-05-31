@@ -19,6 +19,7 @@ import { spacing, radius, shadows, usePageShell } from '../../src/lib/design-tok
 import { useIsTablet } from '../../src/lib/device';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { useUserRole } from '../../src/hooks/use-user-role';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -480,6 +481,8 @@ export default function CalendarScreen() {
   
   const { jobs, fetchJobs, isLoading } = useJobsStore();
   const { clients, fetchClients } = useClientsStore();
+  const { isOwner, isManager } = useUserRole();
+  const canCreateJobs = isOwner || isManager;
   const [viewMode, setViewMode] = useState<ViewMode>('today');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -675,10 +678,12 @@ export default function CalendarScreen() {
               <PressableRow style={styles.dispatchButton} onPress={() => router.push('/more/dispatch-board' as any)} >
                 <Feather name="columns" size={16} color={colors.foreground} />
               </PressableRow>
-              <PressableRow style={styles.scheduleButton} onPress={handleScheduleJob} >
-                <Feather name="plus" size={18} color={colors.primaryForeground} />
-                <Text style={styles.scheduleButtonText}>New Job</Text>
-              </PressableRow>
+              {canCreateJobs && (
+                <PressableRow style={styles.scheduleButton} onPress={handleScheduleJob} >
+                  <Feather name="plus" size={18} color={colors.primaryForeground} />
+                  <Text style={styles.scheduleButtonText}>New Job</Text>
+                </PressableRow>
+              )}
             </View>
           </View>
 

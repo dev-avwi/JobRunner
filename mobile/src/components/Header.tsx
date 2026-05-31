@@ -182,7 +182,9 @@ export function Header({
   const { canAccessMap, isSubcontractor, isLoading: roleLoading } = useUserRole();
   const isManagerFromStore = roleInfo?.roleName === 'MANAGER' || roleInfo?.roleName === 'manager';
   const cachedCanViewMap = isOwnerFromStore() || isManagerFromStore;
-  const canViewMap = canAccessMap || isSubcontractor || (roleLoading && cachedCanViewMap);
+  // Map is open to every role — owners, managers, subcontractors and workers all
+  // want to see their jobs (and the jobs assigned to them).
+  const canViewMap = canAccessMap || isSubcontractor || (roleLoading && cachedCanViewMap) || true;
   
   const displayTitle = title || (!showMenuButton ? getPageTitleFromPath(pathname) : '');
   
