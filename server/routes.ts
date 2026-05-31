@@ -486,6 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (process.env.SENDGRID_API_KEY) {
         sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
         await sgMail.default.send({
+          trackingSettings: { clickTracking: { enable: false, enableText: false }, openTracking: { enable: true } },
           to: 'admin@avwebinnovation.com',
           from: {
             email: 'noreply@jobrunner.com.au',
@@ -31680,6 +31681,7 @@ Respond with JSON in this format:
           sgMail.setApiKey(process.env.SENDGRID_API_KEY);
           
           const emailPayload: any = {
+            trackingSettings: { clickTracking: { enable: false, enableText: false }, openTracking: { enable: true } },
             to: email,
             from: businessEmail || 'noreply@jobrunner.com.au',
             subject: `Payment Receipt - ${formattedAmount} from ${escapeHtml(businessName)}`,
@@ -44735,6 +44737,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       if (process.env.SENDGRID_API_KEY) {
         sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
         await sgMail.default.send({
+          trackingSettings: { clickTracking: { enable: false, enableText: false }, openTracking: { enable: true } },
           to: 'admin@avwebinnovation.com',
           from: { email: 'noreply@jobrunner.com.au', name: 'JobRunner Website Requests' },
           replyTo: user?.email || 'admin@avwebinnovation.com',

@@ -3362,6 +3362,7 @@ import { logSystemEvent } from "../systemEventService";
         const businessName = business.businessName || 'JobRunner';
         
         await sgMail.default.send({
+          trackingSettings: { clickTracking: { enable: false, enableText: false }, openTracking: { enable: true } },
           to: client.email,
           from: {
             email: fromEmail,
