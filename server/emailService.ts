@@ -1913,20 +1913,18 @@ export async function sendTeamInviteEmail(
     subject: `You've been invited to join ${businessName} on JobRunner`,
     html: renderEmailShell('Team Invitation', `
     <tr>
-      <td style="background-color: #2563EB; padding: 30px 32px; text-align: center;">
-        <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+      <td style="height: 4px; background-color: #2563EB; font-size: 0; line-height: 0;">&nbsp;</td>
+    </tr>
+    <tr>
+      <td style="background-color: #ffffff; padding: 32px 32px 4px 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0">
           <tr>
-            <td valign="middle" style="padding-right: 11px;">
-              <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-                <td align="center" valign="middle" width="42" height="42" style="width: 42px; height: 42px; background-color: #ffffff; border-radius: 10px; text-align: center;">
-                  <img src="${baseUrl}/favicon-192.png" width="28" height="28" alt="JobRunner" style="display: inline-block; border: 0; vertical-align: middle;" />
-                </td>
-              </tr></table>
+            <td valign="middle" style="padding-right: 10px;">
+              <img src="${baseUrl}/favicon-192.png" width="32" height="32" alt="JobRunner" style="display: inline-block; border: 0; vertical-align: middle;" />
             </td>
-            <td valign="middle"><span style="font-size: 25px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #ffffff;">Job</span><span style="color: #F59E0B;">Runner</span></span></td>
+            <td valign="middle"><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #0f172a;">Job</span><span style="color: #F59E0B;">Runner</span></span></td>
           </tr>
         </table>
-        <p style="margin: 13px 0 0 0; color: rgba(255,255,255,0.72); font-size: 10px; font-weight: 600; letter-spacing: 1.8px; text-transform: uppercase; font-family: ${EMAIL_SYSTEM_FONT};">Built for Australian tradies</p>
       </td>
     </tr>
     <tr>
