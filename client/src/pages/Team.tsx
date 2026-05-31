@@ -948,6 +948,21 @@ function MembersTable({
 
   const rows = showLockedSample ? sample : members;
 
+  const { toast } = useToast();
+  const resendMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/team/members/${id}/resend-invite`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/team/members"] });
+      toast({ title: "Invite resent", description: "We've sent the invitation again." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not resend invite", description: err?.message || "Please try again.", variant: "destructive" });
+    },
+  });
+
   if (loading) {
     return (
       <Card>
@@ -1022,7 +1037,33 @@ function MembersTable({
             <div className="text-[12.5px] text-muted-foreground tabular-nums">{timeAgo(m.lastActiveAt)}</div>
             <div className="text-[12.5px] tabular-nums font-medium">{m.hoursThisWeek ? `${m.hoursThisWeek}h` : "—"}</div>
             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end">
-              <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="w-4 h-4" /></Button>
+              {status === "pending" && !showLockedSample ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={(e) => e.stopPropagation()}
+                      data-testid={`button-member-row-actions-${m.id}`}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem
+                      onSelect={(e) => { e.preventDefault(); resendMutation.mutate(m.id); }}
+                      disabled={resendMutation.isPending}
+                      data-testid={`action-resend-invite-${m.id}`}
+                    >
+                      {resendMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      Resend invite
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="w-4 h-4" /></Button>
+              )}
             </div>
           </div>
         );
