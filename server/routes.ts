@@ -29445,6 +29445,7 @@ Respond with JSON in this format:
           username: email.split('@')[0] + '_' + Date.now().toString(36),
           firstName: firstName || teamMember.firstName || undefined,
           lastName: lastName || teamMember.lastName || undefined,
+          inviteToken: token,
         });
         
         if (!registerResult.success) {

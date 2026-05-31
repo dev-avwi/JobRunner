@@ -50,9 +50,13 @@ export class AuthService {
    * team_members (including pending invitations and subcontractor roles).
    * Returns null if no conflict.
    */
-  static async findEmailConflict(rawEmail: string): Promise<EmailConflict | null> {
+  static async findEmailConflict(
+    rawEmail: string,
+    options?: { ignoreInviteToken?: string },
+  ): Promise<EmailConflict | null> {
     const email = rawEmail.toLowerCase().trim();
     if (!email) return null;
+    const ignoreInviteToken = options?.ignoreInviteToken?.trim() || null;
 
     // 1) Existing user account (any auth provider)
     const existingUser = await storage.getUserByEmail(email);
@@ -73,6 +77,7 @@ export class AuthService {
         inviteStatus: teamMembers.inviteStatus,
         memberId: teamMembers.memberId,
         roleId: teamMembers.roleId,
+        inviteToken: teamMembers.inviteToken,
       })
       .from(teamMembers)
       .where(
@@ -81,11 +86,18 @@ export class AuthService {
           inArray(teamMembers.inviteStatus, ['pending', 'accepted']),
         ),
       )
-      .limit(5)) as Array<{ id: string; inviteStatus: string; memberId: string | null; roleId: string }>;
+      .limit(5)) as Array<{ id: string; inviteStatus: string; memberId: string | null; roleId: string; inviteToken: string | null }>;
 
-    if (teamRows.length > 0) {
+    // When the caller is accepting a specific invitation, that exact pending
+    // invite is not a conflict with itself — exclude it so the invitee can
+    // create their account. Other live invites/identities still block.
+    const relevantTeamRows = ignoreInviteToken
+      ? teamRows.filter((r) => r.inviteToken !== ignoreInviteToken)
+      : teamRows;
+
+    if (relevantTeamRows.length > 0) {
       // Distinguish pending invitations vs. already-accepted team identities.
-      const pending = teamRows.find((r) => r.inviteStatus === 'pending' && !r.memberId);
+      const pending = relevantTeamRows.find((r) => r.inviteStatus === 'pending' && !r.memberId);
       if (pending) {
         // Best-effort subcontractor classification using the role name. We avoid
         // an extra join: if any team role lookup fails, fall back to the
@@ -173,7 +185,9 @@ export class AuthService {
       // return 503 instead of allowing the signup to proceed.
       let conflict: EmailConflict | null = null;
       try {
-        conflict = await AuthService.findEmailConflict(validatedData.email);
+        conflict = await AuthService.findEmailConflict(validatedData.email, {
+          ignoreInviteToken: userData.inviteToken,
+        });
       } catch (lookupErr) {
         console.error('[auth.register] email conflict lookup failed:', lookupErr);
         return {
