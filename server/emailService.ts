@@ -1922,7 +1922,7 @@ export async function sendTeamInviteEmail(
             <td valign="middle" style="padding-right: 10px;">
               <img src="${baseUrl}/favicon-192.png" width="32" height="32" alt="JobRunner" style="display: inline-block; border: 0; vertical-align: middle;" />
             </td>
-            <td valign="middle"><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #0f172a;">Job</span><span style="color: #F59E0B;">Runner</span></span></td>
+            <td valign="middle"><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #2563EB;">Job</span><span style="color: #F59E0B;">Runner</span></span></td>
           </tr>
         </table>
       </td>
