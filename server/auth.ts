@@ -52,7 +52,7 @@ export class AuthService {
    */
   static async findEmailConflict(
     rawEmail: string,
-    options?: { ignoreInviteToken?: string },
+    options?: { ignoreInviteToken?: string; inviteTrusted?: boolean },
   ): Promise<EmailConflict | null> {
     const email = rawEmail.toLowerCase().trim();
     if (!email) return null;
@@ -62,6 +62,14 @@ export class AuthService {
     const existingUser = await storage.getUserByEmail(email);
     if (existingUser) {
       return { source: 'user', ...EMAIL_CONFLICT_MESSAGES.user };
+    }
+
+    // Trusted team-invite acceptance: the invite link proves the invitee owns
+    // this inbox, so identities under OTHER businesses (a pending invite or a
+    // client record that merely shares this email) must NOT block creating
+    // their account. An existing USER account (checked above) still blocks.
+    if (options?.inviteTrusted) {
+      return null;
     }
 
     // 2) Active team_member rows — pending invites (memberId IS NULL,
@@ -177,6 +185,30 @@ export class AuthService {
         return { success: false, error: 'Password must be at least 8 characters with one uppercase letter and one special character' };
       }
 
+      // Determine whether this is a TRUSTED team-invite acceptance: the token
+      // matches a still-pending team_member whose email equals the email being
+      // registered. Receiving the invite link at that inbox proves email
+      // ownership, so we (a) pre-verify the new account and (b) skip the
+      // cross-business identity block — other-business pending invites or
+      // client records that merely share this email must NOT prevent the
+      // invitee from creating their account. Only an existing USER blocks.
+      let inviteTrusted = false;
+      if (userData.inviteToken) {
+        try {
+          const teamMember = await storage.getTeamMemberByInviteToken(userData.inviteToken);
+          if (
+            teamMember &&
+            teamMember.inviteStatus === 'pending' &&
+            teamMember.email &&
+            teamMember.email.toLowerCase().trim() === validatedData.email
+          ) {
+            inviteTrusted = true;
+          }
+        } catch (e) {
+          console.error('[auth.register] inviteToken lookup failed:', e);
+        }
+      }
+
       // Check if email collides with any existing identity (user, team
       // member, client, subcontractor, pending invitation). Prevents orphan
       // accounts under another business owner's workspace.
@@ -187,6 +219,7 @@ export class AuthService {
       try {
         conflict = await AuthService.findEmailConflict(validatedData.email, {
           ignoreInviteToken: userData.inviteToken,
+          inviteTrusted,
         });
       } catch (lookupErr) {
         console.error('[auth.register] email conflict lookup failed:', lookupErr);
@@ -210,25 +243,8 @@ export class AuthService {
       // Hash password
       const hashedPassword = await this.hashPassword(validatedData.password);
 
-      // If a valid inviteToken is supplied AND it matches a pending team_member
-      // with the same email, we can mark the new account as already email-verified
-      // (delivery of the invite link to that inbox is proof of email ownership).
-      let preVerified = false;
-      if (userData.inviteToken) {
-        try {
-          const teamMember = await storage.getTeamMemberByInviteToken(userData.inviteToken);
-          if (
-            teamMember &&
-            teamMember.inviteStatus === 'pending' &&
-            teamMember.email &&
-            teamMember.email.toLowerCase().trim() === validatedData.email
-          ) {
-            preVerified = true;
-          }
-        } catch (e) {
-          console.error('[auth.register] inviteToken lookup failed:', e);
-        }
-      }
+      // Trusted invite acceptance proves inbox ownership → pre-verify email.
+      const preVerified = inviteTrusted;
 
       // Create user
       const user = await storage.createUser({
