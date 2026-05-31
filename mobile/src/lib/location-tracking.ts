@@ -166,9 +166,6 @@ class LocationTrackingService {
 
   setSubcontractorMode(isSubcontractor: boolean): void {
     this._isSubcontractor = isSubcontractor;
-    if (isSubcontractor && !this._activeJobContext) {
-      this.stopTracking();
-    }
     if (__DEV__) console.log(`[Location] Subcontractor mode: ${isSubcontractor}`);
   }
 
@@ -220,11 +217,6 @@ class LocationTrackingService {
    * Start background location tracking
    */
   async startTracking(): Promise<boolean> {
-    if (this._isSubcontractor && !this._activeJobContext) {
-      if (__DEV__) console.log('[Location] Subcontractor cannot start tracking without active job context');
-      return false;
-    }
-
     try {
       this.updateStatus('starting');
 
@@ -409,11 +401,6 @@ class LocationTrackingService {
    * Send location update to the server
    */
   async sendLocationToServer(location: LocationUpdate): Promise<void> {
-    if (this._isSubcontractor && !this._activeJobContext) {
-      if (__DEV__) console.log('[Location] Subcontractor has no active job - skipping location send');
-      return;
-    }
-
     const payload = {
       latitude: location.latitude,
       longitude: location.longitude,
@@ -556,10 +543,6 @@ class LocationTrackingService {
    * Handle location update from background task
    */
   handleLocationUpdate(location: LocationUpdate): void {
-    if (this._isSubcontractor && !this._activeJobContext) {
-      return;
-    }
-
     this.currentLocation = location;
 
     if (this.onLocationUpdate) {

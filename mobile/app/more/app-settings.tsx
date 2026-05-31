@@ -508,9 +508,10 @@ export default function AppSettingsScreen() {
       if (value) {
         const success = await enableTracking();
         if (!success) {
+          const msg = useLocationStore.getState().errorMessage;
           Alert.alert(
-            'Location Permission Required',
-            'Allow location access in your device settings to enable team tracking.',
+            'Location Sharing',
+            msg || 'Could not start location sharing. Check that location is allowed for JobRunner in your device settings.',
             [{ text: 'OK' }]
           );
         }

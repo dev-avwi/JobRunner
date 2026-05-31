@@ -179,10 +179,10 @@ export function Header({
   const styles = useMemo(() => createStyles(colors, insets.top), [colors, insets.top]);
   const { unreadCount } = useNotificationsStore();
   const pathname = usePathname();
-  const { canAccessMap, isLoading: roleLoading } = useUserRole();
+  const { canAccessMap, isSubcontractor, isLoading: roleLoading } = useUserRole();
   const isManagerFromStore = roleInfo?.roleName === 'MANAGER' || roleInfo?.roleName === 'manager';
   const cachedCanViewMap = isOwnerFromStore() || isManagerFromStore;
-  const canViewMap = canAccessMap || (roleLoading && cachedCanViewMap);
+  const canViewMap = canAccessMap || isSubcontractor || (roleLoading && cachedCanViewMap);
   
   const displayTitle = title || (!showMenuButton ? getPageTitleFromPath(pathname) : '');
   

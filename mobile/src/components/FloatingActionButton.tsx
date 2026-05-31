@@ -9,7 +9,8 @@ import {
   Animated,
   Dimensions,
   Easing,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme, ThemeColors, colorWithOpacity } from '../lib/theme';
 import { spacing, radius, shadows, typography, iconSizes } from '../lib/design-tokens';
 import { SIDEBAR_WIDTH } from '../lib/device';
+import { useUserRole } from '../hooks/use-user-role';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const isIOS = Platform.OS === 'ios';
@@ -27,6 +29,7 @@ interface FABAction {
   label: string;
   onPress: () => void;
   color?: string;
+  locked?: boolean;
 }
 
 // Subtle, light action colors - professional iOS aesthetic with gentle color hints
@@ -214,6 +217,7 @@ interface FloatingActionButtonProps {
 export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabStyle = 'phone', bottomOffset = 0 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { colors } = useTheme();
+  const { isSubcontractor } = useUserRole();
   const isTabletStyle = fabStyle === 'tablet';
   const styles = useMemo(() => createStyles(colors, isTabletStyle), [colors, isTabletStyle]);
   const fabInsets = useSafeAreaInsets();
@@ -258,6 +262,7 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
       icon: 'file-text',
       label: 'New Quote',
       colorKey: 'quote',
+      locked: isSubcontractor,
       onPress: () => {
         setIsOpen(false);
         router.push('/more/quote/new');
@@ -267,6 +272,7 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
       icon: 'dollar-sign',
       label: 'New Invoice',
       colorKey: 'invoice',
+      locked: isSubcontractor,
       onPress: () => {
         setIsOpen(false);
         router.push('/more/invoice/new');
@@ -276,6 +282,7 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
       icon: 'user-plus',
       label: 'New Client',
       colorKey: 'client',
+      locked: isSubcontractor,
       onPress: () => {
         setIsOpen(false);
         router.push('/more/client/new');
@@ -381,18 +388,27 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
               {gridActions.map((action, index) => {
                 const bgColor = ACTION_BG_COLORS[action.colorKey];
                 const iconColor = ACTION_COLORS[action.colorKey];
+                const isLocked = !!action.locked;
                 return (
                   <TouchableOpacity
                     key={index}
-                    style={styles.menuItem}
-                    onPress={action.onPress}
+                    style={[styles.menuItem, isLocked && { opacity: 0.55 }]}
+                    onPress={isLocked
+                      ? () => {
+                          Alert.alert(
+                            `${action.label} locked`,
+                            'This is managed by the business owner. Switch to your Personal profile to create your own.',
+                            [{ text: 'OK' }]
+                          );
+                        }
+                      : action.onPress}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.menuItemIcon, { backgroundColor: bgColor }]}>
+                    <View style={[styles.menuItemIcon, { backgroundColor: isLocked ? colorWithOpacity(colors.mutedForeground, 0.12) : bgColor }]}>
                       <Feather 
-                        name={action.icon} 
+                        name={isLocked ? 'lock' : action.icon} 
                         size={isTabletStyle ? 24 : 20} 
-                        color={iconColor} 
+                        color={isLocked ? colors.mutedForeground : iconColor} 
                       />
                     </View>
                     <Text style={styles.menuItemLabel} numberOfLines={1} ellipsizeMode="tail">{action.label}</Text>
