@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,28 @@ interface InviteDetails {
     permissionsByCategory: PermissionCategory[];
     availableToRequest: AvailablePermission[];
   };
+}
+
+// Branded page shell — gradient backdrop, JobRunner wordmark, footer.
+// Matches the premium header used across JobRunner emails and magic-link pages.
+function PageShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/40 flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="flex items-center justify-center gap-2.5 mb-6">
+          <img src="/favicon-192.png" alt="JobRunner" className="h-9 w-9 rounded-lg" />
+          <span className="text-2xl font-extrabold tracking-tight leading-none">
+            <span style={{ color: "#2563EB" }}>Job</span>
+            <span style={{ color: "#F59E0B" }}>Runner</span>
+          </span>
+        </div>
+        {children}
+        <p className="text-[11px] text-muted-foreground text-center mt-6">
+          Powered by JobRunner &middot; Built for Australian tradies
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default function AcceptInvite() {
@@ -249,66 +271,20 @@ export default function AcceptInvite() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center gap-2 justify-center text-2xl">
+      <PageShell>
+        <Card>
+          <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
+            <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
               <AlertCircle className="h-6 w-6 text-destructive" />
-              Invalid Link
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Alert variant="destructive">
-              <AlertDescription>
-                This invitation link is invalid or expired. Please request a new invitation from your team leader.
-              </AlertDescription>
-            </Alert>
-            <Button 
-              onClick={() => setLocation('/login')} 
-              className="w-full mt-4"
-              data-testid="button-go-to-login"
-            >
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (validating) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="py-12">
-            <div className="text-center space-y-3">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-              <p className="text-muted-foreground">Verifying invitation...</p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!inviteData?.valid || inviteData?.error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center gap-2 justify-center text-2xl">
-              <AlertCircle className="h-6 w-6 text-destructive" />
-              Invalid Invitation
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert variant="destructive">
-              <AlertDescription>
-                {inviteData?.error || 'This invitation is no longer valid. It may have already been used or expired.'}
-              </AlertDescription>
-            </Alert>
-            <Button 
-              onClick={() => setLocation('/login')} 
+            <div>
+              <h1 className="text-lg font-semibold">Invalid link</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                This invitation link is invalid or expired. Please request a new invitation from your team leader.
+              </p>
+            </div>
+            <Button
+              onClick={() => setLocation('/login')}
               className="w-full"
               data-testid="button-go-to-login"
             >
@@ -316,42 +292,82 @@ export default function AcceptInvite() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </PageShell>
+    );
+  }
+
+  if (validating) {
+    return (
+      <PageShell>
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-3">
+              <Loader2 className="h-7 w-7 animate-spin mx-auto text-primary" />
+              <p className="text-sm text-muted-foreground">Verifying invitation&hellip;</p>
+            </div>
+          </CardContent>
+        </Card>
+      </PageShell>
+    );
+  }
+
+  if (!inviteData?.valid || inviteData?.error) {
+    return (
+      <PageShell>
+        <Card>
+          <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
+            <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold">Invitation not valid</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {inviteData?.error || 'This invitation is no longer valid. It may have already been used or expired.'}
+              </p>
+            </div>
+            <Button
+              onClick={() => setLocation('/login')}
+              className="w-full"
+              data-testid="button-go-to-login"
+            >
+              Go to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </PageShell>
     );
   }
 
   if (acceptStatus === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center pb-4">
-            <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <CheckCircle2 className="h-10 w-10 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl text-green-600">
-              Welcome to the Team!
-            </CardTitle>
-            <CardDescription className="text-base mt-2">
-              You've successfully joined <span className="font-semibold text-foreground">{inviteData?.invite?.businessName}</span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-muted/50 rounded-lg p-4 text-center space-y-2">
-              <p className="text-sm text-muted-foreground">What happens next:</p>
-              <div className="space-y-1">
-                <p className="font-medium">You'll have access to jobs, schedules, and team features</p>
-                <p className="text-sm text-muted-foreground">based on your assigned role as <span className="font-medium text-foreground">{inviteData?.invite?.roleName}</span></p>
+      <PageShell>
+        <Card>
+          <CardContent className="py-10">
+            <div className="text-center">
+              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
               </div>
+              <h1 className="text-2xl font-bold">Welcome to the team!</h1>
+              <p className="text-sm text-muted-foreground mt-2">
+                You've successfully joined <span className="font-semibold text-foreground">{inviteData?.invite?.businessName}</span>
+              </p>
             </div>
-            
-            <div className="text-center space-y-3">
+
+            <div className="bg-muted/50 rounded-lg p-4 text-center space-y-1 mt-6">
+              <p className="text-sm text-muted-foreground">What happens next</p>
+              <p className="font-medium">You'll have access to jobs, schedules, and team features</p>
+              <p className="text-sm text-muted-foreground">based on your role as <span className="font-medium text-foreground">{inviteData?.invite?.roleName}</span></p>
+            </div>
+
+            <div className="text-center space-y-3 mt-6">
               <div className="flex items-center justify-center gap-2 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Redirecting to dashboard in {countdown}...</span>
+                <span className="text-sm">Redirecting to dashboard in {countdown}&hellip;</span>
               </div>
-              <Button 
-                onClick={() => setLocation('/')} 
+              <Button
+                onClick={() => setLocation('/')}
                 className="w-full"
+                size="lg"
                 data-testid="button-go-to-dashboard"
               >
                 Go to Dashboard Now
@@ -360,7 +376,7 @@ export default function AcceptInvite() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </PageShell>
     );
   }
 
@@ -370,19 +386,20 @@ export default function AcceptInvite() {
   const hasAvailableToRequest = invite.availableToRequest && invite.availableToRequest.length > 0;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center pb-4">
-          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Users className="h-8 w-8 text-primary" />
+    <PageShell>
+      <Card>
+        <CardContent className="py-8 space-y-6">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Users className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary mb-1.5">You're invited</p>
+            <h1 className="text-2xl font-bold leading-tight">Join {invite.businessName}</h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              {invite.inviterName} has invited you to join the team
+            </p>
           </div>
-          <CardTitle className="text-2xl">You're Invited!</CardTitle>
-          <CardDescription className="text-base mt-2">
-            {invite.inviterName} has invited you to join their team
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
+
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-5 space-y-4">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -397,7 +414,7 @@ export default function AcceptInvite() {
             <Separator />
             
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                 <Shield className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
@@ -414,9 +431,9 @@ export default function AcceptInvite() {
             <Collapsible open={permissionsOpen} onOpenChange={setPermissionsOpen}>
               <Card className="border">
                 <CollapsibleTrigger asChild>
-                  <button className="w-full p-4 flex items-center justify-between text-left hover-elevate rounded-lg">
+                  <button className="w-full p-4 flex items-center justify-between gap-3 text-left hover-elevate rounded-lg">
                     <div className="flex items-center gap-3">
-                      <Shield className="h-5 w-5 text-primary" />
+                      <Shield className="h-5 w-5 text-primary flex-shrink-0" />
                       <div>
                         <p className="font-medium">Your Permissions</p>
                         <p className="text-xs text-muted-foreground">
@@ -425,9 +442,9 @@ export default function AcceptInvite() {
                       </div>
                     </div>
                     {permissionsOpen ? (
-                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                      <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     ) : (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     )}
                   </button>
                 </CollapsibleTrigger>
@@ -472,9 +489,9 @@ export default function AcceptInvite() {
             <Collapsible open={requestAccessOpen} onOpenChange={setRequestAccessOpen}>
               <Card className="border">
                 <CollapsibleTrigger asChild>
-                  <button className="w-full p-4 flex items-center justify-between text-left hover-elevate rounded-lg">
+                  <button className="w-full p-4 flex items-center justify-between gap-3 text-left hover-elevate rounded-lg">
                     <div className="flex items-center gap-3">
-                      <Send className="h-5 w-5 text-primary" />
+                      <Send className="h-5 w-5 text-primary flex-shrink-0" />
                       <div>
                         <p className="font-medium">Request Additional Access</p>
                         <p className="text-xs text-muted-foreground">
@@ -483,9 +500,9 @@ export default function AcceptInvite() {
                       </div>
                     </div>
                     {requestAccessOpen ? (
-                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                      <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     ) : (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     )}
                   </button>
                 </CollapsibleTrigger>
@@ -584,7 +601,7 @@ export default function AcceptInvite() {
                   </>
                 ) : (
                   <>
-                    Accept Invitation & Join
+                    Accept Invitation &amp; Join
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
@@ -595,7 +612,7 @@ export default function AcceptInvite() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <UserPlus className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold">Create Account & Join</h3>
+                  <h3 className="font-semibold">Create Account &amp; Join</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Create your JobRunner account to join the team
@@ -681,7 +698,7 @@ export default function AcceptInvite() {
                     </>
                   ) : (
                     <>
-                      Create Account & Join Team
+                      Create Account &amp; Join Team
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -717,6 +734,6 @@ export default function AcceptInvite() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   );
 }
