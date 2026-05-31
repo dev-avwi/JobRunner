@@ -1894,13 +1894,13 @@ export async function sendTeamInviteEmail(
   baseUrl: string
 ): Promise<{ success: boolean; error?: string; mock?: boolean }> {
 
-  const displayName = inviteeName || inviteeEmail.split('@')[0];
+  const firstName = inviteeName ? inviteeName.trim().split(/\s+/)[0] : '';
+  const greeting = firstName ? `G'day ${firstName},` : `G'day,`;
   // Direct https Universal Link / App Link — opens the app on iOS/Android if
   // installed (verified via /.well-known/{apple-app-site-association,assetlinks.json}),
   // otherwise the web /accept-invite/:token page handles it.
   const acceptUrl = `${baseUrl}/accept-invite/${inviteToken}`;
   const smartAppLink = acceptUrl;
-  const logoUrl = `${baseUrl}/logo.png`;
 
   const emailData = {
     to: inviteeEmail,
@@ -1911,24 +1911,46 @@ export async function sendTeamInviteEmail(
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `You've been invited to join ${businessName} on JobRunner`,
     html: renderEmailShell('Team Invitation', `
-    ${emailHeaderBand({ brandColor: '#2563EB', logoUrl, businessName: 'JobRunner' })}
     <tr>
-      <td class="content" style="padding: 28px 32px 0 32px;">
-        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">You're invited to join ${businessName}</h1>
-        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">G'day ${displayName}, <strong style="color: #0f172a;">${inviterName}</strong> has invited you to join <strong style="color: #0f172a;">${businessName}</strong> on JobRunner as a <strong style="color: #0f172a;">${roleName}</strong>.</p>
+      <td style="background-color: #2563EB; padding: 22px 32px; text-align: center;">
+        <span style="font-size: 25px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #ffffff;">Job</span><span style="color: #F59E0B;">Runner</span></span>
       </td>
     </tr>
     <tr>
-      <td class="content" style="padding: 24px 32px 0 32px;">
+      <td class="content" style="padding: 32px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">You're invited to join ${businessName}</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">${greeting} <strong style="color: #0f172a;">${inviterName}</strong> has invited you to join <strong style="color: #0f172a;">${businessName}</strong> on JobRunner as a <strong style="color: #0f172a;">${roleName}</strong>.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 26px 32px 0 32px;">
+        ${emailCtaButton('Accept Invite', smartAppLink, '#2563EB')}
+        <p style="margin: 14px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">Opens in the JobRunner app, or your browser if the app isn't installed. This invitation expires in 7 days.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 26px 32px 0 32px;">
         <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
           <tr>
             <td style="padding: 18px 22px;">
-              <p style="margin: 0 0 10px 0; color: #0f172a; font-size: 14px; font-weight: 700;">What you'll be able to do</p>
+              <p style="margin: 0 0 12px 0; color: #0f172a; font-size: 14px; font-weight: 700;">What you'll be able to do</p>
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">View and manage your assigned jobs</td></tr>
-                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Track your time on jobs</td></tr>
-                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Communicate with the team</td></tr>
-                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Access job details on your mobile</td></tr>
+                <tr>
+                  <td width="22" valign="top" style="padding: 5px 0; color: #2563EB; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
+                  <td style="padding: 5px 0; color: #475569; font-size: 14px; line-height: 1.6;">View and manage your assigned jobs</td>
+                </tr>
+                <tr>
+                  <td width="22" valign="top" style="padding: 5px 0; color: #2563EB; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
+                  <td style="padding: 5px 0; color: #475569; font-size: 14px; line-height: 1.6;">Track your time on jobs</td>
+                </tr>
+                <tr>
+                  <td width="22" valign="top" style="padding: 5px 0; color: #2563EB; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
+                  <td style="padding: 5px 0; color: #475569; font-size: 14px; line-height: 1.6;">Communicate with the team</td>
+                </tr>
+                <tr>
+                  <td width="22" valign="top" style="padding: 5px 0; color: #2563EB; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
+                  <td style="padding: 5px 0; color: #475569; font-size: 14px; line-height: 1.6;">Access job details on your mobile</td>
+                </tr>
               </table>
             </td>
           </tr>
@@ -1936,13 +1958,7 @@ export async function sendTeamInviteEmail(
       </td>
     </tr>
     <tr>
-      <td class="content" style="padding: 24px 32px 0 32px;">
-        ${emailCtaButton('Accept invitation', smartAppLink, '#2563EB')}
-        <p style="margin: 14px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">Opens in the JobRunner app, or your browser if the app isn't installed. This invitation expires in 7 days.</p>
-      </td>
-    </tr>
-    <tr>
-      <td class="content" style="padding: 24px 32px 32px 32px;">
+      <td class="content" style="padding: 26px 32px 32px 32px;">
         <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.6;">Cheers,<br><strong style="color: #0f172a;">The JobRunner Team</strong></p>
         <p style="margin: 16px 0 0 0; color: #94a3b8; font-size: 12px; line-height: 1.6;">If you didn't expect this invitation, you can safely ignore this email.</p>
       </td>
