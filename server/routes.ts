@@ -28717,7 +28717,7 @@ Respond with JSON in this format:
       if (member.phone) {
         try {
           const smartLink = `${baseUrl}/accept-invite/${member.inviteToken}`;
-          const firstName = member.firstName || member.name?.split(' ')[0] || '';
+          const firstName = member.firstName || '';
           const smsBody = `G'day${firstName ? ' ' + firstName : ''}! Reminder: You've been invited to join ${businessNameStr} on JobRunner as a ${roleNameStr}. Tap to accept: ${smartLink}`;
           const smsResult = await sendSMS({ to: member.phone, message: smsBody });
           smsSent = smsResult.success;

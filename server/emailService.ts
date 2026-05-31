@@ -1912,11 +1912,17 @@ export async function sendTeamInviteEmail(
     subject: `You've been invited to join ${businessName} on JobRunner`,
     html: renderEmailShell('Team Invitation', `
     <tr>
-      <td style="background-color: #ffffff; padding: 20px 32px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+      <td style="background-color: #2B7DE9; padding: 26px 32px; text-align: center;">
         <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
           <tr>
-            <td valign="middle" style="padding-right: 9px;"><img src="${baseUrl}/favicon-192.png" width="30" height="30" alt="JobRunner" style="display: block; border: 0;" /></td>
-            <td valign="middle"><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #2563EB;">Job</span><span style="color: #F59E0B;">Runner</span></span></td>
+            <td valign="middle" style="padding-right: 11px;">
+              <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+                <td align="center" valign="middle" width="42" height="42" style="width: 42px; height: 42px; background-color: #ffffff; border-radius: 9px; text-align: center;">
+                  <img src="${baseUrl}/favicon-192.png" width="28" height="28" alt="JobRunner" style="display: inline-block; border: 0; vertical-align: middle;" />
+                </td>
+              </tr></table>
+            </td>
+            <td valign="middle"><span style="font-size: 25px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #ffffff;">Job</span><span style="color: #F28C28;">Runner</span></span></td>
           </tr>
         </table>
       </td>
@@ -1929,31 +1935,32 @@ export async function sendTeamInviteEmail(
     </tr>
     <tr>
       <td class="content" style="padding: 26px 32px 0 32px;">
-        ${emailCtaButton('Accept Invite', smartAppLink, '#2563EB')}
+        ${emailCtaButton('Accept Invite', smartAppLink, '#2B7DE9')}
         <p style="margin: 14px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">Opens in the JobRunner app, or your browser if the app isn't installed. This invitation expires in 7 days.</p>
+        <div style="width: 48px; height: 3px; background-color: #F28C28; border-radius: 2px; margin: 18px auto 0 auto; font-size: 0; line-height: 0;">&nbsp;</div>
       </td>
     </tr>
     <tr>
       <td class="content" style="padding: 26px 32px 0 32px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #2B7DE9; border-radius: 6px;">
           <tr>
             <td style="padding: 18px 22px;">
               <p style="margin: 0 0 12px 0; color: #0f172a; font-size: 14px; font-weight: 700;">What you'll be able to do</p>
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td width="22" valign="top" style="padding: 5px 0; color: #2563EB; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
+                  <td width="22" valign="top" style="padding: 5px 0; color: #2B7DE9; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
                   <td style="padding: 5px 0; color: #475569; font-size: 14px; line-height: 1.6;">View and manage your assigned jobs</td>
                 </tr>
                 <tr>
-                  <td width="22" valign="top" style="padding: 5px 0; color: #2563EB; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
+                  <td width="22" valign="top" style="padding: 5px 0; color: #2B7DE9; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
                   <td style="padding: 5px 0; color: #475569; font-size: 14px; line-height: 1.6;">Track your time on jobs</td>
                 </tr>
                 <tr>
-                  <td width="22" valign="top" style="padding: 5px 0; color: #2563EB; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
+                  <td width="22" valign="top" style="padding: 5px 0; color: #2B7DE9; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
                   <td style="padding: 5px 0; color: #475569; font-size: 14px; line-height: 1.6;">Communicate with the team</td>
                 </tr>
                 <tr>
-                  <td width="22" valign="top" style="padding: 5px 0; color: #2563EB; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
+                  <td width="22" valign="top" style="padding: 5px 0; color: #2B7DE9; font-size: 15px; font-weight: 700; line-height: 1.6;">&#10003;</td>
                   <td style="padding: 5px 0; color: #475569; font-size: 14px; line-height: 1.6;">Access job details on your mobile</td>
                 </tr>
               </table>
@@ -1963,9 +1970,18 @@ export async function sendTeamInviteEmail(
       </td>
     </tr>
     <tr>
-      <td class="content" style="padding: 26px 32px 32px 32px;">
+      <td class="content" style="padding: 26px 32px 22px 32px;">
         <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.6;">Cheers,<br><strong style="color: #0f172a;">The JobRunner Team</strong></p>
         <p style="margin: 16px 0 0 0; color: #94a3b8; font-size: 12px; line-height: 1.6;">If you didn't expect this invitation, you can safely ignore this email.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 32px;"><div style="border-top: 1px solid #e2e8f0; font-size: 0; line-height: 0;">&nbsp;</div></td>
+    </tr>
+    <tr>
+      <td style="padding: 16px 32px 26px 32px; text-align: center;">
+        <p style="margin: 0; color: #94a3b8; font-size: 12px; line-height: 1.6;"><strong style="color: #64748b;">JobRunner</strong> &mdash; Built for Australian tradies</p>
+        <p style="margin: 7px 0 0 0; font-size: 11px; line-height: 1.6;"><a href="mailto:${PLATFORM_REPLY_TO_EMAIL}?subject=Unsubscribe" style="color: #94a3b8; text-decoration: underline;">Unsubscribe</a></p>
       </td>
     </tr>
     `)
