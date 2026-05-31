@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import GettingStartedChecklist from "./GettingStartedChecklist";
 import TodayScheduleCard from "./TodayScheduleCard";
-import TrustBanner from "./TrustBanner";
 import ActivityFeed from "./ActivityFeed";
 import FirstQuoteCta, { useIsBrandNewOwner } from "./FirstQuoteCta";
 import FloatingActionButton from "./FloatingActionButton";
@@ -334,7 +333,6 @@ export default function OwnerManagerDashboard({
       </div>
 
       <ConnectionBanner />
-      <TrustBanner />
 
       {hasMoneyData && (
         <Card 

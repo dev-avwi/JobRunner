@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import GettingStartedChecklist from "./GettingStartedChecklist";
 import TodayScheduleCard from "./TodayScheduleCard";
-import TrustBanner from "./TrustBanner";
 import ActivityFeed from "./ActivityFeed";
 import FirstQuoteCta, { useIsBrandNewOwner } from "./FirstQuoteCta";
 import FloatingActionButton from "./FloatingActionButton";
@@ -362,8 +361,6 @@ export default function TeamOwnerDashboard({
       </div>
 
       <ConnectionBanner />
-
-      <TrustBanner />
 
       {/* MONEY OWED - Most important metric for tradies */}
       {(kpis?.unpaidInvoicesTotal ?? 0) > 0 && (
