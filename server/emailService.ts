@@ -393,6 +393,30 @@ const emailHeaderBand = (opts: {
   </tr>`;
 };
 
+// Premium JobRunner-branded header for PLATFORM emails (NOT customer white-label
+// quotes/invoices/receipts/payment-requests, which keep the business's own brand).
+// Matches the team-invite header exactly: thin status accent bar + white header with
+// the "Job" (blue) "Runner" (amber) wordmark and favicon. Accent defaults to brand
+// blue; pass a status color (green/red) to signal success/failure while keeping look.
+const jobRunnerHeader = (opts?: { accentColor?: string; baseUrl?: string }): string => {
+  const accent = opts?.accentColor || '#2563EB';
+  const base = opts?.baseUrl || getBaseUrl();
+  return `
+  <tr><td style="height: 4px; line-height: 4px; font-size: 0; background-color: ${accent};">&nbsp;</td></tr>
+  <tr>
+    <td style="background-color: #ffffff; padding: 32px 32px 4px 32px;">
+      <table role="presentation" cellpadding="0" cellspacing="0">
+        <tr>
+          <td valign="middle" style="padding-right: 10px;">
+            <img src="${base}/favicon-192.png" width="32" height="32" alt="JobRunner" style="display: inline-block; border: 0; vertical-align: middle;" />
+          </td>
+          <td valign="middle"><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #2563EB;">Job</span><span style="color: #F59E0B;">Runner</span></span></td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+};
+
 // Line item rows for the editorial line-items table.
 const emailLineItemRows = (items: any[]): string => (items || []).map((item: any) => `
       <tr>
@@ -1333,7 +1357,7 @@ const createEmailVerificationEmail = (user: any, verificationToken: string) => {
       subscriptionTracking: { enable: false },
     },
     html: renderEmailShell('Verify Your Email - JobRunner', `
-    ${emailHeaderBand({ brandColor: '#2563EB', logoUrl, businessName: 'JobRunner' })}
+    ${jobRunnerHeader()}
     <tr>
       <td class="content" style="padding: 28px 32px 0 32px;">
         <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">Verify your email</h1>
@@ -1514,7 +1538,7 @@ export const sendPasswordResetEmail = async (user: any, resetToken: string) => {
       subscriptionTracking: { enable: false },
     },
     html: renderEmailShell('Reset Your Password - JobRunner', `
-    ${emailHeaderBand({ brandColor: '#2563EB', logoUrl, businessName: 'JobRunner' })}
+    ${jobRunnerHeader()}
     <tr>
       <td class="content" style="padding: 28px 32px 0 32px;">
         <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">Reset your password</h1>
@@ -1561,7 +1585,7 @@ export async function sendPaymentSuccessEmail(user: any, businessSettings: any, 
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `Payment Successful - ${plan} Plan Activated`,
     html: renderEmailShell('Payment Successful', `
-    ${emailHeaderBand({ brandColor: '#16a34a', logoUrl, businessName: 'JobRunner' })}
+    ${jobRunnerHeader({ accentColor: '#16a34a' })}
     <tr>
       <td class="content" style="padding: 28px 32px 0 32px;">
         <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">Payment received &mdash; you're all set</h1>
@@ -1618,7 +1642,7 @@ export async function sendPaymentFailedEmail(user: any, businessSettings: any): 
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: 'Payment Failed - Action Required',
     html: renderEmailShell('Payment Failed', `
-    ${emailHeaderBand({ brandColor: '#dc2626', logoUrl, businessName: 'JobRunner' })}
+    ${jobRunnerHeader({ accentColor: '#dc2626' })}
     <tr>
       <td class="content" style="padding: 28px 32px 0 32px;">
         <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">We couldn't process your payment</h1>
@@ -1754,7 +1778,7 @@ export async function sendWelcomeEmail(
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: 'Welcome to JobRunner - Let\'s get your business sorted!',
     html: renderEmailShell('Welcome to JobRunner', `
-    ${emailHeaderBand({ brandColor: '#2563EB', logoUrl, businessName: 'JobRunner' })}
+    ${jobRunnerHeader()}
     <tr>
       <td class="content" style="padding: 28px 32px 0 32px;">
         <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">G'day ${userName}, welcome aboard</h1>
@@ -1838,7 +1862,7 @@ export async function sendTestEmail(
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: 'JobRunner - Test Email',
     html: renderEmailShell('Test Email', `
-    ${emailHeaderBand({ brandColor: '#16a34a', businessName: 'JobRunner' })}
+    ${jobRunnerHeader({ accentColor: '#16a34a' })}
     <tr>
       <td class="content" style="padding: 28px 32px 0 32px;">
         <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">Your email is working</h1>
@@ -1912,21 +1936,7 @@ export async function sendTeamInviteEmail(
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `You've been invited to join ${businessName} on JobRunner`,
     html: renderEmailShell('Team Invitation', `
-    <tr>
-      <td style="height: 4px; background-color: #2563EB; font-size: 0; line-height: 0;">&nbsp;</td>
-    </tr>
-    <tr>
-      <td style="background-color: #ffffff; padding: 32px 32px 4px 32px;">
-        <table role="presentation" cellpadding="0" cellspacing="0">
-          <tr>
-            <td valign="middle" style="padding-right: 10px;">
-              <img src="${baseUrl}/favicon-192.png" width="32" height="32" alt="JobRunner" style="display: inline-block; border: 0; vertical-align: middle;" />
-            </td>
-            <td valign="middle"><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #2563EB;">Job</span><span style="color: #F59E0B;">Runner</span></span></td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+    ${jobRunnerHeader({ baseUrl })}
     <tr>
       <td class="content" style="padding: 34px 32px 0 32px;">
         <p style="margin: 0 0 8px 0; color: #2563EB; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;">You're invited</p>
@@ -2066,7 +2076,7 @@ export async function sendJobAssignmentEmail(
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `New Job Assigned: ${jobTitle}`,
     html: renderEmailShell('New Job Assignment', `
-    ${emailHeaderBand({ brandColor: '#F59E0B', logoUrl, businessName: businessName || 'JobRunner' })}
+    ${jobRunnerHeader()}
     <tr>
       <td class="content" style="padding: 28px 32px 0 32px;">
         <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">A new job has been assigned to you</h1>
@@ -2145,7 +2155,7 @@ export async function sendJobCompletionNotificationEmail(
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `Job Completed: ${jobTitle}`,
     html: renderEmailShell('Job Completed', `
-    ${emailHeaderBand({ brandColor: '#16a34a', logoUrl, businessName: 'JobRunner' })}
+    ${jobRunnerHeader({ accentColor: '#16a34a' })}
     <tr>
       <td class="content" style="padding: 28px 32px 0 32px;">
         <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">A job has been marked complete</h1>
@@ -2619,7 +2629,13 @@ export function createDailySummaryEmail(data: DailySummaryData): { to: string; f
     </tr>`;
 
   const innerRows = `
-    ${emailHeaderBand({ brandColor, businessName: data.business.name, docLabel: 'Daily summary', docRef: data.dateFormatted })}
+    ${jobRunnerHeader()}
+    <tr>
+      <td class="content" style="padding: 32px 32px 0 32px;">
+        <p style="margin: 0 0 8px 0; color: #2563EB; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;">Daily summary &middot; ${data.dateFormatted}</p>
+        <h1 style="margin: 0; color: #0f172a; font-size: 24px; font-weight: 800; line-height: 1.25; letter-spacing: -0.4px;">${data.business.name}</h1>
+      </td>
+    </tr>
     ${!hasActivity ? `
     <tr>
       <td class="content" style="padding: 32px 32px;">
