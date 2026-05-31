@@ -28701,7 +28701,7 @@ Respond with JSON in this format:
       try {
         await sendTeamInviteEmail(
           member.email,
-          member.name || null,
+          [member.firstName, member.lastName].filter(Boolean).join(' ') || null,
           owner?.firstName || 'The business owner',
           businessNameStr,
           roleNameStr,

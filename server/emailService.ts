@@ -1895,7 +1895,7 @@ export async function sendTeamInviteEmail(
 ): Promise<{ success: boolean; error?: string; mock?: boolean }> {
 
   const firstName = inviteeName ? inviteeName.trim().split(/\s+/)[0] : '';
-  const greeting = firstName ? `G'day ${firstName},` : `G'day,`;
+  const greeting = firstName ? `G'day ${firstName},` : `G'day there,`;
   // Direct https Universal Link / App Link — opens the app on iOS/Android if
   // installed (verified via /.well-known/{apple-app-site-association,assetlinks.json}),
   // otherwise the web /accept-invite/:token page handles it.
@@ -1912,8 +1912,13 @@ export async function sendTeamInviteEmail(
     subject: `You've been invited to join ${businessName} on JobRunner`,
     html: renderEmailShell('Team Invitation', `
     <tr>
-      <td style="background-color: #2563EB; padding: 22px 32px; text-align: center;">
-        <span style="font-size: 25px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #ffffff;">Job</span><span style="color: #F59E0B;">Runner</span></span>
+      <td style="background-color: #ffffff; padding: 20px 32px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+        <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+          <tr>
+            <td valign="middle" style="padding-right: 9px;"><img src="${baseUrl}/favicon-192.png" width="30" height="30" alt="JobRunner" style="display: block; border: 0;" /></td>
+            <td valign="middle"><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; font-family: ${EMAIL_SYSTEM_FONT};"><span style="color: #2563EB;">Job</span><span style="color: #F59E0B;">Runner</span></span></td>
+          </tr>
+        </table>
       </td>
     </tr>
     <tr>
