@@ -449,7 +449,7 @@ if (process.env.DATABASE_URL) {
           "wss://*.replit.dev",
           ...(isDev ? ["'unsafe-inline'", "ws://localhost:*", "ws://127.0.0.1:*"] : []),
         ],
-        frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+        frameSrc: ["'self'", "blob:", "https://js.stripe.com", "https://hooks.stripe.com"],
         frameAncestors: isDev
           ? ["'self'", "https://*.replit.dev", "https://*.replit.com", "https://replit.com"]
           : ["'self'"],
