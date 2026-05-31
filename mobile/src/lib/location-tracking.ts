@@ -259,17 +259,21 @@ class LocationTrackingService {
         await this.sendImmediateLocation();
         return true;
       } catch (bgError: any) {
-        const errorMessage = bgError?.message || '';
-        if (errorMessage.includes('UIBackgroundModes') || errorMessage.includes('Background location')) {
-          if (__DEV__) console.warn('[Location] Background location not configured in Info.plist, using foreground tracking only');
-          const location = await this.getCurrentLocation();
-          if (location) {
-            this.updateStatus('foreground_only');
-            this._stationaryCount = 0;
-            if (this.onLocationUpdate) this.onLocationUpdate(location);
-            await this.sendLocationToServer(location);
-            return true;
-          }
+        // Background updates can fail for several reasons — most commonly on iOS
+        // when the user grants only "While Using" (not "Always"), but also when
+        // UIBackgroundModes isn't configured. In EVERY case we can still put the
+        // worker on the team map by sending the current foreground location.
+        // (Previously this fallback only ran for a specific error-message string,
+        // so a "While Using" grant silently sent nothing and the worker never
+        // appeared on the map.)
+        if (__DEV__) console.warn('[Location] Background tracking unavailable, falling back to foreground send:', bgError?.message);
+        const location = await this.getCurrentLocation();
+        if (location) {
+          this.updateStatus('foreground_only');
+          this._stationaryCount = 0;
+          if (this.onLocationUpdate) this.onLocationUpdate(location);
+          await this.sendLocationToServer(location);
+          return true;
         }
         throw bgError;
       }
