@@ -31859,8 +31859,8 @@ Respond with JSON in this format:
 
       const locationTime = new Date(timestamp || Date.now());
 
-      // Insert location history record
-      await storage.db.insert(locationTracking).values({
+      // Insert location history record (breadcrumb trail)
+      await storage.createLocationTracking({
         userId,
         latitude: latitude.toString(),
         longitude: longitude.toString(),
@@ -31874,28 +31874,24 @@ Respond with JSON in this format:
         trackingType: 'automatic',
       });
 
-      // Update or insert current status in tradieStatus
-      const existingStatus = await storage.db.query.tradieStatus.findFirst({
-        where: eq(tradieStatus.userId, userId),
+      // Update (or create) the worker's live status pin shown on the team map.
+      // businessOwnerId is required: for a worker it's their owner, for an owner
+      // posting their own location it's themselves.
+      const userContext = await getUserContext(userId);
+      await storage.upsertTradieStatus({
+        userId,
+        businessOwnerId: userContext.businessOwnerId || userId,
+        currentLatitude: latitude.toString(),
+        currentLongitude: longitude.toString(),
+        speed: speed?.toString(),
+        heading: heading?.toString(),
+        batteryLevel,
+        isCharging,
+        activityStatus: activityType === 'driving' ? 'driving' : activityType === 'working' ? 'working' : 'online',
+        lastSeenAt: locationTime,
+        lastLocationUpdate: locationTime,
       });
 
-      if (existingStatus) {
-        await storage.db.update(tradieStatus)
-          .set({
-            currentLatitude: latitude.toString(),
-            currentLongitude: longitude.toString(),
-            speed: speed?.toString(),
-            heading: heading?.toString(),
-            batteryLevel,
-            isCharging,
-            activityStatus: activityType === 'driving' ? 'driving' : activityType === 'working' ? 'working' : 'online',
-            lastSeenAt: locationTime,
-            lastLocationUpdate: locationTime,
-            updatedAt: new Date(),
-          })
-          .where(eq(tradieStatus.userId, userId));
-      }
-      
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error updating location:', error);
