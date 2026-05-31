@@ -37,6 +37,14 @@ export const PERMISSIONS = {
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
+// Placeholder business name auto-created for invited workers/subcontractors who
+// don't own a real business. It is NOT a real own-business: it exists only so
+// they skip the owner onboarding wizard. Anywhere we decide "is this user a
+// business owner?" we must treat this sentinel as "no own business" so a plain
+// worker resolves into the business they were invited to (inheriting its plan
+// and permissions) instead of being treated as the owner of an empty business.
+export const WORKER_PROFILE_PLACEHOLDER_NAME = 'Worker Profile';
+
 export const ROLE_TEMPLATES = {
   OWNER: {
     name: 'Owner',
@@ -142,6 +150,11 @@ export interface UserContext {
   ownerSubscriptionValid?: boolean;
   ownerSubscriptionError?: string;
   ownerBusinessName?: string;
+  // The subscription tier that governs the user's CURRENT context. For a team
+  // member working inside a business, this is the business owner's tier (the
+  // worker inherits the business plan) — NOT the worker's own personal tier.
+  // For an owner, this is their own tier.
+  effectiveSubscriptionTier?: string;
 }
 
 export async function getUserContext(userId: string): Promise<UserContext> {
@@ -153,7 +166,14 @@ export async function getUserContext(userId: string): Promise<UserContext> {
     teamMembership = await storage.getTeamMemberByUserIdAndBusiness(userId, activeBusinessId);
   } else {
     const ownSettings = await storage.getBusinessSettings(userId);
-    if (!ownSettings?.businessName) {
+    // The "Worker Profile" placeholder is not a real own-business, so a plain
+    // worker with no active business still resolves into the business they were
+    // invited to (inheriting its plan + permissions) instead of looking like an
+    // owner of an empty business.
+    const hasRealOwnBusiness =
+      !!ownSettings?.businessName &&
+      ownSettings.businessName !== WORKER_PROFILE_PLACEHOLDER_NAME;
+    if (!hasRealOwnBusiness) {
       teamMembership = await storage.getTeamMembershipByMemberId(userId);
     }
   }
@@ -173,6 +193,8 @@ export async function getUserContext(userId: string): Promise<UserContext> {
     let ownerSubscriptionValid = true;
     let ownerSubscriptionError: string | undefined;
     let ownerBusinessName: string | undefined;
+    // The plan the team member inherits from the business they work in.
+    let effectiveSubscriptionTier = 'free';
     
     if (ownerUser) {
       const ownerTier = ownerUser.subscriptionTier;
@@ -187,6 +209,13 @@ export async function getUserContext(userId: string): Promise<UserContext> {
       const teamCapableTiers = new Set(['team', 'business', 'beta']);
       const ownerHasTeamPlan = !!ownerTier && teamCapableTiers.has(ownerTier);
       const ownerHasBetaUnlock = !!(ownerUser.betaUser || ownerUser.betaLifetimeAccess);
+
+      // The worker inherits the business owner's plan. Beta-unlocked owners map
+      // to 'business' so beta workers get full feature access (the tier ranking
+      // used by the UI gate doesn't understand a 'beta' tier string).
+      effectiveSubscriptionTier = ownerHasBetaUnlock
+        ? 'business'
+        : (ownerTier || 'free');
 
       if (subscriptionStatus === 'canceled' && !isTrialActive) {
         ownerSubscriptionValid = false;
@@ -219,6 +248,7 @@ export async function getUserContext(userId: string): Promise<UserContext> {
       ownerSubscriptionValid,
       ownerSubscriptionError,
       ownerBusinessName,
+      effectiveSubscriptionTier,
     };
   }
   
@@ -230,6 +260,7 @@ export async function getUserContext(userId: string): Promise<UserContext> {
     permissions: Object.values(PERMISSIONS),
     teamMemberId: null,
     ownerSubscriptionValid: true,
+    effectiveSubscriptionTier: currentUser?.subscriptionTier || 'free',
   };
 }
 

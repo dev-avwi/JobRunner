@@ -416,7 +416,7 @@ export default function StaffTradieDashboard({
         : `Your day is clear. Enjoy it.`;
 
   return (
-    <div className="w-full px-4 sm:px-5 py-5 sm:py-6 pb-28 space-y-6" data-testid="staff-tradie-dashboard">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-28 space-y-6" data-testid="staff-tradie-dashboard">
       {/* Hero */}
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">

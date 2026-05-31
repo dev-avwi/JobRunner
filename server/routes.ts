@@ -55,7 +55,7 @@ import { loginSchema, insertUserSchema, type SafeUser, requestLoginCodeSchema, v
 import { sendEmailVerificationEmail, sendLoginCodeEmail, sendJobConfirmationEmail, sendPasswordResetEmail, sendTeamInviteEmail, sendJobAssignmentEmail, sendJobCompletionNotificationEmail, sendWelcomeEmail } from "./emailService";
 import { FreemiumService } from "./freemiumService";
 import { DEMO_USER, VISITOR_USER } from "./demoData";
-import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit } from "./permissions";
+import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, WORKER_PROFILE_PLACEHOLDER_NAME } from "./permissions";
 import { logTeamActivity } from "./activityService";
 import {
   insertBusinessSettingsSchema,
@@ -3563,7 +3563,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const businesses: any[] = [];
 
-      if (ownSettings?.businessName) {
+      // Skip the "Worker Profile" placeholder: it is not a real own-business, so
+      // a plain worker (one membership + placeholder) gets exactly one entry and
+      // the switcher auto-hides. Subcontractors with multiple real memberships
+      // still get multiple entries and keep the switcher.
+      const hasRealOwnBusiness =
+        !!ownSettings?.businessName &&
+        ownSettings.businessName !== WORKER_PROFILE_PLACEHOLDER_NAME;
+
+      if (hasRealOwnBusiness) {
         let ownJobCount = 0;
         try {
           const ownJobs = await storage.getJobs(effectiveUserId);
@@ -5077,9 +5085,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usageInfo = await FreemiumService.getFullUsageInfo(req.userId);
       const user = await storage.getUser(req.userId);
       const businessSettings = await storage.getBusinessSettings(req.userId);
+      // A worker/subcontractor inherits the plan of the business they work in.
+      const userContext = await getUserContext(req.userId);
+      const effectiveTier = userContext.effectiveSubscriptionTier || user?.subscriptionTier || 'free';
       res.json({
         ...usageInfo,
-        subscriptionTier: user?.subscriptionTier || 'free',
+        subscriptionTier: effectiveTier,
         subscriptionStatus: businessSettings?.subscriptionStatus || 'none',
         betaLifetimeAccess: user?.betaLifetimeAccess || false,
         isBeta: IS_BETA,
@@ -8114,6 +8125,27 @@ Be specific about materials, colors, and features that would be included.`
   }
 
   // Business Settings Routes
+  // Non-sensitive DISPLAY fields a worker/subcontractor may see from the
+  // business owner's settings. Anything not in this list (tokens, bank +
+  // billing data, OAuth/Twilio/Vapi creds, stripe ids, payment-method PII)
+  // is NEVER returned to a non-owner. Owners always get their own full row.
+  const WORKER_VISIBLE_SETTINGS_KEYS = [
+    'businessName', 'abn', 'phone', 'email', 'address', 'logoUrl',
+    'detectedColors', 'primaryColor', 'secondaryColor', 'accentColor',
+    'customThemeEnabled', 'brandColor', 'themeMode',
+    'gstEnabled', 'defaultHourlyRate', 'timeRoundingMinutes', 'minimumCalloutHours',
+    'includeLocationProofOnInvoices', 'calloutFee', 'quoteValidityDays',
+    'invoicePrefix', 'quotePrefix', 'paymentInstructions',
+    'teamSize', 'numberOfEmployees', 'licenseNumber', 'regulatorRegistration',
+    'warrantyPeriod', 'lateFeeRate', 'quoteTerms', 'invoiceTerms', 'defaultPaymentTermsDays',
+    'documentTemplate', 'documentTemplateSettings',
+    'timezone', 'scheduleStartHour', 'scheduleEndHour',
+    'simpleMode', 'onboardingCompleted', 'hasSeenWalkthrough', 'onboardingLevel',
+    'aiEnabled', 'aiPhotoAnalysisEnabled', 'aiSuggestionsEnabled',
+    'geofenceSmsAlerts', 'smsMode', 'smartRunningLateEnabled', 'pushNotificationsEnabled',
+    'googleReviewUrl', 'bookingSlug', 'bookingPageEnabled',
+  ];
+
   app.get("/api/business-settings", requireAuth, async (req: any, res) => {
     try {
       let settings = await storage.getBusinessSettings(req.userId);
@@ -8159,7 +8191,7 @@ Be specific about materials, colors, and features that would be included.`
           })();
           settings = await storage.createBusinessSettings({
             userId: req.userId,
-            businessName: isStaffOnOtherTeam ? 'Worker Profile' : ownerDefaultName,
+            businessName: isStaffOnOtherTeam ? WORKER_PROFILE_PLACEHOLDER_NAME : ownerDefaultName,
             onboardingCompleted: isStaffOnOtherTeam,
             onboardingLevel: 0,
           } as any);
@@ -8185,11 +8217,29 @@ Be specific about materials, colors, and features that would be included.`
         }
       }
       
+      // A worker/subcontractor operating inside a business they don't own should
+      // see THAT business's identity (name, logo, settings) and inherit its plan
+      // — not their own "Worker Profile" placeholder. Resolve the active business
+      // owner and use their settings for display.
+      const sbUserContext = await getUserContext(req.userId);
+      const sbEffectiveTier = sbUserContext.effectiveSubscriptionTier || user?.subscriptionTier || 'free';
+      const isWorkerInBusiness = !sbUserContext.isOwner && !!sbUserContext.businessOwnerId;
+      const displayOwnerId = isWorkerInBusiness ? sbUserContext.businessOwnerId! : req.userId;
+
+      let displaySettings = settings!;
+      let displayUser = user;
+      if (isWorkerInBusiness) {
+        const ownerSettings = await storage.getBusinessSettings(displayOwnerId);
+        if (ownerSettings) displaySettings = ownerSettings;
+        const ownerUser = await storage.getUser(displayOwnerId);
+        if (ownerUser) displayUser = ownerUser;
+      }
+
       // Auto-detect simpleMode default: if never explicitly set, base on team members
-      let simpleMode = settings.simpleMode;
+      let simpleMode = displaySettings.simpleMode;
       if (simpleMode === null || simpleMode === undefined) {
         try {
-          const teamMembers = await storage.getTeamMembers(req.userId);
+          const teamMembers = await storage.getTeamMembers(displayOwnerId);
           const acceptedMembers = teamMembers.filter((m: any) => m.inviteStatus === "accepted");
           simpleMode = acceptedMembers.length === 0;
         } catch {
@@ -8202,13 +8252,24 @@ Be specific about materials, colors, and features that would be included.`
       const isMobileApp = userAgent.includes('Expo') || 
                           userAgent.includes('ReactNative') || 
                           req.headers['x-mobile-app'] === 'true';
-      
+
+      // Workers/subcontractors only receive a non-sensitive DISPLAY subset of
+      // the owner's settings — never the raw row (it holds tokens, bank +
+      // billing data). Owners always get their own full settings.
+      const baseSettings: any = isWorkerInBusiness
+        ? Object.fromEntries(
+            WORKER_VISIBLE_SETTINGS_KEYS
+              .filter((k) => k in (displaySettings as any))
+              .map((k) => [k, (displaySettings as any)[k]])
+          )
+        : displaySettings;
+
       const responseData: any = {
-        ...settings,
+        ...baseSettings,
         simpleMode,
-        logoUrl: resolveBrowserLogoUrl(settings.logoUrl, isMobileApp),
-        subscriptionTier: user?.subscriptionTier || 'free',
-        tradeType: user?.tradeType || 'general',
+        logoUrl: resolveBrowserLogoUrl(displaySettings.logoUrl, isMobileApp),
+        subscriptionTier: sbEffectiveTier,
+        tradeType: displayUser?.tradeType || 'general',
       };
 
       if (req.isDemo) {
