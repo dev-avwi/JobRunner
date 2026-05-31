@@ -210,7 +210,9 @@ export function Header({
     fetchWorkspaceInfo();
   }, []);
   
-  const showWorkspaceIndicator = multiBusinessCount > 1 || pendingInviteCount > 0;
+  // Subcontractors always get a prominent workspace switcher so they can hop
+  // between Personal profile and any joined businesses (or join another).
+  const showWorkspaceIndicator = multiBusinessCount > 1 || pendingInviteCount > 0 || isSubcontractor;
   
   const avatarScale = useRef(new Animated.Value(1)).current;
   

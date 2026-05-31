@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   Modal,
   StyleSheet,
@@ -67,6 +68,9 @@ export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitc
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState<string | null>(null);
   const [acceptingInvite, setAcceptingInvite] = useState<string | null>(null);
+  const [showJoinForm, setShowJoinForm] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [joining, setJoining] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -157,6 +161,35 @@ export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitc
     );
   };
 
+  const handleJoinByCode = async () => {
+    const code = joinCode.trim().toUpperCase();
+    if (!code) {
+      Alert.alert('Enter a code', 'Paste the invite code from the business owner.');
+      return;
+    }
+    setJoining(true);
+    try {
+      const res = await api.post<{ success?: boolean; businessName?: string; error?: string }>(
+        '/api/team/invite-code/redeem',
+        { code },
+      );
+      if (res.data?.success) {
+        Alert.alert('Joined', `You've joined ${res.data.businessName || 'the business'}.`);
+        setJoinCode('');
+        setShowJoinForm(false);
+        await fetchData();
+        await forceRefreshAuth();
+        onSwitch?.();
+      } else {
+        Alert.alert('Error', res.error || res.data?.error || 'Invalid or expired invite code');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Could not join with that code');
+    } finally {
+      setJoining(false);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-AU', { 
@@ -166,6 +199,53 @@ export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitc
       hour: 'numeric', 
       minute: '2-digit' 
     });
+  };
+
+  const personalBusinesses = businesses.filter((b) => b.isOwnBusiness);
+  const joinedBusinesses = businesses.filter((b) => !b.isOwnBusiness);
+
+  const renderBusinessCard = (biz: Business) => {
+    const isActive = biz.businessOwnerId === activeBusinessId;
+    const isSwitching = switching === biz.businessOwnerId;
+    return (
+      <PressableRow key={biz.businessOwnerId} style={[styles.businessCard, isActive && styles.businessCardActive]} onPress={() => handleSwitch(biz.businessOwnerId)} disabled={isSwitching || isActive} >
+        <View style={[styles.businessLogo, isActive && styles.businessLogoActive]}>
+          {biz.logoUrl ? (
+            <Image source={{ uri: biz.logoUrl }} style={styles.logoImage} />
+          ) : (
+            <Feather
+              name={biz.isOwnBusiness ? "home" : "briefcase"}
+              size={20}
+              color={isActive ? colors.primaryForeground : colors.primary}
+            />
+          )}
+        </View>
+        <View style={styles.businessInfo}>
+          <Text style={[styles.businessName, isActive && styles.businessNameActive]}>
+            {biz.isOwnBusiness ? 'Personal profile' : biz.businessName}
+          </Text>
+          <Text style={styles.businessRole}>
+            {biz.isOwnBusiness ? (biz.businessName || 'Your own workspace') : biz.roleName}
+          </Text>
+        </View>
+        <View style={styles.businessRight}>
+          {(biz.pendingJobCount ?? 0) > 0 && (
+            <View style={styles.jobCountBadge}>
+              <Text style={styles.jobCountText}>{biz.pendingJobCount}</Text>
+            </View>
+          )}
+          {isSwitching ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : isActive ? (
+            <View style={styles.activeIndicator}>
+              <Feather name="check" size={14} color={colors.primaryForeground} />
+            </View>
+          ) : (
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          )}
+        </View>
+      </PressableRow>
+    );
   };
 
   return (
@@ -248,51 +328,19 @@ export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitc
               </View>
             )}
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>YOUR WORKSPACES</Text>
-              {businesses.map((biz) => {
-                const isActive = biz.businessOwnerId === activeBusinessId;
-                const isSwitching = switching === biz.businessOwnerId;
+            {personalBusinesses.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>PERSONAL</Text>
+                {personalBusinesses.map(renderBusinessCard)}
+              </View>
+            )}
 
-                return (
-                  <PressableRow key={biz.businessOwnerId} style={[styles.businessCard, isActive && styles.businessCardActive]} onPress={() => handleSwitch(biz.businessOwnerId)} disabled={isSwitching || isActive} >
-                    <View style={[styles.businessLogo, isActive && styles.businessLogoActive]}>
-                      {biz.logoUrl ? (
-                        <Image source={{ uri: biz.logoUrl }} style={styles.logoImage} />
-                      ) : (
-                        <Feather
-                          name={biz.isOwnBusiness ? "home" : "briefcase"}
-                          size={20}
-                          color={isActive ? colors.primaryForeground : colors.primary}
-                        />
-                      )}
-                    </View>
-                    <View style={styles.businessInfo}>
-                      <Text style={[styles.businessName, isActive && styles.businessNameActive]}>
-                        {biz.businessName}
-                      </Text>
-                      <Text style={styles.businessRole}>{biz.roleName}</Text>
-                    </View>
-                    <View style={styles.businessRight}>
-                      {(biz.pendingJobCount ?? 0) > 0 && (
-                        <View style={styles.jobCountBadge}>
-                          <Text style={styles.jobCountText}>{biz.pendingJobCount}</Text>
-                        </View>
-                      )}
-                      {isSwitching ? (
-                        <ActivityIndicator size="small" color={colors.primary} />
-                      ) : isActive ? (
-                        <View style={styles.activeIndicator}>
-                          <Feather name="check" size={14} color={colors.primaryForeground} />
-                        </View>
-                      ) : (
-                        <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-                      )}
-                    </View>
-                  </PressableRow>
-                );
-              })}
-            </View>
+            {joinedBusinesses.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>JOINED BUSINESSES</Text>
+                {joinedBusinesses.map(renderBusinessCard)}
+              </View>
+            )}
 
             {businesses.length === 0 && (
               <View style={styles.emptyState}>
@@ -303,6 +351,41 @@ export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitc
                 </Text>
               </View>
             )}
+
+            <View style={styles.section}>
+              {showJoinForm ? (
+                <View style={styles.joinForm}>
+                  <Text style={styles.joinFormLabel}>Enter invite code</Text>
+                  <TextInput
+                    style={styles.joinInput}
+                    value={joinCode}
+                    onChangeText={setJoinCode}
+                    placeholder="e.g. ABC123"
+                    placeholderTextColor={colors.mutedForeground}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    editable={!joining}
+                  />
+                  <View style={styles.joinFormActions}>
+                    <PressableRow style={styles.joinCancelButton} onPress={() => { setShowJoinForm(false); setJoinCode(''); }} disabled={joining}>
+                      <Text style={styles.joinCancelText}>Cancel</Text>
+                    </PressableRow>
+                    <PressableRow style={styles.joinSubmitButton} onPress={handleJoinByCode} disabled={joining}>
+                      {joining ? (
+                        <ActivityIndicator size="small" color={colors.primaryForeground} />
+                      ) : (
+                        <Text style={styles.joinSubmitText}>Join</Text>
+                      )}
+                    </PressableRow>
+                  </View>
+                </View>
+              ) : (
+                <PressableRow style={styles.joinAnotherButton} onPress={() => setShowJoinForm(true)}>
+                  <Feather name="plus-circle" size={18} color={colors.primary} />
+                  <Text style={styles.joinAnotherText}>Join another business</Text>
+                </PressableRow>
+              )}
+            </View>
           </ScrollView>
         )}
       </View>
@@ -542,6 +625,78 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  joinAnotherButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.xl,
+    paddingVertical: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  joinAnotherText: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  joinForm: {
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
+  joinFormLabel: {
+    ...typography.caption,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  joinInput: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontSize: 16,
+    color: colors.foreground,
+    letterSpacing: 1,
+  },
+  joinFormActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  joinCancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  joinCancelText: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  joinSubmitButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
+  },
+  joinSubmitText: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.primaryForeground,
   },
   emptyState: {
     alignItems: 'center',

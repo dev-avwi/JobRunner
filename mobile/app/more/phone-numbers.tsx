@@ -22,6 +22,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, typography } from '../../src/lib/design-tokens';
 import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
+import { useUserRole } from '../../src/hooks/use-user-role';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showToast } from '../../src/lib/toast';
 
@@ -71,6 +72,9 @@ export default function PhoneNumbersPage() {
   const bottomInset = useBottomInset(40);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { businessSettings, fetchBusinessSettings } = useAuthStore();
+  // Subcontractors viewing a joined business get read-only access — the
+  // dedicated number is owned/managed by the business owner.
+  const { isSubcontractor } = useUserRole();
 
   const [numbers, setNumbers] = useState<AvailableNumber[]>([]);
   const [loading, setLoading] = useState(false);
@@ -388,6 +392,11 @@ export default function PhoneNumbersPage() {
   }, []);
 
   useEffect(() => {
+    if (isSubcontractor) {
+      // Read-only: only need to display the active number/config.
+      fetchAiConfigs();
+      return;
+    }
     if (!currentNumber) searchNumbers();
     fetchPortRequests();
     fetchAiConfigs();
@@ -404,6 +413,7 @@ export default function PhoneNumbersPage() {
   };
 
   useEffect(() => {
+    if (isSubcontractor) return;
     if (!currentNumber && aiConfigs.length === 0) searchNumbers();
   }, [aiConfigs]);
 
@@ -414,6 +424,69 @@ export default function PhoneNumbersPage() {
     }
     return phone;
   };
+
+  // Read-only view for subcontractors in a joined business. They can see the
+  // active number(s)/AI Receptionist status, but cannot buy, release, port,
+  // relabel, or change SMS attribution — those belong to the business owner.
+  if (isSubcontractor) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}>
+          <Text style={styles.pageTitle}>Phone Numbers</Text>
+          <Text style={styles.pageSubtitle}>
+            The phone number and AI Receptionist for this business.
+          </Text>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: `${colors.info}10`, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.lg, gap: spacing.xs, borderWidth: 1, borderColor: `${colors.info}30` }}>
+            <Feather name="lock" size={14} color={colors.info} />
+            <Text style={{ fontSize: 12, color: colors.info, flex: 1, lineHeight: 17 }}>
+              These numbers are managed by the business owner. You have view-only access.
+            </Text>
+          </View>
+
+          {aiConfigs.length > 0 ? (
+            aiConfigs.map((cfg) => {
+              const num = cfg.dedicatedPhoneNumber ? formatPhone(cfg.dedicatedPhoneNumber) : 'Pending setup';
+              const statusLabel = cfg.enabled ? 'Active' : 'Inactive';
+              const statusColor = cfg.enabled ? colors.success : colors.mutedForeground;
+              return (
+                <View key={cfg.id} style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginBottom: spacing.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+                      <Feather name="phone" size={16} color={colors.primary} />
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.foreground }}>{num}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${statusColor}15`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusColor }} />
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: statusColor }}>{statusLabel}</Text>
+                    </View>
+                  </View>
+                  {!!cfg.label && (
+                    <Text style={{ fontSize: 13, color: colors.mutedForeground, marginTop: spacing.xs }}>{cfg.label}</Text>
+                  )}
+                </View>
+              );
+            })
+          ) : currentNumber ? (
+            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginBottom: spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <Feather name="phone" size={16} color={colors.primary} />
+                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.foreground }}>{formatPhone(currentNumber)}</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={{ alignItems: 'center', paddingVertical: spacing['2xl'], gap: spacing.sm }}>
+              <Feather name="phone-off" size={32} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center' }}>
+                No dedicated number set up for this business yet.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </>
+    );
+  }
 
   return (
     <>
