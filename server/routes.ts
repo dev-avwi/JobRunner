@@ -28495,6 +28495,11 @@ Respond with JSON in this format:
           roleName: roleName,
           roleDescription: roleData?.description || '',
           themeColor,
+          // The client reads `invitationStatus`; the DB column is `inviteStatus`.
+          // Without this mapping it was always undefined, so unaccepted invites
+          // were wrongly rendered as "Active". Surface the real invite state so a
+          // member only shows Active once they've actually accepted.
+          invitationStatus: member.inviteStatus,
         };
       });
       

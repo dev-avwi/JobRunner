@@ -3,6 +3,82 @@ import { users, jobs, quotes, invoices, clients } from '@shared/schema';
 import { eq, sql, and, gt, isNull, isNotNull, count } from 'drizzle-orm';
 import { sendSystemEmail } from './emailService';
 import { logger } from './logger';
+import { getProductionBaseUrl } from './urlHelper';
+
+const BRAND_BLUE = '#2563EB';
+
+// Absolute logo URL — relative URLs do not work in email clients
+function lifecycleLogoUrl(): string {
+  return `${getProductionBaseUrl()}/logo.png`;
+}
+
+// One consistent primary CTA button used across every lifecycle email
+function lifecycleButton(text: string, url: string): string {
+  return `
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 28px 0;">
+          <tr>
+            <td align="center">
+              <a href="${url}" style="display: inline-block; background-color: ${BRAND_BLUE}; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: 600; line-height: 1;">${text}</a>
+            </td>
+          </tr>
+        </table>`;
+}
+
+// Shared, email-client-safe shell matching the JobRunner design language
+function lifecycleEmailShell(heading: string, innerContent: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>JobRunner</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; width: 100% !important; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+          <tr>
+            <td style="height: 4px; line-height: 4px; font-size: 0; background-color: ${BRAND_BLUE};">&nbsp;</td>
+          </tr>
+          <tr>
+            <td style="padding: 32px 32px 0 32px;">
+              <img src="${lifecycleLogoUrl()}" alt="JobRunner" style="max-height: 44px; max-width: 180px; display: block; margin-bottom: 16px;" />
+              <p style="margin: 0; color: #0f172a; font-size: 19px; font-weight: 700; line-height: 1.3;">JobRunner</p>
+              <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px;">Built for Australian tradies</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 24px; border-top: 1px solid #e2e8f0;">
+                <tr>
+                  <td style="padding-top: 20px;">
+                    <p style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 700; line-height: 1.3;">${heading}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 32px 32px 32px;">
+              ${innerContent}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
 
 interface LifecycleEmailsSent {
   welcome_day1?: string;
@@ -36,32 +112,23 @@ const LIFECYCLE_EMAILS = [
     minDaysSinceLastEmail: 2,
     condition: (user: UserWithMilestones) => user.clientCount === 0,
     subject: (user: UserWithMilestones) => `${getFirstName(user)}, let's add your first client`,
-    body: (user: UserWithMilestones) => `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">G'day ${getFirstName(user)},</h2>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          You signed up for JobRunner a few days ago — nice one! The quickest way to see the value is to add your first client and create a job.
-        </p>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          It takes about 30 seconds:
-        </p>
-        <ol style="color: #4a4a4a; font-size: 16px; line-height: 1.8;">
-          <li>Open JobRunner and tap <strong>Clients</strong></li>
-          <li>Add a client name and phone number</li>
-          <li>Create a job for that client</li>
-        </ol>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          Once you've got a job in there, everything else — quotes, invoices, scheduling — flows from that.
-        </p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="https://jobrunner.com.au" style="background-color: #2563eb; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Open JobRunner</a>
-        </div>
-        <p style="color: #888; font-size: 14px; margin-top: 32px;">
-          Stuck? Email us at admin@avwebinnovation.com and we'll personally help you get set up.<br/>
-          — The JobRunner Team
-        </p>
-      </div>
-    `,
+    body: (user: UserWithMilestones) => lifecycleEmailShell('Let\'s add your first client', `
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">G'day ${getFirstName(user)},</p>
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">You signed up for JobRunner a few days ago &mdash; nice one. The quickest way to see the value is to add your first client and create a job.</p>
+              <p style="margin: 0 0 12px 0; color: #475569; font-size: 15px; line-height: 1.6;">It takes about 30 seconds:</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 0 0 16px 0;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <p style="margin: 0 0 10px 0; color: #475569; font-size: 15px; line-height: 1.5;"><strong style="color: #0f172a;">1.</strong>&nbsp;&nbsp;Open JobRunner and tap <strong style="color: #0f172a;">Clients</strong></p>
+                    <p style="margin: 0 0 10px 0; color: #475569; font-size: 15px; line-height: 1.5;"><strong style="color: #0f172a;">2.</strong>&nbsp;&nbsp;Add a client name and phone number</p>
+                    <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.5;"><strong style="color: #0f172a;">3.</strong>&nbsp;&nbsp;Create a job for that client</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 8px 0; color: #475569; font-size: 15px; line-height: 1.6;">Once you've got a job in there, everything else &mdash; quotes, invoices, scheduling &mdash; flows from that.</p>
+              ${lifecycleButton('Open JobRunner', 'https://jobrunner.com.au')}
+              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Stuck? Email us at admin@avwebinnovation.com and we'll personally help you get set up.<br/>&mdash; The JobRunner Team</p>
+    `),
   },
   {
     key: 'nudge_day7',
@@ -69,30 +136,23 @@ const LIFECYCLE_EMAILS = [
     minDaysSinceLastEmail: 3,
     condition: (user: UserWithMilestones) => user.quoteCount === 0,
     subject: (user: UserWithMilestones) => `${getFirstName(user)}, send your first quote in under a minute`,
-    body: (user: UserWithMilestones) => `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">Hey ${getFirstName(user)},</h2>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          You've been on JobRunner for a week now. The tradies who get the most value are the ones who send their first quote early — it's the moment the app starts saving you real time.
-        </p>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          Here's what makes JobRunner quotes different:
-        </p>
-        <ul style="color: #4a4a4a; font-size: 16px; line-height: 1.8;">
-          <li><strong>Professional PDF</strong> — branded with your logo and ABN</li>
-          <li><strong>One-tap send</strong> — email or SMS straight to the client</li>
-          <li><strong>Track status</strong> — see when they view and accept it</li>
-          <li><strong>Convert to invoice</strong> — one click when the job's done</li>
-        </ul>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="https://jobrunner.com.au" style="background-color: #2563eb; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Create a Quote</a>
-        </div>
-        <p style="color: #888; font-size: 14px; margin-top: 32px;">
-          Need a hand? Email us at admin@avwebinnovation.com.<br/>
-          — The JobRunner Team
-        </p>
-      </div>
-    `,
+    body: (user: UserWithMilestones) => lifecycleEmailShell('Send your first quote in under a minute', `
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">Hey ${getFirstName(user)},</p>
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">You've been on JobRunner for a week now. The tradies who get the most value are the ones who send their first quote early &mdash; it's the moment the app starts saving you real time.</p>
+              <p style="margin: 0 0 12px 0; color: #475569; font-size: 15px; line-height: 1.6;">Here's what makes JobRunner quotes different:</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 0 0 16px 0;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <p style="margin: 0 0 10px 0; color: #475569; font-size: 15px; line-height: 1.5;"><strong style="color: #0f172a;">Professional PDF</strong> &mdash; branded with your logo and ABN</p>
+                    <p style="margin: 0 0 10px 0; color: #475569; font-size: 15px; line-height: 1.5;"><strong style="color: #0f172a;">One-tap send</strong> &mdash; email or SMS straight to the client</p>
+                    <p style="margin: 0 0 10px 0; color: #475569; font-size: 15px; line-height: 1.5;"><strong style="color: #0f172a;">Track status</strong> &mdash; see when they view and accept it</p>
+                    <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.5;"><strong style="color: #0f172a;">Convert to invoice</strong> &mdash; one click when the job's done</p>
+                  </td>
+                </tr>
+              </table>
+              ${lifecycleButton('Create a Quote', 'https://jobrunner.com.au')}
+              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Need a hand? Email us at admin@avwebinnovation.com.<br/>&mdash; The JobRunner Team</p>
+    `),
   },
   {
     key: 'nudge_day14',
@@ -100,27 +160,20 @@ const LIFECYCLE_EMAILS = [
     minDaysSinceLastEmail: 5,
     condition: (user: UserWithMilestones) => user.invoiceCount === 0,
     subject: (user: UserWithMilestones) => `${getFirstName(user)}, get paid faster with JobRunner invoices`,
-    body: (user: UserWithMilestones) => `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">Hey ${getFirstName(user)},</h2>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          Two weeks in and you haven't sent an invoice yet — that's where the real magic happens.
-        </p>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          JobRunner invoices let your clients pay online with a card. No more chasing bank transfers or waiting for direct deposits.
-        </p>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          <strong>Pro tip:</strong> If you've already got a quote in the system, you can convert it to an invoice with one tap.
-        </p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="https://jobrunner.com.au" style="background-color: #2563eb; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Send Your First Invoice</a>
-        </div>
-        <p style="color: #888; font-size: 14px; margin-top: 32px;">
-          Questions about getting paid through JobRunner? Email us at admin@avwebinnovation.com — happy to walk you through it.<br/>
-          — The JobRunner Team
-        </p>
-      </div>
-    `,
+    body: (user: UserWithMilestones) => lifecycleEmailShell('Get paid faster with JobRunner invoices', `
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">Hey ${getFirstName(user)},</p>
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">Two weeks in and you haven't sent an invoice yet &mdash; that's where the real magic happens.</p>
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">JobRunner invoices let your clients pay online with a card. No more chasing bank transfers or waiting for direct deposits.</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 0 0 16px 0;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">Pro tip:</strong> If you've already got a quote in the system, you can convert it to an invoice with one tap.</p>
+                  </td>
+                </tr>
+              </table>
+              ${lifecycleButton('Send Your First Invoice', 'https://jobrunner.com.au')}
+              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Questions about getting paid through JobRunner? Email us at admin@avwebinnovation.com &mdash; happy to walk you through it.<br/>&mdash; The JobRunner Team</p>
+    `),
   },
   {
     key: 'churn_risk_day21',
@@ -128,31 +181,23 @@ const LIFECYCLE_EMAILS = [
     minDaysSinceLastEmail: 5,
     condition: (user: UserWithMilestones) => user.jobCount <= 1 && user.quoteCount === 0,
     subject: (user: UserWithMilestones) => `${getFirstName(user)}, is JobRunner right for your business?`,
-    body: (user: UserWithMilestones) => `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">Hey ${getFirstName(user)},</h2>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          I noticed you signed up for JobRunner three weeks ago but haven't used it much yet. No worries — I wanted to check in and see if there's anything stopping you from getting started.
-        </p>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          Common things I hear from tradies:
-        </p>
-        <ul style="color: #4a4a4a; font-size: 16px; line-height: 1.8;">
-          <li><strong>"I'm too busy right now"</strong> — Fair enough. The app is always here when you're ready. It takes 5 minutes to set up properly.</li>
-          <li><strong>"I'm not sure how to use it"</strong> — Email us at admin@avwebinnovation.com and we'll personally walk you through it.</li>
-          <li><strong>"It's missing something I need"</strong> — Tell us what and we'll see what we can do.</li>
-        </ul>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          Either way, your account is here whenever you need it. No pressure.
-        </p>
-        <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin-top: 24px;">
-          <strong>P.S.</strong> If you want, I can jump on a quick call and set the whole thing up for you in 10 minutes. Just email admin@avwebinnovation.com and we'll sort a time.
-        </p>
-        <p style="color: #888; font-size: 14px; margin-top: 32px;">
-          — The JobRunner Team
-        </p>
-      </div>
-    `,
+    body: (user: UserWithMilestones) => lifecycleEmailShell('Is JobRunner right for your business?', `
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">Hey ${getFirstName(user)},</p>
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">I noticed you signed up for JobRunner three weeks ago but haven't used it much yet. No worries &mdash; I wanted to check in and see if there's anything stopping you from getting started.</p>
+              <p style="margin: 0 0 12px 0; color: #475569; font-size: 15px; line-height: 1.6;">Common things I hear from tradies:</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 0 0 16px 0;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <p style="margin: 0 0 12px 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">"I'm too busy right now"</strong> &mdash; Fair enough. The app is always here when you're ready. It takes 5 minutes to set up properly.</p>
+                    <p style="margin: 0 0 12px 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">"I'm not sure how to use it"</strong> &mdash; Email us at admin@avwebinnovation.com and we'll personally walk you through it.</p>
+                    <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">"It's missing something I need"</strong> &mdash; Tell us what and we'll see what we can do.</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">Either way, your account is here whenever you need it. No pressure.</p>
+              <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">P.S.</strong> If you want, I can jump on a quick call and set the whole thing up for you in 10 minutes. Just email admin@avwebinnovation.com and we'll sort a time.</p>
+              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">&mdash; The JobRunner Team</p>
+    `),
   },
   {
     key: 'nudge_day30',
@@ -160,34 +205,25 @@ const LIFECYCLE_EMAILS = [
     minDaysSinceLastEmail: 7,
     condition: (user: UserWithMilestones) => user.jobCount >= 3 && user.subscriptionTier === 'free',
     subject: (user: UserWithMilestones) => `${getFirstName(user)}, you're getting real value from JobRunner`,
-    body: (user: UserWithMilestones) => `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">Nice work, ${getFirstName(user)}!</h2>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          You've created ${user.jobCount} jobs in JobRunner this month — that's solid. You're clearly using it for real work.
-        </p>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          On the free plan you're limited to 25 jobs per month. As your business grows, the Pro plan gives you:
-        </p>
-        <ul style="color: #4a4a4a; font-size: 16px; line-height: 1.8;">
-          <li>Unlimited jobs, quotes, and invoices</li>
-          <li>SMS notifications to clients</li>
-          <li>Custom branding on all documents</li>
-          <li>Xero integration</li>
-          <li>AI assistant for quotes and job descriptions</li>
-          <li>Online payments via Stripe</li>
-        </ul>
-        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-          You can upgrade any time from the app — no lock-in, cancel whenever.
-        </p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="https://jobrunner.com.au" style="background-color: #2563eb; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">See Pro Plan</a>
-        </div>
-        <p style="color: #888; font-size: 14px; margin-top: 32px;">
-          — The JobRunner Team
-        </p>
-      </div>
-    `,
+    body: (user: UserWithMilestones) => lifecycleEmailShell(`Nice work, ${getFirstName(user)}`, `
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">You've created ${user.jobCount} jobs in JobRunner this month &mdash; that's solid. You're clearly using it for real work.</p>
+              <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">On the free plan you're limited to 25 jobs per month. As your business grows, the Pro plan gives you:</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 0 0 16px 0;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <p style="margin: 0 0 8px 0; color: #475569; font-size: 15px; line-height: 1.5;">Unlimited jobs, quotes, and invoices</p>
+                    <p style="margin: 0 0 8px 0; color: #475569; font-size: 15px; line-height: 1.5;">SMS notifications to clients</p>
+                    <p style="margin: 0 0 8px 0; color: #475569; font-size: 15px; line-height: 1.5;">Custom branding on all documents</p>
+                    <p style="margin: 0 0 8px 0; color: #475569; font-size: 15px; line-height: 1.5;">Xero integration</p>
+                    <p style="margin: 0 0 8px 0; color: #475569; font-size: 15px; line-height: 1.5;">AI assistant for quotes and job descriptions</p>
+                    <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.5;">Online payments via Stripe</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 8px 0; color: #475569; font-size: 15px; line-height: 1.6;">You can upgrade any time from the app &mdash; no lock-in, cancel whenever.</p>
+              ${lifecycleButton('See Pro Plan', 'https://jobrunner.com.au')}
+              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">&mdash; The JobRunner Team</p>
+    `),
   },
 ];
 

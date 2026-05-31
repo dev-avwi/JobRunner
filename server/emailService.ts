@@ -54,13 +54,18 @@ export async function sendViaSendGrid(emailData: any): Promise<{ messageId: stri
   if (!emailData.from?.email) {
     emailData.from = { email: PLATFORM_FROM_EMAIL, name: PLATFORM_FROM_NAME };
   }
-  // Enable open + click tracking by default so the SendGrid event webhook
-  // can populate openedAt/clickedAt/etc on email_delivery_logs.
-  // Callers can override by setting trackingSettings explicitly (e.g. for
-  // emails that should not have wrapped links like password reset codes).
+  // IMPORTANT: click tracking is DISABLED globally.
+  // SendGrid click tracking rewrites every link in the email to route through
+  // the branded link subdomain (e.g. url9318.jobrunner.com.au). That subdomain's
+  // TLS certificate is not valid, so recipients clicking quote/invoice/job/invite
+  // links hit Chrome's "Your connection is not private" (NET::ERR_CERT_COMMON_NAME_INVALID)
+  // warning. Disabling click tracking makes every link go DIRECTLY to the genuine,
+  // properly-secured JobRunner domain. Open tracking (an invisible pixel, never
+  // clicked) stays on so the webhook can still populate openedAt on delivery logs.
+  // Callers can still override by setting trackingSettings explicitly.
   if (!emailData.trackingSettings) {
     emailData.trackingSettings = {
-      clickTracking: { enable: true, enableText: false },
+      clickTracking: { enable: false, enableText: false },
       openTracking: { enable: true },
       subscriptionTracking: { enable: false },
     };
@@ -345,27 +350,226 @@ const UNSUBSCRIBE_FOOTER = `
   </div>
 `;
 
+// ============ SHARED EMAIL DESIGN SYSTEM ============
+// Editorial, email-client-safe components shared across all inline emails.
+// Table-based, inline CSS, system font stack — no web fonts/flexbox/grid.
+const EMAIL_SYSTEM_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+
+// One consistent primary CTA button used across every email (Outlook-safe table button).
+const emailCtaButton = (text: string, url: string, brandColor: string): string => `
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+    <tr>
+      <td align="center" style="border-radius: 8px; background-color: ${brandColor};">
+        <a href="${url}" class="cta-button" style="display: inline-block; padding: 15px 36px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; line-height: 1; font-family: ${EMAIL_SYSTEM_FONT};">${text}</a>
+      </td>
+    </tr>
+  </table>`;
+
+// Clean editorial header: thin brand band + logo + business name + optional document label/ref.
+const emailHeaderBand = (opts: {
+  brandColor: string;
+  logoUrl?: string | null;
+  businessName?: string | null;
+  abn?: string | null;
+  docLabel?: string | null;
+  docRef?: string | null;
+}): string => {
+  const { brandColor, logoUrl, businessName, abn, docLabel, docRef } = opts;
+  return `
+  <tr><td style="height: 4px; line-height: 4px; font-size: 0; background-color: ${brandColor};">&nbsp;</td></tr>
+  <tr>
+    <td class="header" style="padding: 32px 32px 0 32px;">
+      ${logoUrl ? `<img src="${logoUrl}" alt="${businessName || 'JobRunner'}" style="max-height: 44px; max-width: 180px; display: block; margin-bottom: 16px;" />` : ''}
+      ${businessName ? `<p style="margin: 0; color: #0f172a; font-size: 19px; font-weight: 700; line-height: 1.3;">${businessName}</p>` : ''}
+      ${abn ? `<p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px;">ABN ${abn}</p>` : ''}
+      ${docLabel ? `
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 24px; border-top: 1px solid #e2e8f0;">
+        <tr>
+          <td style="padding-top: 18px; vertical-align: bottom;"><span style="color: ${brandColor}; font-size: 17px; font-weight: 700;">${docLabel}</span></td>
+          ${docRef ? `<td style="padding-top: 18px; text-align: right; vertical-align: bottom;"><span style="color: #64748b; font-size: 14px;">${docRef}</span></td>` : ''}
+        </tr>
+      </table>` : ''}
+    </td>
+  </tr>`;
+};
+
+// Line item rows for the editorial line-items table.
+const emailLineItemRows = (items: any[]): string => (items || []).map((item: any) => `
+      <tr>
+        <td style="padding: 14px 12px 14px 0; color: #1e293b; font-size: 14px; border-bottom: 1px solid #f1f5f9;">${item.description}</td>
+        <td style="padding: 14px 12px; color: #64748b; font-size: 14px; text-align: center; border-bottom: 1px solid #f1f5f9;">${Number(item.quantity).toFixed(2)}</td>
+        <td style="padding: 14px 12px; color: #64748b; font-size: 14px; text-align: right; border-bottom: 1px solid #f1f5f9;">$${Number(item.unitPrice).toFixed(2)}</td>
+        <td style="padding: 14px 0 14px 12px; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right; border-bottom: 1px solid #f1f5f9;">$${Number(item.total).toFixed(2)}</td>
+      </tr>`).join('');
+
+// Full email shell: head reset + responsive block + white 600px container + JobRunner footer.
+const renderEmailShell = (title: string, innerRows: string, footerNote?: string): string => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${title}</title>
+  <!--[if mso]>
+  <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+  <![endif]-->
+  <style type="text/css">
+    body, table, td, p, a, li, blockquote { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; background-color: #f1f5f9; }
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .content { padding: 24px !important; }
+      .header { padding: 28px 24px 0 24px !important; }
+      .line-items td { padding: 8px 4px !important; font-size: 13px !important; }
+      .cta-button { padding: 14px 24px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: ${EMAIL_SYSTEM_FONT};">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table class="container" role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">
+          ${innerRows}
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; margin-top: 20px;">
+          <tr>
+            <td align="center" style="padding: 8px 24px; color: #94a3b8; font-size: 12px; line-height: 1.6;">
+              <p style="margin: 0; color: #64748b; font-size: 12px;">Sent with <strong style="color: #475569;">JobRunner</strong> &mdash; built for Australian tradies</p>
+              ${footerNote ? `<p style="margin: 10px 0 0 0; color: #94a3b8; font-size: 11px;">${footerNote}</p>` : ''}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
 // Email template for quotes
 const createQuoteEmail = (quote: any, client: any, business: any, acceptanceUrl?: string | null) => {
-  const lineItemsHtml = quote.lineItems?.map((item: any) => `
-    <tr>
-      <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.description}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${Number(item.quantity).toFixed(2)}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(item.unitPrice).toFixed(2)}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(item.total).toFixed(2)}</td>
-    </tr>
-  `).join('');
-
   // Use persisted totals from the database instead of recalculating
   const subtotal = Number(quote.subtotal);
   const gstAmount = Number(quote.gstAmount);
   const totalAmount = Number(quote.total);
   const brandColor = business.brandColor || '#2563EB';
-  
+  const quoteRef = quote.number || quote.id?.substring(0, 8).toUpperCase();
+
   // Get logo URL - use business logo if available, otherwise JobRunner logo
   const baseUrl = getBaseUrl();
   const defaultLogoUrl = `${baseUrl}/logo.png`;
   const logoUrl = business.logoUrl || defaultLogoUrl;
+
+  const totalsHtml = business.gstEnabled ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-size: 14px;">Subtotal</td>
+                <td style="padding: 6px 0; color: #1e293b; font-size: 14px; text-align: right;">$${subtotal.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-size: 14px;">GST (10%)</td>
+                <td style="padding: 6px 0; color: #1e293b; font-size: 14px; text-align: right;">$${gstAmount.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 14px 0 0 0; color: #0f172a; font-size: 17px; font-weight: 700; border-top: 2px solid #e2e8f0;">Total</td>
+                <td style="padding: 14px 0 0 0; color: ${brandColor}; font-size: 17px; font-weight: 700; text-align: right; border-top: 2px solid #e2e8f0;">$${totalAmount.toFixed(2)}</td>
+              </tr>` : `
+              <tr>
+                <td style="padding: 0; color: #0f172a; font-size: 17px; font-weight: 700;">Total</td>
+                <td style="padding: 0; color: ${brandColor}; font-size: 22px; font-weight: 700; text-align: right;">$${totalAmount.toFixed(2)}</td>
+              </tr>`;
+
+  const innerRows = `
+    ${emailHeaderBand({ brandColor, logoUrl, businessName: business.businessName, abn: business.abn, docLabel: 'Quote', docRef: `No. ${quoteRef}` })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <p style="margin: 0; color: #0f172a; font-size: 17px; font-weight: 600;">Hi ${client.name},</p>
+        <p style="margin: 12px 0 0 0; color: #475569; font-size: 15px; line-height: 1.65;">Thanks for getting in touch. Here's your quote for the work we discussed &mdash; have a read and let us know if you'd like to go ahead.</p>
+      </td>
+    </tr>
+    ${acceptanceUrl ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        ${emailCtaButton('View &amp; Accept Quote', acceptanceUrl, brandColor)}
+        <p style="margin: 16px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">Or paste this link into your browser:<br><a href="${acceptanceUrl}" style="color: ${brandColor}; word-break: break-all;">${acceptanceUrl}</a></p>
+      </td>
+    </tr>
+    ` : ''}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 20px;">
+              <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Job</p>
+              <p style="margin: 6px 0 0 0; color: #0f172a; font-size: 16px; font-weight: 600;">${quote.title}</p>
+              ${quote.description ? `<p style="margin: 10px 0 0 0; color: #475569; font-size: 14px; line-height: 1.6;">${quote.description}</p>` : ''}
+              <p style="margin: 14px 0 0 0; color: #64748b; font-size: 13px;">Date: ${new Date(quote.createdAt).toLocaleDateString('en-AU')}</p>
+              ${quote.validUntil ? `<p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">Valid until: ${new Date(quote.validUntil).toLocaleDateString('en-AU')}</p>` : ''}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    ${quote.lineItems?.length ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <table role="presentation" class="line-items" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td style="padding: 0 12px 10px 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; border-bottom: 2px solid #e2e8f0;">Description</td>
+            <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: center; border-bottom: 2px solid #e2e8f0;">Qty</td>
+            <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0;">Unit</td>
+            <td style="padding: 0 0 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0;">Total</td>
+          </tr>
+          ${emailLineItemRows(quote.lineItems)}
+        </table>
+      </td>
+    </tr>
+    ` : ''}
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td>
+              <table role="presentation" cellpadding="0" cellspacing="0" align="right" style="min-width: 240px;">
+                ${totalsHtml}
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    ${quote.notes ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Notes</p>
+        <p style="margin: 8px 0 0 0; color: #475569; font-size: 14px; line-height: 1.65;">${quote.notes}</p>
+      </td>
+    </tr>
+    ` : ''}
+    ${acceptanceUrl ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        ${emailCtaButton('Accept This Quote', acceptanceUrl, brandColor)}
+      </td>
+    </tr>
+    ` : ''}
+    <tr>
+      <td class="content" style="padding: 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #e2e8f0;">
+          <tr>
+            <td style="padding-top: 24px;">
+              <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">Questions about this quote? Just reply to this email or give us a call&nbsp;&mdash; happy to help.</p>
+              <p style="margin: 16px 0 0 0; color: #0f172a; font-size: 15px; font-weight: 600;">${business.businessName}</p>
+              ${business.phone ? `<p style="margin: 4px 0 0 0;"><a href="tel:${business.phone}" style="color: ${brandColor}; text-decoration: none; font-size: 14px;">${business.phone}</a></p>` : ''}
+              ${business.email ? `<p style="margin: 4px 0 0 0;"><a href="mailto:${business.email}" style="color: ${brandColor}; text-decoration: none; font-size: 14px;">${business.email}</a></p>` : ''}
+              ${business.address ? `<p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">${business.address}</p>` : ''}
+              ${business.abn ? `<p style="margin: 10px 0 0 0; color: #94a3b8; font-size: 12px;">ABN ${business.abn}</p>` : ''}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`;
 
   // Platform sends from noreply@jobrunner.com.au, but reply-to goes to the tradie's business email
   return {
@@ -376,146 +580,150 @@ const createQuoteEmail = (quote: any, client: any, business: any, acceptanceUrl?
     },
     replyTo: business.email || PLATFORM_REPLY_TO_EMAIL,
     subject: `Quote #${quote.number || quote.id?.substring(0, 8).toUpperCase()} from ${business.businessName}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Quote - ${quote.title}</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, ${brandColor} 0%, ${brandColor}dd 100%); padding: 24px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
-          <div style="background: white; display: inline-block; padding: 12px 20px; border-radius: 8px; margin-bottom: 12px;">
-            <img src="${logoUrl}" alt="${business.businessName || 'JobRunner'}" style="max-height: 48px; max-width: 160px; display: block;" />
-          </div>
-          <h1 style="color: white; margin: 0; font-size: 22px;">${business.businessName}</h1>
-          ${business.abn ? `<p style="margin: 4px 0 0 0; color: rgba(255,255,255,0.85); font-size: 12px;">ABN: ${business.abn}</p>` : ''}
-          <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Quote #${quote.number || quote.id?.substring(0, 8).toUpperCase()}</p>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-          <p style="font-size: 16px;">Hi ${client.name},</p>
-          <p>Thanks for getting in touch! Here's your quote for the work we discussed.</p>
-        </div>
-        
-        ${acceptanceUrl ? `
-        <div style="text-align: center; margin: 30px 0; padding: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; border: 1px solid #86efac;">
-          <p style="margin: 0 0 16px 0; color: #166534; font-weight: 600; font-size: 16px;">Ready to view your quote?</p>
-          <a href="${acceptanceUrl}" style="background-color: ${brandColor}; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 18px; font-weight: bold;">
-            View & Accept Quote
-          </a>
-          <p style="margin-top: 16px; color: #374151; font-size: 13px;">Or copy this link into your browser:</p>
-          <p style="margin: 8px 0 0 0; word-break: break-all;"><a href="${acceptanceUrl}" style="color: ${brandColor}; font-size: 12px;">${acceptanceUrl}</a></p>
-        </div>
-        ` : ''}
-
-        <div style="margin-bottom: 20px;">
-          <h2 style="color: #333; border-bottom: 2px solid ${brandColor}; padding-bottom: 10px;">Quote Summary</h2>
-          <p><strong>Job:</strong> ${quote.title}</p>
-          ${quote.description ? `<p><strong>Description:</strong> ${quote.description}</p>` : ''}
-          <p><strong>Date:</strong> ${new Date(quote.createdAt).toLocaleDateString('en-AU')}</p>
-          ${quote.validUntil ? `<p><strong>Valid Until:</strong> ${new Date(quote.validUntil).toLocaleDateString('en-AU')}</p>` : ''}
-        </div>
-
-        ${quote.lineItems?.length ? `
-        <div style="margin-bottom: 20px;">
-          <h3 style="color: #333;">Line Items</h3>
-          <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
-            <thead>
-              <tr style="background: #f8f9fa;">
-                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Description</th>
-                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Qty</th>
-                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Unit Price</th>
-                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${lineItemsHtml}
-            </tbody>
-          </table>
-        </div>
-        ` : ''}
-
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          ${business.gstEnabled ? `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <span>Subtotal:</span>
-              <span>$${subtotal.toFixed(2)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <span>GST (10%):</span>
-              <span>$${gstAmount.toFixed(2)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; border-top: 2px solid #2563EB; padding-top: 10px; font-size: 20px; font-weight: bold; color: #2563EB;">
-              <span>Total Amount:</span>
-              <span>$${totalAmount.toFixed(2)}</span>
-            </div>
-          ` : `
-            <h3 style="margin: 0 0 10px 0; color: #333;">Total Amount</h3>
-            <p style="font-size: 24px; font-weight: bold; color: #2563EB; margin: 0;">$${totalAmount.toFixed(2)}</p>
-          `}
-        </div>
-
-        ${quote.notes ? `
-        <div style="margin-bottom: 20px;">
-          <h3 style="color: #333;">Notes</h3>
-          <p style="background: #f8f9fa; padding: 15px; border-radius: 8px;">${quote.notes}</p>
-        </div>
-        ` : ''}
-
-        ${acceptanceUrl ? `
-        <div style="text-align: center; margin: 30px 0; padding: 20px; background: linear-gradient(135deg, ${brandColor}15, ${brandColor}05); border-radius: 12px; border: 1px solid ${brandColor}30;">
-          <p style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Ready to go ahead?</p>
-          <a href="${acceptanceUrl}" style="background-color: ${brandColor}; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold;">
-            Accept This Quote
-          </a>
-        </div>
-        ` : ''}
-
-        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${brandColor};">
-          <p style="margin: 0; color: #333; font-weight: 500;">Questions about this quote?</p>
-          <p style="margin: 10px 0 0 0; color: #666;">Just reply to this email or give us a call - we're happy to help.</p>
-          ${business.phone ? `<p style="margin: 10px 0 0 0;"><strong>Phone:</strong> <a href="tel:${business.phone}" style="color: ${brandColor}; text-decoration: none;">${business.phone}</a></p>` : ''}
-          ${business.email ? `<p style="margin: 5px 0 0 0;"><strong>Email:</strong> <a href="mailto:${business.email}" style="color: ${brandColor}; text-decoration: none;">${business.email}</a></p>` : ''}
-        </div>
-
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-          <p style="margin: 0; color: #999; font-size: 12px;">
-            This quote was sent by ${business.businessName}${business.abn ? ` (ABN: ${business.abn})` : ''}
-          </p>
-          ${business.address ? `<p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">${business.address}</p>` : ''}
-        </div>
-        
-        ${UNSUBSCRIBE_FOOTER}
-      </body>
-      </html>
-    `
+    html: renderEmailShell(`Quote - ${quote.title}`, innerRows, 'This is a transactional email regarding your quote request.')
   };
 };
 
 // Email template for invoices
 const createInvoiceEmail = (invoice: any, client: any, business: any, paymentUrl?: string | null) => {
-  const lineItemsHtml = invoice.lineItems?.map((item: any) => `
-    <tr>
-      <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.description}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${Number(item.quantity).toFixed(2)}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(item.unitPrice).toFixed(2)}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(item.total).toFixed(2)}</td>
-    </tr>
-  `).join('');
-
   // Use persisted totals from the database
   const subtotal = Number(invoice.subtotal);
   const gstAmount = Number(invoice.gstAmount);
   const totalAmount = Number(invoice.total);
   const brandColor = business.brandColor || '#2563EB';
   const dueDateStr = invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-AU') : null;
-  
+  const invoiceRef = invoice.number || invoice.id?.substring(0, 8).toUpperCase();
+
   // Get logo URL - use business logo if available, otherwise JobRunner logo
   const baseUrl = getBaseUrl();
   const defaultLogoUrl = `${baseUrl}/logo.png`;
   const logoUrl = business.logoUrl || defaultLogoUrl;
+
+  const totalsHtml = business.gstEnabled ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-size: 14px;">Subtotal</td>
+                <td style="padding: 6px 0; color: #1e293b; font-size: 14px; text-align: right;">$${subtotal.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-size: 14px;">GST (10%)</td>
+                <td style="padding: 6px 0; color: #1e293b; font-size: 14px; text-align: right;">$${gstAmount.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 14px 0 0 0; color: #0f172a; font-size: 17px; font-weight: 700; border-top: 2px solid #e2e8f0;">Total</td>
+                <td style="padding: 14px 0 0 0; color: ${brandColor}; font-size: 17px; font-weight: 700; text-align: right; border-top: 2px solid #e2e8f0;">$${totalAmount.toFixed(2)}</td>
+              </tr>` : `
+              <tr>
+                <td style="padding: 0; color: #0f172a; font-size: 17px; font-weight: 700;">Total</td>
+                <td style="padding: 0; color: ${brandColor}; font-size: 22px; font-weight: 700; text-align: right;">$${totalAmount.toFixed(2)}</td>
+              </tr>`;
+
+  const innerRows = `
+    ${emailHeaderBand({ brandColor, logoUrl, businessName: business.businessName, abn: business.abn, docLabel: 'Tax Invoice', docRef: `No. ${invoiceRef}` })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <p style="margin: 0; color: #0f172a; font-size: 17px; font-weight: 600;">Hi ${client.name},</p>
+        <p style="margin: 12px 0 0 0; color: #475569; font-size: 15px; line-height: 1.65;">Here's your invoice for the completed work.${dueDateStr ? ` Payment is due by <strong style="color: #0f172a;">${dueDateStr}</strong>.` : ''}</p>
+      </td>
+    </tr>
+    ${paymentUrl ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        ${emailCtaButton(`Pay Now &mdash; $${totalAmount.toFixed(2)}`, paymentUrl, brandColor)}
+        <p style="margin: 14px 0 0 0; color: #64748b; font-size: 13px; text-align: center;">Secure payment via card</p>
+        <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">Or paste this link into your browser:<br><a href="${paymentUrl}" style="color: ${brandColor}; word-break: break-all;">${paymentUrl}</a></p>
+      </td>
+    </tr>
+    ` : ''}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 20px;">
+              <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Job</p>
+              <p style="margin: 6px 0 0 0; color: #0f172a; font-size: 16px; font-weight: 600;">${invoice.title}</p>
+              ${invoice.description ? `<p style="margin: 10px 0 0 0; color: #475569; font-size: 14px; line-height: 1.6;">${invoice.description}</p>` : ''}
+              <p style="margin: 14px 0 0 0; color: #64748b; font-size: 13px;">Date: ${new Date(invoice.createdAt).toLocaleDateString('en-AU')}</p>
+              ${dueDateStr ? `<p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">Due date: ${dueDateStr}</p>` : ''}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    ${invoice.lineItems?.length ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <table role="presentation" class="line-items" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td style="padding: 0 12px 10px 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; border-bottom: 2px solid #e2e8f0;">Description</td>
+            <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: center; border-bottom: 2px solid #e2e8f0;">Qty</td>
+            <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0;">Unit</td>
+            <td style="padding: 0 0 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0;">Total</td>
+          </tr>
+          ${emailLineItemRows(invoice.lineItems)}
+        </table>
+      </td>
+    </tr>
+    ` : ''}
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td>
+              <table role="presentation" cellpadding="0" cellspacing="0" align="right" style="min-width: 240px;">
+                ${totalsHtml}
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    ${invoice.notes ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Notes</p>
+        <p style="margin: 8px 0 0 0; color: #475569; font-size: 14px; line-height: 1.65;">${invoice.notes}</p>
+      </td>
+    </tr>
+    ` : ''}
+    ${paymentUrl ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        ${emailCtaButton(`Pay $${totalAmount.toFixed(2)} Now`, paymentUrl, brandColor)}
+      </td>
+    </tr>
+    ` : `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 20px;">
+              <p style="margin: 0; color: #0f172a; font-size: 15px; font-weight: 600;">Payment methods</p>
+              <p style="margin: 10px 0 0 0; color: #475569; font-size: 14px; line-height: 1.6;">Please contact us for payment options including bank transfer or card payment.</p>
+              ${business.bankName ? `<p style="margin: 12px 0 0 0; color: #475569; font-size: 14px;"><strong style="color: #0f172a;">Bank:</strong> ${business.bankName}</p>` : ''}
+              ${business.bsb ? `<p style="margin: 4px 0 0 0; color: #475569; font-size: 14px;"><strong style="color: #0f172a;">BSB:</strong> ${business.bsb}</p>` : ''}
+              ${business.accountNumber ? `<p style="margin: 4px 0 0 0; color: #475569; font-size: 14px;"><strong style="color: #0f172a;">Account:</strong> ${business.accountNumber}</p>` : ''}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    `}
+    <tr>
+      <td class="content" style="padding: 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #e2e8f0;">
+          <tr>
+            <td style="padding-top: 24px;">
+              <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">Questions about this invoice? Just reply to this email or give us a call&nbsp;&mdash; happy to help.</p>
+              <p style="margin: 16px 0 0 0; color: #0f172a; font-size: 15px; font-weight: 600;">${business.businessName}</p>
+              ${business.phone ? `<p style="margin: 4px 0 0 0;"><a href="tel:${business.phone}" style="color: ${brandColor}; text-decoration: none; font-size: 14px;">${business.phone}</a></p>` : ''}
+              ${business.email ? `<p style="margin: 4px 0 0 0;"><a href="mailto:${business.email}" style="color: ${brandColor}; text-decoration: none; font-size: 14px;">${business.email}</a></p>` : ''}
+              ${business.address ? `<p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">${business.address}</p>` : ''}
+              <p style="margin: 10px 0 0 0; color: #94a3b8; font-size: 12px;">This is a tax invoice from ${business.businessName}${business.abn ? ` (ABN ${business.abn})` : ''}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`;
 
   // Platform sends from noreply@jobrunner.com.au, but reply-to goes to the tradie's business email
   return {
@@ -526,156 +734,117 @@ const createInvoiceEmail = (invoice: any, client: any, business: any, paymentUrl
     },
     replyTo: business.email || PLATFORM_REPLY_TO_EMAIL,
     subject: `Invoice #${invoice.number || invoice.id?.substring(0, 8).toUpperCase()} from ${business.businessName}${dueDateStr ? ` - Due ${dueDateStr}` : ''}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Invoice - ${invoice.title}</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, ${brandColor} 0%, ${brandColor}dd 100%); padding: 24px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
-          <div style="background: white; display: inline-block; padding: 12px 20px; border-radius: 8px; margin-bottom: 12px;">
-            <img src="${logoUrl}" alt="${business.businessName || 'JobRunner'}" style="max-height: 48px; max-width: 160px; display: block;" />
-          </div>
-          <p style="margin: 0 0 4px 0; color: rgba(255,255,255,0.85); font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">TAX INVOICE</p>
-          <h1 style="color: white; margin: 0; font-size: 22px;">${business.businessName}</h1>
-          ${business.abn ? `<p style="margin: 4px 0 0 0; color: rgba(255,255,255,0.85); font-size: 12px;">ABN: ${business.abn}</p>` : ''}
-          <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Invoice #${invoice.number || invoice.id?.substring(0, 8).toUpperCase()}</p>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-          <p style="font-size: 16px;">Hi ${client.name},</p>
-          <p>Here's your invoice for the completed work. ${dueDateStr ? `Payment is due by <strong>${dueDateStr}</strong>.` : ''}</p>
-        </div>
-        
-        ${paymentUrl ? `
-        <div style="text-align: center; margin: 30px 0; padding: 24px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; border: 1px solid #E8862E;">
-          <p style="margin: 0 0 16px 0; color: #92400e; font-weight: 600; font-size: 16px;">Ready to pay your invoice?</p>
-          <a href="${paymentUrl}" style="background-color: ${brandColor}; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 18px; font-weight: bold;">
-            Pay Now - $${totalAmount.toFixed(2)}
-          </a>
-          <p style="margin-top: 16px; color: #374151; font-size: 13px;">Secure payment via card</p>
-          <p style="margin: 8px 0 0 0; color: #666; font-size: 12px;">Or copy this link into your browser:</p>
-          <p style="margin: 8px 0 0 0; word-break: break-all;"><a href="${paymentUrl}" style="color: ${brandColor}; font-size: 12px;">${paymentUrl}</a></p>
-        </div>
-        ` : ''}
-
-        <div style="margin-bottom: 20px;">
-          <h2 style="color: #333; border-bottom: 2px solid ${brandColor}; padding-bottom: 10px;">Invoice Summary</h2>
-          <p><strong>Job:</strong> ${invoice.title}</p>
-          ${invoice.description ? `<p><strong>Description:</strong> ${invoice.description}</p>` : ''}
-          <p><strong>Date:</strong> ${new Date(invoice.createdAt).toLocaleDateString('en-AU')}</p>
-          ${dueDateStr ? `<p><strong>Due Date:</strong> ${dueDateStr}</p>` : ''}
-        </div>
-
-        ${invoice.lineItems?.length ? `
-        <div style="margin-bottom: 20px;">
-          <h3 style="color: #333;">Line Items</h3>
-          <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
-            <thead>
-              <tr style="background: #f8f9fa;">
-                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Description</th>
-                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Qty</th>
-                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Unit Price</th>
-                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${lineItemsHtml}
-            </tbody>
-          </table>
-        </div>
-        ` : ''}
-
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          ${business.gstEnabled ? `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <span>Subtotal:</span>
-              <span>$${subtotal.toFixed(2)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <span>GST (10%):</span>
-              <span>$${gstAmount.toFixed(2)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; border-top: 2px solid #ddd; padding-top: 10px; font-size: 20px; font-weight: bold; color: #2563EB;">
-              <span>Total Amount:</span>
-              <span>$${totalAmount.toFixed(2)}</span>
-            </div>
-          ` : `
-            <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; color: #2563EB;">
-              <span>Total Amount:</span>
-              <span>$${totalAmount.toFixed(2)}</span>
-            </div>
-          `}
-        </div>
-
-        ${invoice.notes ? `
-        <div style="margin-bottom: 20px;">
-          <h3 style="color: #333;">Notes</h3>
-          <p style="background: #f8f9fa; padding: 15px; border-radius: 8px;">${invoice.notes}</p>
-        </div>
-        ` : ''}
-
-        ${paymentUrl ? `
-        <div style="text-align: center; margin: 30px 0; padding: 20px; background: linear-gradient(135deg, ${brandColor}15, ${brandColor}05); border-radius: 12px; border: 1px solid ${brandColor}30;">
-          <p style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Ready to pay?</p>
-          <a href="${paymentUrl}" style="background-color: ${brandColor}; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold;">
-            Pay $${totalAmount.toFixed(2)} Now
-          </a>
-        </div>
-        ` : `
-        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${brandColor};">
-          <p style="margin: 0; color: #333; font-weight: 500;">Payment Methods</p>
-          <p style="margin: 10px 0 0 0; color: #666;">Please contact us for payment options including bank transfer or card payment.</p>
-          ${business.bankName ? `<p style="margin: 10px 0 0 0;"><strong>Bank:</strong> ${business.bankName}</p>` : ''}
-          ${business.bsb ? `<p style="margin: 5px 0 0 0;"><strong>BSB:</strong> ${business.bsb}</p>` : ''}
-          ${business.accountNumber ? `<p style="margin: 5px 0 0 0;"><strong>Account:</strong> ${business.accountNumber}</p>` : ''}
-        </div>
-        `}
-
-        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${brandColor};">
-          <p style="margin: 0; color: #333; font-weight: 500;">Questions about this invoice?</p>
-          <p style="margin: 10px 0 0 0; color: #666;">Just reply to this email or give us a call.</p>
-          ${business.phone ? `<p style="margin: 10px 0 0 0;"><strong>Phone:</strong> <a href="tel:${business.phone}" style="color: ${brandColor}; text-decoration: none;">${business.phone}</a></p>` : ''}
-          ${business.email ? `<p style="margin: 5px 0 0 0;"><strong>Email:</strong> <a href="mailto:${business.email}" style="color: ${brandColor}; text-decoration: none;">${business.email}</a></p>` : ''}
-        </div>
-
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-          <p style="margin: 0; color: #999; font-size: 12px;">
-            This is a tax invoice from ${business.businessName}${business.abn ? ` (ABN: ${business.abn})` : ''}
-          </p>
-          ${business.address ? `<p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">${business.address}</p>` : ''}
-        </div>
-        
-        ${UNSUBSCRIBE_FOOTER}
-      </body>
-      </html>
-    `
+    html: renderEmailShell(`Invoice - ${invoice.title}`, innerRows, 'This is a transactional email regarding your invoice.')
   };
 };
 
 // Email template for receipts (when invoice is marked as paid)
 const createReceiptEmail = (invoice: any, client: any, business: any) => {
-  const lineItemsHtml = invoice.lineItems?.map((item: any) => `
-    <tr>
-      <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.description}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${Number(item.quantity).toFixed(2)}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(item.unitPrice).toFixed(2)}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(item.total).toFixed(2)}</td>
-    </tr>
-  `).join('');
-
   // Use persisted totals from the database
   const subtotal = Number(invoice.subtotal);
   const gstAmount = Number(invoice.gstAmount);
   const totalAmount = Number(invoice.total);
-  
+  const brandColor = business.brandColor || '#2563EB';
+  const receiptRef = invoice.id?.substring(0, 8).toUpperCase();
+
   // Get logo URL - use business logo if available, otherwise JobRunner logo
   const baseUrl = getBaseUrl();
   const defaultLogoUrl = `${baseUrl}/logo.png`;
   const logoUrl = business.logoUrl || defaultLogoUrl;
+
+  const totalsHtml = business.gstEnabled ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-size: 14px;">Subtotal</td>
+                <td style="padding: 6px 0; color: #1e293b; font-size: 14px; text-align: right;">$${subtotal.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-size: 14px;">GST (10%)</td>
+                <td style="padding: 6px 0; color: #1e293b; font-size: 14px; text-align: right;">$${gstAmount.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 14px 0 0 0; color: #0f172a; font-size: 17px; font-weight: 700; border-top: 2px solid #e2e8f0;">Amount paid</td>
+                <td style="padding: 14px 0 0 0; color: ${brandColor}; font-size: 17px; font-weight: 700; text-align: right; border-top: 2px solid #e2e8f0;">$${totalAmount.toFixed(2)}</td>
+              </tr>` : `
+              <tr>
+                <td style="padding: 0; color: #0f172a; font-size: 17px; font-weight: 700;">Amount paid</td>
+                <td style="padding: 0; color: ${brandColor}; font-size: 22px; font-weight: 700; text-align: right;">$${totalAmount.toFixed(2)}</td>
+              </tr>`;
+
+  const innerRows = `
+    ${emailHeaderBand({ brandColor, logoUrl, businessName: business.businessName, abn: business.abn, docLabel: 'Receipt', docRef: `No. ${receiptRef}` })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <p style="margin: 0; color: #0f172a; font-size: 17px; font-weight: 600;">Hi ${client.name},</p>
+        <p style="margin: 12px 0 0 0; color: #475569; font-size: 15px; line-height: 1.65;">Thanks &mdash; this confirms we've received your payment in full. Here's your receipt for your records.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 20px;">
+              <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Service</p>
+              <p style="margin: 6px 0 0 0; color: #0f172a; font-size: 16px; font-weight: 600;">${invoice.title}</p>
+              ${invoice.description ? `<p style="margin: 10px 0 0 0; color: #475569; font-size: 14px; line-height: 1.6;">${invoice.description}</p>` : ''}
+              <p style="margin: 14px 0 0 0; color: #64748b; font-size: 13px;">Client: ${client.name}</p>
+              <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">Payment date: ${new Date(invoice.paidAt || Date.now()).toLocaleDateString()}</p>
+              <p style="margin: 12px 0 0 0;"><span style="display: inline-block; background-color: #ecfdf5; color: #059669; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.4px;">PAID</span></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    ${invoice.lineItems?.length ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <table role="presentation" class="line-items" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td style="padding: 0 12px 10px 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; border-bottom: 2px solid #e2e8f0;">Description</td>
+            <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: center; border-bottom: 2px solid #e2e8f0;">Qty</td>
+            <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0;">Unit</td>
+            <td style="padding: 0 0 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0;">Total</td>
+          </tr>
+          ${emailLineItemRows(invoice.lineItems)}
+        </table>
+      </td>
+    </tr>
+    ` : ''}
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td>
+              <table role="presentation" cellpadding="0" cellspacing="0" align="right" style="min-width: 240px;">
+                ${totalsHtml}
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    ${invoice.notes ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Notes</p>
+        <p style="margin: 8px 0 0 0; color: #475569; font-size: 14px; line-height: 1.65;">${invoice.notes}</p>
+      </td>
+    </tr>
+    ` : ''}
+    <tr>
+      <td class="content" style="padding: 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #e2e8f0;">
+          <tr>
+            <td style="padding-top: 24px;">
+              <p style="margin: 0; color: #0f172a; font-size: 15px; font-weight: 600;">Thanks for your business.</p>
+              <p style="margin: 8px 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;">This receipt confirms that payment has been received in full.</p>
+              <p style="margin: 16px 0 0 0; color: #0f172a; font-size: 15px; font-weight: 600;">${business.businessName}</p>
+              ${business.phone ? `<p style="margin: 4px 0 0 0;"><a href="tel:${business.phone}" style="color: ${brandColor}; text-decoration: none; font-size: 14px;">${business.phone}</a></p>` : ''}
+              ${business.email ? `<p style="margin: 4px 0 0 0;"><a href="mailto:${business.email}" style="color: ${brandColor}; text-decoration: none; font-size: 14px;">${business.email}</a></p>` : ''}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`;
 
   // Platform sends from noreply@jobrunner.com.au, but reply-to goes to the tradie's business email
   return {
@@ -686,92 +855,7 @@ const createReceiptEmail = (invoice: any, client: any, business: any) => {
     },
     replyTo: business.email || PLATFORM_REPLY_TO_EMAIL,
     subject: `Receipt: ${invoice.title}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Receipt - ${invoice.title}</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: #2563EB; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-          <div style="background: white; display: inline-block; padding: 12px 20px; border-radius: 8px; margin-bottom: 12px;">
-            <img src="${logoUrl}" alt="${business.businessName || 'JobRunner'}" style="max-height: 48px; max-width: 160px; display: block;" />
-          </div>
-          <h1 style="margin: 0;">Payment Received</h1>
-          <h2 style="margin: 10px 0 0 0;">${business.businessName}</h2>
-          <p style="margin: 5px 0; opacity: 0.9;">Receipt #${invoice.id?.substring(0, 8).toUpperCase()}</p>
-        </div>
-        
-        <div style="margin-bottom: 20px;">
-          <h2 style="color: #333; border-bottom: 2px solid #2563EB; padding-bottom: 10px;">Payment Details</h2>
-          <p><strong>Service:</strong> ${invoice.title}</p>
-          ${invoice.description ? `<p><strong>Description:</strong> ${invoice.description}</p>` : ''}
-          <p><strong>Client:</strong> ${client.name}</p>
-          <p><strong>Payment Date:</strong> ${new Date(invoice.paidAt || Date.now()).toLocaleDateString()}</p>
-          <p><strong>Status:</strong> <span style="background: #2563EB; color: white; padding: 2px 8px; border-radius: 4px;">PAID</span></p>
-        </div>
-
-        ${invoice.lineItems?.length ? `
-        <div style="margin-bottom: 20px;">
-          <h3 style="color: #333;">Services Provided</h3>
-          <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
-            <thead>
-              <tr style="background: #f8f9fa;">
-                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Description</th>
-                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Qty</th>
-                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Unit Price</th>
-                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${lineItemsHtml}
-            </tbody>
-          </table>
-        </div>
-        ` : ''}
-
-        <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          ${business.gstEnabled ? `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <span>Subtotal:</span>
-              <span>$${subtotal.toFixed(2)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <span>GST (10%):</span>
-              <span>$${gstAmount.toFixed(2)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; border-top: 2px solid #2563EB; padding-top: 10px; font-size: 20px; font-weight: bold; color: #2563EB;">
-              <span>Amount Paid:</span>
-              <span>$${totalAmount.toFixed(2)}</span>
-            </div>
-          ` : `
-            <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; color: #2563EB;">
-              <span>Amount Paid:</span>
-              <span>$${totalAmount.toFixed(2)}</span>
-            </div>
-          `}
-        </div>
-
-        ${invoice.notes ? `
-        <div style="margin-bottom: 20px;">
-          <h3 style="color: #333;">Notes</h3>
-          <p style="background: #f8f9fa; padding: 15px; border-radius: 8px;">${invoice.notes}</p>
-        </div>
-        ` : ''}
-
-        <div style="margin-top: 30px; padding: 20px; background: #f0fdf4; border-radius: 8px; text-align: center;">
-          <p style="margin: 0; color: #059669; font-weight: bold;">Thank you for your business!</p>
-          <p style="margin: 10px 0 0 0;">This receipt confirms that payment has been received in full.</p>
-          ${business.phone ? `<p style="margin: 10px 0 0 0;"><strong>Phone:</strong> ${business.phone}</p>` : ''}
-          ${business.email ? `<p style="margin: 5px 0 0 0;"><strong>Email:</strong> ${business.email}</p>` : ''}
-        </div>
-        
-        ${UNSUBSCRIBE_FOOTER}
-      </body>
-      </html>
-    `
+    html: renderEmailShell(`Receipt - ${invoice.title}`, innerRows, 'This is a transactional email regarding your payment.')
   };
 };
 
@@ -1248,48 +1332,26 @@ const createEmailVerificationEmail = (user: any, verificationToken: string) => {
       openTracking: { enable: true },
       subscriptionTracking: { enable: false },
     },
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Verify Your Email - JobRunner</title>
-      </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f4f5f7;">
-        <div style="max-width: 560px; margin: 0 auto; padding: 32px 16px;">
-          <div style="background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb;">
-            <div style="padding: 36px 32px 12px 32px; text-align: center; background: #ffffff;">
-              <img src="${logoUrl}" alt="JobRunner" style="max-width: 132px; height: auto; display: inline-block;" />
-            </div>
-            <div style="height: 3px; background: #F59E0B; margin: 0 32px;"></div>
-
-            <div style="padding: 28px 32px 8px 32px;">
-              <h1 style="color: #111827; margin: 0 0 8px 0; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">Verify your email</h1>
-              <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 15px;">Hi ${user.firstName || 'there'}, thanks for signing up. Tap the button below to confirm this is you and finish setting up your JobRunner account.</p>
-
-              <div style="text-align: center; margin: 28px 0 8px 0;">
-                <a href="${verificationUrl}" style="background: #2563EB; color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 600; font-size: 15px;">Verify email</a>
-              </div>
-
-              <p style="margin: 24px 0 0 0; font-size: 13px; color: #6b7280; text-align: center;">This link expires in 24 hours.</p>
-            </div>
-
-            <div style="padding: 20px 32px 28px 32px; border-top: 1px solid #f1f2f4; margin-top: 20px;">
-              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
-                If you didn't create a JobRunner account, you can safely ignore this email.
-              </p>
-            </div>
-          </div>
-
-          <p style="margin: 20px 0 0 0; text-align: center; color: #9ca3af; font-size: 12px;">
-            <strong style="color: #6b7280;">JobRunner</strong> &bull; Built for Australian tradies
-          </p>
-          ${UNSUBSCRIBE_FOOTER}
-        </div>
-      </body>
-      </html>
-    `
+    html: renderEmailShell('Verify Your Email - JobRunner', `
+    ${emailHeaderBand({ brandColor: '#2563EB', logoUrl, businessName: 'JobRunner' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">Verify your email</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">Hi ${user.firstName || 'there'}, thanks for signing up. Confirm this is you to finish setting up your JobRunner account.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        ${emailCtaButton('Verify email', verificationUrl, '#2563EB')}
+        <p style="margin: 18px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">This link expires in 24 hours. Or paste this into your browser:<br><a href="${verificationUrl}" style="color: #2563EB; word-break: break-all;">${verificationUrl}</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        <p style="margin: 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">If you didn't create a JobRunner account, you can safely ignore this email.</p>
+      </td>
+    </tr>
+    `)
   };
 };
 
@@ -1451,48 +1513,26 @@ export const sendPasswordResetEmail = async (user: any, resetToken: string) => {
       openTracking: { enable: true },
       subscriptionTracking: { enable: false },
     },
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Reset Your Password - JobRunner</title>
-      </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f4f5f7;">
-        <div style="max-width: 560px; margin: 0 auto; padding: 32px 16px;">
-          <div style="background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb;">
-            <div style="padding: 36px 32px 12px 32px; text-align: center; background: #ffffff;">
-              <img src="${logoUrl}" alt="JobRunner" style="max-width: 132px; height: auto; display: inline-block;" />
-            </div>
-            <div style="height: 3px; background: #F59E0B; margin: 0 32px;"></div>
-
-            <div style="padding: 28px 32px 8px 32px;">
-              <h1 style="color: #111827; margin: 0 0 8px 0; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">Reset your password</h1>
-              <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 15px;">Hi ${user.firstName || 'there'}, we got a request to reset your JobRunner password. Tap the button below to create a new one.</p>
-
-              <div style="text-align: center; margin: 28px 0 8px 0;">
-                <a href="${resetUrl}" style="background: #2563EB; color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 600; font-size: 15px;">Reset password</a>
-              </div>
-
-              <p style="margin: 24px 0 0 0; font-size: 13px; color: #6b7280; text-align: center;">This link expires in 1 hour.</p>
-            </div>
-
-            <div style="padding: 20px 32px 28px 32px; border-top: 1px solid #f1f2f4; margin-top: 20px;">
-              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
-                Didn't ask for this? You can safely ignore this email — your password won't change until you create a new one.
-              </p>
-            </div>
-          </div>
-
-          <p style="margin: 20px 0 0 0; text-align: center; color: #9ca3af; font-size: 12px;">
-            <strong style="color: #6b7280;">JobRunner</strong> &bull; Built for Australian tradies
-          </p>
-          ${UNSUBSCRIBE_FOOTER}
-        </div>
-      </body>
-      </html>
-    `,
+    html: renderEmailShell('Reset Your Password - JobRunner', `
+    ${emailHeaderBand({ brandColor: '#2563EB', logoUrl, businessName: 'JobRunner' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">Reset your password</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">Hi ${user.firstName || 'there'}, we got a request to reset your JobRunner password. Use the button below to create a new one.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        ${emailCtaButton('Reset password', resetUrl, '#2563EB')}
+        <p style="margin: 18px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">This link expires in 1 hour. Or paste this into your browser:<br><a href="${resetUrl}" style="color: #2563EB; word-break: break-all;">${resetUrl}</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        <p style="margin: 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Didn't ask for this? You can safely ignore this email &mdash; your password won't change until you create a new one.</p>
+      </td>
+    </tr>
+    `),
     text: `Password Reset Request\n\nHi ${user.firstName || 'there'},\n\nWe received a request to reset the password for your JobRunner account.\n\nClick this link to reset your password: ${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this reset, you can safely ignore this email.\n\n- The JobRunner Team`
   };
 
@@ -1509,6 +1549,8 @@ export const sendPasswordResetEmail = async (user: any, resetToken: string) => {
 // Payment success email
 export async function sendPaymentSuccessEmail(user: any, businessSettings: any, plan: string): Promise<void> {
 
+  const baseUrl = getBaseUrl();
+  const logoUrl = `${baseUrl}/logo.png`;
 
   const emailData = {
     to: user.email || businessSettings.email,
@@ -1518,35 +1560,38 @@ export async function sendPaymentSuccessEmail(user: any, businessSettings: any, 
     },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `Payment Successful - ${plan} Plan Activated`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Payment Successful</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Payment Successful! 🎉</h1>
-        </div>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <p>Hi ${user.firstName || user.username},</p>
-          <p>Thank you for subscribing to JobRunner ${plan}! Your payment has been processed successfully.</p>
-          
-          <div style="background: white; padding: 15px; border-radius: 6px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #2563EB;">Your ${plan} Plan is Active</h3>
-            <p style="margin: 0;">You now have access to all ${plan} features.</p>
-          </div>
-          
-          <p>If you have any questions, our support team is here to help.</p>
-        </div>
-        
-        ${UNSUBSCRIBE_FOOTER}
-      </body>
-      </html>
-    `
+    html: renderEmailShell('Payment Successful', `
+    ${emailHeaderBand({ brandColor: '#16a34a', logoUrl, businessName: 'JobRunner' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">Payment received &mdash; you're all set</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">Hi ${user.firstName || user.username}, thanks for subscribing to JobRunner ${plan}. Your payment went through and your account is good to go.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 20px;">
+              <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 600;">Your plan</p>
+              <p style="margin: 6px 0 0 0; color: #0f172a; font-size: 18px; font-weight: 700;">${plan} &mdash; active</p>
+              <p style="margin: 8px 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;">You now have access to all ${plan} features.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        ${emailCtaButton('Go to JobRunner', baseUrl, '#2563EB')}
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">If you have any questions, just reply to this email &mdash; our support team is here to help.</p>
+      </td>
+    </tr>
+    `)
   };
 
   try {
@@ -1561,6 +1606,8 @@ export async function sendPaymentSuccessEmail(user: any, businessSettings: any, 
 // Payment failed email
 export async function sendPaymentFailedEmail(user: any, businessSettings: any): Promise<void> {
 
+  const baseUrl = getBaseUrl();
+  const logoUrl = `${baseUrl}/logo.png`;
 
   const emailData = {
     to: user.email || businessSettings.email,
@@ -1570,30 +1617,37 @@ export async function sendPaymentFailedEmail(user: any, businessSettings: any): 
     },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: 'Payment Failed - Action Required',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Payment Failed</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: #dc2626; padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Payment Failed</h1>
-        </div>
-        
-        <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #dc2626;">
-          <p>Hi ${user.firstName || user.username},</p>
-          <p><strong>We were unable to process your subscription payment.</strong></p>
-          
-          <p>Please update your payment method to continue using JobRunner Pro features.</p>
-        </div>
-        
-        ${UNSUBSCRIBE_FOOTER}
-      </body>
-      </html>
-    `
+    html: renderEmailShell('Payment Failed', `
+    ${emailHeaderBand({ brandColor: '#dc2626', logoUrl, businessName: 'JobRunner' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">We couldn't process your payment</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">Hi ${user.firstName || user.username}, your most recent subscription payment didn't go through. This usually just means your card has expired or needs updating.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 20px;">
+              <p style="margin: 0; color: #b91c1c; font-size: 14px; font-weight: 600;">Action needed</p>
+              <p style="margin: 8px 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;">Please update your payment method to keep your JobRunner Pro features active.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        ${emailCtaButton('Update payment method', baseUrl, '#2563EB')}
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">If you think this is a mistake or need a hand, just reply to this email &mdash; we're happy to help.</p>
+      </td>
+    </tr>
+    `)
   };
 
   try {
@@ -1628,53 +1682,46 @@ export async function sendPaymentRequestEmail(params: PaymentRequestEmailParams)
     },
     replyTo: businessEmail || PLATFORM_REPLY_TO_EMAIL,
     subject: `Payment Request from ${businessName} - $${amount.toFixed(2)}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Payment Request</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-          <h1 style="color: white; margin: 0;">${businessName}</h1>
-          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Payment Request</p>
-        </div>
-        
-        <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin-bottom: 20px;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <p style="font-size: 14px; color: #666; margin: 0 0 5px 0;">Amount Due</p>
-            <p style="font-size: 36px; font-weight: bold; color: #111; margin: 0;">$${amount.toFixed(2)} AUD</p>
-            <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Includes GST</p>
-          </div>
-          
-          <div style="border-top: 1px solid #e5e7eb; padding-top: 15px;">
-            <p style="margin: 0 0 10px 0;"><strong>For:</strong> ${description}</p>
-            ${reference ? `<p style="margin: 0;"><strong>Reference:</strong> ${reference}</p>` : ''}
-          </div>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${paymentUrl}" style="background-color: #2563EB; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 18px; font-weight: bold;">
-            Pay Now Securely
-          </a>
-          <p style="margin-top: 12px; color: #666; font-size: 14px;">Click the button above to pay with your card</p>
-        </div>
-        
-        <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #E8862E;">
-          <p style="margin: 0; font-size: 14px; color: #92400e;">
-            <strong>Secure Payment:</strong> Your payment is processed securely through Stripe. We never store your card details.
-          </p>
-        </div>
-        
-        <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
-          <p style="margin: 0;">This payment request was sent by ${businessName}</p>
-          <p style="margin: 5px 0 0 0;">Powered by JobRunner</p>
-        </div>
-      </body>
-      </html>
-    `
+    html: renderEmailShell('Payment Request', `
+    ${emailHeaderBand({ brandColor: '#2563EB', businessName: businessName || 'JobRunner', docLabel: 'Payment request' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6;">${businessName} has sent you a request for payment. You can pay securely online using the button below.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 24px 20px; text-align: center;">
+              <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 600;">Amount due</p>
+              <p style="margin: 8px 0 0 0; color: #0f172a; font-size: 34px; font-weight: 700; line-height: 1.1;">$${amount.toFixed(2)} AUD</p>
+              <p style="margin: 6px 0 0 0; color: #64748b; font-size: 12px;">Includes GST</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 20px 20px 20px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #e2e8f0;">
+                <tr><td style="padding-top: 16px;"><p style="margin: 0; color: #64748b; font-size: 14px;"><span style="color: #0f172a; font-weight: 600;">For:</span> ${description}</p></td></tr>
+                ${reference ? `<tr><td style="padding-top: 8px;"><p style="margin: 0; color: #64748b; font-size: 14px;"><span style="color: #0f172a; font-weight: 600;">Reference:</span> ${reference}</p></td></tr>` : ''}
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        ${emailCtaButton('Pay now securely', paymentUrl, '#2563EB')}
+        <p style="margin: 14px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">Pay with your card &mdash; processed securely through Stripe. We never store your card details.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        <p style="margin: 0; color: #94a3b8; font-size: 12px; line-height: 1.6;">This payment request was sent by ${businessName}.</p>
+      </td>
+    </tr>
+    `)
   };
 
   try {
@@ -1706,109 +1753,59 @@ export async function sendWelcomeEmail(
     },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: 'Welcome to JobRunner - Let\'s get your business sorted!',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to JobRunner</title>
-      </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.7; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #f9fafb;">
-        <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); padding: 44px 32px; border-radius: 16px 16px 0 0; text-align: center;">
-          <img src="${logoUrl}" alt="JobRunner" style="max-width: 140px; height: auto; margin-bottom: 20px;" />
-          <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.5px;">Welcome to JobRunner!</h1>
-          <p style="color: rgba(255,255,255,0.85); margin: 12px 0 0 0; font-size: 15px; font-weight: 400;">The business management platform built for Australian tradies</p>
-        </div>
-        
-        <div style="background: white; padding: 32px; border-radius: 0 0 16px 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-          <p style="font-size: 18px; margin: 0 0 20px 0; font-weight: 500; color: #111827;">G'day ${userName}!</p>
-          
-          <p style="margin: 0 0 20px 0; color: #4b5563;">Thanks for signing up to JobRunner. You've just taken the first step towards running a more organised, professional trade business.</p>
-          
-          <div style="background: #eff6ff; padding: 28px; border-radius: 12px; margin: 28px 0;">
-            <h3 style="margin: 0 0 24px 0; color: #2563EB; text-align: center; font-size: 17px; font-weight: 600; letter-spacing: -0.3px;">Quick Start Guide</h3>
-            
-            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
-              <tr>
-                <td style="padding-bottom: 18px; vertical-align: top; width: 44px;">
-                  <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); color: white; width: 26px; height: 26px; border-radius: 50%; text-align: center; line-height: 26px; font-weight: 600; font-size: 13px; display: inline-block;">1</div>
-                </td>
-                <td style="padding-bottom: 18px; vertical-align: top;">
-                  <strong style="color: #2563EB; font-size: 14px; font-weight: 600;">Set up your business profile</strong>
-                  <p style="margin: 6px 0 0 0; color: #6b7280; font-size: 13px; line-height: 1.5;">Add your ABN, logo, and business details for professional quotes and invoices</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding-bottom: 18px; vertical-align: top; width: 44px;">
-                  <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); color: white; width: 26px; height: 26px; border-radius: 50%; text-align: center; line-height: 26px; font-weight: 600; font-size: 13px; display: inline-block;">2</div>
-                </td>
-                <td style="padding-bottom: 18px; vertical-align: top;">
-                  <strong style="color: #2563EB; font-size: 14px; font-weight: 600;">Add your first client</strong>
-                  <p style="margin: 6px 0 0 0; color: #6b7280; font-size: 13px; line-height: 1.5;">Store customer details and job history in one place</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding-bottom: 18px; vertical-align: top; width: 44px;">
-                  <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); color: white; width: 26px; height: 26px; border-radius: 50%; text-align: center; line-height: 26px; font-weight: 600; font-size: 13px; display: inline-block;">3</div>
-                </td>
-                <td style="padding-bottom: 18px; vertical-align: top;">
-                  <strong style="color: #2563EB; font-size: 14px; font-weight: 600;">Create a quote</strong>
-                  <p style="margin: 6px 0 0 0; color: #6b7280; font-size: 13px; line-height: 1.5;">Use our templates to send professional quotes with one click</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding-bottom: 18px; vertical-align: top; width: 44px;">
-                  <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); color: white; width: 26px; height: 26px; border-radius: 50%; text-align: center; line-height: 26px; font-weight: 600; font-size: 13px; display: inline-block;">4</div>
-                </td>
-                <td style="padding-bottom: 18px; vertical-align: top;">
-                  <strong style="color: #2563EB; font-size: 14px; font-weight: 600;">Convert quote to job</strong>
-                  <p style="margin: 6px 0 0 0; color: #6b7280; font-size: 13px; line-height: 1.5;">Once accepted, turn it into a trackable job with scheduling</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="vertical-align: top; width: 44px;">
-                  <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; width: 26px; height: 26px; border-radius: 50%; text-align: center; line-height: 26px; font-weight: 600; font-size: 13px; display: inline-block;">5</div>
-                </td>
-                <td style="vertical-align: top;">
-                  <strong style="color: #047857; font-size: 14px; font-weight: 600;">Invoice & get paid</strong>
-                  <p style="margin: 6px 0 0 0; color: #6b7280; font-size: 13px; line-height: 1.5;">Send invoices with Stripe payment links - get paid online instantly</p>
-                </td>
-              </tr>
-            </table>
-          </div>
-          
-          <div style="background: #fef3c7; padding: 16px 18px; border-radius: 10px; margin: 24px 0; border-left: 4px solid #E8862E;">
-            <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.5;">
-              <strong>Pro tip:</strong> Download our mobile app to manage your jobs on the go. Same account, synced data!
-            </p>
-          </div>
-          
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${effectiveBaseUrl}" style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); color: white; padding: 14px 36px; text-decoration: none; border-radius: 10px; display: inline-block; font-size: 15px; font-weight: 600; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);">
-              Get Started Now
-            </a>
-          </div>
-          
-          <p style="color: #6b7280; font-size: 13px; margin-top: 28px;">
-            Need help? Just reply to this email and we'll get back to you.
-          </p>
-          
-          <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-            <p style="margin: 0; color: #374151; font-size: 14px;">
-              Cheers,<br>
-              <strong>The JobRunner Team</strong>
-            </p>
-          </div>
-        </div>
-        
-        <div style="text-align: center; padding: 24px; color: #9ca3af; font-size: 12px;">
-          <p style="margin: 0;"><strong style="color: #6b7280;">JobRunner</strong> &bull; Built for Australian tradies</p>
-          <p style="margin: 8px 0 0 0;">Questions? Visit jobrunner.com.au for support</p>
-        </div>
-      </body>
-      </html>
-    `
+    html: renderEmailShell('Welcome to JobRunner', `
+    ${emailHeaderBand({ brandColor: '#2563EB', logoUrl, businessName: 'JobRunner' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">G'day ${userName}, welcome aboard</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">Thanks for signing up to JobRunner. You've just taken the first step towards running a more organised, professional trade business. Here's a quick way to get going.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+          ${[
+            { n: '1', color: '#2563EB', title: 'Set up your business profile', body: 'Add your ABN, logo, and business details for professional quotes and invoices.' },
+            { n: '2', color: '#2563EB', title: 'Add your first client', body: 'Store customer details and job history in one place.' },
+            { n: '3', color: '#2563EB', title: 'Create a quote', body: 'Use our templates to send professional quotes with one click.' },
+            { n: '4', color: '#2563EB', title: 'Convert quote to job', body: 'Once accepted, turn it into a trackable job with scheduling.' },
+            { n: '5', color: '#16a34a', title: 'Invoice & get paid', body: 'Send invoices with Stripe payment links \u2014 get paid online instantly.' },
+          ].map((s, i, arr) => `
+          <tr>
+            <td style="padding: 0 14px ${i === arr.length - 1 ? '0' : '18px'} 0; vertical-align: top; width: 36px;">
+              <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width: 28px; height: 28px; background-color: ${s.color}; border-radius: 6px; text-align: center; color: #ffffff; font-size: 13px; font-weight: 700; line-height: 28px;">${s.n}</td></tr></table>
+            </td>
+            <td style="padding: 0 0 ${i === arr.length - 1 ? '0' : '18px'} 0; vertical-align: top;">
+              <p style="margin: 0; color: #0f172a; font-size: 15px; font-weight: 700;">${s.title}</p>
+              <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;">${s.body}</p>
+            </td>
+          </tr>`).join('')}
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 16px 20px;">
+              <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #E8862E; font-weight: 700;">Tip:</span> Download our mobile app to manage your jobs on the go. Same account, synced data.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        ${emailCtaButton('Get started now', effectiveBaseUrl, '#2563EB')}
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">Need help? Just reply to this email and we'll get back to you.</p>
+        <p style="margin: 16px 0 0 0; color: #475569; font-size: 14px; line-height: 1.6;">Cheers,<br><strong style="color: #0f172a;">The JobRunner Team</strong></p>
+      </td>
+    </tr>
+    `)
   };
 
   try {
@@ -1840,38 +1837,36 @@ export async function sendTestEmail(
     },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: 'JobRunner - Test Email',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Test Email</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Email Test Successful!</h1>
-        </div>
-        
-        <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #22c55e;">
-          <p style="margin: 0;">Hi ${businessName},</p>
-          <p>Your JobRunner email integration is working perfectly.</p>
-          <p>Your clients will now receive professional emails for:</p>
-          <ul>
-            <li>Quotes and estimates</li>
-            <li>Invoices and payment links</li>
-            <li>Payment confirmations</li>
-            <li>Job updates and reminders</li>
-          </ul>
-        </div>
-        
-        <div style="text-align: center; padding: 20px; color: #666;">
-          <p style="margin: 0; font-size: 12px;">This is a test email from JobRunner</p>
-          <p style="margin: 5px 0 0 0; font-size: 12px;">Replies to your business emails will go to your registered email address</p>
-        </div>
-      </body>
-      </html>
-    `
+    html: renderEmailShell('Test Email', `
+    ${emailHeaderBand({ brandColor: '#16a34a', businessName: 'JobRunner' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">Your email is working</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">Hi ${businessName}, your JobRunner email integration is set up correctly. Your clients will now receive professional emails for:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 20px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 22px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Quotes and estimates</td></tr>
+                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Invoices and payment links</td></tr>
+                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Payment confirmations</td></tr>
+                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Job updates and reminders</td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        <p style="margin: 0; color: #94a3b8; font-size: 12px; line-height: 1.6;">This is a test email from JobRunner. Replies to your business emails will go to your registered email address.</p>
+      </td>
+    </tr>
+    `)
   };
 
   try {
@@ -1915,62 +1910,44 @@ export async function sendTeamInviteEmail(
     },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `You've been invited to join ${businessName} on JobRunner`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Team Invitation</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
-        <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); padding: 40px 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <img src="${logoUrl}" alt="JobRunner" style="max-width: 180px; height: auto; margin-bottom: 15px;" />
-          <h1 style="color: white; margin: 0; font-size: 24px;">You're Invited to Join ${businessName}</h1>
-          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">on JobRunner</p>
-        </div>
-        
-        <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <p style="font-size: 18px; margin-bottom: 20px;">G'day ${displayName}!</p>
-          
-          <p><strong>${inviterName}</strong> has invited you to join <strong>${businessName}</strong> as a <strong>${roleName}</strong>.</p>
-          
-          <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #2563EB;">
-            <h3 style="margin: 0 0 15px 0; color: #2563EB;">What you'll be able to do:</h3>
-            <ul style="margin: 0; padding-left: 20px;">
-              <li style="margin-bottom: 8px;">View and manage your assigned jobs</li>
-              <li style="margin-bottom: 8px;">Track your time on jobs</li>
-              <li style="margin-bottom: 8px;">Communicate with the team</li>
-              <li>Access job details on your mobile</li>
-            </ul>
-          </div>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${smartAppLink}" style="background-color: #22c55e; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold; margin-bottom: 12px;">
-              Accept Invitation
-            </a>
-            <p style="color: #666; font-size: 13px; margin: 12px 0 8px 0;">
-              Opens in the JobRunner app, or browser if app not installed
-            </p>
-          </div>
-          
-          <p style="color: #666; font-size: 14px; margin-top: 20px; text-align: center;">
-            This invitation link will expire in 7 days.
-          </p>
-          
-          <p style="margin-top: 25px;">
-            Cheers,<br>
-            <strong>The JobRunner Team</strong>
-          </p>
-        </div>
-        
-        <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
-          <p style="margin: 0;">JobRunner - The business management platform for Australian tradies</p>
-          <p style="margin: 5px 0 0 0;">If you didn't expect this invitation, you can ignore this email.</p>
-        </div>
-      </body>
-      </html>
-    `
+    html: renderEmailShell('Team Invitation', `
+    ${emailHeaderBand({ brandColor: '#2563EB', logoUrl, businessName: 'JobRunner' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">You're invited to join ${businessName}</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">G'day ${displayName}, <strong style="color: #0f172a;">${inviterName}</strong> has invited you to join <strong style="color: #0f172a;">${businessName}</strong> on JobRunner as a <strong style="color: #0f172a;">${roleName}</strong>.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 22px;">
+              <p style="margin: 0 0 10px 0; color: #0f172a; font-size: 14px; font-weight: 700;">What you'll be able to do</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">View and manage your assigned jobs</td></tr>
+                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Track your time on jobs</td></tr>
+                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Communicate with the team</td></tr>
+                <tr><td style="padding: 4px 0; color: #475569; font-size: 14px; line-height: 1.6;">Access job details on your mobile</td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        ${emailCtaButton('Accept invitation', smartAppLink, '#2563EB')}
+        <p style="margin: 14px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">Opens in the JobRunner app, or your browser if the app isn't installed. This invitation expires in 7 days.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.6;">Cheers,<br><strong style="color: #0f172a;">The JobRunner Team</strong></p>
+        <p style="margin: 16px 0 0 0; color: #94a3b8; font-size: 12px; line-height: 1.6;">If you didn't expect this invitation, you can safely ignore this email.</p>
+      </td>
+    </tr>
+    `)
   };
 
   try {
@@ -2002,6 +1979,7 @@ export async function sendJobAssignmentEmail(
 
   const displayName = assigneeName || assigneeEmail.split('@')[0];
   const jobUrl = `${baseUrl}/jobs/${jobId}`;
+  const logoUrl = `${baseUrl}/logo.png`;
   const formattedDate = scheduledDate ? new Date(scheduledDate).toLocaleDateString('en-AU', {
     weekday: 'long',
     day: 'numeric',
@@ -2017,47 +1995,38 @@ export async function sendJobAssignmentEmail(
     },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `New Job Assigned: ${jobTitle}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>New Job Assignment</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
-        <div style="background: linear-gradient(135deg, #E8862E 0%, #C86B1A 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 22px;">New Job Assigned to You</h1>
-        </div>
-        
-        <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <p style="font-size: 16px; margin-bottom: 20px;">Hey ${displayName},</p>
-          
-          <p><strong>${assignerName}</strong> has assigned you a new job.</p>
-          
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #E8862E;">
-            <h3 style="margin: 0 0 15px 0; color: #925714;">${jobTitle}</h3>
-            ${jobAddress ? `<p style="margin: 0 0 8px 0;"><strong>Address:</strong> ${jobAddress}</p>` : ''}
-            <p style="margin: 0;"><strong>Scheduled:</strong> ${formattedDate}</p>
-          </div>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${jobUrl}" style="background-color: #E8862E; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold;">
-              View Job Details
-            </a>
-          </div>
-          
-          <p style="color: #666; font-size: 14px;">
-            Open JobRunner to see the full job details and get started.
-          </p>
-        </div>
-        
-        <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
-          <p style="margin: 0;">Powered by JobRunner</p>
-        </div>
-      </body>
-      </html>
-    `
+    html: renderEmailShell('New Job Assignment', `
+    ${emailHeaderBand({ brandColor: '#E8862E', logoUrl, businessName: businessName || 'JobRunner' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">A new job has been assigned to you</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">Hey ${displayName}, <strong style="color: #0f172a;">${assignerName}</strong> has assigned you a new job. Here are the details.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 22px;">
+              <p style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 700;">${jobTitle}</p>
+              ${jobAddress ? `<p style="margin: 10px 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Address:</span> ${jobAddress}</p>` : ''}
+              <p style="margin: ${jobAddress ? '6px' : '10px'} 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Scheduled:</span> ${formattedDate}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        ${emailCtaButton('View job details', jobUrl, '#E8862E')}
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">Open JobRunner to see the full job details and get started.</p>
+      </td>
+    </tr>
+    `)
   };
 
   try {
@@ -2088,6 +2057,7 @@ export async function sendJobCompletionNotificationEmail(
 
   const displayName = ownerName || ownerEmail.split('@')[0];
   const jobUrl = `${baseUrl}/jobs/${jobId}`;
+  const logoUrl = `${baseUrl}/logo.png`;
   const formattedDate = completedAt.toLocaleDateString('en-AU', {
     weekday: 'short',
     day: 'numeric',
@@ -2104,47 +2074,38 @@ export async function sendJobCompletionNotificationEmail(
     },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `Job Completed: ${jobTitle}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Job Completed</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
-        <div style="background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 22px;">Job Completed</h1>
-        </div>
-        
-        <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <p style="font-size: 16px; margin-bottom: 20px;">Hey ${displayName},</p>
-          
-          <p><strong>${staffName}</strong> has marked a job as complete.</p>
-          
-          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #22c55e;">
-            <h3 style="margin: 0 0 15px 0; color: #166534;">${jobTitle}</h3>
-            ${clientName ? `<p style="margin: 0 0 8px 0;"><strong>Client:</strong> ${clientName}</p>` : ''}
-            <p style="margin: 0;"><strong>Completed:</strong> ${formattedDate}</p>
-          </div>
-          
-          <p style="font-size: 14px; color: #666;">
-            The job includes photos, signatures, and time tracking data. Review the details and create an invoice.
-          </p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${jobUrl}" style="background-color: #22c55e; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold;">
-              View Job & Create Invoice
-            </a>
-          </div>
-        </div>
-        
-        <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
-          <p style="margin: 0;">Powered by JobRunner</p>
-        </div>
-      </body>
-      </html>
-    `
+    html: renderEmailShell('Job Completed', `
+    ${emailHeaderBand({ brandColor: '#16a34a', logoUrl, businessName: 'JobRunner' })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">A job has been marked complete</h1>
+        <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">Hey ${displayName}, <strong style="color: #0f172a;">${staffName}</strong> has just marked a job as complete.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr>
+            <td style="padding: 18px 22px;">
+              <p style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 700;">${jobTitle}</p>
+              ${clientName ? `<p style="margin: 10px 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Client:</span> ${clientName}</p>` : ''}
+              <p style="margin: ${clientName ? '6px' : '10px'} 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Completed:</span> ${formattedDate}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">The job includes photos, signatures, and time tracking data. Review the details and create an invoice.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 24px 32px 32px 32px;">
+        ${emailCtaButton('View job & create invoice', jobUrl, '#2563EB')}
+      </td>
+    </tr>
+    `)
   };
 
   try {
@@ -2546,35 +2507,177 @@ export function createDailySummaryEmail(data: DailySummaryData): { to: string; f
   const completedJobsHtml = data.jobs.completedList.length > 0 
     ? data.jobs.completedList.map(job => `
       <tr>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #eee;">${job.title}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #eee;">${job.client}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(job.value)}</td>
+        <td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-size: 14px;">${job.title}</td>
+        <td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 14px;">${job.client}</td>
+        <td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #0f172a; font-size: 14px; font-weight: 600;">${formatCurrency(job.value)}</td>
       </tr>
     `).join('')
-    : '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;">No jobs completed today</td></tr>';
+    : '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #94a3b8; font-size: 14px;">No jobs completed today</td></tr>';
 
   const paymentsHtml = data.payments.paymentsList.length > 0
     ? data.payments.paymentsList.map(payment => `
       <tr>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #eee;">${payment.client}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #eee;">${payment.invoice}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #eee; text-align: right; color: #2563EB; font-weight: 600;">${formatCurrency(payment.amount)}</td>
+        <td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-size: 14px;">${payment.client}</td>
+        <td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 14px;">${payment.invoice}</td>
+        <td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #16a34a; font-size: 14px; font-weight: 600;">${formatCurrency(payment.amount)}</td>
       </tr>
     `).join('')
     : '';
 
   const actionItemsHtml = data.actionItems.length > 0
     ? data.actionItems.map(item => {
-        const priorityColor = item.priority === 'high' ? '#dc2626' : item.priority === 'medium' ? '#E8862E' : '#6b7280';
-        const priorityBg = item.priority === 'high' ? '#fef2f2' : item.priority === 'medium' ? '#fffbeb' : '#f9fafb';
+        const priorityColor = item.priority === 'high' ? '#dc2626' : item.priority === 'medium' ? '#E8862E' : '#64748b';
+        const priorityLabel = item.priority === 'high' ? 'High priority' : item.priority === 'medium' ? 'Medium priority' : 'Low priority';
         return `
-          <div style="padding: 12px 16px; margin-bottom: 8px; background: ${priorityBg}; border-left: 4px solid ${priorityColor}; border-radius: 4px;">
-            <span style="color: ${priorityColor}; font-weight: 600; text-transform: uppercase; font-size: 11px;">${item.priority}</span>
-            <p style="margin: 4px 0 0 0; color: #333;">${item.message}</p>
-          </div>
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px;">
+            <tr>
+              <td style="padding: 14px 16px;">
+                <p style="margin: 0; color: ${priorityColor}; font-weight: 700; font-size: 12px;">${priorityLabel}</p>
+                <p style="margin: 6px 0 0 0; color: #475569; font-size: 14px; line-height: 1.6;">${item.message}</p>
+              </td>
+            </tr>
+          </table>
         `;
       }).join('')
-    : '<p style="color: #666; text-align: center; padding: 20px;">No action items - great job!</p>';
+    : '<p style="margin: 0; color: #94a3b8; font-size: 14px; text-align: center; padding: 16px;">No action items \u2014 nice work.</p>';
+
+  const sectionHeading = (label: string) => `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <h2 style="margin: 0 0 14px 0; color: #0f172a; font-size: 17px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">${label}</h2>
+      </td>
+    </tr>`;
+
+  const innerRows = `
+    ${emailHeaderBand({ brandColor, businessName: data.business.name, docLabel: 'Daily summary', docRef: data.dateFormatted })}
+    ${!hasActivity ? `
+    <tr>
+      <td class="content" style="padding: 32px 32px;">
+        <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6; text-align: center;">Quiet day today &mdash; no activity to report.</p>
+      </td>
+    </tr>
+    ` : `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td width="33%" style="padding: 0 6px 0 0; vertical-align: top;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px;">
+                <tr><td style="padding: 16px 12px; text-align: center;">
+                  <p style="margin: 0; color: #16a34a; font-size: 22px; font-weight: 700;">${formatCurrency(data.payments.totalAmount)}</p>
+                  <p style="margin: 4px 0 0 0; color: #15803d; font-size: 12px;">Payments received</p>
+                </td></tr>
+              </table>
+            </td>
+            <td width="33%" style="padding: 0 6px; vertical-align: top;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px;">
+                <tr><td style="padding: 16px 12px; text-align: center;">
+                  <p style="margin: 0; color: #2563EB; font-size: 22px; font-weight: 700;">${data.jobs.completed}</p>
+                  <p style="margin: 4px 0 0 0; color: #2563EB; font-size: 12px;">Jobs completed</p>
+                </td></tr>
+              </table>
+            </td>
+            <td width="33%" style="padding: 0 0 0 6px; vertical-align: top;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <tr><td style="padding: 16px 12px; text-align: center;">
+                  <p style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700;">${data.quotes.conversionRate}%</p>
+                  <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px;">Quote conversion</p>
+                </td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    ${sectionHeading('Jobs')}
+    <tr>
+      <td class="content" style="padding: 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td style="color: #64748b; font-size: 14px; line-height: 1.8;"><span style="color: #0f172a; font-weight: 700;">${data.jobs.completed}</span> completed &nbsp;&bull;&nbsp; <span style="color: #0f172a; font-weight: 700;">${data.jobs.inProgress}</span> in progress &nbsp;&bull;&nbsp; <span style="color: #0f172a; font-weight: 700;">${data.jobs.scheduled}</span> scheduled</td>
+          </tr>
+        </table>
+        ${data.jobs.completedList.length > 0 ? `
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 14px; border: 1px solid #e2e8f0; border-radius: 8px; border-collapse: separate; overflow: hidden;">
+          <tr style="background-color: #f8fafc;">
+            <td style="padding: 10px 14px; text-align: left; font-weight: 700; color: #475569; font-size: 12px;">Job</td>
+            <td style="padding: 10px 14px; text-align: left; font-weight: 700; color: #475569; font-size: 12px;">Client</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: #475569; font-size: 12px;">Value</td>
+          </tr>
+          ${completedJobsHtml}
+        </table>
+        ` : ''}
+      </td>
+    </tr>
+
+    ${sectionHeading('Quotes')}
+    <tr>
+      <td class="content" style="padding: 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr><td style="color: #64748b; font-size: 14px; line-height: 1.8;"><span style="color: #0f172a; font-weight: 700;">${data.quotes.sent}</span> sent (${formatCurrency(data.quotes.sentTotal)}) &nbsp;&bull;&nbsp; <span style="color: #16a34a; font-weight: 700;">${data.quotes.accepted}</span> accepted (${formatCurrency(data.quotes.acceptedTotal)})</td></tr>
+          <tr><td style="color: #64748b; font-size: 14px; line-height: 1.8;"><span style="color: #dc2626; font-weight: 700;">${data.quotes.rejected}</span> rejected &nbsp;&bull;&nbsp; <span style="color: #E8862E; font-weight: 700;">${data.quotes.pending}</span> pending</td></tr>
+        </table>
+      </td>
+    </tr>
+
+    ${sectionHeading('Invoices')}
+    <tr>
+      <td class="content" style="padding: 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr><td style="color: #64748b; font-size: 14px; line-height: 1.8;"><span style="color: #0f172a; font-weight: 700;">${data.invoices.sent}</span> sent (${formatCurrency(data.invoices.sentTotal)}) &nbsp;&bull;&nbsp; <span style="color: #16a34a; font-weight: 700;">${data.invoices.paid}</span> paid (${formatCurrency(data.invoices.paidTotal)})</td></tr>
+          ${data.invoices.overdue > 0 ? `<tr><td style="color: #64748b; font-size: 14px; line-height: 1.8;"><span style="color: #dc2626; font-weight: 700;">${data.invoices.overdue}</span> overdue (${formatCurrency(data.invoices.overdueTotal)})</td></tr>` : ''}
+        </table>
+      </td>
+    </tr>
+
+    ${data.payments.paymentsList.length > 0 ? `
+    ${sectionHeading('Payments received')}
+    <tr>
+      <td class="content" style="padding: 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #e2e8f0; border-radius: 8px; border-collapse: separate; overflow: hidden;">
+          <tr style="background-color: #f8fafc;">
+            <td style="padding: 10px 14px; text-align: left; font-weight: 700; color: #475569; font-size: 12px;">Client</td>
+            <td style="padding: 10px 14px; text-align: left; font-weight: 700; color: #475569; font-size: 12px;">Invoice</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: #475569; font-size: 12px;">Amount</td>
+          </tr>
+          ${paymentsHtml}
+          <tr style="background-color: #f8fafc;">
+            <td colspan="2" style="padding: 12px 14px; font-weight: 700; color: #0f172a; font-size: 14px;">Total received</td>
+            <td style="padding: 12px 14px; text-align: right; font-weight: 700; color: #16a34a; font-size: 15px;">${formatCurrency(data.payments.totalAmount)}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    ` : ''}
+
+    ${data.actionItems.length > 0 ? `
+    ${sectionHeading('Action items')}
+    <tr>
+      <td class="content" style="padding: 0 32px;">
+        ${actionItemsHtml}
+      </td>
+    </tr>
+    ` : ''}
+    `}
+
+    <tr>
+      <td class="content" style="padding: 28px 32px 32px 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #e2e8f0;">
+          <tr>
+            <td width="50%" style="padding: 18px 0 0 0; vertical-align: top;">
+              <p style="margin: 0; color: #94a3b8; font-size: 12px;">Total revenue today</p>
+              <p style="margin: 4px 0 0 0; color: #0f172a; font-size: 18px; font-weight: 700;">${formatCurrency(data.metrics.totalRevenue)}</p>
+            </td>
+            <td width="50%" style="padding: 18px 0 0 0; vertical-align: top; text-align: right;">
+              <p style="margin: 0; color: #94a3b8; font-size: 12px;">Outstanding invoices</p>
+              <p style="margin: 4px 0 0 0; color: #E8862E; font-size: 18px; font-weight: 700;">${formatCurrency(data.metrics.outstandingInvoices)}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  `;
 
   return {
     to: data.business.email,
@@ -2582,182 +2685,8 @@ export function createDailySummaryEmail(data: DailySummaryData): { to: string; f
       email: PLATFORM_FROM_EMAIL,
       name: 'JobRunner Daily Summary'
     },
-    subject: `📊 Daily Summary for ${data.dateFormatted} - ${data.business.name}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Daily Summary - ${data.dateFormatted}</title>
-      </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, ${brandColor}, ${brandColor}dd); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px; font-weight: 600;">📊 End of Day Summary</h1>
-          <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 16px;">${data.dateFormatted}</p>
-          <p style="margin: 4px 0 0 0; opacity: 0.8; font-size: 14px;">${data.business.name}</p>
-        </div>
-
-        <!-- Main Content -->
-        <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-          
-          ${!hasActivity ? `
-          <div style="text-align: center; padding: 40px 20px;">
-            <p style="font-size: 48px; margin: 0;">😴</p>
-            <p style="color: #666; font-size: 16px; margin-top: 16px;">Quiet day today - no activity to report!</p>
-          </div>
-          ` : `
-          <!-- Key Metrics -->
-          <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 30px;">
-            <div style="flex: 1; min-width: 140px; background: #f0fdf4; padding: 20px; border-radius: 8px; text-align: center;">
-              <p style="margin: 0; color: #059669; font-size: 28px; font-weight: 700;">${formatCurrency(data.payments.totalAmount)}</p>
-              <p style="margin: 4px 0 0 0; color: #047857; font-size: 13px;">Payments Received</p>
-            </div>
-            <div style="flex: 1; min-width: 140px; background: #eff6ff; padding: 20px; border-radius: 8px; text-align: center;">
-              <p style="margin: 0; color: #2563EB; font-size: 28px; font-weight: 700;">${data.jobs.completed}</p>
-              <p style="margin: 4px 0 0 0; color: #2563EB; font-size: 13px;">Jobs Completed</p>
-            </div>
-            <div style="flex: 1; min-width: 140px; background: #faf5ff; padding: 20px; border-radius: 8px; text-align: center;">
-              <p style="margin: 0; color: #7c3aed; font-size: 28px; font-weight: 700;">${data.quotes.conversionRate}%</p>
-              <p style="margin: 4px 0 0 0; color: #6d28d9; font-size: 13px;">Quote Conversion</p>
-            </div>
-          </div>
-
-          <!-- Jobs Summary -->
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: ${brandColor}; font-size: 18px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid ${brandColor}20;">
-              🔧 Jobs Summary
-            </h2>
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-              <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #2563EB; font-weight: 600;">${data.jobs.completed}</span> Completed
-              </div>
-              <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #2563EB; font-weight: 600;">${data.jobs.inProgress}</span> In Progress
-              </div>
-              <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #8b5cf6; font-weight: 600;">${data.jobs.scheduled}</span> Scheduled
-              </div>
-            </div>
-            ${data.jobs.completedList.length > 0 ? `
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <thead>
-                <tr style="background: #f8f9fa;">
-                  <th style="padding: 10px 12px; text-align: left; font-weight: 600;">Job</th>
-                  <th style="padding: 10px 12px; text-align: left; font-weight: 600;">Client</th>
-                  <th style="padding: 10px 12px; text-align: right; font-weight: 600;">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${completedJobsHtml}
-              </tbody>
-            </table>
-            ` : ''}
-          </div>
-
-          <!-- Quotes Summary -->
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: ${brandColor}; font-size: 18px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid ${brandColor}20;">
-              📝 Quotes Summary
-            </h2>
-            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-              <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #3b82f6; font-weight: 600;">${data.quotes.sent}</span> Sent (${formatCurrency(data.quotes.sentTotal)})
-              </div>
-              <div style="background: #f0fdf4; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #2563EB; font-weight: 600;">${data.quotes.accepted}</span> Accepted (${formatCurrency(data.quotes.acceptedTotal)})
-              </div>
-              <div style="background: #fef2f2; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #dc2626; font-weight: 600;">${data.quotes.rejected}</span> Rejected
-              </div>
-              <div style="background: #fffbeb; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #E8862E; font-weight: 600;">${data.quotes.pending}</span> Pending
-              </div>
-            </div>
-          </div>
-
-          <!-- Invoices Summary -->
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: ${brandColor}; font-size: 18px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid ${brandColor}20;">
-              💰 Invoices Summary
-            </h2>
-            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-              <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #3b82f6; font-weight: 600;">${data.invoices.sent}</span> Sent (${formatCurrency(data.invoices.sentTotal)})
-              </div>
-              <div style="background: #f0fdf4; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #2563EB; font-weight: 600;">${data.invoices.paid}</span> Paid (${formatCurrency(data.invoices.paidTotal)})
-              </div>
-              ${data.invoices.overdue > 0 ? `
-              <div style="background: #fef2f2; padding: 12px 16px; border-radius: 6px;">
-                <span style="color: #dc2626; font-weight: 600;">${data.invoices.overdue}</span> Overdue (${formatCurrency(data.invoices.overdueTotal)})
-              </div>
-              ` : ''}
-            </div>
-          </div>
-
-          <!-- Payments Received -->
-          ${data.payments.paymentsList.length > 0 ? `
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: ${brandColor}; font-size: 18px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid ${brandColor}20;">
-              ✅ Payments Received
-            </h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <thead>
-                <tr style="background: #f0fdf4;">
-                  <th style="padding: 10px 12px; text-align: left; font-weight: 600;">Client</th>
-                  <th style="padding: 10px 12px; text-align: left; font-weight: 600;">Invoice</th>
-                  <th style="padding: 10px 12px; text-align: right; font-weight: 600;">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${paymentsHtml}
-              </tbody>
-              <tfoot>
-                <tr style="background: #f0fdf4;">
-                  <td colspan="2" style="padding: 12px; font-weight: 600;">Total Received</td>
-                  <td style="padding: 12px; text-align: right; font-weight: 700; color: #2563EB; font-size: 16px;">${formatCurrency(data.payments.totalAmount)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          ` : ''}
-
-          <!-- Action Items -->
-          ${data.actionItems.length > 0 ? `
-          <div style="margin-bottom: 20px;">
-            <h2 style="color: ${brandColor}; font-size: 18px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid ${brandColor}20;">
-              ⚡ Action Items
-            </h2>
-            ${actionItemsHtml}
-          </div>
-          ` : ''}
-          `}
-
-          <!-- Footer Stats -->
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; text-align: center;">
-              <div>
-                <p style="margin: 0; color: #666; font-size: 12px;">Total Revenue Today</p>
-                <p style="margin: 4px 0 0 0; font-weight: 700; color: #2563EB; font-size: 18px;">${formatCurrency(data.metrics.totalRevenue)}</p>
-              </div>
-              <div>
-                <p style="margin: 0; color: #666; font-size: 12px;">Outstanding Invoices</p>
-                <p style="margin: 4px 0 0 0; font-weight: 700; color: #E8862E; font-size: 18px;">${formatCurrency(data.metrics.outstandingInvoices)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
-          <p style="margin: 0;">This is your automated daily summary from JobRunner</p>
-          <p style="margin: 8px 0 0 0;">You can manage your summary preferences in Settings → Automations</p>
-        </div>
-      </body>
-      </html>
-    `
+    subject: `Daily Summary for ${data.dateFormatted} - ${data.business.name}`,
+    html: renderEmailShell(`Daily Summary - ${data.dateFormatted}`, innerRows, 'This is your automated daily summary from JobRunner. You can manage your summary preferences in Settings \u2192 Automations.')
   };
 }
 

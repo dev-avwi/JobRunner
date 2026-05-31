@@ -41,9 +41,9 @@ const baseEmailWrapper = (content: string, brandColor: string = BRAND_BLUE) => `
     
     /* Responsive styles */
     @media only screen and (max-width: 600px) {
-      .container { width: 100% !important; padding: 10px !important; }
-      .content { padding: 20px !important; }
-      .header { padding: 20px !important; }
+      .container { width: 100% !important; padding: 0 !important; }
+      .content { padding: 24px !important; }
+      .header { padding: 28px 24px 0 24px !important; }
       .line-items td { padding: 8px 4px !important; font-size: 13px !important; }
       .cta-button { padding: 14px 24px !important; }
     }
@@ -53,19 +53,19 @@ const baseEmailWrapper = (content: string, brandColor: string = BRAND_BLUE) => `
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table class="container" role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+        <table class="container" role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">
           ${content}
         </table>
         <!-- Footer with Unsubscribe -->
-        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; margin-top: 24px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; margin-top: 20px;">
           <tr>
-            <td align="center" style="padding: 20px; color: #94a3b8; font-size: 12px; line-height: 1.5;">
-              <p style="margin: 0;">Powered by <strong>JobRunner</strong></p>
-              <p style="margin: 8px 0 0 0;">The business management platform for Australian tradies</p>
-              <p style="margin: 16px 0 0 0; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+            <td align="center" style="padding: 8px 24px; color: #94a3b8; font-size: 12px; line-height: 1.6;">
+              <p style="margin: 0; color: #64748b; font-size: 12px;">Sent with <strong style="color: #475569;">JobRunner</strong> &mdash; built for Australian tradies</p>
+              <p style="margin: 14px 0 0 0; padding-top: 14px; border-top: 1px solid #e2e8f0; color: #94a3b8;">
                 This email was sent by JobRunner on behalf of the business above.<br>
-                <a href="<%asm_group_unsubscribe_url%>" style="color: #64748b; text-decoration: underline;">Unsubscribe</a> | 
-                <a href="<%asm_preferences_url%>" style="color: #64748b; text-decoration: underline;">Manage email preferences</a>
+                <a href="<%asm_group_unsubscribe_url%>" style="color: #94a3b8; text-decoration: underline;">Unsubscribe</a>
+                &nbsp;&middot;&nbsp;
+                <a href="<%asm_preferences_url%>" style="color: #94a3b8; text-decoration: underline;">Manage email preferences</a>
               </p>
             </td>
           </tr>
@@ -94,16 +94,23 @@ const emailHeader = (
   
   return `
 <tr>
-  <td class="header" style="background: linear-gradient(135deg, ${brandColor} 0%, ${adjustColor(brandColor, -20)} 100%); padding: 32px; text-align: center;">
-    <div style="background: white; display: inline-block; padding: 12px 20px; border-radius: 8px; margin-bottom: 16px;">
-      <img src="${resolvedLogoUrl}" alt="${businessName || 'JobRunner'}" style="max-height: 48px; max-width: 160px; display: block;" />
-    </div>
-    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">${businessName}</h1>
-    ${abn ? `<p style="color: rgba(255,255,255,0.85); margin: 8px 0 0 0; font-size: 13px;">ABN: ${abn}</p>` : ''}
-    <div style="margin-top: 16px; display: inline-block; background: rgba(255,255,255,0.2); padding: 8px 20px; border-radius: 20px;">
-      <span style="color: #ffffff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${documentType}</span>
-      <span style="color: rgba(255,255,255,0.85); font-size: 14px; margin-left: 8px;">#${documentNumber}</span>
-    </div>
+  <td style="height: 4px; line-height: 4px; font-size: 0; background-color: ${brandColor};">&nbsp;</td>
+</tr>
+<tr>
+  <td class="header" style="padding: 32px 32px 0 32px;">
+    <img src="${resolvedLogoUrl}" alt="${businessName || 'JobRunner'}" style="max-height: 44px; max-width: 180px; display: block; margin-bottom: 16px;" />
+    <p style="margin: 0; color: #0f172a; font-size: 19px; font-weight: 700; line-height: 1.3;">${businessName}</p>
+    ${abn ? `<p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px;">ABN ${abn}</p>` : ''}
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 24px; border-top: 1px solid #e2e8f0;">
+      <tr>
+        <td style="padding-top: 18px; vertical-align: bottom;">
+          <span style="color: ${brandColor}; font-size: 17px; font-weight: 700;">${documentType}</span>
+        </td>
+        <td style="padding-top: 18px; text-align: right; vertical-align: bottom;">
+          <span style="color: #64748b; font-size: 14px;">No. ${documentNumber}</span>
+        </td>
+      </tr>
+    </table>
   </td>
 </tr>
 `;
@@ -117,18 +124,12 @@ const clientInfoSection = (
   clientPhone?: string
 ) => `
 <tr>
-  <td style="padding: 24px 32px;">
-    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-      <tr>
-        <td style="padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
-          <p style="margin: 0; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Bill To</p>
-          <p style="margin: 8px 0 0 0; color: #1e293b; font-size: 18px; font-weight: 600;">${clientName}</p>
-          ${clientEmail ? `<p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">${clientEmail}</p>` : ''}
-          ${clientAddress ? `<p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">${clientAddress}</p>` : ''}
-          ${clientPhone ? `<p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">${clientPhone}</p>` : ''}
-        </td>
-      </tr>
-    </table>
+  <td style="padding: 24px 32px 0 32px;">
+    <p style="margin: 0; color: #94a3b8; font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; font-weight: 600;">Billed to</p>
+    <p style="margin: 6px 0 0 0; color: #0f172a; font-size: 16px; font-weight: 600;">${clientName}</p>
+    ${clientEmail ? `<p style="margin: 3px 0 0 0; color: #64748b; font-size: 14px;">${clientEmail}</p>` : ''}
+    ${clientAddress ? `<p style="margin: 3px 0 0 0; color: #64748b; font-size: 14px;">${clientAddress}</p>` : ''}
+    ${clientPhone ? `<p style="margin: 3px 0 0 0; color: #64748b; font-size: 14px;">${clientPhone}</p>` : ''}
   </td>
 </tr>
 `;
@@ -136,9 +137,9 @@ const clientInfoSection = (
 // Greeting section
 const greetingSection = (clientFirstName: string, message: string) => `
 <tr>
-  <td class="content" style="padding: 0 32px 24px 32px;">
-    <p style="margin: 0 0 16px 0; color: #1e293b; font-size: 16px;">Hi ${clientFirstName},</p>
-    <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6;">${message}</p>
+  <td class="content" style="padding: 24px 32px 8px 32px;">
+    <p style="margin: 0 0 14px 0; color: #0f172a; font-size: 16px; font-weight: 600;">Hi ${clientFirstName},</p>
+    <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.65;">${message}</p>
   </td>
 </tr>
 `;
@@ -153,55 +154,61 @@ const lineItemsTable = (
   showGst: boolean = true
 ) => `
 <tr>
-  <td style="padding: 0 32px 24px 32px;">
+  <td style="padding: 24px 32px 8px 32px;">
     <table class="line-items" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
-      <tr style="background-color: #f8fafc;">
-        <td style="padding: 12px 16px; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid ${brandColor};">Description</td>
-        <td style="padding: 12px 16px; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; border-bottom: 2px solid ${brandColor};">Qty</td>
-        <td style="padding: 12px 16px; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; text-align: right; border-bottom: 2px solid ${brandColor};">Price</td>
-        <td style="padding: 12px 16px; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; text-align: right; border-bottom: 2px solid ${brandColor};">Total</td>
+      <tr>
+        <td style="padding: 0 12px 10px 0; color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid #e2e8f0;">Description</td>
+        <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; text-align: center; border-bottom: 1px solid #e2e8f0;">Qty</td>
+        <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; text-align: right; border-bottom: 1px solid #e2e8f0;">Price</td>
+        <td style="padding: 0 0 10px 12px; color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; text-align: right; border-bottom: 1px solid #e2e8f0;">Total</td>
       </tr>
       ${items.map(item => `
       <tr>
-        <td style="padding: 14px 16px; color: #1e293b; font-size: 14px; border-bottom: 1px solid #e2e8f0;">${item.description}</td>
-        <td style="padding: 14px 16px; color: #64748b; font-size: 14px; text-align: center; border-bottom: 1px solid #e2e8f0;">${Number(item.quantity).toFixed(2)}</td>
-        <td style="padding: 14px 16px; color: #64748b; font-size: 14px; text-align: right; border-bottom: 1px solid #e2e8f0;">$${Number(item.unitPrice).toFixed(2)}</td>
-        <td style="padding: 14px 16px; color: #1e293b; font-size: 14px; font-weight: 500; text-align: right; border-bottom: 1px solid #e2e8f0;">$${Number(item.total).toFixed(2)}</td>
+        <td style="padding: 14px 12px 14px 0; color: #1e293b; font-size: 14px; border-bottom: 1px solid #f1f5f9;">${item.description}</td>
+        <td style="padding: 14px 12px; color: #64748b; font-size: 14px; text-align: center; border-bottom: 1px solid #f1f5f9;">${Number(item.quantity).toFixed(2)}</td>
+        <td style="padding: 14px 12px; color: #64748b; font-size: 14px; text-align: right; border-bottom: 1px solid #f1f5f9;">$${Number(item.unitPrice).toFixed(2)}</td>
+        <td style="padding: 14px 0 14px 12px; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right; border-bottom: 1px solid #f1f5f9;">$${Number(item.total).toFixed(2)}</td>
       </tr>
       `).join('')}
       <tr>
-        <td colspan="3" style="padding: 14px 16px; color: #64748b; font-size: 14px; text-align: right;">Subtotal</td>
-        <td style="padding: 14px 16px; color: #1e293b; font-size: 14px; text-align: right;">$${subtotal.toFixed(2)}</td>
+        <td colspan="3" style="padding: 14px 12px 6px 0; color: #64748b; font-size: 14px; text-align: right;">Subtotal</td>
+        <td style="padding: 14px 0 6px 12px; color: #1e293b; font-size: 14px; text-align: right;">$${subtotal.toFixed(2)}</td>
       </tr>
       ${showGst && gstAmount > 0 ? `
       <tr>
-        <td colspan="3" style="padding: 14px 16px; color: #64748b; font-size: 14px; text-align: right;">GST (10%)</td>
-        <td style="padding: 14px 16px; color: #1e293b; font-size: 14px; text-align: right;">$${gstAmount.toFixed(2)}</td>
+        <td colspan="3" style="padding: 4px 12px 4px 0; color: #64748b; font-size: 14px; text-align: right;">GST (10%)</td>
+        <td style="padding: 4px 0 4px 12px; color: #1e293b; font-size: 14px; text-align: right;">$${gstAmount.toFixed(2)}</td>
       </tr>
       ` : ''}
-      <tr style="background-color: #f8fafc;">
-        <td colspan="3" style="padding: 16px; color: #1e293b; font-size: 16px; font-weight: 700; text-align: right;">Total (AUD)</td>
-        <td style="padding: 16px; color: ${brandColor}; font-size: 20px; font-weight: 700; text-align: right;">$${total.toFixed(2)}</td>
+      <tr>
+        <td colspan="3" style="padding: 14px 12px 0 0; color: #0f172a; font-size: 15px; font-weight: 700; text-align: right; border-top: 2px solid ${brandColor};">Total (AUD)</td>
+        <td style="padding: 14px 0 0 12px; color: ${brandColor}; font-size: 20px; font-weight: 700; text-align: right; border-top: 2px solid ${brandColor};">$${total.toFixed(2)}</td>
       </tr>
     </table>
   </td>
 </tr>
 `;
 
-// CTA Button
+// CTA Button — one consistent primary button style used across all emails
 const ctaButton = (text: string, url: string, brandColor: string) => `
 <tr>
-  <td style="padding: 0 32px 32px 32px; text-align: center;">
-    <a href="${url}" class="cta-button" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 6px -1px ${brandColor}40;">
-      ${text}
-    </a>
+  <td style="padding: 24px 32px 8px 32px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+      <tr>
+        <td align="center">
+          <a href="${url}" class="cta-button" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; padding: 15px 36px; border-radius: 8px; font-size: 16px; font-weight: 600; line-height: 1;">
+            ${text}
+          </a>
+        </td>
+      </tr>
+    </table>
   </td>
 </tr>
 `;
 
 // Status badge
 const statusBadge = (status: string, color: string) => `
-<span style="display: inline-block; background-color: ${color}20; color: ${color}; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+<span style="display: inline-block; background-color: ${color}20; color: ${color}; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.3px;">
   ${status}
 </span>
 `;
@@ -209,13 +216,17 @@ const statusBadge = (status: string, color: string) => `
 // Due date section
 const dueDateSection = (dueDate: string, isOverdue: boolean = false) => `
 <tr>
-  <td style="padding: 0 32px 24px 32px;">
-    <div style="background-color: ${isOverdue ? '#fef2f2' : '#f0fdf4'}; border-radius: 8px; padding: 16px; text-align: center; border-left: 4px solid ${isOverdue ? ERROR_RED : SUCCESS_GREEN};">
-      <p style="margin: 0; color: ${isOverdue ? ERROR_RED : SUCCESS_GREEN}; font-size: 14px; font-weight: 600;">
-        ${isOverdue ? 'PAYMENT OVERDUE' : 'Payment Due'}
-      </p>
-      <p style="margin: 8px 0 0 0; color: #1e293b; font-size: 18px; font-weight: 700;">${dueDate}</p>
-    </div>
+  <td style="padding: 24px 32px 0 32px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${isOverdue ? '#fef2f2' : '#eff6ff'}; border: 1px solid ${isOverdue ? '#fecaca' : '#bfdbfe'}; border-radius: 8px;">
+      <tr>
+        <td style="padding: 16px 20px;">
+          <p style="margin: 0; color: ${isOverdue ? ERROR_RED : NEUTRAL_GRAY}; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;">
+            ${isOverdue ? 'Payment overdue' : 'Payment due'}
+          </p>
+          <p style="margin: 6px 0 0 0; color: #0f172a; font-size: 18px; font-weight: 700;">${dueDate}</p>
+        </td>
+      </tr>
+    </table>
   </td>
 </tr>
 `;
@@ -229,16 +240,16 @@ const businessFooter = (
   abn?: string
 ) => `
 <tr>
-  <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
-    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+  <td style="padding: 32px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #e2e8f0;">
       <tr>
-        <td style="text-align: center;">
-          <p style="margin: 0; color: #64748b; font-size: 13px;">If you have any questions, please contact us:</p>
-          <p style="margin: 12px 0 0 0; color: #1e293b; font-size: 15px; font-weight: 600;">${businessName}</p>
+        <td style="padding-top: 24px;">
+          <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">Questions about this? Just reply to this email or get in touch&nbsp;&mdash; happy to help.</p>
+          <p style="margin: 16px 0 0 0; color: #0f172a; font-size: 15px; font-weight: 600;">${businessName}</p>
           ${email ? `<p style="margin: 4px 0 0 0;"><a href="mailto:${email}" style="color: #2563EB; text-decoration: none; font-size: 14px;">${email}</a></p>` : ''}
           ${phone ? `<p style="margin: 4px 0 0 0;"><a href="tel:${phone}" style="color: #2563EB; text-decoration: none; font-size: 14px;">${phone}</a></p>` : ''}
           ${address ? `<p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">${address}</p>` : ''}
-          ${abn ? `<p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 12px;">ABN: ${abn}</p>` : ''}
+          ${abn ? `<p style="margin: 10px 0 0 0; color: #94a3b8; font-size: 12px;">ABN ${abn}</p>` : ''}
         </td>
       </tr>
     </table>
@@ -409,26 +420,35 @@ export function generateReceiptEmailTemplate(data: ReceiptEmailData): { subject:
   
   const content = `
     <tr>
-      <td style="background-color: ${SUCCESS_GREEN}; padding: 32px; text-align: center;">
-        ${logoUrl ? `
-          <div style="background: white; display: inline-block; padding: 12px 20px; border-radius: 8px; margin-bottom: 16px;">
-            <img src="${logoUrl}" alt="${data.businessName}" style="max-height: 48px; max-width: 150px; display: block;" />
-          </div>
-        ` : ''}
-        <div style="width: 64px; height: 64px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;">
-          <span style="font-size: 32px;">&#10003;</span>
-        </div>
-        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Payment Received</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Thank you for your payment!</p>
+      <td style="height: 4px; line-height: 4px; font-size: 0; background-color: ${brandColor};">&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="header" style="padding: 32px 32px 0 32px;">
+        ${logoUrl ? `<img src="${logoUrl}" alt="${data.businessName}" style="max-height: 44px; max-width: 180px; display: block; margin-bottom: 16px;" />` : ''}
+        <p style="margin: 0; color: #0f172a; font-size: 19px; font-weight: 700; line-height: 1.3;">${data.businessName}</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 24px; border-top: 1px solid #e2e8f0;">
+          <tr>
+            <td style="padding-top: 18px; vertical-align: bottom;">
+              <span style="color: ${brandColor}; font-size: 17px; font-weight: 700;">Receipt</span>
+            </td>
+            <td style="padding-top: 18px; text-align: right; vertical-align: bottom;">
+              <span style="color: #64748b; font-size: 14px;">No. ${data.invoiceNumber}</span>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
-    ${greetingSection(clientFirstName, `We've received your payment for <strong>${data.invoiceTitle}</strong>. Here's your receipt for your records.`)}
+    ${greetingSection(clientFirstName, `Thanks &mdash; we've received your payment for <strong>${data.invoiceTitle}</strong>. Here's your receipt for your records.`)}
     <tr>
-      <td style="padding: 0 32px 24px 32px;">
-        <div style="background-color: #f0fdf4; border-radius: 8px; padding: 16px; text-align: center; border: 1px solid #bbf7d0;">
-          <p style="margin: 0; color: #64748b; font-size: 13px;">Payment Date</p>
-          <p style="margin: 4px 0 0 0; color: #1e293b; font-size: 16px; font-weight: 600;">${data.paidDate}</p>
-        </div>
+      <td style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;">
+          <tr>
+            <td style="padding: 16px 20px;">
+              <p style="margin: 0; color: ${NEUTRAL_GRAY}; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;">Payment date</p>
+              <p style="margin: 6px 0 0 0; color: #0f172a; font-size: 18px; font-weight: 700;">${data.paidDate}</p>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
     ${lineItemsTable(data.lineItems, data.subtotal, data.gstAmount, data.total, brandColor, data.gstAmount > 0)}
@@ -483,23 +503,35 @@ export function generateReminderEmailTemplate(data: ReminderEmailData): { subjec
   
   const content = `
     <tr>
-      <td style="background-color: ${tone.color}; padding: 32px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">${tone.heading}</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 14px;">Invoice #${data.invoiceNumber}</p>
+      <td style="height: 4px; line-height: 4px; font-size: 0; background-color: ${tone.color};">&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="header" style="padding: 32px 32px 0 32px;">
+        <p style="margin: 0; color: #0f172a; font-size: 19px; font-weight: 700; line-height: 1.3;">${data.businessName}</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 24px; border-top: 1px solid #e2e8f0;">
+          <tr>
+            <td style="padding-top: 18px; vertical-align: bottom;">
+              <span style="color: ${tone.color}; font-size: 17px; font-weight: 700;">${tone.heading}</span>
+            </td>
+            <td style="padding-top: 18px; text-align: right; vertical-align: bottom;">
+              <span style="color: #64748b; font-size: 14px;">Invoice #${data.invoiceNumber}</span>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
     ${greetingSection(clientFirstName, tone.message)}
     <tr>
-      <td style="padding: 0 32px 24px 32px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border-radius: 8px;">
+      <td style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
           <tr>
-            <td style="padding: 20px; text-align: center; border-right: 1px solid #e2e8f0;">
-              <p style="margin: 0; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Amount Due</p>
-              <p style="margin: 8px 0 0 0; color: ${tone.color}; font-size: 28px; font-weight: 700;">${formatCurrency(data.total)}</p>
+            <td style="padding: 20px; width: 50%; border-right: 1px solid #e2e8f0;">
+              <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Amount due</p>
+              <p style="margin: 8px 0 0 0; color: ${tone.color}; font-size: 26px; font-weight: 700;">${formatCurrency(data.total)}</p>
             </td>
-            <td style="padding: 20px; text-align: center;">
-              <p style="margin: 0; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Due Date</p>
-              <p style="margin: 8px 0 0 0; color: #1e293b; font-size: 18px; font-weight: 600;">${formatDate(data.dueDate)}</p>
+            <td style="padding: 20px; width: 50%;">
+              <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Due date</p>
+              <p style="margin: 8px 0 0 0; color: #0f172a; font-size: 17px; font-weight: 600;">${formatDate(data.dueDate)}</p>
               <p style="margin: 4px 0 0 0; color: ${ERROR_RED}; font-size: 13px; font-weight: 500;">${data.daysPastDue} days overdue</p>
             </td>
           </tr>
@@ -530,21 +562,22 @@ export function generateQuoteAcceptedNotificationTemplate(data: {
 }): { subject: string; html: string } {
   const content = `
     <tr>
-      <td style="background-color: ${SUCCESS_GREEN}; padding: 32px; text-align: center;">
-        <div style="width: 64px; height: 64px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;">
-          <span style="font-size: 32px; color: white;">&#10003;</span>
-        </div>
-        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Quote Accepted!</h1>
+      <td style="height: 4px; line-height: 4px; font-size: 0; background-color: ${SUCCESS_GREEN};">&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="header" style="padding: 32px 32px 0 32px;">
+        <p style="margin: 0; color: ${SUCCESS_GREEN}; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;">${data.businessName}</p>
+        <h1 style="margin: 10px 0 0 0; color: #0f172a; font-size: 22px; font-weight: 700;">Quote accepted</h1>
       </td>
     </tr>
-    ${greetingSection(data.tradieFirstName, `Great news! <strong>${data.clientName}</strong> has accepted your quote.`)}
+    ${greetingSection(data.tradieFirstName, `Great news &mdash; <strong>${data.clientName}</strong> has accepted your quote.`)}
     <tr>
-      <td style="padding: 0 32px 24px 32px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
+      <td style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
           <tr>
-            <td style="padding: 24px; text-align: center;">
-              <p style="margin: 0; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Quote Details</p>
-              <p style="margin: 12px 0 0 0; color: #1e293b; font-size: 18px; font-weight: 600;">${data.quoteTitle}</p>
+            <td style="padding: 24px;">
+              <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Quote details</p>
+              <p style="margin: 10px 0 0 0; color: #0f172a; font-size: 18px; font-weight: 600;">${data.quoteTitle}</p>
               <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">Quote #${data.quoteNumber}</p>
               <p style="margin: 16px 0 0 0; color: ${SUCCESS_GREEN}; font-size: 28px; font-weight: 700;">${formatCurrency(data.total)}</p>
               <p style="margin: 12px 0 0 0; color: #64748b; font-size: 13px;">Accepted on ${formatDate(data.acceptedAt)}</p>
@@ -554,14 +587,13 @@ export function generateQuoteAcceptedNotificationTemplate(data: {
       </td>
     </tr>
     <tr>
-      <td style="padding: 0 32px 24px 32px;">
-        <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px;">
-          <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">
-            <strong>Next steps:</strong> You can now convert this quote to a job and start scheduling the work. Remember to send an invoice once the job is complete!
-          </p>
-        </div>
+      <td style="padding: 16px 32px 8px 32px;">
+        <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.65;">
+          <strong style="color: #0f172a;">Next steps:</strong> You can now convert this quote to a job and start scheduling the work. Remember to send an invoice once the job's done.
+        </p>
       </td>
     </tr>
+    ${businessFooter(data.businessName)}
   `;
   
   return {
@@ -582,22 +614,23 @@ export function generatePaymentReceivedNotificationTemplate(data: {
 }): { subject: string; html: string } {
   const content = `
     <tr>
-      <td style="background-color: ${SUCCESS_GREEN}; padding: 32px; text-align: center;">
-        <div style="width: 64px; height: 64px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;">
-          <span style="font-size: 32px; color: white;">$</span>
-        </div>
-        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Payment Received!</h1>
+      <td style="height: 4px; line-height: 4px; font-size: 0; background-color: ${SUCCESS_GREEN};">&nbsp;</td>
+    </tr>
+    <tr>
+      <td class="header" style="padding: 32px 32px 0 32px;">
+        <p style="margin: 0; color: ${SUCCESS_GREEN}; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;">${data.businessName}</p>
+        <h1 style="margin: 10px 0 0 0; color: #0f172a; font-size: 22px; font-weight: 700;">Payment received</h1>
       </td>
     </tr>
     ${greetingSection(data.tradieFirstName, `<strong>${data.clientName}</strong> has paid Invoice #${data.invoiceNumber}.`)}
     <tr>
-      <td style="padding: 0 32px 24px 32px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
+      <td style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
           <tr>
-            <td style="padding: 24px; text-align: center;">
-              <p style="margin: 0; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Amount Received</p>
-              <p style="margin: 12px 0 0 0; color: ${SUCCESS_GREEN}; font-size: 36px; font-weight: 700;">${formatCurrency(data.amountPaid)}</p>
-              <p style="margin: 16px 0 0 0; color: #1e293b; font-size: 16px; font-weight: 600;">${data.invoiceTitle}</p>
+            <td style="padding: 24px;">
+              <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Amount received</p>
+              <p style="margin: 10px 0 0 0; color: ${SUCCESS_GREEN}; font-size: 34px; font-weight: 700;">${formatCurrency(data.amountPaid)}</p>
+              <p style="margin: 16px 0 0 0; color: #0f172a; font-size: 16px; font-weight: 600;">${data.invoiceTitle}</p>
               <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">Invoice #${data.invoiceNumber}</p>
               <p style="margin: 12px 0 0 0; color: #64748b; font-size: 13px;">Paid on ${formatDate(data.paidAt)}</p>
             </td>
@@ -605,6 +638,7 @@ export function generatePaymentReceivedNotificationTemplate(data: {
         </table>
       </td>
     </tr>
+    ${businessFooter(data.businessName)}
   `;
   
   return {

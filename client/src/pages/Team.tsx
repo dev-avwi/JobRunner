@@ -200,8 +200,8 @@ export default function TeamPage() {
   const filteredMembers = useMemo(() => {
     const lower = search.trim().toLowerCase();
     return members.filter((m) => {
-      if (filter === "active" && (m.status === "off_today" || m.invitationStatus === "pending")) return false;
-      if (filter === "pending" && m.invitationStatus !== "pending") return false;
+      if (filter === "active" && (m.status === "off_today" || m.invitationStatus !== "accepted")) return false;
+      if (filter === "pending" && m.invitationStatus === "accepted") return false;
       if (filter === "off" && m.status !== "off_today") return false;
       if (filter === "inactive" && m.status !== "inactive") return false;
       if (!lower) return true;
@@ -224,8 +224,8 @@ export default function TeamPage() {
   }, [subs, filter, search]);
 
   const stats = useMemo(() => {
-    const activeMembers = members.filter((m) => m.invitationStatus !== "pending" && m.status !== "inactive").length;
-    const pendingMembers = members.filter((m) => m.invitationStatus === "pending").length;
+    const activeMembers = members.filter((m) => m.invitationStatus === "accepted" && m.status !== "inactive").length;
+    const pendingMembers = members.filter((m) => m.invitationStatus !== "accepted").length;
     const totalSubs = subs.length;
     const hours = members.reduce((acc, m) => acc + (m.hoursThisWeek || 0), 0);
     return { activeMembers, pendingMembers, totalSubs, hours };
@@ -235,8 +235,8 @@ export default function TeamPage() {
     if (tab === "members") {
       return {
         all: members.length,
-        active: members.filter((m) => m.invitationStatus !== "pending" && m.status !== "off_today" && m.status !== "inactive").length,
-        pending: members.filter((m) => m.invitationStatus === "pending").length,
+        active: members.filter((m) => m.invitationStatus === "accepted" && m.status !== "off_today" && m.status !== "inactive").length,
+        pending: members.filter((m) => m.invitationStatus !== "accepted").length,
         off: members.filter((m) => m.status === "off_today").length,
         inactive: members.filter((m) => m.status === "inactive").length,
       };
@@ -982,7 +982,7 @@ function MembersTable({
       </div>
       {rows.map((m) => {
         const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || "Unknown";
-        const status = m.invitationStatus === "pending" ? "pending" : m.status === "off_today" ? "away" : m.status === "inactive" ? "inactive" : "on";
+        const status = m.invitationStatus !== "accepted" ? "pending" : m.status === "off_today" ? "away" : m.status === "inactive" ? "inactive" : "on";
         const init = initialsFor(m.firstName, m.lastName);
         const color = colorFromString(m.id || name);
 
