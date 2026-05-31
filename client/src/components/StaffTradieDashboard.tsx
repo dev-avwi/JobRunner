@@ -513,42 +513,24 @@ export default function StaffTradieDashboard({
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <Card className="cursor-pointer hover-elevate" onClick={() => onNavigate?.('/work?filter=today')} data-testid="kpi-today">
-          <CardContent className="py-2.5 px-3">
-            <div className="flex items-center gap-1.5">
-              <CalendarDays className="h-4 w-4 flex-shrink-0 text-primary" />
-              <p className="text-lg font-bold tabular-nums">{todaysJobs.length}</p>
-            </div>
-            <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate">Today</p>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover-elevate" onClick={() => onNavigate?.('/work')} data-testid="kpi-this-week">
-          <CardContent className="py-2.5 px-3">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: 'hsl(var(--trade))' }} />
-              <p className="text-lg font-bold tabular-nums">{weeklyStats.scheduledCount}</p>
-            </div>
-            <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate">This Week</p>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover-elevate" onClick={() => onNavigate?.('/work?filter=done')} data-testid="kpi-completed">
-          <CardContent className="py-2.5 px-3">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-600" />
-              <p className="text-lg font-bold tabular-nums text-green-600">{weeklyStats.completedCount}</p>
-            </div>
-            <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate">Done</p>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover-elevate" onClick={() => onNavigate?.('/time-tracking')} data-testid="kpi-hours">
-          <CardContent className="py-2.5 px-3">
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-              <p className="text-lg font-bold tabular-nums">{Math.floor(totalMinutesToday / 60)}h {totalMinutesToday % 60}m</p>
-            </div>
-            <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate">Logged</p>
-          </CardContent>
-        </Card>
+        {[
+          { key: 'today', label: 'Today', icon: CalendarDays, value: <>{todaysJobs.length}</>, onClick: () => onNavigate?.('/work?filter=today') },
+          { key: 'this-week', label: 'This Week', icon: Calendar, value: <>{weeklyStats.scheduledCount}</>, onClick: () => onNavigate?.('/work') },
+          { key: 'completed', label: 'Done', icon: CheckCircle2, value: <>{weeklyStats.completedCount}</>, onClick: () => onNavigate?.('/work?filter=done') },
+          { key: 'hours', label: 'Logged', icon: Clock, value: (
+            <>{Math.floor(totalMinutesToday / 60)}<span className="text-base font-semibold text-muted-foreground">h </span>{totalMinutesToday % 60}<span className="text-base font-semibold text-muted-foreground">m</span></>
+          ), onClick: () => onNavigate?.('/time-tracking') },
+        ].map((kpi) => (
+          <Card key={kpi.key} className="cursor-pointer hover-elevate" onClick={kpi.onClick} data-testid={`kpi-${kpi.key}`}>
+            <CardContent className="p-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">{kpi.label}</p>
+                <kpi.icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+              </div>
+              <p className="text-[26px] leading-none font-bold tabular-nums tracking-tight mt-2.5 truncate">{kpi.value}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Two-column work surface */}
