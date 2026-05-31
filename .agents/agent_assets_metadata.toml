@@ -131,3 +131,15 @@ id = "UOjEfOTvOS_NInZl6Aw5V"
 uri = "file://attached_assets/hero-demo-9x16_1080x1920.mp4"
 type = "video"
 title = "Hero demo — 9:16 App Store preview (1080x1920)"
+
+[[outputs]]
+id = "xxCV-t2JHHraZLjPSkhez"
+uri = "file://exports/hero-demo-vertical-1080x1920.mp4"
+type = "video"
+title = "Hero Demo — Vertical 9:16 (1080x1920)"
+
+[[outputs]]
+id = "onNAYywwLT-NQPU1FSlgB"
+uri = "file://exports/hero-demo-app-preview-886x1920-v2.mp4"
+type = "video"
+title = "Hero Demo — App Store Preview (886x1920, tall)"
