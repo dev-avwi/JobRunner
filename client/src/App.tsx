@@ -16,7 +16,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import DemoModeBanner from "@/components/DemoModeBanner";
 import { ThemeProvider, useTheme } from "@/components/ThemeProvider";
-import { getTradeInfo } from "@/data/tradeTypes";
 
 import AppSidebar from "@/components/AppSidebar";
 import BottomNav from "@/components/BottomNav";
@@ -1176,7 +1175,7 @@ function AppLayout() {
   // NOTE: Trade type colors are ONLY applied when custom brand theme is NOT enabled
   // When custom brand theme is enabled, ThemeProvider handles all --trade variables
   useEffect(() => {
-    const updateTradeColors = (userTradeType?: string) => {
+    const updateTradeColors = () => {
       // Check if custom brand theme is enabled - if so, don't override ThemeProvider's colors
       const brandThemeStr = localStorage.getItem('jobrunner-brand-theme');
       if (brandThemeStr) {
@@ -1191,10 +1190,13 @@ function AppLayout() {
         }
       }
       
-      // Use user's trade type if available, otherwise use saved or default
-      const tradeType = userTradeType || localStorage.getItem('jobrunner-trade-type') || 'plumbing';
-      const tradeInfo = getTradeInfo(tradeType);
-      const hexColor = tradeInfo.color;
+      // JobRunner brand blue — the global accent stays ONE consistent colour
+      // app-wide. Per-trade colours still live in the catalog for badges/icons,
+      // but they no longer drive the theme (which previously made non-plumbing
+      // trades, e.g. Electrical = red, clash with the blue brand elsewhere).
+      // The only thing that recolours the app is an explicit custom brand theme
+      // (handled by ThemeProvider, which sets every accent var consistently).
+      const hexColor = '#2563EB';
       const hsl = hexToHsl(hexColor);
       
       // Check current theme
