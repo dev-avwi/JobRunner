@@ -8,7 +8,7 @@ import { getProductionBaseUrl } from './urlHelper';
 // Brand colors
 const BRAND_BLUE = '#2563EB';
 const SUCCESS_GREEN = '#2563EB';
-const WARNING_ORANGE = '#E8862E';
+const WARNING_ORANGE = '#F59E0B';
 const ERROR_RED = '#dc2626';
 const NEUTRAL_GRAY = '#64748b';
 

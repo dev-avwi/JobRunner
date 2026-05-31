@@ -1788,7 +1788,7 @@ export async function sendWelcomeEmail(
         <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
           <tr>
             <td style="padding: 16px 20px;">
-              <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #E8862E; font-weight: 700;">Tip:</span> Download our mobile app to manage your jobs on the go. Same account, synced data.</p>
+              <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #F59E0B; font-weight: 700;">Tip:</span> Download our mobile app to manage your jobs on the go. Same account, synced data.</p>
             </td>
           </tr>
         </table>
@@ -2066,7 +2066,7 @@ export async function sendJobAssignmentEmail(
     replyTo: PLATFORM_REPLY_TO_EMAIL,
     subject: `New Job Assigned: ${jobTitle}`,
     html: renderEmailShell('New Job Assignment', `
-    ${emailHeaderBand({ brandColor: '#E8862E', logoUrl, businessName: businessName || 'JobRunner' })}
+    ${emailHeaderBand({ brandColor: '#F59E0B', logoUrl, businessName: businessName || 'JobRunner' })}
     <tr>
       <td class="content" style="padding: 28px 32px 0 32px;">
         <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">A new job has been assigned to you</h1>
@@ -2088,7 +2088,7 @@ export async function sendJobAssignmentEmail(
     </tr>
     <tr>
       <td class="content" style="padding: 24px 32px 0 32px;">
-        ${emailCtaButton('View job details', jobUrl, '#E8862E')}
+        ${emailCtaButton('View job details', jobUrl, '#F59E0B')}
       </td>
     </tr>
     <tr>
@@ -2596,7 +2596,7 @@ export function createDailySummaryEmail(data: DailySummaryData): { to: string; f
 
   const actionItemsHtml = data.actionItems.length > 0
     ? data.actionItems.map(item => {
-        const priorityColor = item.priority === 'high' ? '#dc2626' : item.priority === 'medium' ? '#E8862E' : '#64748b';
+        const priorityColor = item.priority === 'high' ? '#dc2626' : item.priority === 'medium' ? '#F59E0B' : '#64748b';
         const priorityLabel = item.priority === 'high' ? 'High priority' : item.priority === 'medium' ? 'Medium priority' : 'Low priority';
         return `
           <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px;">
@@ -2686,7 +2686,7 @@ export function createDailySummaryEmail(data: DailySummaryData): { to: string; f
       <td class="content" style="padding: 0 32px;">
         <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
           <tr><td style="color: #64748b; font-size: 14px; line-height: 1.8;"><span style="color: #0f172a; font-weight: 700;">${data.quotes.sent}</span> sent (${formatCurrency(data.quotes.sentTotal)}) &nbsp;&bull;&nbsp; <span style="color: #16a34a; font-weight: 700;">${data.quotes.accepted}</span> accepted (${formatCurrency(data.quotes.acceptedTotal)})</td></tr>
-          <tr><td style="color: #64748b; font-size: 14px; line-height: 1.8;"><span style="color: #dc2626; font-weight: 700;">${data.quotes.rejected}</span> rejected &nbsp;&bull;&nbsp; <span style="color: #E8862E; font-weight: 700;">${data.quotes.pending}</span> pending</td></tr>
+          <tr><td style="color: #64748b; font-size: 14px; line-height: 1.8;"><span style="color: #dc2626; font-weight: 700;">${data.quotes.rejected}</span> rejected &nbsp;&bull;&nbsp; <span style="color: #F59E0B; font-weight: 700;">${data.quotes.pending}</span> pending</td></tr>
         </table>
       </td>
     </tr>
@@ -2741,7 +2741,7 @@ export function createDailySummaryEmail(data: DailySummaryData): { to: string; f
             </td>
             <td width="50%" style="padding: 18px 0 0 0; vertical-align: top; text-align: right;">
               <p style="margin: 0; color: #94a3b8; font-size: 12px;">Outstanding invoices</p>
-              <p style="margin: 4px 0 0 0; color: #E8862E; font-size: 18px; font-weight: 700;">${formatCurrency(data.metrics.outstandingInvoices)}</p>
+              <p style="margin: 4px 0 0 0; color: #F59E0B; font-size: 18px; font-weight: 700;">${formatCurrency(data.metrics.outstandingInvoices)}</p>
             </td>
           </tr>
         </table>
