@@ -125,3 +125,9 @@ id = "b37NjfC0BQejrTD7HlIH3"
 uri = "file://attached_assets/screenshots/ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp_worf_replit_dev_mockup_preview_signup-screen_OptionC.png"
 type = "image"
 title = "Option C — Warm Human (real screenshot)"
+
+[[outputs]]
+id = "UOjEfOTvOS_NInZl6Aw5V"
+uri = "file://attached_assets/hero-demo-9x16_1080x1920.mp4"
+type = "video"
+title = "Hero demo — 9:16 App Store preview (1080x1920)"
