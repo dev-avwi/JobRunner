@@ -37,7 +37,7 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/inventory/categories", requireAuth, async (req: any, res) => {
+  app.post("/api/inventory/categories", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const parsed = insertInventoryCategorySchema.parse(req.body);
@@ -49,7 +49,7 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
-  app.patch("/api/inventory/categories/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/inventory/categories/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const updated = await storage.updateInventoryCategory(req.params.id, userContext.effectiveUserId, req.body);
@@ -61,7 +61,7 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/inventory/categories/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/inventory/categories/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const deleted = await storage.deleteInventoryCategory(req.params.id, userContext.effectiveUserId);
@@ -97,7 +97,7 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/inventory/items", requireAuth, async (req: any, res) => {
+  app.post("/api/inventory/items", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const parsed = insertInventoryItemSchema.parse(req.body);
@@ -109,7 +109,7 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
-  app.patch("/api/inventory/items/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/inventory/items/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const updated = await storage.updateInventoryItem(req.params.id, userContext.effectiveUserId, req.body);
@@ -121,7 +121,7 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/inventory/items/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/inventory/items/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const deleted = await storage.deleteInventoryItem(req.params.id, userContext.effectiveUserId);

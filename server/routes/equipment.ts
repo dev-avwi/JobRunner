@@ -36,7 +36,7 @@ export function registerEquipmentRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/equipment/categories", requireAuth, async (req: any, res) => {
+  app.post("/api/equipment/categories", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const validatedData = insertEquipmentCategorySchema.parse(req.body);
@@ -65,7 +65,7 @@ export function registerEquipmentRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/equipment", requireAuth, async (req: any, res) => {
+  app.post("/api/equipment", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const validatedData = insertEquipmentSchema.parse(req.body);
@@ -83,7 +83,7 @@ export function registerEquipmentRoutes(app: Express): void {
     }
   });
 
-  app.patch("/api/equipment/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/equipment/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const item = await storage.updateEquipment(req.params.id, userContext.effectiveUserId, req.body);
@@ -97,7 +97,7 @@ export function registerEquipmentRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/equipment/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/equipment/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const success = await storage.deleteEquipment(req.params.id, userContext.effectiveUserId);

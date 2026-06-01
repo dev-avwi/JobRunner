@@ -59,7 +59,7 @@ export function registerRebatesRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/rebates", requireAuth, async (req: any, res) => {
+  app.post("/api/rebates", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const validatedData = insertRebateSchema.parse({
@@ -77,7 +77,7 @@ export function registerRebatesRoutes(app: Express): void {
     }
   });
 
-  app.patch("/api/rebates/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/rebates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const rebate = await storage.updateRebate(req.params.id, userContext.effectiveUserId, req.body);
@@ -91,7 +91,7 @@ export function registerRebatesRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/rebates/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/rebates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const success = await storage.deleteRebate(req.params.id, userContext.effectiveUserId);
@@ -105,7 +105,7 @@ export function registerRebatesRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/rebates/:id/submit", requireAuth, async (req: any, res) => {
+  app.post("/api/rebates/:id/submit", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const rebate = await storage.updateRebate(req.params.id, userContext.effectiveUserId, {
@@ -122,7 +122,7 @@ export function registerRebatesRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/rebates/:id/receive", requireAuth, async (req: any, res) => {
+  app.post("/api/rebates/:id/receive", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const rebate = await storage.updateRebate(req.params.id, userContext.effectiveUserId, {

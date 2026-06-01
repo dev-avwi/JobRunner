@@ -1188,7 +1188,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.post("/api/jobs/:id/archive", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:id/archive", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const job = await storage.archiveJob(req.params.id, userContext.effectiveUserId);
@@ -1202,7 +1202,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.post("/api/jobs/:id/unarchive", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:id/unarchive", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const job = await storage.unarchiveJob(req.params.id, userContext.effectiveUserId);
@@ -5505,7 +5505,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.delete("/api/jobs/:jobId/photos/:photoId", requireAuth, async (req: any, res) => {
+  app.delete("/api/jobs/:jobId/photos/:photoId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { photoId } = req.params;

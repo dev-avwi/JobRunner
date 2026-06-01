@@ -9612,14 +9612,14 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // API Key Management Routes - Now managed by Replit connector
-  app.post("/api/integrations/save-stripe-keys", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/save-stripe-keys", requireAuth, ownerOnly(), async (req: any, res) => {
     res.json({ 
       success: true,
       message: "Stripe is now managed through Replit's integration panel. Your keys are automatically configured."
     });
   });
 
-  app.post("/api/integrations/save-sendgrid-key", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/save-sendgrid-key", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { apiKey } = req.body;
       
@@ -9964,7 +9964,7 @@ Be specific about materials, colors, and features that would be included.`
   }, 5 * 60 * 1000);
 
   // Xero connect for mobile app - returns auth URL for in-app browser OAuth
-  app.post("/api/integrations/xero/mobile-connect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/mobile-connect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       if (!xeroService.isXeroConfigured()) {
         return res.status(400).json({ 
@@ -9989,7 +9989,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/connect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/connect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       if (!xeroService.isXeroConfigured()) {
         return res.status(400).json({ 
@@ -10063,7 +10063,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/disconnect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/disconnect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const success = await xeroService.disconnect(req.userId);
       res.json({ success });
@@ -10370,7 +10370,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Switch to a different Xero tenant (organization)
-  app.post("/api/integrations/xero/switch-tenant", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/switch-tenant", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { tenantId } = req.body;
       if (!tenantId) {
@@ -11140,7 +11140,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // MYOB Integration Routes
-  app.post("/api/integrations/myob/mobile-connect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/mobile-connect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       if (!myobService.isMyobConfigured()) {
         return res.status(400).json({ 
@@ -11160,7 +11160,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/connect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/connect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       if (!myobService.isMyobConfigured()) {
         return res.status(400).json({ 
@@ -11207,7 +11207,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/disconnect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/disconnect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const success = await myobService.disconnect(req.userId);
       res.json({ success });
@@ -11260,7 +11260,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/credentials", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/credentials", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { cfUsername, cfPassword } = req.body;
       
@@ -11363,7 +11363,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // QuickBooks Integration Routes
-  app.post("/api/integrations/quickbooks/mobile-connect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/mobile-connect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       if (!quickbooksService.isQuickbooksConfigured()) {
         return res.status(400).json({ 
@@ -11383,7 +11383,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/connect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/connect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       if (!quickbooksService.isQuickbooksConfigured()) {
         return res.status(400).json({ 
@@ -11451,7 +11451,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/disconnect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/disconnect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const success = await quickbooksService.disconnect(req.userId);
       res.json({ success });
@@ -11642,7 +11642,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Google Calendar OAuth - Start connection flow (supports both web and mobile)
-  app.post("/api/integrations/google-calendar/connect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/google-calendar/connect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { getAuthorizationUrl, isGoogleCalendarConfigured } = await import('./googleCalendarClient');
       
@@ -11734,7 +11734,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Google Calendar disconnect
-  app.post("/api/integrations/google-calendar/disconnect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/google-calendar/disconnect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { disconnectCalendar } = await import('./googleCalendarClient');
       
@@ -11914,7 +11914,7 @@ Be specific about materials, colors, and features that would be included.`
   // ========== Outlook/Microsoft 365 Email Integration ==========
   
   // Outlook OAuth - Start connection flow
-  app.post("/api/integrations/outlook/connect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/outlook/connect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { getAuthorizationUrl, isOutlookConfigured } = await import('./outlookClient');
       
@@ -11969,7 +11969,7 @@ Be specific about materials, colors, and features that would be included.`
   });
   
   // Outlook disconnect
-  app.post("/api/integrations/outlook/disconnect", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/outlook/disconnect", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { disconnectOutlook } = await import('./outlookClient');
       
