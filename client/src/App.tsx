@@ -24,7 +24,8 @@ import FloatingAIChat from "@/components/FloatingAIChat";
 import PaymentToastProvider from "@/components/PaymentToastProvider";
 import RouteGuard from "@/components/RouteGuard";
 import FeatureGate from "@/components/FeatureGate";
-import ErrorBoundary, { PageErrorBoundary } from "@/components/ErrorBoundary";
+import ErrorBoundary, { PageErrorBoundary, ChunkErrorBoundary } from "@/components/ErrorBoundary";
+import { lazyWithReload } from "@/lib/lazyWithReload";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useFeatureAccess } from "@/hooks/use-subscription";
 import GuidedTour, { useGuidedTour } from "@/components/GuidedTour";
@@ -33,78 +34,78 @@ import FirstTimeWalkthrough from "@/components/FirstTimeWalkthrough";
 import WhatYouMissedModal from "@/components/WhatYouMissedModal";
 import AdminAppShell from "@/components/AdminAppShell";
 
-const Dashboard = React.lazy(() => import("@/components/Dashboard"));
-const JobsList = React.lazy(() => import("@/components/JobsList"));
-const ClientsList = React.lazy(() => import("@/components/ClientsList"));
-const QuotesList = React.lazy(() => import("@/components/QuotesList"));
-const QuoteForm = React.lazy(() => import("@/components/QuoteForm"));
-const QuoteDetailView = React.lazy(() => import("@/components/QuoteDetailView"));
-const JobForm = React.lazy(() => import("@/components/JobForm"));
-const JobEditForm = React.lazy(() => import("@/components/JobEditForm"));
-const InvoiceForm = React.lazy(() => import("@/components/InvoiceForm"));
-const DocumentEditor = React.lazy(() => import("@/components/DocumentEditor"));
-const LiveQuoteEditor = React.lazy(() => import("@/components/LiveQuoteEditor"));
-const LiveInvoiceEditor = React.lazy(() => import("@/components/LiveInvoiceEditor"));
-const ClientForm = React.lazy(() => import("@/components/ClientForm"));
-const InvoiceDetailView = React.lazy(() => import("@/components/InvoiceDetailView"));
-const ReceiptDetailView = React.lazy(() => import("@/components/ReceiptDetailView"));
-const ClientDetailView = React.lazy(() => import("@/components/ClientDetailView"));
-const JobDetailView = React.lazy(() => import("@/components/JobDetailView"));
-const JobCompletion = React.lazy(() => import("@/components/JobCompletion"));
-const InvoicesList = React.lazy(() => import("@/components/InvoicesList"));
-const CalendarView = React.lazy(() => import("@/components/CalendarView"));
-const Settings = React.lazy(() => import("@/components/Settings"));
-const EmailSetupGuide = React.lazy(() => import("@/components/EmailSetupGuide"));
-const QuoteModal = React.lazy(() => import("@/components/QuoteModal"));
-const InvoiceModal = React.lazy(() => import("@/components/InvoiceModal"));
+const Dashboard = lazyWithReload(() => import("@/components/Dashboard"));
+const JobsList = lazyWithReload(() => import("@/components/JobsList"));
+const ClientsList = lazyWithReload(() => import("@/components/ClientsList"));
+const QuotesList = lazyWithReload(() => import("@/components/QuotesList"));
+const QuoteForm = lazyWithReload(() => import("@/components/QuoteForm"));
+const QuoteDetailView = lazyWithReload(() => import("@/components/QuoteDetailView"));
+const JobForm = lazyWithReload(() => import("@/components/JobForm"));
+const JobEditForm = lazyWithReload(() => import("@/components/JobEditForm"));
+const InvoiceForm = lazyWithReload(() => import("@/components/InvoiceForm"));
+const DocumentEditor = lazyWithReload(() => import("@/components/DocumentEditor"));
+const LiveQuoteEditor = lazyWithReload(() => import("@/components/LiveQuoteEditor"));
+const LiveInvoiceEditor = lazyWithReload(() => import("@/components/LiveInvoiceEditor"));
+const ClientForm = lazyWithReload(() => import("@/components/ClientForm"));
+const InvoiceDetailView = lazyWithReload(() => import("@/components/InvoiceDetailView"));
+const ReceiptDetailView = lazyWithReload(() => import("@/components/ReceiptDetailView"));
+const ClientDetailView = lazyWithReload(() => import("@/components/ClientDetailView"));
+const JobDetailView = lazyWithReload(() => import("@/components/JobDetailView"));
+const JobCompletion = lazyWithReload(() => import("@/components/JobCompletion"));
+const InvoicesList = lazyWithReload(() => import("@/components/InvoicesList"));
+const CalendarView = lazyWithReload(() => import("@/components/CalendarView"));
+const Settings = lazyWithReload(() => import("@/components/Settings"));
+const EmailSetupGuide = lazyWithReload(() => import("@/components/EmailSetupGuide"));
+const QuoteModal = lazyWithReload(() => import("@/components/QuoteModal"));
+const InvoiceModal = lazyWithReload(() => import("@/components/InvoiceModal"));
 
-const More = React.lazy(() => import("@/pages/More"));
-const Integrations = React.lazy(() => import("@/pages/Integrations"));
-const ActionCenter = React.lazy(() => import("@/pages/ActionCenter"));
-const Insights = React.lazy(() => import("@/pages/Insights"));
-const Autopilot = React.lazy(() => import("@/pages/Autopilot"));
-const NotFound = React.lazy(() => import("@/pages/not-found"));
-const VerifyEmail = React.lazy(() => import("@/pages/VerifyEmail"));
-const VerifyEmailPending = React.lazy(() => import("@/pages/VerifyEmailPending"));
-const ResetPassword = React.lazy(() => import("@/pages/ResetPassword"));
-const AcceptInvite = React.lazy(() => import("@/pages/AcceptInvite"));
-const AcceptAssignment = React.lazy(() => import("@/pages/AcceptAssignment"));
-const JobInvite = React.lazy(() => import("@/pages/JobInvite"));
-const OpenApp = React.lazy(() => import("@/pages/OpenApp"));
-const TimeTrackingPage = React.lazy(() => import("@/pages/TimeTracking"));
-const TeamOperations = React.lazy(() => import("@/pages/TeamOperations"));
-const Team = React.lazy(() => import("@/pages/Team"));
-const MagicLinkLanding = React.lazy(() => import("@/pages/MagicLinkLanding"));
-const PaymentPage = React.lazy(() => import("@/pages/PaymentPage"));
-const PrivacyPolicy = React.lazy(() => import("@/pages/PrivacyPolicy"));
-const TermsOfService = React.lazy(() => import("@/pages/TermsOfService"));
-const DeleteAccount = React.lazy(() => import("@/pages/DeleteAccount"));
-const Support = React.lazy(() => import("@/pages/Support"));
-const TrackArrival = React.lazy(() => import("@/pages/TrackArrival"));
-const Reports = React.lazy(() => import("@/pages/Reports"));
-const Calculators = React.lazy(() => import("@/pages/Calculators"));
-const CollectPayment = React.lazy(() => import("@/pages/CollectPayment"));
-const TeamChatPage = React.lazy(() => import("@/pages/TeamChat"));
-const ChatHub = React.lazy(() => import("@/pages/ChatHub"));
-const JobMapPage = React.lazy(() => import("@/pages/JobMap"));
-const DirectMessagesPage = React.lazy(() => import("@/pages/DirectMessages"));
-const DispatchBoard = React.lazy(() => import("@/pages/DispatchBoard"));
-const SchedulePage = React.lazy(() => import("@/pages/SchedulePage"));
-const Automations = React.lazy(() => import("@/pages/Automations"));
-const RecurringJobs = React.lazy(() => import("@/pages/RecurringJobs"));
-const ServiceRemindersPage = React.lazy(() => import("@/pages/ServiceReminders"));
-const InventoryPage = React.lazy(() => import("@/pages/InventoryPage"));
-const RebatesPage = React.lazy(() => import("@/pages/Rebates"));
-const Leads = React.lazy(() => import("@/pages/Leads"));
-const AIVisualizationPage = React.lazy(() => import("@/pages/AIVisualization"));
-const PayrollReports = React.lazy(() => import("@/pages/PayrollReports"));
-const ClientPortal = React.lazy(() => import("@/pages/ClientPortal"));
-const ClientPortalHub = React.lazy(() => import("@/pages/ClientPortalHub"));
-const JobPortal = React.lazy(() => import("@/pages/JobPortal"));
-const PaymentHub = React.lazy(() => import("@/pages/PaymentHub"));
-const ExpensesPage = React.lazy(() => import("@/pages/ExpensesPage"));
-const WorkPage = React.lazy(() => import("@/pages/WorkPage"));
-const AdminDashboard = React.lazy(() => import("@/pages/AdminDashboard"));
+const More = lazyWithReload(() => import("@/pages/More"));
+const Integrations = lazyWithReload(() => import("@/pages/Integrations"));
+const ActionCenter = lazyWithReload(() => import("@/pages/ActionCenter"));
+const Insights = lazyWithReload(() => import("@/pages/Insights"));
+const Autopilot = lazyWithReload(() => import("@/pages/Autopilot"));
+const NotFound = lazyWithReload(() => import("@/pages/not-found"));
+const VerifyEmail = lazyWithReload(() => import("@/pages/VerifyEmail"));
+const VerifyEmailPending = lazyWithReload(() => import("@/pages/VerifyEmailPending"));
+const ResetPassword = lazyWithReload(() => import("@/pages/ResetPassword"));
+const AcceptInvite = lazyWithReload(() => import("@/pages/AcceptInvite"));
+const AcceptAssignment = lazyWithReload(() => import("@/pages/AcceptAssignment"));
+const JobInvite = lazyWithReload(() => import("@/pages/JobInvite"));
+const OpenApp = lazyWithReload(() => import("@/pages/OpenApp"));
+const TimeTrackingPage = lazyWithReload(() => import("@/pages/TimeTracking"));
+const TeamOperations = lazyWithReload(() => import("@/pages/TeamOperations"));
+const Team = lazyWithReload(() => import("@/pages/Team"));
+const MagicLinkLanding = lazyWithReload(() => import("@/pages/MagicLinkLanding"));
+const PaymentPage = lazyWithReload(() => import("@/pages/PaymentPage"));
+const PrivacyPolicy = lazyWithReload(() => import("@/pages/PrivacyPolicy"));
+const TermsOfService = lazyWithReload(() => import("@/pages/TermsOfService"));
+const DeleteAccount = lazyWithReload(() => import("@/pages/DeleteAccount"));
+const Support = lazyWithReload(() => import("@/pages/Support"));
+const TrackArrival = lazyWithReload(() => import("@/pages/TrackArrival"));
+const Reports = lazyWithReload(() => import("@/pages/Reports"));
+const Calculators = lazyWithReload(() => import("@/pages/Calculators"));
+const CollectPayment = lazyWithReload(() => import("@/pages/CollectPayment"));
+const TeamChatPage = lazyWithReload(() => import("@/pages/TeamChat"));
+const ChatHub = lazyWithReload(() => import("@/pages/ChatHub"));
+const JobMapPage = lazyWithReload(() => import("@/pages/JobMap"));
+const DirectMessagesPage = lazyWithReload(() => import("@/pages/DirectMessages"));
+const DispatchBoard = lazyWithReload(() => import("@/pages/DispatchBoard"));
+const SchedulePage = lazyWithReload(() => import("@/pages/SchedulePage"));
+const Automations = lazyWithReload(() => import("@/pages/Automations"));
+const RecurringJobs = lazyWithReload(() => import("@/pages/RecurringJobs"));
+const ServiceRemindersPage = lazyWithReload(() => import("@/pages/ServiceReminders"));
+const InventoryPage = lazyWithReload(() => import("@/pages/InventoryPage"));
+const RebatesPage = lazyWithReload(() => import("@/pages/Rebates"));
+const Leads = lazyWithReload(() => import("@/pages/Leads"));
+const AIVisualizationPage = lazyWithReload(() => import("@/pages/AIVisualization"));
+const PayrollReports = lazyWithReload(() => import("@/pages/PayrollReports"));
+const ClientPortal = lazyWithReload(() => import("@/pages/ClientPortal"));
+const ClientPortalHub = lazyWithReload(() => import("@/pages/ClientPortalHub"));
+const JobPortal = lazyWithReload(() => import("@/pages/JobPortal"));
+const PaymentHub = lazyWithReload(() => import("@/pages/PaymentHub"));
+const ExpensesPage = lazyWithReload(() => import("@/pages/ExpensesPage"));
+const WorkPage = lazyWithReload(() => import("@/pages/WorkPage"));
+const AdminDashboard = lazyWithReload(() => import("@/pages/AdminDashboard"));
 
 // Shared admin sub-paths, rendered in both the main tradie Router (so
 // /admin/* doesn't fall through to NotFound — AdminDashboard handles 403s)
@@ -115,20 +116,20 @@ const ADMIN_SUB_PATHS = ["/admin", "/admin/comms", "/admin/revenue", "/admin/use
 const renderAdminRoutes = () => ADMIN_SUB_PATHS.map((path) => (
   <Route key={path} path={path} component={AdminDashboard} />
 ));
-const LandingPage = React.lazy(() => import("@/pages/LandingPage"));
-const DemoPage = React.lazy(() => import("@/pages/Demo"));
-const SubscriptionPage = React.lazy(() => import("@/pages/SubscriptionPage"));
-const TemplatesHub = React.lazy(() => import("@/pages/TemplatesHub"));
-const DocumentsHub = React.lazy(() => import("@/pages/DocumentsHub"));
-const WhsHubPage = React.lazy(() => import("@/pages/WhsHub"));
-const CommunicationsHub = React.lazy(() => import("@/pages/CommunicationsHub"));
-const TimeEditAuditLog = React.lazy(() => import("@/pages/TimeEditAuditLog"));
-const ProfitabilityReport = React.lazy(() => import("@/pages/ProfitabilityReport"));
-const SubcontractorWebView = React.lazy(() => import("@/pages/SubcontractorWebView"));
-const FilesPage = React.lazy(() => import("@/pages/Files"));
-const AIReceptionist = React.lazy(() => import("@/pages/AIReceptionist"));
-const AIReceptionistCalls = React.lazy(() => import("@/pages/AIReceptionistCalls"));
-const WebsiteAddonPage = React.lazy(() => import("@/pages/WebsiteAddon"));
+const LandingPage = lazyWithReload(() => import("@/pages/LandingPage"));
+const DemoPage = lazyWithReload(() => import("@/pages/Demo"));
+const SubscriptionPage = lazyWithReload(() => import("@/pages/SubscriptionPage"));
+const TemplatesHub = lazyWithReload(() => import("@/pages/TemplatesHub"));
+const DocumentsHub = lazyWithReload(() => import("@/pages/DocumentsHub"));
+const WhsHubPage = lazyWithReload(() => import("@/pages/WhsHub"));
+const CommunicationsHub = lazyWithReload(() => import("@/pages/CommunicationsHub"));
+const TimeEditAuditLog = lazyWithReload(() => import("@/pages/TimeEditAuditLog"));
+const ProfitabilityReport = lazyWithReload(() => import("@/pages/ProfitabilityReport"));
+const SubcontractorWebView = lazyWithReload(() => import("@/pages/SubcontractorWebView"));
+const FilesPage = lazyWithReload(() => import("@/pages/Files"));
+const AIReceptionist = lazyWithReload(() => import("@/pages/AIReceptionist"));
+const AIReceptionistCalls = lazyWithReload(() => import("@/pages/AIReceptionistCalls"));
+const WebsiteAddonPage = lazyWithReload(() => import("@/pages/WebsiteAddon"));
 
 function BusinessPicker({ userId }: { userId: string }) {
   const { data: businessData } = useQuery({
@@ -494,6 +495,7 @@ function Router({
   }, [onNavigate]);
 
   return (
+    <ChunkErrorBoundary>
     <Suspense fallback={
       <div className="w-full px-6 lg:px-8 py-6 space-y-6 animate-pulse">
         <div className="flex items-center justify-between">
@@ -939,6 +941,7 @@ function Router({
       <Route component={NotFound} />
       </Switch>
     </Suspense>
+    </ChunkErrorBoundary>
   );
 }
 
@@ -1482,6 +1485,7 @@ function AppLayout() {
         onLogout={handleLogout} 
         onNavigate={(path) => setLocation(path)}
       >
+        <ChunkErrorBoundary>
         <Suspense fallback={
           <div className="w-full px-6 lg:px-8 py-6 space-y-6 animate-pulse">
             <div className="flex items-center justify-between">
@@ -1516,6 +1520,7 @@ function AppLayout() {
           </Route>
         </Switch>
         </Suspense>
+        </ChunkErrorBoundary>
       </AdminAppShell>
     );
   }
@@ -1749,6 +1754,7 @@ function App() {
         <NetworkProvider>
           <JobCollaborationProvider>
           <TooltipProvider>
+            <ChunkErrorBoundary>
             <Suspense fallback={
               <div className="flex items-center justify-center h-screen">
                 <div className="space-y-4 w-full max-w-sm px-6 animate-pulse">
@@ -1779,6 +1785,7 @@ function App() {
               </Route>
             </Switch>
             </Suspense>
+            </ChunkErrorBoundary>
             <Toaster />
           </TooltipProvider>
           </JobCollaborationProvider>

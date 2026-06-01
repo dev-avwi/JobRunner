@@ -1,8 +1,9 @@
 import { Component, ErrorInfo } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
+import { isChunkLoadError, clearReloadFlag } from "@/lib/lazyWithReload";
 
 function reportErrorToServer(data: {
   message: string;
@@ -181,6 +182,80 @@ export class PageErrorBoundary extends Component<ErrorBoundaryProps, PageErrorBo
               Try Again
             </Button>
           </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+interface ChunkErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+/**
+ * Catches stale lazy-chunk load failures that the guarded reload in
+ * `lazyWithReload` could not recover from (i.e. a reload was already attempted
+ * and the import still failed). Shows a friendly "new version available" prompt
+ * instead of a blank screen or a crash. Any non-chunk error is re-thrown during
+ * render so the surrounding ErrorBoundary handles it normally.
+ */
+export class ChunkErrorBoundary extends Component<ErrorBoundaryProps, ChunkErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ChunkErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (isChunkLoadError(error)) {
+      console.warn('[ChunkErrorBoundary] Stale chunk load failed after reload guard tripped:', error.message);
+      trackEvent("stale_chunk_recovery_prompt", {
+        error: error.message?.substring(0, 200),
+      });
+    } else {
+      reportErrorToServer({
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack || undefined,
+      });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      if (this.state.error && !isChunkLoadError(this.state.error)) {
+        // Not a chunk error — let an outer boundary deal with it.
+        throw this.state.error;
+      }
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="max-w-md w-full">
+            <CardContent className="flex flex-col items-center text-center pt-8 pb-8 gap-4">
+              <div className="rounded-full bg-primary/10 p-3">
+                <RefreshCw className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="text-xl font-semibold text-foreground">
+                A new version is available
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                The app was updated. Reload to get the latest version.
+              </p>
+              <Button
+                className="mt-2"
+                onClick={() => {
+                  clearReloadFlag();
+                  window.location.reload();
+                }}
+              >
+                Reload
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       );
     }
