@@ -83,6 +83,15 @@ psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_invoices_is_sample ON in
 # Task #114 (Today's Schedule v2): per-day drag-reorder column on jobs
 psql "$DATABASE_URL" -c "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS schedule_order integer;" 2>/dev/null || true
 
+# Task #194 (Subbie-Bills-Business Billing Builder): additive billing columns.
+# ADDITIVE ONLY (matches migrations/0019_subbie_billing_builder.sql + shared/schema.ts).
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS doc_type text NOT NULL DEFAULT 'invoice';" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS title text;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS gst_enabled boolean NOT NULL DEFAULT true;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS valid_until timestamp;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoice_items ADD COLUMN IF NOT EXISTS quantity numeric(10,2);" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoice_items ADD COLUMN IF NOT EXISTS unit_price numeric(10,2);" 2>/dev/null || true
+
 # Drift guard rail (Task #108): refuse to deploy if schema.ts and the live DB
 # disagree after the ALTERs above. Logs the diff and exits non-zero.
 echo "Verifying schema is in sync with shared/schema.ts..."
