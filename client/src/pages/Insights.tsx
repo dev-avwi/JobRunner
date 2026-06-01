@@ -436,6 +436,18 @@ export default function Insights({ onNavigate }: InsightsProps) {
     ? quotesData.filter((q: any) => q.status !== 'draft').length
     : 0;
 
+  const hasNoData = !isLoading
+    && !profit?.revenueThisMonth
+    && !kpis?.monthlyEarnings
+    && !kpis?.weeklyEarnings
+    && !kpis?.jobsToday
+    && !kpis?.unpaidInvoicesCount
+    && !kpis?.quotesAwaiting
+    && !kpis?.jobsToInvoice
+    && !cashflow?.thisMonthCollected
+    && !cashflow?.lastMonthCollected
+    && totalQuotesSent === 0;
+
   return (
     <div className="w-full px-4 sm:px-5 md:px-6 py-5 sm:py-6 section-gap pb-28 md:pb-6">
       <div className="space-y-1">
@@ -443,28 +455,43 @@ export default function Insights({ onNavigate }: InsightsProps) {
         <p className="ios-caption mt-0.5">Business health at a glance</p>
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          const TabIcon = tab.icon;
-          return isActive ? (
-            <Button key={tab.id} size="sm" className="text-white font-medium flex-shrink-0"
-              style={{ backgroundColor: "hsl(var(--trade))", borderColor: "hsl(var(--trade))" }}
-              onClick={() => setActiveTab(tab.id)}>
-              <TabIcon className="h-3.5 w-3.5 mr-1.5" />
-              {tab.label}
-            </Button>
-          ) : (
-            <Button key={tab.id} variant="ghost" size="sm" className="flex-shrink-0" onClick={() => setActiveTab(tab.id)}>
-              <TabIcon className="h-3.5 w-3.5 mr-1.5" />
-              {tab.label}
-            </Button>
-          );
-        })}
-      </div>
+      {!hasNoData && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            const TabIcon = tab.icon;
+            return isActive ? (
+              <Button key={tab.id} size="sm" className="text-white font-medium flex-shrink-0"
+                style={{ backgroundColor: "hsl(var(--trade))", borderColor: "hsl(var(--trade))" }}
+                onClick={() => setActiveTab(tab.id)}>
+                <TabIcon className="h-3.5 w-3.5 mr-1.5" />
+                {tab.label}
+              </Button>
+            ) : (
+              <Button key={tab.id} variant="ghost" size="sm" className="flex-shrink-0" onClick={() => setActiveTab(tab.id)}>
+                <TabIcon className="h-3.5 w-3.5 mr-1.5" />
+                {tab.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
 
       {isLoading ? (
         <SkeletonGrid />
+      ) : hasNoData ? (
+        <div className="feed-card animate-fade-up">
+          <div className="py-16 text-center">
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: "linear-gradient(135deg, hsl(var(--trade) / 0.12), hsl(var(--trade) / 0.06))" }}
+            >
+              <BarChart3 className="h-10 w-10" style={{ color: "hsl(var(--trade))" }} />
+            </div>
+            <p className="text-lg font-semibold text-foreground mb-1">No insights yet</p>
+            <p className="ios-caption max-w-xs mx-auto">Create your first job, quote, or invoice and your numbers will start showing up here.</p>
+          </div>
+        </div>
       ) : (
         <>
           {activeTab === "profit" && (

@@ -3,6 +3,7 @@ import { apiRequest, offlineAwareApiRequest, safeInvalidateQueries, getSessionTo
 import { useMemo } from "react";
 import { partitionByRecent } from "@shared/dateUtils";
 import { trackEvent } from "@/lib/analytics";
+import { celebrate } from "@/lib/celebrate";
 
 async function applyOptimisticInvoiceStatus(id: string, status: string) {
   await queryClient.cancelQueries({ queryKey: ["/api/invoices"] });
@@ -161,6 +162,7 @@ export function useMarkInvoicePaid() {
     },
     onSuccess: () => {
       trackEvent('invoice_paid');
+      celebrate('invoice_paid');
     },
   });
 }
@@ -188,10 +190,15 @@ export function useRecordPayment() {
       }
       return response.json();
     },
-    onSuccess: (_data: any, variables: RecordPaymentData) => {
+    onSuccess: (data: any, variables: RecordPaymentData) => {
       safeInvalidateQueries({ queryKey: ["/api/invoices"] });
       safeInvalidateQueries({ queryKey: ["/api/invoices", variables.invoiceId, "payments"] });
       trackEvent('payment_received');
+      // Only celebrate when the payment actually clears the invoice.
+      const status = data?.invoice?.status ?? data?.status;
+      if (status === 'paid') {
+        celebrate('invoice_paid');
+      }
     },
   });
 }

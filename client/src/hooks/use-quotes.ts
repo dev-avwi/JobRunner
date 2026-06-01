@@ -3,6 +3,7 @@ import { apiRequest, offlineAwareApiRequest, safeInvalidateQueries, queryClient 
 import { useMemo } from "react";
 import { partitionByRecent } from "@shared/dateUtils";
 import { trackEvent } from "@/lib/analytics";
+import { celebrate } from "@/lib/celebrate";
 
 // Apply an optimistic status update across every cached quote list/detail
 // containing the given id, returning rollback snapshots for onError.
@@ -203,6 +204,9 @@ export function useUpdateQuoteStatus() {
     },
     onMutate: async ({ id, status }) => ({ snapshots: await applyOptimisticQuoteStatus(id, status) }),
     onError: (_err, _vars, ctx: any) => { if (ctx?.snapshots) rollbackQuoteSnapshots(ctx.snapshots); },
+    onSuccess: (_data, vars) => {
+      if (vars.status === 'accepted') celebrate('quote_accepted');
+    },
     onSettled: (_data, _err, vars) => {
       safeInvalidateQueries({ queryKey: ["/api/quotes"] });
       safeInvalidateQueries({ queryKey: ["/api/quotes", vars.id] });
@@ -218,6 +222,9 @@ export function useAcceptQuote() {
     },
     onMutate: async (id: string) => ({ snapshots: await applyOptimisticQuoteStatus(id, 'accepted') }),
     onError: (_err, _id, ctx: any) => { if (ctx?.snapshots) rollbackQuoteSnapshots(ctx.snapshots); },
+    onSuccess: () => {
+      celebrate('quote_accepted');
+    },
     onSettled: (_data, _err, id) => {
       safeInvalidateQueries({ queryKey: ["/api/quotes"] });
       safeInvalidateQueries({ queryKey: ["/api/quotes", id] });

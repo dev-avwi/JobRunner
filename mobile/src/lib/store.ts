@@ -7,6 +7,7 @@ import locationTracking from './location-tracking';
 import notificationService from './notifications';
 import LiveActivity from '../../modules/LiveActivity/src';
 import type { TemplateCustomization } from './document-templates';
+import { celebrate } from './celebrate';
 
 // ============ TYPES ============
 
@@ -968,6 +969,7 @@ export const useJobsStore = create<JobsState>((set, get) => ({
       }
     }
 
+    if (status === 'done') celebrate('job_completed');
     return true;
   },
 
@@ -1512,6 +1514,7 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
         return false;
       }
     }
+    if (status === 'accepted') celebrate('quote_accepted');
     return true;
   },
 
@@ -1781,6 +1784,7 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
         return false;
       }
     }
+    if (status === 'paid') celebrate('invoice_paid');
     return true;
   },
 

@@ -5,6 +5,7 @@ import { partitionByRecent } from "@shared/dateUtils";
 import { useToast } from "@/hooks/use-toast";
 import { UsageCounts } from "./use-subscription";
 import { trackEvent } from "@/lib/analytics";
+import { celebrate } from "@/lib/celebrate";
 
 export interface SubscriptionLimitError {
   error: string;
@@ -154,7 +155,7 @@ export function useUpdateJob() {
       const response = await apiRequest("PATCH", `/api/jobs/${id}`, data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       safeInvalidateQueries({ queryKey: ["/api/jobs"] });
       safeInvalidateQueries({ queryKey: ["/api/jobs/today"] });
       safeInvalidateQueries({ queryKey: ["/api/jobs/my-jobs"] });
@@ -162,6 +163,10 @@ export function useUpdateJob() {
       // Refresh next actions when job status changes
       safeInvalidateQueries({ queryKey: ["/api/jobs/next-actions"] });
       safeInvalidateQueries({ queryKey: ["/api/dashboard/unified"] });
+      // Celebrate when a job is marked complete
+      if (variables?.data?.status === 'done') {
+        celebrate('job_completed');
+      }
     },
   });
 }

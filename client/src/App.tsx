@@ -22,6 +22,7 @@ import BottomNav from "@/components/BottomNav";
 import Header from "@/components/Header";
 import FloatingAIChat from "@/components/FloatingAIChat";
 import PaymentToastProvider from "@/components/PaymentToastProvider";
+import CelebrationOverlay from "@/components/CelebrationOverlay";
 import RouteGuard from "@/components/RouteGuard";
 import FeatureGate from "@/components/FeatureGate";
 import ErrorBoundary, { PageErrorBoundary, ChunkErrorBoundary } from "@/components/ErrorBoundary";
@@ -1699,6 +1700,9 @@ function AppLayout() {
       
       {/* Payment Toast Provider - shows celebratory "Cha-ching!" when payments come in */}
       <PaymentToastProvider />
+
+      {/* Brief delight overlay on key wins (invoice paid, quote accepted, job done) */}
+      <CelebrationOverlay />
       
       {/* What You Missed popup - shows on app open */}
       <WhatYouMissedModal />

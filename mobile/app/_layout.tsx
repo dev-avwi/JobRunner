@@ -42,6 +42,7 @@ import { CustomAlertProvider } from '../src/components/CustomAlert';
 import { initGlobalIAP } from '../src/lib/iap-global';
 import Toast from 'react-native-toast-message';
 import { buildToastConfig } from '../src/lib/toast';
+import Celebration from '../src/components/Celebration';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ActionSheetProvider } from '../src/components/ui/ActionSheet';
 import { ConfirmDialogProvider } from '../src/components/ui/ConfirmDialog';
@@ -896,6 +897,7 @@ function RootLayoutContent() {
           <LoadingScreen colors={colors} />
         </View>
       )}
+      <Celebration />
       <Toast config={buildToastConfig()} />
     </View>
   );
