@@ -1,4 +1,5 @@
 import type { Quote, Invoice, QuoteLineItem, InvoiceLineItem, Client, BusinessSettings, DigitalSignature, Job, TimeEntry } from "@shared/schema";
+import { getClientDisplayName, getWorkerDisplayName, ensureDisplayName } from "@shared/displayName";
 import { ObjectStorageService, parseObjectPath, objectStorageClient } from './objectStorage';
 import { pdfQueue, BackpressureError } from './concurrency';
 
@@ -989,7 +990,7 @@ export const generateQuotePDF = (data: QuoteWithDetails): string => {
       <div class="info-block">
         <div class="info-label">Quote For</div>
         <div class="info-value">
-          <strong>${client.name}</strong><br/>
+          <strong>${getClientDisplayName(client)}</strong><br/>
           ${client.address ? `${client.address}<br/>` : ''}
           ${client.email ? `${client.email}<br/>` : ''}
           ${client.phone ? `${client.phone}` : ''}
@@ -1329,7 +1330,7 @@ export const generateInvoicePDF = (data: InvoiceWithDetails): string => {
       <div class="info-block">
         <div class="info-label">Bill To</div>
         <div class="info-value">
-          <strong>${client.name}</strong><br/>
+          <strong>${getClientDisplayName(client)}</strong><br/>
           ${client.address ? `${client.address}<br/>` : ''}
           ${client.email ? `${client.email}<br/>` : ''}
           ${client.phone ? `${client.phone}` : ''}
@@ -1401,7 +1402,7 @@ export const generateInvoicePDF = (data: InvoiceWithDetails): string => {
         <tbody>
           ${labourSummary.labourLines.map((line: any) => `
             <tr>
-              <td>${line.hideNameOnInvoice ? 'Labour' : line.workerName}${line.hasGpsProof ? ' <span style="color: #16a34a; font-size: 8px;">GPS</span>' : ''}</td>
+              <td>${line.hideNameOnInvoice ? 'Labour' : ensureDisplayName(line.workerName, 'Team member')}${line.hasGpsProof ? ' <span style="color: #16a34a; font-size: 8px;">GPS</span>' : ''}</td>
               <td>${formatCurrency(line.hourlyRate)}/hr</td>
               <td>${line.roundedHours}h</td>
               <td style="font-size: 8px; color: #666;">${formatTimePeriod(line.workPeriodStart, line.workPeriodEnd)}</td>
@@ -1429,7 +1430,7 @@ export const generateInvoicePDF = (data: InvoiceWithDetails): string => {
         <tbody>
           ${labourSummary.locationProof.filter((r: any) => r.gpsVerified).map((record: any) => `
             <tr style="border-bottom: 1px solid #f3f4f6;">
-              <td style="padding: 4px 6px;">${record.workerName}</td>
+              <td style="padding: 4px 6px;">${ensureDisplayName(record.workerName, 'Team member')}</td>
               <td style="padding: 4px 6px;">${record.clockIn.timestamp ? formatDateTime(record.clockIn.timestamp) : '—'}</td>
               <td style="padding: 4px 6px;">${record.clockOut.timestamp ? formatDateTime(record.clockOut.timestamp) : '—'}</td>
               <td style="padding: 4px 6px; font-size: 8px; color: #6b7280;">${record.clockIn.address || (record.clockIn.latitude ? record.clockIn.latitude + ', ' + record.clockIn.longitude : '—')}</td>
@@ -1601,7 +1602,7 @@ ${(business as any).insuranceAmount ? `Coverage: ${(business as any).insuranceAm
         <tbody>
           ${data.assignments.map(a => `
             <tr>
-              <td>${a.workerName}</td>
+              <td>${ensureDisplayName(a.workerName, 'Team member')}</td>
               <td>${formatAUDateTime(a.travelStartedAt)}</td>
               <td>${formatAUDateTime(a.arrivedAt)}</td>
               <td><span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 500; background: ${a.assignmentStatus === 'completed' || a.assignmentStatus === 'done' ? '#dcfce7; color: #166534' : a.assignmentStatus === 'arrived' || a.assignmentStatus === 'working' ? '#dbeafe; color: #1e40af' : a.assignmentStatus === 'en_route' || a.assignmentStatus === 'travelling' ? '#fef3c7; color: #92400e' : '#f3f4f6; color: #374151'};">${a.assignmentStatus}</span></td>
@@ -2625,7 +2626,7 @@ export const generateQuoteAcceptancePage = (data: QuoteWithDetails, acceptanceUr
           <div class="info-block">
             <h3>Prepared For</h3>
             <p>
-              <strong>${client.name}</strong><br/>
+              <strong>${getClientDisplayName(client)}</strong><br/>
               ${client.address ? `${client.address}<br/>` : ''}
               ${client.email || ''}
             </p>
@@ -2730,7 +2731,7 @@ export const generateQuoteAcceptancePage = (data: QuoteWithDetails, acceptanceUr
             <div id="accept-section" class="hidden">
               <div class="form-group">
                 <label for="accepted_by">Your Name *</label>
-                <input type="text" id="accepted_by" name="accepted_by" required placeholder="Enter your full name" value="${client.name}"/>
+                <input type="text" id="accepted_by" name="accepted_by" required placeholder="Enter your full name" value="${getClientDisplayName(client)}"/>
               </div>
               
               <div class="signature-pad-container">
@@ -3568,7 +3569,7 @@ export const generatePaymentReceiptPDF = (data: PaymentReceiptData): string => {
         <div class="info-label">Received From</div>
         <div class="info-value">
           ${client ? `
-            <strong>${client.name}</strong><br/>
+            <strong>${getClientDisplayName(client)}</strong><br/>
             ${client.address ? `${client.address}<br/>` : ''}
             ${client.email ? `${client.email}<br/>` : ''}
             ${client.phone ? `${client.phone}` : ''}
@@ -3776,7 +3777,7 @@ export const generateJobProofPackPDF = (data: {
         <tbody>
           ${timeEntries.map(e => `
           <tr>
-            <td>${e.workerName || 'Owner'}</td>
+            <td>${ensureDisplayName(e.workerName, 'Owner')}</td>
             <td>${formatShortDate(e.startTime)}</td>
             <td>${formatShortTime(e.startTime)}</td>
             <td>${e.endTime ? formatShortTime(e.endTime) : '-'}</td>
@@ -3938,7 +3939,7 @@ export const generateJobProofPackPDF = (data: {
           const durationStr = w.totalMs > 0 ? `${Math.floor(w.totalMs / 3600000)}h ${Math.floor((w.totalMs % 3600000) / 60000)}m` : (w.firstIn && w.lastOut ? `${Math.floor((new Date(w.lastOut).getTime() - new Date(w.firstIn).getTime()) / 3600000)}h ${Math.floor(((new Date(w.lastOut).getTime() - new Date(w.firstIn).getTime()) % 3600000) / 60000)}m` : '-');
           return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #dcfce7">
             <div>
-              <span style="font-weight:600;color:#14532d">${w.worker}</span>
+              <span style="font-weight:600;color:#14532d">${ensureDisplayName(w.worker, 'Team member')}</span>
               ${w.verified ? '<span class="gps-badge verified" style="margin-left:6px;font-size:9px">GPS Verified</span>' : ''}
             </div>
             <div style="text-align:right;font-size:11px;color:#166534">
@@ -3968,7 +3969,7 @@ export const generateJobProofPackPDF = (data: {
             const rows = [];
             if (e.clockInLatitude || e.clockInAddress) {
               rows.push(`<tr>
-                <td>${e.workerName}</td>
+                <td>${ensureDisplayName(e.workerName, 'Owner')}</td>
                 <td>Clock In</td>
                 <td>${formatShortTime(e.startTime)}, ${formatShortDate(e.startTime)}</td>
                 <td>${e.clockInAddress || `${e.clockInLatitude}, ${e.clockInLongitude}`}</td>
@@ -3977,7 +3978,7 @@ export const generateJobProofPackPDF = (data: {
             }
             if (e.clockOutLatitude || e.clockOutAddress) {
               rows.push(`<tr>
-                <td>${e.workerName}</td>
+                <td>${ensureDisplayName(e.workerName, 'Owner')}</td>
                 <td>Clock Out</td>
                 <td>${e.endTime ? `${formatShortTime(e.endTime)}, ${formatShortDate(e.endTime)}` : '-'}</td>
                 <td>${e.clockOutAddress || `${e.clockOutLatitude}, ${e.clockOutLongitude}`}</td>
@@ -3986,7 +3987,7 @@ export const generateJobProofPackPDF = (data: {
             }
             if (rows.length === 0 && e.origin === 'geofence') {
               rows.push(`<tr>
-                <td>${e.workerName}</td>
+                <td>${ensureDisplayName(e.workerName, 'Owner')}</td>
                 <td>Geofence</td>
                 <td>${formatShortTime(e.startTime)}, ${formatShortDate(e.startTime)}</td>
                 <td>Auto-detected by geofence</td>
@@ -3996,7 +3997,7 @@ export const generateJobProofPackPDF = (data: {
             return rows.join('');
           }).join('')}
           ${geofenceAlerts.map(a => `<tr>
-            <td>${a.workerName}</td>
+            <td>${ensureDisplayName(a.workerName, 'Team member')}</td>
             <td>${a.alertType === 'arrival' ? 'Geofence Arrival' : 'Geofence Departure'}</td>
             <td>${formatShortTime(a.createdAt)}, ${formatShortDate(a.createdAt)}</td>
             <td>${a.address || (a.latitude ? `${a.latitude}, ${a.longitude}` : '-')}${a.distanceFromSite ? ` (${parseFloat(a.distanceFromSite).toFixed(0)}m from site)` : ''}</td>
@@ -4219,7 +4220,7 @@ export const generateJobProofPackPDF = (data: {
       <div class="info-block">
         <div class="info-label">Client</div>
         <div class="info-value">
-          <strong>${client?.name || 'Unknown Client'}</strong>
+          <strong>${getClientDisplayName(client, 'Unknown Client')}</strong>
           ${client?.email ? `<br/>${client.email}` : ''}
           ${client?.phone ? `<br/>${client.phone}` : ''}
           ${client?.address ? `<br/>${client.address}` : ''}
@@ -4844,7 +4845,7 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
     <body>
       <div class="header">
         <div class="header-left">
-          <h1>${escapeHtml(subcontractor.name)}</h1>
+          <h1>${escapeHtml(ensureDisplayName(subcontractor.name, 'Subcontractor'))}</h1>
           ${subcontractor.abn ? `<p>ABN: ${escapeHtml(subcontractor.abn)}</p>` : ''}
           ${subcontractor.email ? `<p>${escapeHtml(subcontractor.email)}</p>` : ''}
         </div>
@@ -4858,7 +4859,7 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
       <div class="parties">
         <div class="party">
           <h3>From</h3>
-          <p class="name">${escapeHtml(subcontractor.name)}</p>
+          <p class="name">${escapeHtml(ensureDisplayName(subcontractor.name, 'Subcontractor'))}</p>
           ${subcontractor.abn ? `<p>ABN: ${escapeHtml(subcontractor.abn)}</p>` : ''}
           ${subcontractor.email ? `<p>${escapeHtml(subcontractor.email)}</p>` : ''}
         </div>

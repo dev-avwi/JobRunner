@@ -76,6 +76,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { formatHistoryDate } from "@shared/dateUtils";
 import type { Job } from "@shared/schema";
+import { getWorkerDisplayName } from "@shared/displayName";
 import { useAppMode } from "@/hooks/use-app-mode";
 import { useIntegrationHealth, isTwilioReady } from "@/hooks/use-integration-health";
 
@@ -2064,7 +2065,7 @@ export default function JobDetailView({
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <span className="text-sm font-medium">{assignedMember.firstName} {assignedMember.lastName}</span>
+                    <span className="text-sm font-medium">{getWorkerDisplayName(assignedMember)}</span>
                     <span className="text-xs text-muted-foreground ml-1.5">({assignedMember.roleName})</span>
                   </div>
                 </div>
@@ -2476,7 +2477,7 @@ export default function JobDetailView({
                         {job.assignedTo ? (
                           (() => {
                             const assigned = teamMembers.find(m => m.memberId === job.assignedTo);
-                            return assigned ? `${assigned.firstName} ${assigned.lastName}` : 'Unknown';
+                            return assigned ? getWorkerDisplayName(assigned) : 'Unknown';
                           })()
                         ) : (
                           <span className="text-muted-foreground">Unassigned</span>
@@ -2505,7 +2506,7 @@ export default function JobDetailView({
                               return (
                                 <CommandItem
                                   key={member.memberId}
-                                  value={`${member.firstName} ${member.lastName} ${member.roleName}`}
+                                  value={`${getWorkerDisplayName(member)} ${member.roleName}`}
                                   onSelect={() => {
                                     assignWorkerMutation.mutate(member.memberId);
                                     setWorkerPopoverOpen(false);
@@ -2513,7 +2514,7 @@ export default function JobDetailView({
                                   data-testid={`option-worker-${member.memberId}`}
                                 >
                                   <Check className={`mr-2 h-4 w-4 ${job.assignedTo === member.memberId ? 'opacity-100' : 'opacity-0'}`} />
-                                  <span className="flex-1">{member.firstName} {member.lastName} ({member.roleName})</span>
+                                  <span className="flex-1">{getWorkerDisplayName(member)} ({member.roleName})</span>
                                   {onOtherJob ? (
                                     <Badge variant="outline" className="text-xs text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 ml-2">On a job</Badge>
                                   ) : (

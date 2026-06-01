@@ -21,6 +21,7 @@ import { MapTeardownGuard, safeMapCall } from '@/lib/mapSafe';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import { getWorkerDisplayName } from '@shared/displayName';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -1421,7 +1422,7 @@ export default function JobPortal() {
                   <div className="relative flex-shrink-0">
                     <WorkerAvatar
                       photoUrl={worker.photoUrl}
-                      name={`${worker.firstName} ${worker.lastName}`}
+                      name={getWorkerDisplayName(worker, 'Your technician')}
                       initials={`${worker.firstName?.[0] ?? ''}${worker.lastName?.[0] ?? ''}`.toUpperCase()}
                       bgClass="bg-brand"
                       textClass="text-base"
@@ -1431,7 +1432,7 @@ export default function JobPortal() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground text-sm">{worker.firstName} {worker.lastName}</p>
+                    <p className="font-semibold text-foreground text-sm">{getWorkerDisplayName(worker, 'Your technician')}</p>
                     <p className="text-xs text-muted-foreground">Your assigned technician</p>
                     {worker.phone && (
                       <p className="text-xs text-muted-foreground mt-0.5">{worker.phone}</p>

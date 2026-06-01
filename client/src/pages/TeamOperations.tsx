@@ -118,6 +118,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import type { TeamMember, UserRole, TeamMemberSkill, TeamMemberAvailability, TeamMemberTimeOff } from "@shared/schema";
+import { getWorkerDisplayName } from "@shared/displayName";
 import { PERMISSION_CATEGORIES, PERMISSION_LABELS, type WorkerPermission, DEFAULT_WORKER_PERMISSIONS, ALL_WORKER_PERMISSIONS, ROLE_PRESETS, WORKER_PERMISSIONS } from "@shared/schema";
 import {
   Tooltip,
@@ -497,7 +498,7 @@ function LiveOpsTab() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-sm truncate">
-                                {member.firstName} {member.lastName}
+                                {getWorkerDisplayName(member)}
                               </p>
                               <div className="flex items-center gap-1.5">
                                 <StatusIcon className={`h-3 w-3 ${statusDisplay.text} ${status === 'online' || status === 'on_job' ? 'fill-current' : ''}`} />
@@ -677,7 +678,7 @@ function LiveOpsTab() {
                                         {initials}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-sm">{member?.firstName} {member?.lastName}</p>
+                                        <p className="font-semibold text-sm">{getWorkerDisplayName(member)}</p>
                                         <Badge 
                                           className={`text-xs ${
                                             p.status === 'on_job' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' :
@@ -891,7 +892,7 @@ function LiveOpsTab() {
                   </div>
                   <div className="flex-1">
                     <SheetTitle>
-                      {selectedMember.firstName} {selectedMember.lastName}
+                      {getWorkerDisplayName(selectedMember)}
                     </SheetTitle>
                     <p className="text-sm text-muted-foreground">{selectedMember.email}</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -1601,7 +1602,7 @@ function TeamAdminTab() {
                     </Avatar>
                     <div className="min-w-0">
                       <p className="font-semibold text-base truncate">
-                        {member.firstName} {member.lastName}
+                        {getWorkerDisplayName(member)}
                       </p>
                       <div className="flex flex-wrap items-center gap-1 mt-1">
                         <Badge variant="secondary" className="text-xs">{role?.name || 'No Role'}</Badge>
@@ -1976,7 +1977,7 @@ function TeamAdminTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Team Member</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove <strong>{memberToDelete?.firstName} {memberToDelete?.lastName}</strong> from your team? 
+              Are you sure you want to remove <strong>{getWorkerDisplayName(memberToDelete)}</strong> from your team? 
               This action cannot be undone and they will lose access to your business.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -2009,7 +2010,7 @@ function TeamAdminTab() {
             <DialogTitle>Edit Permissions</DialogTitle>
             <DialogDescription>
               {selectedMemberForPermissions ? (
-                <>Manage permissions for <strong>{selectedMemberForPermissions.firstName} {selectedMemberForPermissions.lastName}</strong></>
+                <>Manage permissions for <strong>{getWorkerDisplayName(selectedMemberForPermissions)}</strong></>
               ) : (
                 'Configure team member permissions'
               )}
@@ -3031,7 +3032,7 @@ function SchedulingTab() {
                           </Avatar>
                           <div className="min-w-0">
                             <p className="font-medium text-sm truncate">
-                              {member?.firstName} {member?.lastName}
+                              {getWorkerDisplayName(member)}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {format(new Date(request.startDate), 'MMM d')} - {format(new Date(request.endDate), 'MMM d, yyyy')}
@@ -3081,7 +3082,7 @@ function SchedulingTab() {
                             {getInitials(member?.firstName, member?.lastName, member?.email)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm flex-1 truncate">{member?.firstName} {member?.lastName}</span>
+                        <span className="text-sm flex-1 truncate">{getWorkerDisplayName(member)}</span>
                         <span className="text-xs text-muted-foreground shrink-0">
                           {format(new Date(leave.startDate), 'MMM d')} - {format(new Date(leave.endDate), 'MMM d')}
                         </span>
@@ -3108,7 +3109,7 @@ function SchedulingTab() {
                   <SelectContent>
                     {acceptedMembers.map((member) => (
                       <SelectItem key={member.id} value={member.id}>
-                        {member.firstName} {member.lastName}
+                        {getWorkerDisplayName(member)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -3209,7 +3210,7 @@ function SchedulingTab() {
                 <SelectContent>
                   {acceptedMembers.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
-                      {member.firstName} {member.lastName}
+                      {getWorkerDisplayName(member)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -3580,7 +3581,7 @@ function SkillsTab() {
               <SelectContent>
                 {acceptedMembers.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
-                    {member.firstName} {member.lastName}
+                    {getWorkerDisplayName(member)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -3720,7 +3721,7 @@ function SkillsTab() {
                 <SelectContent>
                   {acceptedMembers.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
-                      {member.firstName} {member.lastName}
+                      {getWorkerDisplayName(member)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -4001,7 +4002,7 @@ function PerformanceTab() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm sm:text-base truncate">{member.firstName} {member.lastName}</p>
+                      <p className="font-medium text-sm sm:text-base truncate">{getWorkerDisplayName(member)}</p>
                       <p className="text-xs text-muted-foreground truncate">{member.roleName || member.role || 'Team Member'}</p>
                     </div>
                     <Badge variant="secondary" className="shrink-0">
