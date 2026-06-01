@@ -1,4 +1,3 @@
-// Audit complete. No changes needed to this file.
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
@@ -126,6 +125,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import "leaflet/dist/leaflet.css";
+import { MapTeardownGuard } from "@/lib/mapSafe";
 
 interface TeamPresenceData {
   userId: string;
@@ -260,7 +260,7 @@ function TeamThemeAwareTiles() {
   useEffect(() => {
     const tileLayer = L.tileLayer(tileUrl, { attribution: TILE_ATTRIBUTION });
     tileLayer.addTo(map);
-    return () => { map.removeLayer(tileLayer); };
+    return () => { try { map.removeLayer(tileLayer); } catch {} };
   }, [tileUrl, map]);
   
   return null;
@@ -598,6 +598,7 @@ function LiveOpsTab() {
                           scrollWheelZoom={true}
                         >
                           <TeamThemeAwareTiles />
+                          <MapTeardownGuard />
                           {presence.filter(p => {
                             const lat = Number(p.lastLocationLat);
                             const lng = Number(p.lastLocationLng);

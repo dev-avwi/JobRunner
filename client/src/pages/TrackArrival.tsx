@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { MapTeardownGuard } from "@/lib/mapSafe";
 import jobrunnerLogo from "@assets/jobrunner-logo-cropped.png";
 
 interface TrackingData {
@@ -544,6 +545,7 @@ export default function TrackArrival({ token }: TrackArrivalProps) {
                             attribution='&copy; <a href="https://carto.com/">CARTO</a>'
                             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                           />
+                          <MapTeardownGuard />
                           <Marker position={[lastLocation.lat, lastLocation.lng]} icon={createWorkerIcon(workerName)}>
                             <Popup>
                               <div className="text-center p-1">

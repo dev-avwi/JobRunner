@@ -17,6 +17,7 @@ import { useEffect, useLayoutEffect, useState, useRef, useCallback } from "react
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { MapTeardownGuard, safeMapCall } from '@/lib/mapSafe';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -294,7 +295,7 @@ function getDocStatusBadge(status: string) {
 function FitBounds({ bounds }: { bounds: L.LatLngBoundsExpression }) {
   const map = useMap();
   useEffect(() => {
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    safeMapCall(map, (m) => m.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false }));
   }, [map, bounds]);
   return null;
 }
@@ -386,14 +387,16 @@ function RecenterControl({ center, bounds }: { center: [number, number]; bounds:
     btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>`;
     btn.style.cssText = 'position:absolute;top:60px;right:12px;z-index:1000;width:38px;height:38px;border-radius:50%;background:white;border:none;box-shadow:0 1px 4px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;';
     btn.addEventListener('click', () => {
-      if (bounds) {
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
-      } else {
-        map.setView(center, 15);
-      }
+      safeMapCall(map, (m) => {
+        if (bounds) {
+          m.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+        } else {
+          m.setView(center, 15);
+        }
+      });
     });
     container.appendChild(btn);
-    return () => { container.removeChild(btn); };
+    return () => { try { container.removeChild(btn); } catch {} };
   }, [map, center, bounds]);
 
   return null;
@@ -404,29 +407,33 @@ function RouteLine({ from, to }: { from: [number, number]; to: [number, number] 
   const map = useMap();
 
   useEffect(() => {
+    let active = true;
     const fetchRoute = async () => {
       try {
         const res = await fetch(
           `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`
         );
-        if (!res.ok) return;
+        if (!active || !res.ok) return;
         const data = await res.json();
+        if (!active) return;
         if (data.routes && data.routes[0]) {
           const coords: [number, number][] = data.routes[0].geometry.coordinates.map(
             (c: [number, number]) => [c[1], c[0]]
           );
+          if (!active) return;
           setRouteCoords(coords);
           if (coords.length > 0) {
             const bounds = L.latLngBounds(coords);
             bounds.extend(from);
             bounds.extend(to);
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+            safeMapCall(map, (m) => m.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: false }));
           }
         }
       } catch {}
     };
     fetchRoute();
-  }, [from[0], from[1], to[0], to[1]]);
+    return () => { active = false; };
+  }, [from[0], from[1], to[0], to[1], map]);
 
   if (routeCoords.length < 2) return null;
 
@@ -562,6 +569,7 @@ function HeroMap({
             attributionControl={false}
           >
             <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+            <MapTeardownGuard />
             <RecenterControl center={[-33.8688, 151.2093]} bounds={null} />
           </MapContainer>
         </div>
@@ -580,6 +588,7 @@ function HeroMap({
           attributionControl={false}
         >
           <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+          <MapTeardownGuard />
           <RecenterControl center={center} bounds={bounds} />
           {bounds && <FitBounds bounds={bounds} />}
           {hasJobPin && (
