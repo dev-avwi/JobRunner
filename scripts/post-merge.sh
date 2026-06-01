@@ -92,6 +92,17 @@ psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EX
 psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoice_items ADD COLUMN IF NOT EXISTS quantity numeric(10,2);" 2>/dev/null || true
 psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoice_items ADD COLUMN IF NOT EXISTS unit_price numeric(10,2);" 2>/dev/null || true
 
+# Task #198 (Week-1 retention): user_activity table (one row per user per day).
+psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS user_activity (
+  id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  activity_date date NOT NULL,
+  created_at timestamp DEFAULT now(),
+  CONSTRAINT uq_user_activity_user_date UNIQUE (user_id, activity_date)
+);" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_user_activity_user ON user_activity (user_id);" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_user_activity_date ON user_activity (activity_date);" 2>/dev/null || true
+
 # Drift guard rail (Task #108): refuse to deploy if schema.ts and the live DB
 # disagree after the ALTERs above. Logs the diff and exits non-zero.
 echo "Verifying schema is in sync with shared/schema.ts..."
