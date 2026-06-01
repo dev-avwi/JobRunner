@@ -1151,7 +1151,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentToken = nanoid(12);
           try {
             await storage.updateInvoice(i.id, i.userId, { paymentToken });
-          } catch (e) {}
+          } catch (e) {
+            logger.warn('api', 'Failed to persist generated invoice payment token', { userId: i.userId, error: e, metadata: { invoiceId: i.id } });
+          }
         }
         return {
           ...i,
@@ -1166,7 +1168,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           viewToken = nanoid(12);
           try {
             await storage.updateReceipt(r.id, r.userId, { viewToken });
-          } catch (e) {}
+          } catch (e) {
+            logger.warn('api', 'Failed to persist generated receipt view token', { userId: r.userId, error: e, metadata: { receiptId: r.id } });
+          }
         }
         return {
           ...r,
@@ -1201,7 +1205,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               portalToken = newToken.token;
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          logger.warn('api', 'Failed to resolve/rotate job portal token', { userId: j.userId, error: e, metadata: { jobId: j.id } });
+        }
         try {
           const assignments = await storage.getJobAssignments(j.id);
           if (assignments && assignments.length > 0) {
@@ -3898,7 +3904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = registerResult.user;
         isNewUser = true;
         // Belt-and-braces: ensure verified flag is set even if storage layer ignored it.
-        try { await storage.updateUser(user.id, { emailVerified: true }); } catch {}
+        try { await storage.updateUser(user.id, { emailVerified: true }); } catch (e) { logger.warn('auth', 'Failed to set emailVerified flag on user', { userId: user.id, error: e }); }
       }
 
       const seatCheck = await checkTeamSeatLimit(teamMember.businessOwnerId, inviteOwner, inviteOwnerSettings);
@@ -25044,7 +25050,10 @@ Respond with JSON in this format:
             const sessionData = result.rows[0].sess as any;
             userId = sessionData?.userId;
           }
-        } catch {}
+        } catch (e) {
+          // Fallback Bearer session lookup; a DB failure silently de-auths the request.
+          logger.warn('auth', 'Bearer session-token lookup failed', { error: e });
+        }
       }
     }
     return userId || null;
@@ -31312,7 +31321,7 @@ Respond with JSON in this format:
       // G1: Cache the response under the idempotency key so retries are no-ops.
       const idemKey = (req as any)._geofenceIdempotencyKey;
       if (idemKey) {
-        try { await setIdempotencyRecord(idemKey, responsePayload); } catch {}
+        try { await setIdempotencyRecord(idemKey, responsePayload); } catch (e) { logger.warn('api', 'Failed to persist geofence idempotency record', { error: e }); }
       }
 
       res.json(responsePayload);
@@ -32552,7 +32561,7 @@ Respond with JSON in this format:
                         currentJobId,
                         "success",
                       );
-                    } catch {}
+                    } catch (e) { logger.warn('background', 'Failed to log en-route automation dedup record', { error: e, metadata: { jobId: currentJobId } }); }
                   }
                 }
               }

@@ -3271,7 +3271,9 @@ import { logSystemEvent } from "../systemEventService";
           await notifyJobAssigned(resolvedUserId, job.title, job.id);
           try {
             await notifyJobAssignedDB(storage, resolvedUserId, job, assigner || { firstName: 'Manager' });
-          } catch (e) {}
+          } catch (e) {
+            logger.warn('background', 'Failed to persist in-app job-assignment notification', { userId: resolvedUserId, error: e, metadata: { jobId: job.id } });
+          }
 
           results.push({ workerId, status: 'assigned', assignmentId: assignment?.id });
         } catch (assignErr) {
@@ -5860,7 +5862,9 @@ import { logSystemEvent } from "../systemEventService";
           entityId: jobId,
           details: `Confirmed voice action: ${detectedAction.type} - ${detectedAction.description}`,
         });
-      } catch (e) {}
+      } catch (e) {
+        logger.warn('background', 'Failed to write team activity for confirmed voice action', { userId, error: e, metadata: { jobId } });
+      }
 
       detectedActions[actionIndex] = { ...detectedActions[actionIndex], confirmed: true };
       await storage.updateVoiceNote(voiceNoteId, userContext.effectiveUserId, {

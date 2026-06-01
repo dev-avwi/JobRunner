@@ -12,6 +12,7 @@ import { broadcastSmsNotification } from '../websocket';
 import { detectSmsJobIntent } from '../ai';
 import { notifySmsReceived } from '../notifications';
 import { notifySmsReceived as notifySmsReceivedPush } from '../pushNotifications';
+import { logger } from '../logger';
 
 interface SendSmsOptions {
   businessOwnerId: string;
@@ -1113,7 +1114,8 @@ export async function getSmsConversationsForUser(
           conv.clientName = client.name;
         }
       } catch (e) {
-        // Non-critical, skip silently
+        // Non-critical: conversation->client linking is display metadata. Log but don't fail the SMS flow.
+        logger.warn('sms', 'Failed to link SMS conversation to client', { error: e });
       }
     }
   }

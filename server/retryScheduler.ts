@@ -249,7 +249,9 @@ async function recoverStrandedEmails() {
     if (recovered.length > 0) {
       logger.warn('background', `Recovered ${recovered.length} stranded emails from 'retrying' state`);
     }
-  } catch {}
+  } catch (e) {
+    logger.warn('background', 'Failed to recover stranded emails from retrying state', { error: e });
+  }
 }
 
 let retryInterval: NodeJS.Timeout | null = null;

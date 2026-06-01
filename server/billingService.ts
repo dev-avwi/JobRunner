@@ -3,6 +3,7 @@ import { storage } from './storage';
 import Stripe from 'stripe';
 import { PRICING } from '@shared/schema';
 import { getErrorMessage } from "./lib/errors";
+import { logger } from "./logger";
 
 export interface CheckoutSessionResult {
   success: boolean;
@@ -41,6 +42,13 @@ async function getOrCreateStripeCustomer(
       await stripe.customers.retrieve(businessSettings.stripeCustomerId);
       return businessSettings.stripeCustomerId;
     } catch (e) {
+      // Existing customer id no longer resolves at Stripe (deleted/wrong mode);
+      // fall through to recreate. Log so we can spot churned/duplicate customers.
+      logger.warn('billing', 'Failed to retrieve existing Stripe customer; recreating', {
+        userId,
+        error: e,
+        metadata: { stripeCustomerId: businessSettings.stripeCustomerId },
+      });
     }
   }
 

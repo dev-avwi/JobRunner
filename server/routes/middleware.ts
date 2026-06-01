@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import { AuthService } from "../auth";
 import { getUserContext, requireOnboarding } from "../permissions";
 import { IS_BETA } from "../freemiumService";
+import { logger } from "../logger";
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -464,7 +465,11 @@ export function setupOnboardingGuard(app: any) {
           if (result.rows && result.rows.length > 0) {
             resolvedUserId = (result.rows[0].sess as any)?.userId;
           }
-        } catch {}
+        } catch (e) {
+          // Session-token resolution is a fallback auth path; a DB failure here
+          // silently downgrades the request to unauthenticated, so surface it.
+          logger.warn('auth', 'Bearer session-token lookup failed', { error: e });
+        }
       }
     }
 

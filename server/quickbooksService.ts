@@ -4,6 +4,7 @@ import { encrypt, decrypt } from "./encryption";
 import crypto from "crypto";
 import { qboAccountsCache, qboTaxRatesCache, qboItemsCache } from "./cache";
 import { getErrorMessage } from "./lib/errors";
+import { logger } from "./logger";
 
 const QUICKBOOKS_SCOPES = "com.intuit.quickbooks.accounting openid profile email";
 
@@ -1117,7 +1118,9 @@ export async function processQboWebhookPayload(payload: any): Promise<void> {
           }
         }
         // stamp lastWebhookAt
-        try { await storage.updateBusinessSettings(conn.userId, { qboLastWebhookAt: new Date() } as any); } catch {}
+        try { await storage.updateBusinessSettings(conn.userId, { qboLastWebhookAt: new Date() } as any); } catch (e) {
+          logger.warn('webhook', 'QBO webhook: failed to stamp qboLastWebhookAt', { userId: conn.userId, error: e });
+        }
       } catch (err) {
         console.error('[QBO Webhook] processing error:', err);
       }
