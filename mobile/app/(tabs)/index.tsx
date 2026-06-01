@@ -4097,6 +4097,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+    ...shadows.sm,
   },
   contentContainer: {
     paddingHorizontal: pageShell.paddingHorizontal,

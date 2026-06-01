@@ -162,6 +162,7 @@ export const shadows = {
     },
     android: {
       elevation: 1,
+      shadowColor: '#1c2130',
     },
   }) as object,
   sm: Platform.select({
@@ -172,7 +173,8 @@ export const shadows = {
       shadowRadius: 4,
     },
     android: {
-      elevation: 1,
+      elevation: 3,
+      shadowColor: '#1c2130',
     },
   }) as object,
   md: Platform.select({
@@ -183,7 +185,8 @@ export const shadows = {
       shadowRadius: 8,
     },
     android: {
-      elevation: 2,
+      elevation: 6,
+      shadowColor: '#1c2130',
     },
   }) as object,
   lg: Platform.select({
@@ -194,7 +197,8 @@ export const shadows = {
       shadowRadius: 16,
     },
     android: {
-      elevation: 3,
+      elevation: 10,
+      shadowColor: '#1c2130',
     },
   }) as object,
   xl: Platform.select({
@@ -205,7 +209,8 @@ export const shadows = {
       shadowRadius: 24,
     },
     android: {
-      elevation: 5,
+      elevation: 14,
+      shadowColor: '#1c2130',
     },
   }) as object,
   header: Platform.select({
