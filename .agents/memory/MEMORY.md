@@ -16,3 +16,4 @@
 - [Mobile live-location first ping](mobile-live-location-first-ping.md) — enabling team location must force one immediate send; OS background task only fires after ~50m, so stationary workers never show on owner map.
 - [SDS Manager integration](sds-manager-integration.md) — integrate, don't rebuild; they have AU-compliant SDS DB + Parser API + QR access; copy their SafetyCulture model; needs partner API key first.
 - [Job start gate paths](job-start-gate-paths.md) — a gate on starting a job must run on ALL status writers (/status, full update, bulk-status), not just /status; resolve assignedTo to user id first.
+- [403 must not clear session](auth-403-clears-session.md) — Bearer-token-only auth; non-owners 403 on owner-only endpoints; clearing token on 403 silently logs them out on reload. Only 401 clears.

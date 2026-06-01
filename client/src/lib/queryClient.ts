@@ -139,7 +139,10 @@ async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     
-    // Handle demo read-only mode (403 with isDemo flag) — don't clear session
+    // 403 = authenticated but NOT permitted. Never clear the session token here:
+    // a worker/subcontractor legitimately hits owner-only endpoints (quotes,
+    // invoices, reports, team locations) and those return 403. Wiping the token
+    // would silently log them out on the next reload. Surface the error instead.
     if (res.status === 403) {
       try {
         const parsed = JSON.parse(text);
@@ -154,8 +157,7 @@ async function throwIfResNotOk(res: Response) {
       } catch (e) {
         if (e instanceof Error && (e.message.startsWith('demo_readonly:') || e.message.startsWith('team_plan_required:'))) throw e;
       }
-      clearSessionToken();
-      throw new Error(`session_expired: Your session has expired. Please log in again.`);
+      throw new Error(`403: ${text}`);
     }
     
     // Handle session expiry (401)
