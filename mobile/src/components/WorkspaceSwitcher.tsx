@@ -26,7 +26,7 @@ import { getBottomNavHeight } from './BottomNav';
 
 interface Business {
   businessOwnerId: string;
-  businessName: string;
+  businessName: string | null;
   roleName: string;
   teamMemberId: string | null;
   logoUrl?: string;

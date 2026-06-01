@@ -3571,6 +3571,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         !!ownSettings?.businessName &&
         ownSettings.businessName !== WORKER_PROFILE_PLACEHOLDER_NAME;
 
+      // Build the joined-business list first so we can tell whether this user is
+      // a subcontractor anywhere (used to always surface a Personal profile).
+      const memberships = await storage.getAllTeamMembershipsByMemberId(effectiveUserId);
+
+      let isSubcontractorAnywhere = false;
+      const teamBusinessesRaw = await Promise.all(memberships.map(async (m) => {
+        const ownerSettings = await storage.getBusinessSettings(m.businessOwnerId);
+        const ownerUser = await storage.getUser(m.businessOwnerId);
+        const role = m.roleId ? await storage.getUserRole(m.roleId) : null;
+        const roleName = role?.name || 'Worker';
+        if (roleName.toLowerCase().includes('subcontractor')) {
+          isSubcontractorAnywhere = true;
+        }
+
+        let pendingJobCount = 0;
+        try {
+          const ownerJobs = await storage.getJobs(m.businessOwnerId);
+          pendingJobCount = ownerJobs.filter((j) => 
+            (j.assignedTo === effectiveUserId || j.assignedTo === m.id) && 
+            (j.status === 'pending' || j.status === 'scheduled')
+          ).length;
+        } catch (err) {
+          console.error("Error fetching pending job count:", err);
+        }
+        
+        return {
+          businessOwnerId: m.businessOwnerId,
+          businessName: ownerSettings?.businessName || `${ownerUser?.firstName || ''} ${ownerUser?.lastName || ''}`.trim() || 'Unknown Business',
+          roleName,
+          teamMemberId: m.id,
+          logoUrl: ownerSettings?.logoUrl || null,
+          pendingJobCount,
+          isOwnBusiness: false,
+        };
+      }));
+
+      // Dedupe joined businesses by owner id — a user can end up with more than
+      // one team_members row for the same business (legacy duplicate invites),
+      // which would otherwise show the same workspace several times.
+      const seenOwnerIds = new Set<string>();
+      const teamBusinesses = teamBusinessesRaw.filter((b) => {
+        if (seenOwnerIds.has(b.businessOwnerId)) return false;
+        seenOwnerIds.add(b.businessOwnerId);
+        return true;
+      });
+
+      // Personal profile entry. A subcontractor is fundamentally their own
+      // sole-trader business, so they always get a Personal profile they own —
+      // even before they fill in their own business details. Plain workers keep
+      // the old behaviour (no synthetic personal entry; switcher auto-hides).
       if (hasRealOwnBusiness) {
         let ownJobCount = 0;
         try {
@@ -3589,36 +3639,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pendingJobCount: ownJobCount,
           isOwnBusiness: true,
         });
+      } else if (isSubcontractorAnywhere) {
+        businesses.push({
+          businessOwnerId: effectiveUserId,
+          businessName: null,
+          roleName: 'Owner',
+          teamMemberId: null,
+          logoUrl: ownSettings?.logoUrl || null,
+          pendingJobCount: 0,
+          isOwnBusiness: true,
+        });
       }
-
-      const memberships = await storage.getAllTeamMembershipsByMemberId(effectiveUserId);
-      
-      const teamBusinesses = await Promise.all(memberships.map(async (m) => {
-        const ownerSettings = await storage.getBusinessSettings(m.businessOwnerId);
-        const ownerUser = await storage.getUser(m.businessOwnerId);
-        const role = m.roleId ? await storage.getUserRole(m.roleId) : null;
-        
-        let pendingJobCount = 0;
-        try {
-          const ownerJobs = await storage.getJobs(m.businessOwnerId);
-          pendingJobCount = ownerJobs.filter((j) => 
-            (j.assignedTo === effectiveUserId || j.assignedTo === m.id) && 
-            (j.status === 'pending' || j.status === 'scheduled')
-          ).length;
-        } catch (err) {
-          console.error("Error fetching pending job count:", err);
-        }
-        
-        return {
-          businessOwnerId: m.businessOwnerId,
-          businessName: ownerSettings?.businessName || `${ownerUser?.firstName || ''} ${ownerUser?.lastName || ''}`.trim() || 'Unknown Business',
-          roleName: role?.name || 'Worker',
-          teamMemberId: m.id,
-          logoUrl: ownerSettings?.logoUrl || null,
-          pendingJobCount,
-          isOwnBusiness: false,
-        };
-      }));
 
       businesses.push(...teamBusinesses);
       

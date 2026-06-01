@@ -26,7 +26,7 @@ type DocType = 'invoice' | 'quote';
 
 interface BusinessOption {
   businessOwnerId: string;
-  businessName: string;
+  businessName: string | null;
   roleName: string;
 }
 
