@@ -62,6 +62,8 @@ import {
   insertIntegrationSettingsSchema,
   insertNotificationSchema,
   insertClientSchema,
+  insertClientAssetSchema,
+  insertClientAssetServiceSchema,
   insertJobSchema,
   insertQuoteSchema,
   updateQuoteSchema,
@@ -14313,6 +14315,134 @@ Be specific about materials, colors, and features that would be included.`
     } catch (error) {
       console.error("Error fetching client assets:", error);
       res.status(500).json({ error: "Failed to fetch client assets" });
+    }
+  });
+
+  // ============================================
+  // CLIENT ASSET REGISTER (customer-owned assets / vessels / equipment)
+  // ============================================
+  // Coerce ISO date strings into Date objects for the timestamp columns
+  const coerceAssetDates = (body: any) => {
+    if (!body || typeof body !== 'object') return body;
+    const out = { ...body };
+    for (const k of ['installDate', 'warrantyExpiresAt', 'lastServiceDate', 'nextServiceDue', 'serviceDate']) {
+      if (out[k] !== undefined && out[k] !== null && typeof out[k] === 'string') {
+        const d = new Date(out[k]);
+        if (!isNaN(d.getTime())) out[k] = d;
+      }
+    }
+    return out;
+  };
+
+  // List asset-register entries (optionally filtered by client)
+  app.get("/api/client-assets", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_CLIENTS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const clientId = req.query.clientId as string | undefined;
+      const assets = await storage.getClientAssets(userContext.effectiveUserId, clientId);
+      res.json(assets);
+    } catch (error) {
+      console.error("Error listing client assets:", error);
+      res.status(500).json({ error: "Failed to list client assets" });
+    }
+  });
+
+  // Get a single asset with its service history
+  app.get("/api/client-assets/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_CLIENTS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const asset = await storage.getClientAsset(req.params.id, userContext.effectiveUserId);
+      if (!asset) return res.status(404).json({ error: "Asset not found" });
+      const services = await storage.getClientAssetServices(asset.id, userContext.effectiveUserId);
+      res.json({ ...asset, services });
+    } catch (error) {
+      console.error("Error fetching client asset:", error);
+      res.status(500).json({ error: "Failed to fetch client asset" });
+    }
+  });
+
+  // Create an asset-register entry under a client
+  app.post("/api/client-assets", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_CLIENTS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const data = insertClientAssetSchema.parse(coerceAssetDates(req.body));
+      // Verify the client belongs to this organization
+      const client = await storage.getClient(data.clientId, userContext.effectiveUserId);
+      if (!client) return res.status(404).json({ error: "Client not found or access denied" });
+      const asset = await storage.createClientAsset({ ...data, userId: userContext.effectiveUserId });
+      res.status(201).json(asset);
+    } catch (error: any) {
+      if (error?.name === 'ZodError') {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Error creating client asset:", error);
+      res.status(500).json({ error: "Failed to create client asset" });
+    }
+  });
+
+  // Update an asset-register entry
+  app.patch("/api/client-assets/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_CLIENTS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const data = insertClientAssetSchema.partial().parse(coerceAssetDates(req.body));
+      const updated = await storage.updateClientAsset(req.params.id, userContext.effectiveUserId, data);
+      if (!updated) return res.status(404).json({ error: "Asset not found" });
+      res.json(updated);
+    } catch (error: any) {
+      if (error?.name === 'ZodError') {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Error updating client asset:", error);
+      res.status(500).json({ error: "Failed to update client asset" });
+    }
+  });
+
+  // Delete an asset-register entry
+  app.delete("/api/client-assets/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_CLIENTS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const ok = await storage.deleteClientAsset(req.params.id, userContext.effectiveUserId);
+      if (!ok) return res.status(404).json({ error: "Asset not found" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting client asset:", error);
+      res.status(500).json({ error: "Failed to delete client asset" });
+    }
+  });
+
+  // List an asset's service history
+  app.get("/api/client-assets/:id/services", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_CLIENTS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const asset = await storage.getClientAsset(req.params.id, userContext.effectiveUserId);
+      if (!asset) return res.status(404).json({ error: "Asset not found" });
+      const services = await storage.getClientAssetServices(asset.id, userContext.effectiveUserId);
+      res.json(services);
+    } catch (error) {
+      console.error("Error listing asset services:", error);
+      res.status(500).json({ error: "Failed to list asset services" });
+    }
+  });
+
+  // Attach a job/service record to an asset (links a job to the vessel/asset)
+  app.post("/api/client-assets/:id/services", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_CLIENTS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const asset = await storage.getClientAsset(req.params.id, userContext.effectiveUserId);
+      if (!asset) return res.status(404).json({ error: "Asset not found" });
+      const data = insertClientAssetServiceSchema.parse(coerceAssetDates({ ...req.body, assetId: asset.id }));
+      const service = await storage.createClientAssetService({ ...data, userId: userContext.effectiveUserId });
+      // Keep the asset's last/next service dates in sync
+      const patch: any = { lastServiceDate: data.serviceDate };
+      if ((data as any).nextServiceDue) patch.nextServiceDue = (data as any).nextServiceDue;
+      await storage.updateClientAsset(asset.id, userContext.effectiveUserId, patch);
+      res.status(201).json(service);
+    } catch (error: any) {
+      if (error?.name === 'ZodError') {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Error creating asset service:", error);
+      res.status(500).json({ error: "Failed to create asset service" });
     }
   });
 

@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { storage, db } from './storage';
-import { activityLogs, inviteCodes, userRoles, subcontractorTokens } from '@shared/schema';
+import { activityLogs, inviteCodes, userRoles, subcontractorTokens, swmsDocuments, swmsHazards, swmsSignatures } from '@shared/schema';
 import { tradeCatalog } from '../shared/tradeCatalog';
 import { eq, and, sql } from 'drizzle-orm';
 import { getErrorMessage } from "./lib/errors";
@@ -416,6 +416,9 @@ export async function createDemoUserAndData() {
 
       // Seed equipment and job-equipment assignments for dispatch board
       await seedDemoEquipment(demoUser.id);
+
+      // Seed SWMS safety docs + expenses so WHS and financial areas aren't empty
+      await seedDemoSafetyAndExpenses(demoUser.id);
       
       return demoUser;
     }
@@ -1528,6 +1531,10 @@ export async function createDemoUserAndData() {
     // CREATE NOTIFICATIONS for "What You Missed" popup
     // ============================================
     await createDemoNotifications(demoUser.id);
+
+    // Seed equipment, SWMS safety docs + expenses for the fresh demo
+    await seedDemoEquipment(demoUser.id);
+    await seedDemoSafetyAndExpenses(demoUser.id);
 
     return demoUser;
   } catch (error) {
@@ -3266,6 +3273,143 @@ export async function clearUserDemoData(userId: string): Promise<{
   } catch (error: unknown) {
     console.error('[DemoClear] Error clearing demo data:', error);
     return { success: false, message: getErrorMessage(error) || 'Failed to clear demo data', deleted: { clients: 0, jobs: 0, quotes: 0, invoices: 0 } };
+  }
+}
+
+// Seed safety (SWMS with hazards + signatures) and financials (expenses) so the
+// demo's WHS and money areas show real data instead of looking empty.
+async function seedDemoSafetyAndExpenses(userId: string) {
+  try {
+    const allJobs = await storage.getJobs(userId);
+    if (allJobs.length === 0) return;
+    const teamMembers = await storage.getTeamMembers(userId);
+    const activeMembers = teamMembers.filter((m: any) => m.status === 'active');
+    const workerName = (m: any) =>
+      m?.name || [m?.firstName, m?.lastName].filter(Boolean).join(' ') || 'Crew Member';
+    const sig =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+    // ---- SWMS (idempotent) ----
+    const existingSwms = await db
+      .select()
+      .from(swmsDocuments)
+      .where(eq(swmsDocuments.userId, userId));
+    if (existingSwms.length === 0) {
+      const swmsDefs = [
+        {
+          title: 'SWMS - Hot Water System Replacement',
+          description: 'Safe work method statement for removal and installation of gas/electric hot water systems.',
+          workActivityDescription: 'Isolate, drain and remove existing unit; install and commission new hot water system.',
+          ppeRequirements: ['Safety glasses', 'Cut-resistant gloves', 'Steel cap boots', 'Hi-vis', 'Hearing protection'],
+          emergencyContact: '000 / Site Supervisor 0407 888 123',
+          firstAidLocation: 'First aid kit in Ute #1 cab',
+          hazards: [
+            { stepNumber: 1, activityTask: 'Isolate gas and water supply', hazard: 'Gas leak / scalding from hot water', likelihood: 'possible', consequence: 'major', riskBefore: 'high', controlMeasures: 'Lock-out tag-out, gas detector check, allow unit to cool, drain to safe point', riskAfter: 'low', sortOrder: 1 },
+            { stepNumber: 2, activityTask: 'Manual handling of old/new unit', hazard: 'Back/muscle strain, crush injury', likelihood: 'likely', consequence: 'moderate', riskBefore: 'high', controlMeasures: 'Two-person lift, use dolly, clear path, correct lifting technique', riskAfter: 'low', sortOrder: 2 },
+            { stepNumber: 3, activityTask: 'Electrical connection', hazard: 'Electric shock', likelihood: 'unlikely', consequence: 'major', riskBefore: 'medium', controlMeasures: 'Licensed electrician, test for dead, RCD protected supply', riskAfter: 'low', sortOrder: 3 },
+          ],
+        },
+        {
+          title: 'SWMS - Drain Excavation & Repair',
+          description: 'Safe work method statement for trenching and underground drain repair.',
+          workActivityDescription: 'Locate services, excavate trench, repair/replace damaged drainage, backfill and reinstate.',
+          ppeRequirements: ['Hard hat', 'Safety glasses', 'Hi-vis', 'Steel cap boots', 'Gloves'],
+          emergencyContact: '000 / Site Supervisor 0407 888 123',
+          firstAidLocation: 'First aid kit in Ute #2 cab',
+          hazards: [
+            { stepNumber: 1, activityTask: 'Underground service location', hazard: 'Strike live electrical/gas service', likelihood: 'possible', consequence: 'severe', riskBefore: 'high', controlMeasures: 'Dial Before You Dig, cable locator, pothole by hand near services', riskAfter: 'low', sortOrder: 1 },
+            { stepNumber: 2, activityTask: 'Trench excavation', hazard: 'Trench collapse / fall into trench', likelihood: 'possible', consequence: 'severe', riskBefore: 'high', controlMeasures: 'Batter/bench walls, shoring for >1.5m, barricade edges, no lone work', riskAfter: 'medium', sortOrder: 2 },
+            { stepNumber: 3, activityTask: 'Working in wet conditions', hazard: 'Slips, trips, biological hazard from sewage', likelihood: 'likely', consequence: 'moderate', riskBefore: 'medium', controlMeasures: 'Waterproof gloves, wash stations, vaccinations current, clean footing', riskAfter: 'low', sortOrder: 3 },
+          ],
+        },
+      ];
+
+      for (let i = 0; i < swmsDefs.length; i++) {
+        const def = swmsDefs[i];
+        const job = allJobs[i % allJobs.length];
+        const [doc] = await db
+          .insert(swmsDocuments)
+          .values({
+            userId,
+            jobId: job?.id ?? null,
+            title: def.title,
+            description: def.description,
+            siteAddress: (job as any)?.siteAddress || (job as any)?.address || 'Cairns QLD 4870',
+            workActivityDescription: def.workActivityDescription,
+            ppeRequirements: def.ppeRequirements,
+            emergencyContact: def.emergencyContact,
+            firstAidLocation: def.firstAidLocation,
+            status: 'active',
+          })
+          .returning();
+
+        for (const hz of def.hazards) {
+          await db.insert(swmsHazards).values({ swmsId: doc.id, ...hz });
+        }
+
+        // Sign the first SWMS with up to two workers (with GPS) to showcase sign-off.
+        if (i === 0) {
+          const signers = activeMembers.slice(0, 2);
+          if (signers.length === 0) signers.push({ memberId: null, name: 'Jake Morrison' } as any);
+          for (const m of signers) {
+            await db.insert(swmsSignatures).values({
+              swmsId: doc.id,
+              workerName: workerName(m),
+              workerUserId: (m as any).memberId ?? null,
+              signatureData: sig,
+              latitude: '-16.9203',
+              longitude: '145.7710',
+              address: 'Cairns QLD 4870',
+            });
+          }
+        }
+      }
+      console.log('✅ Demo SWMS seeded (2 docs, hazards + signatures)');
+    }
+
+    // ---- Expenses (idempotent) ----
+    const existingExpenses = await storage.getExpenses(userId);
+    if (existingExpenses.length === 0) {
+      const category = await storage.createExpenseCategory({
+        userId,
+        name: 'Materials & Supplies',
+        description: 'Job materials, parts and consumables',
+      } as any);
+      const fuelCat = await storage.createExpenseCategory({
+        userId,
+        name: 'Fuel & Vehicle',
+        description: 'Fuel, tolls and vehicle running costs',
+      } as any);
+
+      const now = Date.now();
+      const day = 24 * 60 * 60 * 1000;
+      const expenseDefs = [
+        { categoryId: category.id, amount: '486.20', gstAmount: '44.20', description: 'Rheem hot water unit 250L', vendor: 'Reece Plumbing', daysAgo: 2 },
+        { categoryId: category.id, amount: '128.70', gstAmount: '11.70', description: 'Copper fittings & valves', vendor: 'Tradelink', daysAgo: 4 },
+        { categoryId: category.id, amount: '312.40', gstAmount: '28.40', description: 'PVC drainage pipe & couplings', vendor: 'Reece Plumbing', daysAgo: 6 },
+        { categoryId: fuelCat.id, amount: '95.50', gstAmount: '8.68', description: 'Diesel - Ute #1', vendor: 'BP Cairns', daysAgo: 1 },
+        { categoryId: fuelCat.id, amount: '88.30', gstAmount: '8.03', description: 'Diesel - Ute #2', vendor: 'Caltex', daysAgo: 3 },
+      ];
+      for (let i = 0; i < expenseDefs.length; i++) {
+        const e = expenseDefs[i];
+        const job = allJobs[i % allJobs.length];
+        await storage.createExpense({
+          userId,
+          jobId: job?.id ?? null,
+          categoryId: e.categoryId,
+          amount: e.amount,
+          gstAmount: e.gstAmount,
+          description: e.description,
+          vendor: e.vendor,
+          expenseDate: new Date(now - e.daysAgo * day),
+          isBillable: true,
+          status: 'approved',
+        } as any);
+      }
+      console.log('✅ Demo expenses seeded (5 expenses across 2 categories)');
+    }
+  } catch (error) {
+    console.error('Error seeding demo safety/expenses:', getErrorMessage(error));
   }
 }
 

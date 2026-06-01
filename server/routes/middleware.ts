@@ -5,6 +5,7 @@ import { storage } from "../storage";
 import { sql } from "drizzle-orm";
 import { AuthService } from "../auth";
 import { getUserContext, requireOnboarding } from "../permissions";
+import { IS_BETA } from "../freemiumService";
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -272,7 +273,6 @@ export const requireAuth = async (req: any, res: any, next: any) => {
 };
 
 export const requireProSubscription = (req: any, res: any, next: any) => {
-  const { IS_BETA } = require('../freemiumService');
   if (IS_BETA) {
     return next();
   }
@@ -288,7 +288,6 @@ export const requireProSubscription = (req: any, res: any, next: any) => {
 
 export const requirePaidTierForSms = async (req: any, res: any, next: any) => {
   try {
-    const { IS_BETA } = require('../freemiumService');
     if (IS_BETA) return next();
 
     const userContext = await getUserContext(req.userId);

@@ -921,10 +921,30 @@ export default function JobDetailView({
         });
       }
     },
-    onError: () => {
+    onError: (error: any) => {
+      // Surface WHS gating blocks (expired licence / Take 5 required) with the
+      // server's friendly message instead of a generic error.
+      let title = "Error";
+      let description = "Failed to update job";
+      const raw = typeof error?.message === 'string' ? error.message : '';
+      const jsonStart = raw.indexOf('{');
+      if (jsonStart !== -1) {
+        try {
+          const parsed = JSON.parse(raw.slice(jsonStart));
+          if (parsed?.code === 'TAKE5_REQUIRED') {
+            title = "Pre-start safety check required";
+            description = parsed.error;
+          } else if (parsed?.code === 'COMPLIANCE_EXPIRED') {
+            title = "Expired licence — job blocked";
+            description = parsed.error;
+          } else if (parsed?.error) {
+            description = parsed.error;
+          }
+        } catch {}
+      }
       toast({
-        title: "Error",
-        description: "Failed to update job",
+        title,
+        description,
         variant: "destructive",
       });
     },

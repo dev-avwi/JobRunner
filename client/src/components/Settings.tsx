@@ -2030,6 +2030,42 @@ export default function Settings({
 
           <Card>
             <CardHeader>
+              <div className="flex items-center gap-2">
+                <SettingsIcon className="w-5 h-5" style={{ color: 'hsl(var(--trade))' }} />
+                <CardTitle>Site Safety (WHS)</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Enforce safety steps before a worker can start a job.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label>Require pre-start (Take 5) before starting a job</Label>
+                  <p className="text-sm text-muted-foreground">A safety or inspection form must be completed for the job first</p>
+                </div>
+                <Switch
+                  checked={!!(businessSettings as any)?.requireTake5BeforeStart}
+                  onCheckedChange={(checked) => handleBusinessSave({ requireTake5BeforeStart: checked } as any)}
+                  data-testid="switch-require-take5"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label>Block job start on expired licence/compliance</Label>
+                  <p className="text-sm text-muted-foreground">Stop a job starting when the worker or business has an expired licence, white card, cert, insurance or rego</p>
+                </div>
+                <Switch
+                  checked={!!(businessSettings as any)?.blockJobStartOnExpiredCompliance}
+                  onCheckedChange={(checked) => handleBusinessSave({ blockJobStartOnExpiredCompliance: checked } as any)}
+                  data-testid="switch-block-expired-compliance"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Business Profile</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

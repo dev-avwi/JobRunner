@@ -269,6 +269,70 @@ import { logSystemEvent } from "../systemEventService";
     chatUpload: multer.Multer;
   }
 
+  // Shared WHS gate: returns a blocking {status, body} when a job is being
+  // started (transition to in_progress) and a configured safety/compliance
+  // requirement is not met. Returns null when the start is allowed. Applied to
+  // ALL job status-mutation paths (status, full update, bulk) so it can't be
+  // bypassed.
+  async function checkJobStartGate(params: {
+    job: any;
+    newStatus: string | undefined;
+    businessSettings: any;
+    effectiveUserId: string;
+    fallbackUserId: string;
+  }): Promise<{ status: number; body: any } | null> {
+    const { job, newStatus, businessSettings, effectiveUserId, fallbackUserId } = params;
+    if (newStatus !== 'in_progress' || !job || job.status === 'in_progress') return null;
+
+    // 1. Block start when the assigned worker / business has an expired licence or cert
+    if (businessSettings?.blockJobStartOnExpiredCompliance) {
+      const assigneeUserId =
+        (await resolveAssigneeUserId(job.assignedTo, effectiveUserId)) ||
+        job.assignedTo ||
+        fallbackUserId;
+      const docs = await storage.getComplianceDocuments(effectiveUserId);
+      const nowTs = new Date();
+      const blockingTypes = ['licence', 'white_card', 'certification', 'insurance', 'vehicle_rego'];
+      const expired = docs.filter((d: any) =>
+        blockingTypes.includes(d.type) &&
+        d.expiryDate && new Date(d.expiryDate) < nowTs &&
+        (!d.holderUserId || d.holderUserId === assigneeUserId)
+      );
+      if (expired.length > 0) {
+        return {
+          status: 409,
+          body: {
+            error: `Cannot start job — ${expired.length} expired licence/compliance document${expired.length > 1 ? 's' : ''} must be renewed first.`,
+            code: 'COMPLIANCE_EXPIRED',
+            expiredDocuments: expired.map((d: any) => ({
+              id: d.id,
+              title: d.title,
+              type: d.type,
+              holderName: d.holderName,
+              expiryDate: d.expiryDate,
+            })),
+          },
+        };
+      }
+    }
+
+    // 2. Require a pre-start / Take 5 safety form to be submitted for this job
+    if (businessSettings?.requireTake5BeforeStart) {
+      const safetyCount = await storage.getJobSafetyFormSubmissionCount(job.id, effectiveUserId);
+      if (safetyCount === 0) {
+        return {
+          status: 428,
+          body: {
+            error: 'A pre-start (Take 5) safety check must be completed before starting this job.',
+            code: 'TAKE5_REQUIRED',
+          },
+        };
+      }
+    }
+
+    return null;
+  }
+
   export function registerJobsRoutes(app: Express, deps: JobsRoutesDeps): void {
     const {
       trackingTokens,
@@ -2372,12 +2436,29 @@ import { logSystemEvent } from "../systemEventService";
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
       const results = { updated: 0, failed: 0, errors: [] as string[] };
+      // Load business settings once for the WHS start gate (only relevant when starting jobs)
+      const bulkBusinessSettings = status === 'in_progress'
+        ? await storage.getBusinessSettings(effectiveUserId)
+        : null;
       for (const id of ids) {
         try {
           const existingJob = await storage.getJob(id, effectiveUserId);
           if (!existingJob) {
             results.failed++;
             results.errors.push(`Job ${id} not found`);
+            continue;
+          }
+          // WHS gating: enforce pre-start safety + licence compliance when starting a job
+          const startGate = await checkJobStartGate({
+            job: existingJob,
+            newStatus: status,
+            businessSettings: bulkBusinessSettings,
+            effectiveUserId,
+            fallbackUserId: req.userId,
+          });
+          if (startGate) {
+            results.failed++;
+            results.errors.push(`Job ${id}: ${startGate.body.error}`);
             continue;
           }
           const now = new Date();
@@ -2462,6 +2543,21 @@ import { logSystemEvent } from "../systemEventService";
       console.log('[PATCH /api/jobs/:id] Parsed data after validation:', JSON.stringify(data, null, 2));
       
       const existingJob = await storage.getJob(req.params.id, effectiveUserId);
+
+      // WHS gating: enforce pre-start safety + licence compliance when starting a job
+      if (data.status === 'in_progress' && existingJob && existingJob.status !== 'in_progress') {
+        const businessSettings = await storage.getBusinessSettings(effectiveUserId);
+        const startGate = await checkJobStartGate({
+          job: existingJob,
+          newStatus: data.status,
+          businessSettings,
+          effectiveUserId,
+          fallbackUserId: req.userId,
+        });
+        if (startGate) {
+          return res.status(startGate.status).json(startGate.body);
+        }
+      }
       
       const editableFields = ['title', 'description', 'address', 'scheduledAt', 'estimatedHours', 'priority', 'geofenceEnabled', 'geofenceRadius'];
       const hasEditableFieldChanges = Object.keys(data).some(k => editableFields.includes(k));
@@ -2818,6 +2914,18 @@ import { logSystemEvent } from "../systemEventService";
             validationErrors
           });
         }
+      }
+
+      // WHS gating: enforce pre-start safety + licence compliance when starting a job
+      const startGate = await checkJobStartGate({
+        job: existingJob,
+        newStatus: status,
+        businessSettings,
+        effectiveUserId,
+        fallbackUserId: req.userId,
+      });
+      if (startGate) {
+        return res.status(startGate.status).json(startGate.body);
       }
 
       // Build update data with stage timestamps

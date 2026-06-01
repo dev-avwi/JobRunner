@@ -596,6 +596,8 @@ export const businessSettings = pgTable("business_settings", {
   bookingPageDescription: text("booking_page_description"),
   emailOnQuoteAccepted: boolean("email_on_quote_accepted").default(false),
   emailOnInvoicePaid: boolean("email_on_invoice_paid").default(false),
+  requireTake5BeforeStart: boolean("require_take5_before_start").default(false), // Block starting a job until a pre-start/Take 5 safety form is submitted
+  blockJobStartOnExpiredCompliance: boolean("block_job_start_on_expired_compliance").default(false), // Block starting a job when the worker/business has an expired licence/cert
   simpleMode: boolean("simple_mode").default(true),
   scheduleStartHour: integer("schedule_start_hour").default(6),
   scheduleEndHour: integer("schedule_end_hour").default(20),

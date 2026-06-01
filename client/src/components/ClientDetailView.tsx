@@ -316,6 +316,63 @@ export default function ClientDetailView({
     enabled: !!clientId
   });
 
+  // Customer Asset Register (vessels / equipment owned by the client)
+  const { data: assetRegister = [], isLoading: registerLoading } = useQuery<any[]>({
+    queryKey: ['/api/client-assets', clientId],
+    queryFn: async () => {
+      const token = getSessionToken();
+      const response = await fetch(`/api/client-assets?clientId=${clientId}`, { credentials: 'include', headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
+      if (!response.ok) throw new Error('Failed to fetch asset register');
+      return response.json();
+    },
+    enabled: !!clientId
+  });
+
+  const [assetDialogOpen, setAssetDialogOpen] = useState(false);
+  const [assetForm, setAssetForm] = useState({ name: '', assetType: 'vessel', manufacturer: '', model: '', serialNumber: '', location: '' });
+  const [attachAssetId, setAttachAssetId] = useState<string | null>(null);
+  const [attachJobId, setAttachJobId] = useState('');
+
+  const createAssetMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/client-assets', { ...assetForm, clientId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/client-assets', clientId] });
+      setAssetDialogOpen(false);
+      setAssetForm({ name: '', assetType: 'vessel', manufacturer: '', model: '', serialNumber: '', location: '' });
+      toast({ title: "Asset added" });
+    },
+    onError: () => toast({ title: "Could not add asset", variant: "destructive" }),
+  });
+
+  const deleteAssetMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest('DELETE', `/api/client-assets/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/client-assets', clientId] });
+      toast({ title: "Asset removed" });
+    },
+    onError: () => toast({ title: "Could not remove asset", variant: "destructive" }),
+  });
+
+  const attachJobMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', `/api/client-assets/${attachAssetId}/services`, {
+        jobId: attachJobId,
+        serviceType: 'maintenance',
+        title: (jobs as any[]).find((j: any) => j.id === attachJobId)?.title || 'Job',
+        serviceDate: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/client-assets', clientId] });
+      setAttachAssetId(null);
+      setAttachJobId('');
+      toast({ title: "Job linked to asset" });
+    },
+    onError: () => toast({ title: "Could not link job", variant: "destructive" }),
+  });
+
   // Fetch client's saved signature (stored on the client profile)
   const { data: savedSignature } = useQuery<{
     hasSavedSignature: boolean;
@@ -1340,6 +1397,59 @@ export default function ClientDetailView({
         </TabsContent>
 
         <TabsContent value="assets" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Asset Register
+                </CardTitle>
+                <Button size="sm" onClick={() => setAssetDialogOpen(true)} data-testid="button-add-asset">
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Asset
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {registerLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : assetRegister.length === 0 ? (
+                <div className="text-center py-6">
+                  <Building2 className="h-9 w-9 text-muted-foreground/30 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No assets yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Track vessels or equipment owned by this client</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {assetRegister.map((a: any) => (
+                    <div key={a.id} className="rounded-md border p-3" data-testid={`asset-row-${a.id}`}>
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{a.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {[a.manufacturer, a.model, a.serialNumber].filter(Boolean).join(' · ') || a.assetType}
+                          </p>
+                          {a.location && <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5"><MapPin className="h-3 w-3" />{a.location}</p>}
+                          {a.lastServiceDate && <p className="text-xs text-muted-foreground mt-0.5">Last service: {new Date(a.lastServiceDate).toLocaleDateString()}</p>}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Badge variant="secondary" className="capitalize">{a.assetType}</Badge>
+                          <Button size="icon" variant="ghost" onClick={() => { setAttachAssetId(a.id); setAttachJobId(''); }} title="Link a job" data-testid={`button-link-job-${a.id}`}>
+                            <Briefcase className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => deleteAssetMutation.mutate(a.id)} title="Remove" data-testid={`button-delete-asset-${a.id}`}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
           {assetsLoading ? (
             <Card>
               <CardContent className="py-8">
@@ -1561,6 +1671,92 @@ export default function ClientDetailView({
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Add Asset dialog */}
+      <Dialog open={assetDialogOpen} onOpenChange={setAssetDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Asset</DialogTitle>
+            <DialogDescription>Track a vessel or piece of equipment owned by this client.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="asset-name">Name</Label>
+              <Input id="asset-name" value={assetForm.name} onChange={(e) => setAssetForm({ ...assetForm, name: e.target.value })} placeholder="MV Coral Princess" data-testid="input-asset-name" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="asset-type">Type</Label>
+              <Select value={assetForm.assetType} onValueChange={(v) => setAssetForm({ ...assetForm, assetType: v })}>
+                <SelectTrigger id="asset-type" data-testid="select-asset-type"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vessel">Vessel</SelectItem>
+                  <SelectItem value="hvac">HVAC</SelectItem>
+                  <SelectItem value="hot_water">Hot Water</SelectItem>
+                  <SelectItem value="electrical">Electrical</SelectItem>
+                  <SelectItem value="plumbing">Plumbing</SelectItem>
+                  <SelectItem value="solar">Solar</SelectItem>
+                  <SelectItem value="appliance">Appliance</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="asset-make">Make</Label>
+                <Input id="asset-make" value={assetForm.manufacturer} onChange={(e) => setAssetForm({ ...assetForm, manufacturer: e.target.value })} data-testid="input-asset-make" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="asset-model">Model</Label>
+                <Input id="asset-model" value={assetForm.model} onChange={(e) => setAssetForm({ ...assetForm, model: e.target.value })} data-testid="input-asset-model" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="asset-serial">Serial / HIN</Label>
+              <Input id="asset-serial" value={assetForm.serialNumber} onChange={(e) => setAssetForm({ ...assetForm, serialNumber: e.target.value })} data-testid="input-asset-serial" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="asset-location">Location</Label>
+              <Input id="asset-location" value={assetForm.location} onChange={(e) => setAssetForm({ ...assetForm, location: e.target.value })} placeholder="Marlin Marina, Cairns" data-testid="input-asset-location" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssetDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => createAssetMutation.mutate()} disabled={!assetForm.name.trim() || createAssetMutation.isPending} data-testid="button-save-asset">
+              {createAssetMutation.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Attach job to asset dialog */}
+      <Dialog open={!!attachAssetId} onOpenChange={(open) => { if (!open) setAttachAssetId(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Link a Job</DialogTitle>
+            <DialogDescription>Record a job against this asset's service history.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="attach-job">Job</Label>
+            <Select value={attachJobId} onValueChange={setAttachJobId}>
+              <SelectTrigger id="attach-job" data-testid="select-attach-job"><SelectValue placeholder="Select a job" /></SelectTrigger>
+              <SelectContent>
+                {(jobs as any[]).map((j: any) => (
+                  <SelectItem key={j.id} value={j.id}>{j.title || j.description || 'Untitled Job'}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(jobs as any[]).length === 0 && <p className="text-xs text-muted-foreground">This client has no jobs yet.</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAttachAssetId(null)}>Cancel</Button>
+            <Button onClick={() => attachJobMutation.mutate()} disabled={!attachJobId || attachJobMutation.isPending} data-testid="button-save-attach-job">
+              {attachJobMutation.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md">

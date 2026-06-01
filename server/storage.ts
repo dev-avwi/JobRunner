@@ -403,6 +403,12 @@ import {
   type QuickReply,
   type InsertQuickReply,
   DEFAULT_QUICK_REPLIES,
+  clientAssets,
+  clientAssetServices,
+  type ClientAsset,
+  type InsertClientAsset,
+  type ClientAssetService,
+  type InsertClientAssetService,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { tradieQuoteTemplates } from "./tradieTemplates";
@@ -732,6 +738,15 @@ export interface IStorage {
   createExpense(expense: InsertExpense & { userId: string }): Promise<Expense>;
   updateExpense(id: string, userId: string, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
   deleteExpense(id: string, userId: string): Promise<boolean>;
+
+  // Client Asset Register
+  getClientAssets(userId: string, clientId?: string): Promise<ClientAsset[]>;
+  getClientAsset(id: string, userId: string): Promise<ClientAsset | undefined>;
+  createClientAsset(asset: InsertClientAsset & { userId: string }): Promise<ClientAsset>;
+  updateClientAsset(id: string, userId: string, asset: Partial<InsertClientAsset>): Promise<ClientAsset | undefined>;
+  deleteClientAsset(id: string, userId: string): Promise<boolean>;
+  getClientAssetServices(assetId: string, userId: string): Promise<ClientAssetService[]>;
+  createClientAssetService(service: InsertClientAssetService & { userId: string }): Promise<ClientAssetService>;
   
   // Inventory Management
   getInventoryCategories(userId: string): Promise<InventoryCategory[]>;
@@ -882,6 +897,7 @@ export interface IStorage {
   // Form Submissions
   getFormSubmissions(formId: string, userId: string): Promise<FormSubmission[]>;
   getFormSubmissionsByJob(jobId: string, userId: string): Promise<FormSubmission[]>;
+  getJobSafetyFormSubmissionCount(jobId: string, userId: string): Promise<number>;
   getFormSubmission(id: string, userId: string): Promise<FormSubmission | undefined>;
   createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission>;
   updateFormSubmission(id: string, userId: string, submission: Partial<InsertFormSubmission>): Promise<FormSubmission | undefined>;
@@ -3802,6 +3818,50 @@ export class PostgresStorage implements IStorage {
     return result.rowCount > 0;
   }
 
+  // Client Asset Register (customer-owned assets / vessels / equipment)
+  async getClientAssets(userId: string, clientId?: string): Promise<ClientAsset[]> {
+    const where = clientId
+      ? and(eq(clientAssets.userId, userId), eq(clientAssets.clientId, clientId))
+      : eq(clientAssets.userId, userId);
+    return await db.select().from(clientAssets).where(where).orderBy(desc(clientAssets.createdAt));
+  }
+
+  async getClientAsset(id: string, userId: string): Promise<ClientAsset | undefined> {
+    const result = await db.select().from(clientAssets)
+      .where(and(eq(clientAssets.id, id), eq(clientAssets.userId, userId)));
+    return result[0];
+  }
+
+  async createClientAsset(asset: InsertClientAsset & { userId: string }): Promise<ClientAsset> {
+    const result = await db.insert(clientAssets).values(asset).returning();
+    return result[0];
+  }
+
+  async updateClientAsset(id: string, userId: string, asset: Partial<InsertClientAsset>): Promise<ClientAsset | undefined> {
+    const result = await db.update(clientAssets)
+      .set({ ...asset, updatedAt: new Date() })
+      .where(and(eq(clientAssets.id, id), eq(clientAssets.userId, userId)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteClientAsset(id: string, userId: string): Promise<boolean> {
+    const result = await db.delete(clientAssets)
+      .where(and(eq(clientAssets.id, id), eq(clientAssets.userId, userId)));
+    return result.rowCount > 0;
+  }
+
+  async getClientAssetServices(assetId: string, userId: string): Promise<ClientAssetService[]> {
+    return await db.select().from(clientAssetServices)
+      .where(and(eq(clientAssetServices.assetId, assetId), eq(clientAssetServices.userId, userId)))
+      .orderBy(desc(clientAssetServices.serviceDate));
+  }
+
+  async createClientAssetService(service: InsertClientAssetService & { userId: string }): Promise<ClientAssetService> {
+    const result = await db.insert(clientAssetServices).values(service).returning();
+    return result[0];
+  }
+
   // Inventory Management
   async getInventoryCategories(userId: string): Promise<InventoryCategory[]> {
     return await db.select().from(inventoryCategories)
@@ -5164,6 +5224,21 @@ export class PostgresStorage implements IStorage {
     return await db.select().from(formSubmissions)
       .where(eq(formSubmissions.jobId, jobId))
       .orderBy(desc(formSubmissions.submittedAt));
+  }
+
+  async getJobSafetyFormSubmissionCount(jobId: string, userId: string): Promise<number> {
+    const job = await this.getJob(jobId, userId);
+    if (!job) return 0;
+
+    const rows = await db.select({ id: formSubmissions.id })
+      .from(formSubmissions)
+      .innerJoin(customForms, eq(formSubmissions.formId, customForms.id))
+      .where(and(
+        eq(formSubmissions.jobId, jobId),
+        inArray(customForms.formType, ['safety', 'inspection'])
+      ));
+
+    return rows.length;
   }
 
   async getFormSubmission(id: string, userId: string): Promise<FormSubmission | undefined> {
