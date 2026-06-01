@@ -46152,11 +46152,15 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const userId = req.userId;
       const businessOwnerId = req.query.businessOwnerId as string | undefined;
       const status = req.query.status as string | undefined;
+      const docType = req.query.docType as string | undefined;
 
       let invoicesList = await storage.getSubcontractorInvoices(userId, businessOwnerId || undefined);
 
       if (status) {
         invoicesList = invoicesList.filter(inv => inv.status === status);
+      }
+      if (docType) {
+        invoicesList = invoicesList.filter(inv => inv.docType === docType);
       }
 
       // Enrich with business names
@@ -46251,16 +46255,19 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.patch("/api/business/subcontractor-invoices/:id/status", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const { status, paidMethod, paidAt } = req.body;
+      const { status, paidMethod, paidAt, rejectionReason } = req.body;
 
-      if (!['approved', 'paid'].includes(status)) {
-        return res.status(400).json({ error: 'Status must be approved or paid' });
+      if (!['approved', 'paid', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Status must be approved, paid, or rejected' });
       }
 
       const invoice = await storage.getSubcontractorInvoice(req.params.id);
       if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
       if (invoice.businessOwnerId !== userId) {
         return res.status(403).json({ error: 'Not authorized' });
+      }
+      if (invoice.docType === 'quote' && status === 'paid') {
+        return res.status(400).json({ error: 'Quotes cannot be marked paid' });
       }
 
       const updates: { status: string; paidAt?: Date; paidMethod?: string; approvedAt?: Date; rejectedAt?: Date; rejectionReason?: string } = { status };
@@ -46271,16 +46278,22 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       if (status === 'approved') {
         updates.approvedAt = new Date();
       }
+      if (status === 'rejected') {
+        updates.rejectedAt = new Date();
+        updates.rejectionReason = rejectionReason || null;
+      }
 
       const updated = await storage.updateSubcontractorInvoice(req.params.id, updates);
 
       // Notify subcontractor
-      const statusLabel = status === 'approved' ? 'Approved' : 'Paid';
+      const isQuote = invoice.docType === 'quote';
+      const docLabel = isQuote ? 'Quote' : 'Invoice';
+      const statusLabel = status === 'approved' ? (isQuote ? 'Accepted' : 'Approved') : status === 'paid' ? 'Paid' : 'Rejected';
       await storage.createNotification({
         userId: invoice.subcontractorUserId,
         type: 'subcontractor_invoice_update',
-        title: `Invoice ${statusLabel}`,
-        message: `Your invoice ${invoice.invoiceNumber} has been marked as ${statusLabel.toLowerCase()}`,
+        title: `${docLabel} ${statusLabel}`,
+        message: `Your ${docLabel.toLowerCase()} ${invoice.invoiceNumber} has been marked as ${statusLabel.toLowerCase()}`,
         relatedType: 'subcontractor_invoice',
         relatedId: invoice.id,
         priority: status === 'paid' ? 'urgent' : 'important',
@@ -46292,8 +46305,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           storage,
           invoice.subcontractorUserId,
           'subcontractor_invoice_update',
-          `Invoice ${statusLabel}`,
-          `Your invoice ${invoice.invoiceNumber} has been marked as ${statusLabel.toLowerCase()}`,
+          `${docLabel} ${statusLabel}`,
+          `Your ${docLabel.toLowerCase()} ${invoice.invoiceNumber} has been marked as ${statusLabel.toLowerCase()}`,
           { invoiceId: invoice.id }
         );
       } catch (e) {
@@ -46345,6 +46358,319 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     } catch (error) {
       console.error('[Subcontractor Invoice PDF] Error:', error);
       res.status(500).json({ error: 'Failed to generate PDF' });
+    }
+  });
+
+  // GET /api/subcontractor/completed-jobs?businessOwnerId= - Completed jobs the subbie worked for a business, for the billing builder
+  app.get("/api/subcontractor/completed-jobs", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const businessOwnerId = req.query.businessOwnerId as string;
+      if (!businessOwnerId) {
+        return res.status(400).json({ error: 'businessOwnerId is required' });
+      }
+
+      // Verify membership in that business
+      const membership = await db.select().from(teamMembers)
+        .where(and(eq(teamMembers.memberId, userId), eq(teamMembers.businessOwnerId, businessOwnerId), eq(teamMembers.isActive, true)))
+        .limit(1);
+      if (membership.length === 0) {
+        return res.status(403).json({ error: 'Not a member of that business' });
+      }
+
+      // Job assignments for this user
+      const assignments = await db.select().from(jobAssignments)
+        .where(and(eq(jobAssignments.userId, userId), eq(jobAssignments.isActive, true)));
+      const assignedJobIds = assignments.map(a => a.jobId);
+      if (assignedJobIds.length === 0) return res.json([]);
+
+      // Completed jobs for this business
+      const completedJobs = await db.select().from(jobs)
+        .where(and(
+          inArray(jobs.id, assignedJobIds),
+          eq(jobs.userId, businessOwnerId),
+          or(eq(jobs.status, 'done'), eq(jobs.status, 'invoiced'))
+        ));
+      if (completedJobs.length === 0) return res.json([]);
+
+      // Closed time entries for this user
+      const allTimeEntries = await db.select().from(timeEntries)
+        .where(and(eq(timeEntries.userId, userId), isNotNull(timeEntries.endTime)));
+
+      // Already-billed job IDs (any non-draft invoice by this subbie for this business)
+      const billedJobRows = await db.select({ jobId: subcontractorInvoiceItems.jobId })
+        .from(subcontractorInvoiceItems)
+        .innerJoin(subcontractorInvoices, eq(subcontractorInvoiceItems.invoiceId, subcontractorInvoices.id))
+        .where(and(
+          eq(subcontractorInvoices.subcontractorUserId, userId),
+          eq(subcontractorInvoices.businessOwnerId, businessOwnerId),
+          eq(subcontractorInvoices.docType, 'invoice'),
+          ne(subcontractorInvoices.status, 'draft')
+        ));
+      const billedJobIds = new Set(billedJobRows.map(r => r.jobId).filter(Boolean));
+
+      const membershipRate = membership[0]?.hourlyRate;
+
+      const result = await Promise.all(completedJobs.map(async job => {
+        const assignment = assignments.find(a => a.jobId === job.id);
+        const hourlyRate = parseFloat(assignment?.hourlyRateOverride || membershipRate || '0');
+        const jobTimeEntries = allTimeEntries.filter(te => te.jobId === job.id);
+        let totalHours = 0;
+        jobTimeEntries.forEach(te => {
+          if (!te.endTime) return;
+          const durationMinutes = te.duration || Math.round((new Date(te.endTime).getTime() - new Date(te.startTime).getTime()) / 60000);
+          totalHours += Math.round(durationMinutes / 60 * 100) / 100;
+        });
+        totalHours = Math.round(totalHours * 100) / 100;
+
+        const materials = await storage.getJobMaterials(job.id, userId);
+        const materialsCost = Math.round(materials.reduce((sum: number, m: { totalCost?: string | number | null }) => sum + parseFloat(m.totalCost?.toString() || '0'), 0) * 100) / 100;
+
+        const labourAmount = Math.round(totalHours * hourlyRate * 100) / 100;
+        return {
+          jobId: job.id,
+          jobTitle: job.title,
+          jobStatus: job.status,
+          completedAt: job.completedAt,
+          suggestedHours: totalHours,
+          hourlyRate,
+          materialsCost,
+          suggestedAmount: Math.round((labourAmount + materialsCost) * 100) / 100,
+          alreadyBilled: billedJobIds.has(job.id),
+        };
+      }));
+
+      res.json(result);
+    } catch (error) {
+      console.error('[Subcontractor Completed Jobs] Error:', error);
+      res.status(500).json({ error: 'Failed to fetch completed jobs' });
+    }
+  });
+
+  // POST /api/subcontractor/billing-documents - Flexible quote/invoice builder for billing a joined business
+  app.post("/api/subcontractor/billing-documents", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const { businessOwnerId, docType, title, notes, gstEnabled, dueDate, validUntil, items } = req.body;
+
+      if (!businessOwnerId) {
+        return res.status(400).json({ error: 'Business owner is required' });
+      }
+      if (docType !== 'invoice' && docType !== 'quote') {
+        return res.status(400).json({ error: "docType must be 'invoice' or 'quote'" });
+      }
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'At least one line item is required' });
+      }
+
+      // Verify membership
+      const membership = await db.select().from(teamMembers)
+        .where(and(eq(teamMembers.memberId, userId), eq(teamMembers.businessOwnerId, businessOwnerId), eq(teamMembers.isActive, true)))
+        .limit(1);
+      if (membership.length === 0) {
+        return res.status(403).json({ error: 'Not a subcontractor for this business' });
+      }
+
+      // Prevent double-billing: for invoices, block jobs already on a non-draft invoice for this subbie+business
+      let billedJobIds = new Set<string>();
+      if (docType === 'invoice') {
+        const billedRows = await db.select({ jobId: subcontractorInvoiceItems.jobId })
+          .from(subcontractorInvoiceItems)
+          .innerJoin(subcontractorInvoices, eq(subcontractorInvoiceItems.invoiceId, subcontractorInvoices.id))
+          .where(and(
+            eq(subcontractorInvoices.subcontractorUserId, userId),
+            eq(subcontractorInvoices.businessOwnerId, businessOwnerId),
+            eq(subcontractorInvoices.docType, 'invoice'),
+            ne(subcontractorInvoices.status, 'draft')
+          ));
+        billedJobIds = new Set(billedRows.map(r => r.jobId).filter(Boolean) as string[]);
+      }
+
+      const assignmentCache: Record<string, boolean> = {};
+      let subtotal = 0;
+      const resolvedItems: Array<{ description: string; quantity: string; unitPrice: string; amount: string; jobId: string | null }> = [];
+
+      for (const item of items) {
+        const description = (item.description || '').toString().trim();
+        if (!description) {
+          return res.status(400).json({ error: 'Each line item needs a description' });
+        }
+        const quantity = Number(item.quantity);
+        const unitPrice = Number(item.unitPrice);
+        if (!Number.isFinite(quantity) || quantity < 0 || quantity > 1000000) {
+          return res.status(400).json({ error: `Invalid quantity for "${description}"` });
+        }
+        if (!Number.isFinite(unitPrice) || unitPrice < 0 || unitPrice > 10000000) {
+          return res.status(400).json({ error: `Invalid unit price for "${description}"` });
+        }
+
+        const jobId = item.jobId || null;
+        if (jobId && assignmentCache[jobId] === undefined) {
+          // Verify job belongs to the business, is completed, and the subbie is assigned
+          const jobRecord = await db.select().from(jobs)
+            .where(and(eq(jobs.id, jobId), eq(jobs.userId, businessOwnerId)))
+            .limit(1);
+          if (jobRecord.length === 0) {
+            return res.status(400).json({ error: 'A selected job does not belong to the selected business' });
+          }
+          if (jobRecord[0].status !== 'done' && jobRecord[0].status !== 'invoiced') {
+            return res.status(400).json({ error: `Job "${jobRecord[0].title}" must be completed before billing` });
+          }
+          const assignment = await db.select().from(jobAssignments)
+            .where(and(eq(jobAssignments.userId, userId), eq(jobAssignments.jobId, jobId), eq(jobAssignments.isActive, true)))
+            .limit(1);
+          if (assignment.length === 0) {
+            return res.status(400).json({ error: `You are not assigned to job "${jobRecord[0].title}"` });
+          }
+          if (docType === 'invoice' && billedJobIds.has(jobId)) {
+            return res.status(400).json({ error: `Job "${jobRecord[0].title}" has already been invoiced` });
+          }
+          assignmentCache[jobId] = true;
+        }
+
+        const amount = Math.round(quantity * unitPrice * 100) / 100;
+        subtotal += amount;
+        resolvedItems.push({
+          description,
+          quantity: quantity.toFixed(2),
+          unitPrice: unitPrice.toFixed(2),
+          amount: amount.toFixed(2),
+          jobId,
+        });
+      }
+
+      subtotal = Math.round(subtotal * 100) / 100;
+      const gstOn = gstEnabled !== false;
+      const gstAmount = gstOn ? Math.round(subtotal * 0.1 * 100) / 100 : 0;
+      const totalAmount = Math.round((subtotal + gstAmount) * 100) / 100;
+
+      const invoiceNumber = await storage.getNextSubcontractorInvoiceNumber(userId);
+
+      const created = await storage.createSubcontractorInvoice({
+        subcontractorUserId: userId,
+        businessOwnerId,
+        docType,
+        title: title || null,
+        gstEnabled: gstOn,
+        status: 'submitted',
+        invoiceNumber,
+        subtotalAmount: subtotal.toFixed(2),
+        gstAmount: gstAmount.toFixed(2),
+        totalAmount: totalAmount.toFixed(2),
+        dueDate: docType === 'invoice' ? (dueDate ? new Date(dueDate) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) : null,
+        validUntil: docType === 'quote' ? (validUntil ? new Date(validUntil) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) : null,
+        submittedAt: new Date(),
+        notes: notes || null,
+      });
+
+      for (const ri of resolvedItems) {
+        await storage.createSubcontractorInvoiceItem({
+          invoiceId: created.id,
+          description: ri.description,
+          quantity: ri.quantity,
+          unitPrice: ri.unitPrice,
+          amount: ri.amount,
+          jobId: ri.jobId,
+        });
+      }
+
+      const subUser = await storage.getUser(userId);
+      const subName = (subUser ? `${subUser.firstName || ''} ${subUser.lastName || ''}`.trim() || subUser.email : null) || 'Subcontractor';
+      const docLabel = docType === 'quote' ? 'Quote' : 'Invoice';
+
+      await storage.createNotification({
+        userId: businessOwnerId,
+        type: 'subcontractor_invoice',
+        title: `New Subcontractor ${docLabel}`,
+        message: `${subName} sent ${docLabel.toLowerCase()} ${invoiceNumber} for $${totalAmount.toFixed(2)}`,
+        relatedType: 'subcontractor_invoice',
+        relatedId: created.id,
+        priority: 'important',
+      });
+
+      try {
+        const { sendPushNotification } = await import('./pushNotifications');
+        await sendPushNotification(
+          storage,
+          businessOwnerId,
+          'subcontractor_invoice',
+          `New Subcontractor ${docLabel}`,
+          `${subName} sent ${docLabel.toLowerCase()} ${invoiceNumber} for $${totalAmount.toFixed(2)}`,
+          { invoiceId: created.id }
+        );
+      } catch (e) {
+        console.warn('[SubBilling] Push notification error:', e);
+      }
+
+      try {
+        const ownerUser = await storage.getUser(businessOwnerId);
+        if (ownerUser?.email) {
+          const { sendSystemEmail } = await import('./emailService');
+          const { generateSubcontractorInvoicePdf } = await import('./pdfService');
+          const bizSettings = await storage.getBusinessSettings(businessOwnerId);
+          const subBizSettings = await storage.getBusinessSettings(userId);
+          const pdfBuffer = await generateSubcontractorInvoicePdf({
+            invoice: {
+              id: created.id,
+              invoiceNumber,
+              docType,
+              title: title || null,
+              gstEnabled: gstOn,
+              status: 'submitted',
+              subtotalAmount: subtotal.toFixed(2),
+              gstAmount: gstAmount.toFixed(2),
+              totalAmount: totalAmount.toFixed(2),
+              dueDate: created.dueDate,
+              validUntil: created.validUntil,
+              notes: notes || null,
+              createdAt: created.createdAt,
+            },
+            items: resolvedItems.map(ri => ({
+              description: ri.description,
+              quantity: ri.quantity,
+              unitPrice: ri.unitPrice,
+              hours: null,
+              rate: null,
+              amount: ri.amount,
+              jobId: ri.jobId,
+            })),
+            subcontractor: { name: subName, email: subUser?.email || '', abn: subBizSettings?.abn || null },
+            business: {
+              name: bizSettings?.businessName || 'Unknown',
+              abn: bizSettings?.abn || null,
+              address: bizSettings?.address || null,
+              email: bizSettings?.email || null,
+              phone: bizSettings?.phone || null,
+            },
+          });
+          const emailData: Record<string, unknown> = {
+            to: ownerUser.email,
+            subject: `New ${docLabel} from ${subName} — $${totalAmount.toFixed(2)}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>New Subcontractor ${docLabel}</h2>
+                <p>${subName} has sent ${docLabel.toLowerCase()} <strong>${invoiceNumber}</strong> for <strong>$${totalAmount.toFixed(2)}</strong>${gstOn ? ' (inc. GST)' : ''}.</p>
+                <p>The PDF is attached. Log in to JobRunner to review.</p>
+              </div>
+            `,
+            attachments: [{
+              content: pdfBuffer.toString('base64'),
+              filename: `${invoiceNumber}.pdf`,
+              type: 'application/pdf',
+              disposition: 'attachment',
+            }],
+          };
+          await sendSystemEmail(emailData);
+        }
+      } catch (e) {
+        console.warn('[SubBilling] Email notification error:', e);
+      }
+
+      const full = await storage.getSubcontractorInvoiceWithItems(created.id);
+      res.json(full);
+    } catch (error) {
+      console.error('[Subcontractor Billing Document] Error:', error);
+      res.status(500).json({ error: 'Failed to create billing document' });
     }
   });
 

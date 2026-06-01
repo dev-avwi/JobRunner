@@ -777,6 +777,38 @@ export function SubcontractorDashboard() {
           <View style={{ gap: spacing.sm }}>
             <TouchableOpacity
               style={[styles.earningsCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+              onPress={() => router.push('/more/subbie-bill' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <View style={[styles.sectionIconContainer, { backgroundColor: colorWithOpacity(colors.primary, 0.12) }]}>
+                  <Feather name="edit-3" size={18} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>Build Quote or Invoice</Text>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Bill a business for completed jobs</Text>
+                </View>
+              </View>
+              <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.earningsCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+              onPress={() => router.push('/more/subbie-earnings' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <View style={[styles.sectionIconContainer, { backgroundColor: colorWithOpacity(colors.info, 0.12) }]}>
+                  <Feather name="file-text" size={18} color={colors.info} />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>Quotes & Invoices</Text>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>View documents and status</Text>
+                </View>
+              </View>
+              <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.earningsCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
               onPress={openCreateInvoice}
               activeOpacity={0.7}
             >
@@ -785,8 +817,8 @@ export function SubcontractorDashboard() {
                   <Feather name="plus-circle" size={18} color={colors.success} />
                 </View>
                 <View>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>Create Invoice</Text>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Invoice completed work</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>Quick Invoice</Text>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Invoice tracked time fast</Text>
                 </View>
               </View>
               <Feather name="chevron-right" size={18} color={colors.mutedForeground} />

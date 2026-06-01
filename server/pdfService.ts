@@ -4615,15 +4615,21 @@ interface SubcontractorInvoicePdfData {
     id: string;
     invoiceNumber: string;
     status: string;
+    docType?: string | null;
+    title?: string | null;
+    gstEnabled?: boolean | null;
     subtotalAmount: string;
     gstAmount: string;
     totalAmount: string;
     dueDate: Date | string | null;
+    validUntil?: Date | string | null;
     notes: string | null;
     createdAt: Date | string | null;
   };
   items: Array<{
     description: string;
+    quantity?: string | null;
+    unitPrice?: string | null;
     hours: string | null;
     rate: string | null;
     amount: string;
@@ -4655,14 +4661,22 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
   const gst = parseFloat(invoice.gstAmount);
   const total = parseFloat(invoice.totalAmount);
 
+  const isQuote = invoice.docType === 'quote';
+  const docLabel = isQuote ? 'QUOTE' : 'TAX INVOICE';
+  const gstApplied = invoice.gstEnabled !== false;
+  const qtyHeader = isQuote ? 'Qty' : 'Qty / Hrs';
+
   const lineItemRows = items.map(item => {
-    const hours = item.hours ? parseFloat(item.hours).toFixed(2) : '-';
-    const rate = item.rate ? formatCurrency(item.rate) : '-';
+    // New builder docs carry quantity/unitPrice; legacy docs carry hours/rate.
+    const qtyVal = item.quantity != null ? parseFloat(item.quantity) : (item.hours != null ? parseFloat(item.hours) : null);
+    const priceVal = item.unitPrice != null ? item.unitPrice : item.rate;
+    const qty = qtyVal != null && !isNaN(qtyVal) ? qtyVal.toFixed(2) : '-';
+    const price = priceVal != null && priceVal !== '' ? formatCurrency(priceVal) : '-';
     return `
       <tr>
         <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${hours}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${rate}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${qty}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${price}</td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(item.amount)}</td>
       </tr>
     `;
@@ -4835,8 +4849,9 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
           ${subcontractor.email ? `<p>${escapeHtml(subcontractor.email)}</p>` : ''}
         </div>
         <div class="header-right">
-          <p class="invoice-label">TAX INVOICE</p>
+          <p class="invoice-label">${docLabel}</p>
           <p class="invoice-number">${invoice.invoiceNumber}</p>
+          ${invoice.title ? `<p class="invoice-number">${escapeHtml(invoice.title)}</p>` : ''}
         </div>
       </div>
 
@@ -4859,12 +4874,12 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
 
       <div class="meta-row">
         <div class="meta-item">
-          <label>Invoice Date</label>
+          <label>${isQuote ? 'Quote Date' : 'Invoice Date'}</label>
           <span>${formatDate(invoice.createdAt)}</span>
         </div>
         <div class="meta-item">
-          <label>Due Date</label>
-          <span>${formatDate(invoice.dueDate)}</span>
+          <label>${isQuote ? 'Valid Until' : 'Due Date'}</label>
+          <span>${formatDate(isQuote ? (invoice.validUntil ?? null) : invoice.dueDate)}</span>
         </div>
         <div class="meta-item">
           <label>Status</label>
@@ -4876,8 +4891,8 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
         <thead>
           <tr>
             <th>Description</th>
-            <th>Hours</th>
-            <th>Rate</th>
+            <th>${qtyHeader}</th>
+            <th>${isQuote ? 'Unit Price' : 'Rate'}</th>
             <th>Amount</th>
           </tr>
         </thead>
@@ -4892,10 +4907,11 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
             <span>Subtotal</span>
             <span>${formatCurrency(subtotal)}</span>
           </div>
+          ${gstApplied ? `
           <div class="totals-row">
             <span>GST (10%)</span>
             <span>${formatCurrency(gst)}</span>
-          </div>
+          </div>` : ''}
           <div class="totals-row total">
             <span>Total</span>
             <span>${formatCurrency(total)}</span>
@@ -4911,7 +4927,9 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
       ` : ''}
 
       <div class="footer">
-        <p>This is a tax invoice for services rendered. GST calculated at the Australian standard rate of 10%.</p>
+        <p>${isQuote
+          ? (gstApplied ? 'This is a quote for services. Prices include GST at the Australian standard rate of 10%.' : 'This is a quote for services. GST is not applied.')
+          : (gstApplied ? 'This is a tax invoice for services rendered. GST calculated at the Australian standard rate of 10%.' : 'This is an invoice for services rendered. GST is not applied.')}</p>
       </div>
     </body>
     </html>
