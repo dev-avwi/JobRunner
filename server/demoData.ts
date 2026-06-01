@@ -162,6 +162,7 @@ async function ensureDemoBusinessAndTeam(demoUser: any) {
       teamSize: 'medium',
       qbccLicense: 'QBCC 1234567',
       insurancePolicy: 'QBE-PLB-987654',
+      onboardingCompleted: true,
       bookingSlug: 'mike-s-plumbing-services',
       bookingPageEnabled: true,
       bookingPageDescription: 'Book a plumbing service with Mike\'s Plumbing Services. We service the Cairns and surrounding areas for all residential and commercial plumbing needs.',
@@ -176,6 +177,11 @@ async function ensureDemoBusinessAndTeam(demoUser: any) {
   } else if (!businessSettings.gstEnabled) {
     await storage.updateBusinessSettings(demoUser.id, { gstEnabled: true });
     console.log('✅ Business settings updated: GST enabled');
+  }
+
+  if (businessSettings && !businessSettings.onboardingCompleted) {
+    await storage.updateBusinessSettings(demoUser.id, { onboardingCompleted: true } as any);
+    console.log('✅ Business settings updated: onboarding marked complete');
   }
 
   if (businessSettings && (businessSettings as any).teamSize === 'solo') {
@@ -443,11 +449,17 @@ export async function createDemoUserAndData() {
         teamSize: 'medium',
         qbccLicense: 'QBCC 1234567',
         insurancePolicy: 'QBE-PLB-987654',
-      });
+        onboardingCompleted: true,
+      } as any);
       console.log('✅ Business settings created');
     } else if (!businessSettings.gstEnabled) {
       await storage.updateBusinessSettings(demoUser.id, { gstEnabled: true });
       console.log('✅ Business settings updated: GST enabled');
+    }
+
+    if (businessSettings && !businessSettings.onboardingCompleted) {
+      await storage.updateBusinessSettings(demoUser.id, { onboardingCompleted: true } as any);
+      console.log('✅ Business settings updated: onboarding marked complete');
     }
 
     if (businessSettings && (businessSettings as any).teamSize === 'solo') {
