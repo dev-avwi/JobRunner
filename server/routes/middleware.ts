@@ -203,6 +203,107 @@ export function backpressureErrorHandler(
   return next(err);
 }
 
+// ============================================================================
+// Activity tracking (week-1 retention)
+// ----------------------------------------------------------------------------
+// Records at most ONE "active day" per user per local day, for BOTH the web
+// app and the mobile app, with no client SDK. It hooks res.finish so it runs
+// AFTER requireAuth has populated req.userId, then upserts a daily-activity
+// row. Background/sync/polling/health/location traffic is excluded so an
+// "active day" reflects a real human action rather than automated noise.
+// ============================================================================
+
+const BUSINESS_TZ = 'Australia/Sydney';
+
+/** Calendar date (YYYY-MM-DD) in the business timezone for the given instant. */
+export function businessLocalDate(d: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: BUSINESS_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
+}
+
+// Path prefixes that represent background/automated traffic (sync, polling,
+// health checks, location pings, push registration) — NOT a human action.
+const ACTIVITY_EXCLUDED_PREFIXES = [
+  '/api/health',
+  '/api/metrics',
+  '/api/auth/me', // app boot / session poll
+  '/api/notifications', // notification + unread-count polling
+  '/api/team/presence', // presence heartbeat polling
+  '/api/location',
+  '/api/location-tracking',
+  '/api/tracking',
+  '/api/tradie-status',
+  '/api/geofence', // geofence event/alert pings
+  '/api/sync',
+  '/api/offline',
+  '/api/push',
+  '/api/push-tokens',
+];
+
+// In-memory dedup so we touch the DB at most once per user per day.
+let activityDayKey = '';
+let recordedToday = new Set<string>();
+
+export async function recordUserActivity(userId: string, day: string): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO user_activity (user_id, activity_date)
+    VALUES (${userId}, ${day})
+    ON CONFLICT (user_id, activity_date) DO NOTHING
+  `);
+}
+
+export function activityTrackingMiddleware(req: any, res: any, next: any) {
+  if (!req.path?.startsWith('/api')) return next();
+  res.on('finish', () => {
+    try {
+      const userId = req.userId; // set by requireAuth before the response finishes
+      if (!userId) return;
+      // Only count successful, intentional human actions.
+      if (res.statusCode < 200 || res.statusCode >= 400) return;
+      if (req.method === 'OPTIONS' || req.method === 'HEAD') return;
+      const path = (req.originalUrl || req.path || '').split('?')[0];
+      if (ACTIVITY_EXCLUDED_PREFIXES.some((p) => path.startsWith(p))) return;
+
+      const today = businessLocalDate();
+      if (today !== activityDayKey) {
+        activityDayKey = today;
+        recordedToday = new Set();
+      }
+      const dedupKey = `${userId}:${today}`;
+      if (recordedToday.has(dedupKey)) return;
+      recordedToday.add(dedupKey);
+
+      // Fire-and-forget — never block or fail the response on this.
+      recordUserActivity(userId, today).catch(() => {
+        // Allow a later request today to retry the write.
+        recordedToday.delete(dedupKey);
+      });
+    } catch {
+      // never let activity tracking affect the request
+    }
+  });
+  next();
+}
+
+/**
+ * One-time idempotent backfill: seed every existing user's signup day as their
+ * day-0 activity so retention cohorts are populated from the start. Safe to run
+ * on every boot (ON CONFLICT DO NOTHING).
+ */
+export async function backfillSignupDayActivity(): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO user_activity (user_id, activity_date)
+    SELECT id, (created_at AT TIME ZONE ${BUSINESS_TZ})::date
+    FROM users
+    WHERE created_at IS NOT NULL
+    ON CONFLICT (user_id, activity_date) DO NOTHING
+  `);
+}
+
 export const requireAuth = async (req: any, res: any, next: any) => {
   let userId = req.session?.userId;
   let isDemoSession = req.session?.isDemo === true;

@@ -17,3 +17,4 @@
 - [SDS Manager integration](sds-manager-integration.md) — integrate, don't rebuild; they have AU-compliant SDS DB + Parser API + QR access; copy their SafetyCulture model; needs partner API key first.
 - [Job start gate paths](job-start-gate-paths.md) — a gate on starting a job must run on ALL status writers (/status, full update, bulk-status), not just /status; resolve assignedTo to user id first.
 - [403 must not clear session](auth-403-clears-session.md) — Bearer-token-only auth; non-owners 403 on owner-only endpoints; clearing token on 403 silently logs them out on reload. Only 401 clears.
+- [Adding a DB table: don't db:push](db-add-table-no-push.md) — drizzle-kit push wants destructive drops (users.role etc) on this DB; add new tables via raw CREATE TABLE IF NOT EXISTS, not npm run db:push.

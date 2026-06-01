@@ -142,6 +142,21 @@ interface AdminUsersResponse {
   users: AdminUser[];
 }
 
+interface RetentionCohort {
+  weekStart: string;
+  signups: number;
+  retained: number;
+  retentionPct: number | null;
+  windowComplete: boolean;
+}
+
+interface RetentionData {
+  cohorts: RetentionCohort[];
+  headline: { retentionPct: number | null; cohorts: number; signups: number; retained: number };
+  trackingStartedAt: string | null;
+  generatedAt: string;
+}
+
 const adminRoutes = [
   { path: "/admin", label: "Overview", icon: LayoutDashboard },
   { path: "/admin/revenue", label: "Revenue", icon: DollarSign },
@@ -233,6 +248,18 @@ function OverviewView({
   usersData: AdminUsersResponse | undefined;
   usersLoading: boolean;
 }) {
+  const { data: retention, isLoading: retentionLoading, error: retentionError } = useQuery<RetentionData>({
+    queryKey: ['/api/admin/retention'],
+  });
+
+  const fmtWeek = (ymd: string) => {
+    const [y, m, d] = ymd.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-AU', {
+      day: 'numeric', month: 'short', timeZone: 'UTC',
+    });
+  };
+  const cohortsWithSignups = (retention?.cohorts || []).filter((c) => c.signups > 0).reverse();
+
   return (
     <div className="space-y-6">
       {statsError && (
@@ -434,6 +461,84 @@ function OverviewView({
               </TableBody>
             </Table>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card data-testid="card-retention">
+        <CardHeader className="pb-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base md:text-lg">Week-1 Retention</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Business owners who came back within 7 days of signing up.
+              </p>
+            </div>
+            {!retentionLoading && !retentionError && retention?.headline.retentionPct != null && (
+              <div className="text-right">
+                <div className="text-2xl md:text-3xl font-semibold" data-testid="text-retention-headline">
+                  {retention.headline.retentionPct}%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  last {retention.headline.cohorts} cohort{retention.headline.cohorts === 1 ? '' : 's'}
+                </p>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {retentionLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : retentionError ? (
+            <div className="flex items-center gap-3 py-6">
+              <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0" />
+              <p className="text-destructive text-sm">Failed to load retention data.</p>
+            </div>
+          ) : cohortsWithSignups.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+              <p className="text-muted-foreground">No signups yet to measure.</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cohort (week of)</TableHead>
+                      <TableHead className="text-right">Signups</TableHead>
+                      <TableHead className="text-right">Came back (7d)</TableHead>
+                      <TableHead className="text-right">Week-1 %</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cohortsWithSignups.map((c) => (
+                      <TableRow key={c.weekStart} data-testid={`row-cohort-${c.weekStart}`}>
+                        <TableCell>{fmtWeek(c.weekStart)}</TableCell>
+                        <TableCell className="text-right">{c.signups}</TableCell>
+                        <TableCell className="text-right">{c.retained}</TableCell>
+                        <TableCell className="text-right">
+                          {!c.windowComplete ? (
+                            <span className="text-muted-foreground">In progress</span>
+                          ) : (
+                            <span className="font-medium">{c.retentionPct ?? 0}%</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                Note: activity tracking{' '}
+                {retention?.trackingStartedAt
+                  ? `started ${fmtWeek(retention.trackingStartedAt)}. Cohorts before then read low because their visits weren't captured yet.`
+                  : 'has only just begun, so early cohorts may read low until enough days are captured.'}
+                {' '}"In progress" means the 7-day window hasn't fully elapsed.
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

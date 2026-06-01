@@ -1360,7 +1360,15 @@ export class PostgresStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await db.insert(users).values(insertUser).returning();
-    return result[0];
+    const created = result[0];
+    // Seed day-0 activity (signup day) so retention cohorts are populated even
+    // before the user takes a tracked action. Best-effort, never blocks signup.
+    db.execute(sql`
+      INSERT INTO user_activity (user_id, activity_date)
+      VALUES (${created.id}, (NOW() AT TIME ZONE 'Australia/Sydney')::date)
+      ON CONFLICT (user_id, activity_date) DO NOTHING
+    `).catch(() => {});
+    return created;
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {

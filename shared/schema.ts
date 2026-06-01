@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, index, unique, real, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, index, unique, real, doublePrecision, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -411,6 +411,25 @@ export const verifyLoginCodeSchema = z.object({
 
 export type RequestLoginCode = z.infer<typeof requestLoginCodeSchema>;
 export type VerifyLoginCode = z.infer<typeof verifyLoginCodeSchema>;
+
+// Daily active-user tracking — one row per user per (local) day. Captured
+// server-side by activity-tracking middleware so it covers BOTH the web app
+// and the mobile app with no client SDK. Powers signup cohort + week-1
+// (Day-7) retention reporting in the admin dashboard. activityDate is stored
+// as a calendar date in the business timezone (Australia/Sydney).
+export const userActivity = pgTable("user_activity", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  activityDate: date("activity_date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  unique("uq_user_activity_user_date").on(table.userId, table.activityDate),
+  index("idx_user_activity_user").on(table.userId),
+  index("idx_user_activity_date").on(table.activityDate),
+]);
+
+export type UserActivity = typeof userActivity.$inferSelect;
+export type InsertUserActivity = typeof userActivity.$inferInsert;
 
 // Business Settings
 export const businessSettings = pgTable("business_settings", {

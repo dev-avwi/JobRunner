@@ -155,6 +155,7 @@ import {
   clients,
   businessSettings,
   businessTemplates,
+  userActivity,
   // Advanced team management tables
   teamMembers,
   teamMemberSkills,
@@ -38199,6 +38200,127 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       });
     } catch (error: any) {
       console.error('Error getting admin stats:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Week-1 (Day-7) retention by weekly signup cohort. Cohort = paying business
+  // owners only (users that own a business / have a business_settings row);
+  // workers & subcontractors are naturally excluded. "Retained" = the owner had
+  // a tracked active day within 7 days AFTER their signup day.
+  app.get("/api/admin/retention", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const BUSINESS_TZ = 'Australia/Sydney';
+
+      // Business owners = users with a business_settings row.
+      const ownerRows = await db
+        .selectDistinct({ id: users.id, createdAt: users.createdAt })
+        .from(users)
+        .innerJoin(businessSettings, eq(businessSettings.userId, users.id));
+
+      const ownerIds = ownerRows.map((o) => o.id);
+      let activityRows: { userId: string; activityDate: string | null }[] = [];
+      if (ownerIds.length > 0) {
+        activityRows = await db
+          .select({ userId: userActivity.userId, activityDate: userActivity.activityDate })
+          .from(userActivity)
+          .where(inArray(userActivity.userId, ownerIds));
+      }
+
+      // userId -> set of active YYYY-MM-DD days; track earliest day overall.
+      const activityByUser = new Map<string, Set<string>>();
+      let trackingStart: string | null = null;
+      for (const r of activityRows) {
+        if (!r.activityDate) continue;
+        const d = String(r.activityDate).slice(0, 10);
+        if (!activityByUser.has(r.userId)) activityByUser.set(r.userId, new Set());
+        activityByUser.get(r.userId)!.add(d);
+        if (!trackingStart || d < trackingStart) trackingStart = d;
+      }
+
+      // Date helpers on YYYY-MM-DD strings (lexical order == chronological).
+      const toLocalDate = (dt: Date): string =>
+        new Intl.DateTimeFormat('en-CA', { timeZone: BUSINESS_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(dt);
+      const addDays = (ymd: string, days: number): string => {
+        const [y, m, d] = ymd.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 1, d));
+        dt.setUTCDate(dt.getUTCDate() + days);
+        return dt.toISOString().slice(0, 10);
+      };
+      const weekStart = (ymd: string): string => {
+        const [y, m, d] = ymd.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 1, d));
+        const dow = dt.getUTCDay(); // 0 Sun .. 6 Sat
+        const back = dow === 0 ? 6 : dow - 1; // Monday-start week
+        dt.setUTCDate(dt.getUTCDate() - back);
+        return dt.toISOString().slice(0, 10);
+      };
+
+      const todayLocal = toLocalDate(new Date());
+
+      type Cohort = { weekStart: string; signups: number; retained: number };
+      const cohortMap = new Map<string, Cohort>();
+      for (const o of ownerRows) {
+        if (!o.createdAt) continue;
+        const signupDay = toLocalDate(new Date(o.createdAt as any));
+        const ws = weekStart(signupDay);
+        if (!cohortMap.has(ws)) cohortMap.set(ws, { weekStart: ws, signups: 0, retained: 0 });
+        const c = cohortMap.get(ws)!;
+        c.signups += 1;
+        // Came back within 7 days = any active day after signup, within 7 days.
+        const windowEnd = addDays(signupDay, 7);
+        const days = activityByUser.get(o.id);
+        const returned = days
+          ? Array.from(days).some((d) => d > signupDay && d <= windowEnd)
+          : false;
+        if (returned) c.retained += 1;
+      }
+
+      // Last 12 weeks, oldest -> newest (continuous; 0-signup weeks included).
+      const weeks = 12;
+      const thisWeekStart = weekStart(todayLocal);
+      const cohorts = [] as Array<{
+        weekStart: string; signups: number; retained: number; retentionPct: number | null; windowComplete: boolean;
+      }>;
+      for (let i = weeks - 1; i >= 0; i--) {
+        const ws = addDays(thisWeekStart, -7 * i);
+        const c = cohortMap.get(ws) || { weekStart: ws, signups: 0, retained: 0 };
+        // 7-day window is complete once 7 days passed since the END of the week.
+        const windowComplete = addDays(ws, 14) <= todayLocal;
+        cohorts.push({
+          weekStart: ws,
+          signups: c.signups,
+          retained: c.retained,
+          retentionPct: c.signups > 0 ? Math.round((c.retained / c.signups) * 100) : null,
+          windowComplete,
+        });
+      }
+
+      // Headline = retention across the last 8 complete cohorts that had signups.
+      let headlineRetained = 0;
+      let headlineSignups = 0;
+      let headlineCohorts = 0;
+      const completeWithSignups = cohorts.filter((c) => c.windowComplete && c.signups > 0);
+      for (const c of completeWithSignups.slice(-8)) {
+        headlineRetained += c.retained;
+        headlineSignups += c.signups;
+        headlineCohorts += 1;
+      }
+      const headlineRetentionPct = headlineSignups > 0 ? Math.round((headlineRetained / headlineSignups) * 100) : null;
+
+      res.json({
+        cohorts,
+        headline: {
+          retentionPct: headlineRetentionPct,
+          cohorts: headlineCohorts,
+          signups: headlineSignups,
+          retained: headlineRetained,
+        },
+        trackingStartedAt: trackingStart,
+        generatedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error('Error getting admin retention:', error);
       res.status(500).json({ error: error.message });
     }
   });

@@ -13,6 +13,7 @@ import { WebhookHandlers } from "./webhookHandlers";
 import { storage, pool as sharedPgPool } from "./storage";
 import { setupWebSocket } from "./websocket";
 import { metricsMiddleware } from "./metrics";
+import { activityTrackingMiddleware, backfillSignupDayActivity } from "./routes/middleware";
 import { getErrorMessage } from "./lib/errors";
 
 process.on('uncaughtException', (error: Error) => {
@@ -531,6 +532,7 @@ if (process.env.DATABASE_URL) {
 
   // Per-route timing + counters for /api/metrics (in-memory, ring buffer per route)
   app.use(metricsMiddleware);
+  app.use(activityTrackingMiddleware);
 
   app.use((req, res, next) => {
     const start = Date.now();
@@ -574,6 +576,12 @@ if (process.env.DATABASE_URL) {
   httpServer = server;
 
   Sentry.setupExpressErrorHandler(app);
+
+  // Seed each existing user's signup day as day-0 activity so retention
+  // cohorts aren't empty. Idempotent + fire-and-forget; never blocks startup.
+  backfillSignupDayActivity().catch((err) => {
+    console.error('[ActivityBackfill] failed:', err?.message || err);
+  });
 
   // Validate dedicated phone numbers against Twilio on startup
   (async () => {
