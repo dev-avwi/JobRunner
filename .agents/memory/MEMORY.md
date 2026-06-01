@@ -14,3 +14,4 @@
 - [No storage.db property](storage-db-undefined-footgun.md) — `db` is module-level in storage.ts; `storage.db.*` is undefined at runtime and slips past the non-typechecking esbuild build. Use storage methods.
 - [PressableRow percentage collapse (iOS)](pressablerow-percentage-collapse.md) — % width/maxWidth on PressableRow double-applies and collapses; fix per call-site, don't touch the shared component.
 - [Mobile live-location first ping](mobile-live-location-first-ping.md) — enabling team location must force one immediate send; OS background task only fires after ~50m, so stationary workers never show on owner map.
+- [SDS Manager integration](sds-manager-integration.md) — integrate, don't rebuild; they have AU-compliant SDS DB + Parser API + QR access; copy their SafetyCulture model; needs partner API key first.

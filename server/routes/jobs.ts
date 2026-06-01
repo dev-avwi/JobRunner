@@ -2727,7 +2727,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.patch("/api/jobs/:id/status", requireAuth, async (req: any, res) => {
+  app.patch("/api/jobs/:id/status", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
       const { status } = req.body;
       
@@ -2964,10 +2964,10 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.post("/api/jobs/:id/complete-inspection", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:id/complete-inspection", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const userContext = await getUserContext(userId);
+      const userContext = req.userContext || await getUserContext(userId);
       const effectiveUserId = userContext.effectiveUserId;
       
       const job = await storage.getJob(req.params.id, effectiveUserId);
@@ -2977,6 +2977,20 @@ import { logSystemEvent } from "../systemEventService";
       
       if (!job.requiresInspection) {
         return res.status(400).json({ error: "This job does not require inspection" });
+      }
+
+      // Only people who manage jobs (owner/admin/manager/supervisor via WRITE_JOBS)
+      // or a worker actually assigned to the job may sign off its inspection.
+      // Check BOTH the primary assignee field and the multi-assignment records so
+      // secondary assigned workers/subcontractors aren't wrongly blocked.
+      const canManageJobs = userContext.isOwner || hasPermission(userContext, PERMISSIONS.WRITE_JOBS);
+      let isAssigned = job.assignedTo === userId;
+      if (!canManageJobs && !isAssigned) {
+        const assignment = await storage.getJobAssignmentForUser(req.params.id, userId);
+        isAssigned = !!assignment;
+      }
+      if (!canManageJobs && !isAssigned) {
+        return res.status(403).json({ error: "You can only complete inspection on jobs assigned to you" });
       }
       
       const updatedJob = await storage.updateJob(req.params.id, effectiveUserId, {
