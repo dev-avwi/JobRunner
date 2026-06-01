@@ -75,140 +75,24 @@ import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { formatHistoryDate } from "@shared/dateUtils";
-import type { Job } from "@shared/schema";
 import { getWorkerDisplayName } from "@shared/displayName";
 import { useAppMode } from "@/hooks/use-app-mode";
 import { useIntegrationHealth, isTwilioReady } from "@/hooks/use-integration-health";
+import type {
+  Photo,
+  JobStatus,
+  Job,
+  Client,
+  QuoteLineItem,
+  LinkedDocument,
+  JobMaterial,
+  JobEquipmentAssignment,
+  JobWithLinks,
+  TeamMember,
+  JobDetailViewProps,
+  User as JdvUser,
+} from "./JobDetailView.types";
 
-interface Photo {
-  url: string;
-  caption?: string;
-}
-
-type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
-
-interface Job {
-  id: string;
-  title: string;
-  description?: string;
-  clientId?: string;
-  address?: string;
-  latitude?: string;
-  longitude?: string;
-  scheduledAt?: string;
-  assignedTo?: string;
-  status: JobStatus;
-  photos?: Photo[];
-  notes?: string;
-  estimatedHours?: number;
-  estimatedCost?: number;
-  geofenceEnabled?: boolean;
-  geofenceRadius?: number;
-  geofenceAutoClockIn?: boolean;
-  geofenceAutoClockOut?: boolean;
-  startedAt?: string;
-  completedAt?: string;
-  invoicedAt?: string;
-  workerStatus?: string;
-  workerStatusUpdatedAt?: string;
-  workerEta?: string;
-  workerEtaMinutes?: number;
-  portalEnabled?: boolean;
-  requiresInspection?: boolean;
-  inspectionCompletedAt?: string;
-  inspectionNotes?: string;
-}
-
-interface Client {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-}
-
-interface User {
-  id: string;
-  email?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-}
-
-interface QuoteLineItem {
-  id: string;
-  description: string;
-  quantity: string;
-  unitPrice: string;
-  total: string;
-  sortOrder: number;
-}
-
-interface LinkedDocument {
-  id: string;
-  title?: string;
-  status: string;
-  total: string;
-  number?: string;
-  quoteNumber?: string;
-  invoiceNumber?: string;
-  description?: string;
-  lineItems?: QuoteLineItem[];
-  createdAt?: string;
-  dueDate?: string;
-  paidAt?: string;
-}
-
-interface JobMaterial {
-  id: string;
-  name: string;
-  description?: string;
-  quantity: string;
-  unit: string;
-  unitCost: string;
-  totalCost: string;
-  supplier?: string;
-  trackingNumber?: string;
-  trackingCarrier?: string;
-  trackingUrl?: string;
-  status: string;
-  notes?: string;
-  markupPercent?: string;
-  receiptPhotoUrl?: string;
-  createdAt: string;
-}
-
-interface JobEquipmentAssignment {
-  id: string;
-  jobId: string;
-  equipmentId: string;
-  userId: string;
-  notes: string | null;
-  assignedAt: string;
-}
-
-interface JobWithLinks {
-  linkedQuote?: LinkedDocument | null;
-  linkedInvoice?: LinkedDocument | null;
-}
-
-interface TeamMember {
-  id: string;
-  memberId: string;
-  firstName: string;
-  lastName: string;
-  roleName: string;
-  isActive: boolean;
-}
-
-interface JobDetailViewProps {
-  jobId: string;
-  onBack: () => void;
-  onEditJob?: (jobId: string) => void;
-  onCompleteJob?: (jobId: string) => void;
-  onCreateQuote?: (jobId: string) => void;
-  onCreateInvoice?: (jobId: string) => void;
-  onViewClient?: (clientId: string) => void;
-}
 
 export default function JobDetailView({
   jobId,
@@ -379,7 +263,7 @@ export default function JobDetailView({
     enabled: !!job?.clientId,
   });
 
-  const { data: currentUser } = useQuery<User>({
+  const { data: currentUser } = useQuery<JdvUser>({
     queryKey: ['/api/auth/me'],
   });
 
