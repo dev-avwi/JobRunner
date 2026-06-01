@@ -270,8 +270,8 @@ export default function LandingPage() {
             {/* Desktop CTA - Call, Login, Get Started grouped together */}
             <div className="hidden lg:flex items-center gap-2">
               <a 
-                href="tel:+61485013994" 
-                title="Call us — 0485 013 994"
+                href="tel:+61458300051" 
+                title="Call us — 0458 300 051"
                 className="inline-flex items-center justify-center w-9 h-9 rounded-md text-brand hover:text-brand-accent hover:bg-brand/5 transition-colors"
                 onClick={() => trackEvent('cta_click', { location: 'nav', button: 'call_support' })}
               >
@@ -298,8 +298,8 @@ export default function LandingPage() {
             {/* Mobile: phone icon + menu button */}
             <div className="lg:hidden flex items-center gap-1">
               <a 
-                href="tel:+61485013994" 
-                title="Call us — 0485 013 994"
+                href="tel:+61458300051" 
+                title="Call us — 0458 300 051"
                 className="inline-flex items-center justify-center w-9 h-9 rounded-md text-brand hover:text-brand-accent hover:bg-brand/5 transition-colors"
                 onClick={() => trackEvent('cta_click', { location: 'nav_mobile', button: 'call_support' })}
               >
@@ -424,12 +424,12 @@ export default function LandingPage() {
                 </Button>
               </Link>
               <a 
-                href="tel:+61485013994" 
+                href="tel:+61458300051" 
                 className="flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-brand transition-colors pt-2"
                 onClick={() => trackEvent('cta_click', { location: 'mobile_menu', button: 'call_support' })}
               >
                 <Phone className="w-4 h-4" />
-                <span>Call us — 0485 013 994</span>
+                <span>Call us — 0458 300 051</span>
               </a>
             </div>
           </div>
