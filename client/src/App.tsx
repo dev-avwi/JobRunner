@@ -999,6 +999,7 @@ function AppLayout() {
   const { theme, setTheme, setThemeWithSync } = useTheme();
   const [location, setLocation] = useLocation();
   const [authKey, setAuthKey] = useState(0);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Modal state for quotes and invoices
   const [quoteModal, setQuoteModal] = useState<{ isOpen: boolean; quoteId: string | null }>({ isOpen: false, quoteId: null });
@@ -1385,33 +1386,53 @@ function AppLayout() {
   };
 
   const handleLogout = async () => {
+    // Show a deliberate "Signing out" screen so the app doesn't snap straight
+    // to the landing page. We hold the overlay for a minimum moment and run the
+    // logout request in parallel, so the transition always feels guided.
+    setIsLoggingOut(true);
+    // Always show the overlay for at least 1.1s so it feels deliberate, but
+    // never wait longer than 2.5s for the network — a hung logout request must
+    // not leave the user stuck on the "Signing you out" screen.
+    const minimumDelay = new Promise((resolve) => setTimeout(resolve, 1100));
+    const request = fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    }).catch((error) => {
+      console.error('Logout error:', error);
+    });
+    const cappedRequest = Promise.race([
+      request,
+      new Promise((resolve) => setTimeout(resolve, 2500)),
+    ]);
     try {
-      await fetch('/api/auth/logout', { 
-        method: 'POST',
-        credentials: 'include' 
-      });
+      await Promise.all([cappedRequest, minimumDelay]);
+    } finally {
       // Clear session token from localStorage (for iOS/Safari fallback)
       clearSessionToken();
       // Reset the sync flag so the next login will sync from backend
       hasInitialSynced.current = false;
       // Invalidate all queries
       queryClient.clear();
-      // Navigate to auth page immediately after logout
+      // Navigate to auth page after the deliberate pause
       setLocation('/auth');
       // Force refetch of auth status which will show login screen
       setAuthKey(prev => prev + 1);
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Clear session token even on error
-      clearSessionToken();
-      // Reset sync flag even on error
-      hasInitialSynced.current = false;
-      // Navigate to auth page even on error
-      setLocation('/auth');
-      // Force refetch anyway to check auth status
-      setAuthKey(prev => prev + 1);
+      // Reveal the auth screen (batched with the updates above in one render)
+      setIsLoggingOut(false);
     }
   };
+
+  if (isLoggingOut) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-background flex items-center justify-center page-enter">
+        <div className="text-center px-6">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-foreground font-medium">Signing you out</p>
+          <p className="text-muted-foreground text-sm mt-1">Saving your session and securing your account...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -1681,7 +1702,7 @@ function AppLayout() {
                     onShowInvoiceModal={(invoiceId) => setInvoiceModal({ isOpen: true, invoiceId })}
                   />
                 ) : (
-                  <div className="flex-1 overflow-y-auto pb-20 md:pb-4">
+                  <div className="flex-1 overflow-y-auto pb-20 md:pb-4 page-enter">
                     <Router 
                       onNavigate={handleNavigation}
                       onShowQuoteModal={(quoteId) => setQuoteModal({ isOpen: true, quoteId })}
