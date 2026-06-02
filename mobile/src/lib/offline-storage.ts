@@ -257,6 +257,7 @@ export const useOfflineStore = create<OfflineState>((set) => ({
 
 class OfflineStorageService {
   private db: SQLite.SQLiteDatabase | null = null;
+  private initPromise: Promise<void> | null = null;
   private networkUnsubscribe: (() => void) | null = null;
   private syncInProgress = false;
   // Serializes write transactions so overlapping callers (e.g. two
@@ -297,9 +298,33 @@ class OfflineStorageService {
    * Initialize the SQLite database and create tables
    */
   async initialize(): Promise<void> {
+    // De-dupe concurrent init calls. React strict-mode / screen re-mounts can
+    // fire initialize() twice; two parallel openDatabaseAsync calls race and
+    // one ends up with a null native handle, which then throws
+    // "NativeDatabase.prepareAsync/execAsync has been rejected → NullPointerException"
+    // on Android. A single shared in-flight promise prevents that race.
+    if (this.db) return;
+    if (this.initPromise) return this.initPromise;
+    this.initPromise = this._initialize();
     try {
-      // Open database
-      this.db = await SQLite.openDatabaseAsync('jobrunner_offline.db');
+      await this.initPromise;
+    } catch (err) {
+      this.initPromise = null; // allow a later retry
+      throw err;
+    }
+  }
+
+  private async _initialize(): Promise<void> {
+    try {
+      // Open database. Android's expo-sqlite occasionally rejects the very
+      // first open with a transient NullPointerException right after a cold
+      // start; retry once before giving up.
+      try {
+        this.db = await SQLite.openDatabaseAsync('jobrunner_offline.db');
+      } catch (openErr) {
+        await new Promise((r) => setTimeout(r, 300));
+        this.db = await SQLite.openDatabaseAsync('jobrunner_offline.db');
+      }
       
       // Create all tables
       await this.db.execAsync(`
@@ -599,7 +624,11 @@ class OfflineStorageService {
       
       if (__DEV__) console.log('[OfflineStorage] Initialized successfully');
     } catch (error) {
-      if (__DEV__) console.error('[OfflineStorage] Initialization failed:', error);
+      this.db = null;
+      // Gracefully handled: callers fall back to live server data when the
+      // local SQLite cache can't open. Warn (not error) so it doesn't pop the
+      // red LogBox overlay during development.
+      if (__DEV__) console.warn('[OfflineStorage] Initialization failed, using server data:', error);
       throw error;
     }
   }
@@ -798,7 +827,7 @@ class OfflineStorageService {
       } catch {}
       
     } catch (error) {
-      if (__DEV__) console.error('[OfflineStorage] Migration error:', error);
+      if (__DEV__) console.warn('[OfflineStorage] Migration warning:', error);
       // Don't throw - we don't want to block initialization
     }
   }

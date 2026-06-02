@@ -57,6 +57,13 @@ interface WeatherData {
   };
 }
 
+// Round a numeric value, or show a dash when the value is missing/non-numeric.
+// Guards against a stale backend returning an undefined field → "NaN" on screen.
+const roundOrDash = (n: any): string => {
+  const v = Number(n);
+  return Number.isFinite(v) ? String(Math.round(v)) : '--';
+};
+
 const WEATHER_CODES: Record<number, { label: string; icon: keyof typeof Feather.glyphMap }> = {
   0: { label: "Clear", icon: "sun" },
   1: { label: "Mainly Clear", icon: "sun" },
@@ -177,7 +184,11 @@ function WeatherWidget() {
         } catch (locErr) {}
       }
       const response = await api.get<WeatherData>(`/api/weather${params}`);
-      if (response.data) {
+      // Only accept a usable payload. A stale/older backend can return a
+      // different shape, leaving the numeric fields undefined → NaN on screen.
+      // On a bad/stale response keep the last known good weather (no flicker);
+      // on first load it stays null so the card simply doesn't render.
+      if (response.data && Number.isFinite(Number(response.data.temperature))) {
         setWeather(response.data);
       }
     } catch (error) {
@@ -298,22 +309,22 @@ function WeatherWidget() {
         </View>
         <View style={[styles.weatherTextContent, { flex: 1 }]}>
           <View style={styles.weatherTempRow}>
-            <Text style={styles.weatherTemp}>{Math.round(weather.temperature)}</Text>
+            <Text style={styles.weatherTemp}>{roundOrDash(weather.temperature)}</Text>
             <Text style={styles.weatherDegree}>°C</Text>
             <Text style={styles.weatherLabel}>{info.label}</Text>
           </View>
           <View style={styles.weatherDetailsRow}>
             <View style={styles.weatherDetailItem}>
               <Feather name="thermometer" size={12} color={colors.mutedForeground} />
-              <Text style={styles.weatherDetailText}>Feels {Math.round(weather.apparentTemperature)}°</Text>
+              <Text style={styles.weatherDetailText}>Feels {roundOrDash(weather.apparentTemperature)}°</Text>
             </View>
             <View style={styles.weatherDetailItem}>
               <Feather name="droplet" size={12} color={colors.mutedForeground} />
-              <Text style={styles.weatherDetailText}>{weather.humidity}%</Text>
+              <Text style={styles.weatherDetailText}>{Number.isFinite(Number(weather.humidity)) ? weather.humidity : '--'}%</Text>
             </View>
             <View style={styles.weatherDetailItem}>
               <Feather name="wind" size={12} color={colors.mutedForeground} />
-              <Text style={styles.weatherDetailText}>{Math.round(weather.windSpeed)} km/h</Text>
+              <Text style={styles.weatherDetailText}>{roundOrDash(weather.windSpeed)} km/h</Text>
             </View>
           </View>
         </View>
@@ -1020,7 +1031,12 @@ function TimeTrackingWidget() {
           </View>
           <View style={styles.timerTextContent}>
             <View style={styles.timerTimeRow}>
-              <Text style={[styles.elapsedTime, isOnBreak && styles.elapsedTimeBreak]}>{elapsedTime}</Text>
+              <Text
+                style={[styles.elapsedTime, isOnBreak && styles.elapsedTimeBreak]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >{elapsedTime}</Text>
               {isOnBreak && (
                 <View style={styles.breakBadge}>
                   <Text style={styles.breakBadgeText}>BREAK</Text>
@@ -5015,7 +5031,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   elapsedTime: {
     fontSize: 24,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1,
     color: colors.primary,
   },
   elapsedTimeBreak: {

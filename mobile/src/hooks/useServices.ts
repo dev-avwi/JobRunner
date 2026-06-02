@@ -416,7 +416,9 @@ export function useOfflineStorage() {
       await offlineStorage.initialize();
       return true;
     } catch (error) {
-      if (__DEV__) console.error('Failed to initialize offline storage:', error);
+      // Gracefully handled: returns false and the app uses live server data.
+      // Warn (not error) so it doesn't pop the red LogBox overlay in dev.
+      if (__DEV__) console.warn('Failed to initialize offline storage, using server data:', error);
       return false;
     }
   }, []);
