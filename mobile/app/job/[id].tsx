@@ -43,7 +43,7 @@ import * as Sharing from 'expo-sharing';
 import * as Location from 'expo-location';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import api, { API_URL } from '../../src/lib/api';
+import api, { API_URL, isAuthErrorMessage } from '../../src/lib/api';
 import { maybeRequestReview } from '../../src/lib/store-review';
 import { locationTracking } from '../../src/lib/location-tracking';
 import { useJobsStore, useTimeTrackingStore, useAuthStore } from '../../src/lib/store';
@@ -2182,7 +2182,7 @@ export default function JobDetailScreen() {
   const updateJobNotes = async (jobId: string, notes: string): Promise<void> => {
     await api.patch(`/api/jobs/${jobId}`, { notes });
   };
-  const { businessSettings, roleInfo, user, hasPermission } = useAuthStore();
+  const { businessSettings, roleInfo, user, hasPermission, logout } = useAuthStore();
   const { isSmsReady } = useIntegrationHealth();
   
   const isOwnerOrManager = roleInfo 
@@ -5985,19 +5985,30 @@ export default function JobDetailScreen() {
   }
 
   if (!job) {
+    const sessionExpired = isAuthErrorMessage(loadError);
     return (
       <View style={styles.errorContainer}>
-        <Feather name="alert-circle" size={48} color={loadError ? colors.destructive : colors.mutedForeground} />
-        <Text style={styles.errorText}>{loadError ? 'Failed to load job' : 'Job not found'}</Text>
+        <Feather name={sessionExpired ? 'log-in' : 'alert-circle'} size={48} color={loadError ? colors.destructive : colors.mutedForeground} />
+        <Text style={styles.errorText}>{sessionExpired ? 'Session expired' : (loadError ? 'Failed to load job' : 'Job not found')}</Text>
         <Text style={[styles.errorText, { fontSize: 14, marginTop: 4 }]}>
-          {loadError || 'The job may have been deleted or you don\'t have access.'}
+          {sessionExpired
+            ? 'Your session has timed out. Please sign in again to continue.'
+            : (loadError || 'The job may have been deleted or you don\'t have access.')}
         </Text>
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
-          <Button
-            variant="default"
-            onPress={loadJob}
-            icon={<Feather name="refresh-cw" size={16} color={colors.white} />}
-          >Retry</Button>
+          {sessionExpired ? (
+            <Button
+              variant="default"
+              onPress={() => { logout(); }}
+              icon={<Feather name="log-in" size={16} color={colors.white} />}
+            >Sign in</Button>
+          ) : (
+            <Button
+              variant="default"
+              onPress={loadJob}
+              icon={<Feather name="refresh-cw" size={16} color={colors.white} />}
+            >Retry</Button>
+          )}
           <Button
             variant="outline"
             onPress={() => router.back()}

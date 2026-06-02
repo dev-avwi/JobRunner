@@ -20,3 +20,5 @@
 - [Onboarding guard blocks job routes](onboarding-guard-blocks-jobs.md) — owner with business_settings.onboardingCompleted=false 403s /api/jobs(/:id) (dashboard exempt) → "Job Not Found"; demo seed must set it; settings are cached (restart after DB patch).
 - [Mobile offline SQLite init NPE](mobile-sqlite-init-race.md) — prepareAsync/execAsync NullPointerException = concurrent double-init race; fix is an initPromise singleton guard; graceful fallbacks must warn not error.
 - [Adding a DB table: don't db:push](db-add-table-no-push.md) — drizzle-kit push wants destructive drops (users.role etc) on this DB; add new tables via raw CREATE TABLE IF NOT EXISTS, not npm run db:push.
+- [Mobile auth-error strings](mobile-auth-error-strings.md) — /api/auth/me returns "Not authenticated" for dead token; auth detection must match all 401 wordings case-insensitively (isAuthErrorMessage in api.ts) or stale cached session locks the app.
+- [Mobile typecheck deps drift](mobile-typecheck-deps-drift.md) — local typecheck.sh false-cleans if node_modules drifts from lockfile; run `npm --prefix mobile ci` first (CI installs locked @types/react 19 + TS 5.9).

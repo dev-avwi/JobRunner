@@ -25,7 +25,7 @@ export default function Celebration() {
   const popScale = useRef(new Animated.Value(0)).current;
   const popOpacity = useRef(new Animated.Value(0)).current;
   const fall = useRef(new Animated.Value(0)).current;
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const config: Record<CelebrationType, { Icon: typeof PartyPopper; label: string; color: string }> = {
     invoice_paid: { Icon: DollarSign, label: 'Paid!', color: colors.success },

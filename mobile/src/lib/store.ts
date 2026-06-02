@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from './api';
+import api, { isAuthErrorMessage } from './api';
 import offlineStorage, { useOfflineStore } from './offline-storage';
 import { clearRoleCache } from './role-cache';
 import { useThemeStore, ThemeMode } from './theme-store';
@@ -465,11 +465,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const response = await api.getCurrentUser();
     
     if (response.error) {
-      // Check if this is an authentication failure (token invalid/expired) vs network error
-      const isAuthError = response.error === 'Authentication required' || 
-                          response.error === 'User not found' ||
-                          response.error.includes('401') ||
-                          response.error.includes('Unauthorized');
+      // Check if this is an authentication failure (token invalid/expired) vs
+      // network error. The backend's /api/auth/me returns "Not authenticated"
+      // for an invalid token — previously that string wasn't matched here, so a
+      // dead token fell through to the "network error" branch and the app kept a
+      // stale cached session, dead-ending every screen instead of prompting login.
+      const isAuthError = isAuthErrorMessage(response.error);
       
       if (isAuthError) {
         // Token is invalid - clear everything and require re-login

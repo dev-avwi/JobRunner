@@ -74,6 +74,25 @@ interface ApiResponse<T> {
   backpressure?: { code: 'BACKPRESSURE'; retryAfterSec: number };
 }
 
+/**
+ * True when an API error string means the session is invalid/expired and the
+ * user needs to sign in again (HTTP 401). The backend uses several wordings
+ * ("Not authenticated", "Authentication required", "Unauthorized") across
+ * different middlewares, so match them all case-insensitively rather than
+ * relying on one exact string.
+ */
+export function isAuthErrorMessage(error?: string | null): boolean {
+  if (!error) return false;
+  const e = error.toLowerCase();
+  return (
+    e.includes('not authenticated') ||
+    e.includes('authentication required') ||
+    e.includes('unauthorized') ||
+    e.includes('401') ||
+    e === 'user not found'
+  );
+}
+
 interface LoginResponse {
   success: boolean;
   user: any;
