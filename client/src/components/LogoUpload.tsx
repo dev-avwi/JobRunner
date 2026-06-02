@@ -18,23 +18,6 @@ export function LogoUpload({ currentLogoUrl, onColorsDetected }: LogoUploadProps
   const [detectedColors, setDetectedColors] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const handleGetUploadParameters = async () => {
-    const response = await fetch("/api/objects/upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to get upload parameters");
-    }
-
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL,
-    };
-  };
-
   const extractColors = async (imageUrl: string): Promise<string[]> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -152,7 +135,7 @@ export function LogoUpload({ currentLogoUrl, onColorsDetected }: LogoUploadProps
 
           <ObjectUploader
             maxFileSize={5 * 1024 * 1024} // 5MB
-            onGetUploadParameters={handleGetUploadParameters}
+            uploadEndpoint="/api/objects/upload-file"
             onComplete={handleUploadComplete}
             accept="image/*"
             buttonClassName="w-full"

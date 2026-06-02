@@ -7,10 +7,17 @@ import { Upload, Check, X } from "lucide-react";
 
 interface ObjectUploaderProps {
   maxFileSize?: number;
-  onGetUploadParameters: () => Promise<{
+  onGetUploadParameters?: () => Promise<{
     method: "PUT";
     url: string;
   }>;
+  /**
+   * When provided, the file is POSTed (multipart, field "file") directly to this
+   * server endpoint instead of doing a browser->GCS signed PUT. The endpoint must
+   * respond with JSON `{ objectPath }`, which is passed to onComplete. This avoids
+   * GCS CORS/DNS failures for small uploads like logos.
+   */
+  uploadEndpoint?: string;
   onComplete?: (uploadUrl: string) => void;
   buttonClassName?: string;
   children: ReactNode;
@@ -24,6 +31,7 @@ interface ObjectUploaderProps {
 export function ObjectUploader({
   maxFileSize = 10485760, // 10MB default
   onGetUploadParameters,
+  uploadEndpoint,
   onComplete,
   buttonClassName,
   children,
@@ -45,12 +53,76 @@ export function ObjectUploader({
     setError(null);
   };
 
+  const finishSuccess = (resultUrl: string) => {
+    setUploadComplete(true);
+    setUploadProgress(100);
+    onComplete?.(resultUrl);
+    setTimeout(() => {
+      setShowModal(false);
+      resetModal();
+    }, 1500);
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) return;
 
     setUploading(true);
     setUploadProgress(0);
     setError(null);
+
+    // Direct server-side upload mode (no browser->GCS PUT, avoids CORS/DNS issues).
+    if (uploadEndpoint) {
+      try {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        });
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            let objectPath = '';
+            try {
+              objectPath = JSON.parse(xhr.responseText || '{}').objectPath || '';
+            } catch {}
+            if (!objectPath) {
+              setError('Upload succeeded but the server returned no file path.');
+              setUploading(false);
+              return;
+            }
+            finishSuccess(objectPath);
+          } else {
+            const detail = (xhr.responseText || '').slice(0, 200);
+            console.error('[Upload] Server upload failed', { status: xhr.status, response: detail });
+            setError(`Upload failed (status ${xhr.status}). ${detail || 'Please try again.'}`);
+            setUploading(false);
+          }
+        };
+
+        xhr.onerror = () => {
+          console.error('[Upload] Network error during server upload', { uploadEndpoint });
+          setError('Upload failed: could not reach the server. Check your connection and try again.');
+          setUploading(false);
+        };
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        xhr.open('POST', uploadEndpoint);
+        xhr.send(formData);
+      } catch (err) {
+        setError('Upload failed. Please try again.');
+        setUploading(false);
+      }
+      return;
+    }
+
+    if (!onGetUploadParameters) {
+      setError('Upload is not configured.');
+      setUploading(false);
+      return;
+    }
 
     try {
       // Get upload parameters
@@ -68,13 +140,7 @@ export function ObjectUploader({
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          setUploadComplete(true);
-          setUploadProgress(100);
-          onComplete?.(url);
-          setTimeout(() => {
-            setShowModal(false);
-            resetModal();
-          }, 1500);
+          finishSuccess(url);
         } else {
           const detail = (xhr.responseText || '').slice(0, 200);
           console.error('[Upload] GCS PUT failed', {

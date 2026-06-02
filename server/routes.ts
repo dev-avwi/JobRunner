@@ -25183,6 +25183,28 @@ Respond with JSON in this format:
     }
   });
 
+  // Direct server-side upload (bypasses browser->GCS CORS). Used by the logo uploader
+  // and any uploader that passes uploadEndpoint. Returns a same-origin /objects/ path.
+  app.post("/api/objects/upload-file", requireAuth, businessLogoUpload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      const objectStorageService = new ObjectStorageService();
+      const ext = (req.file.originalname?.match(/\.[a-zA-Z0-9]+$/)?.[0] || "").toLowerCase();
+      const fileName = `uploads/${randomUUID()}${ext}`;
+      const objectPath = await objectStorageService.uploadFile(
+        fileName,
+        req.file.buffer,
+        req.file.mimetype || "application/octet-stream",
+      );
+      res.json({ objectPath });
+    } catch (error: any) {
+      console.error("[Upload] Direct upload failed:", error?.message || error);
+      res.status(500).json({ error: "Failed to upload file", details: error?.message });
+    }
+  });
+
   app.put("/api/logo", requireAuth, async (req: any, res) => {
     if (!req.body.logoURL) {
       return res.status(400).json({ error: "logoURL is required" });
