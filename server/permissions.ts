@@ -178,6 +178,16 @@ export async function getUserContext(userId: string): Promise<UserContext> {
     }
   }
   
+  // A user can never be a "team member employee" of their own business. If the
+  // only membership we found is a self-membership (member_id === business_owner_id,
+  // which some legacy/dispatch flows created), they ARE the owner — fall through to
+  // the owner result below so owner-only routes don't 403 them. Without this guard,
+  // an owner whose business_settings lookup returns an empty/duplicate row gets
+  // misclassified as a non-owner and locked out of owner-only actions.
+  if (teamMembership && teamMembership.businessOwnerId === userId) {
+    teamMembership = undefined;
+  }
+
   if (teamMembership && teamMembership.inviteStatus === 'accepted') {
     const role = await storage.getUserRole(teamMembership.roleId);
     

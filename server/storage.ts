@@ -1645,7 +1645,22 @@ export class PostgresStorage implements IStorage {
     // Hot-read cache (60s TTL). Invalidated on update/delete in this class.
     const { businessSettingsCache } = await import('./cache');
     return await businessSettingsCache.getOrLoad(userId, async () => {
-      const result = await db.select().from(businessSettings).where(eq(businessSettings.userId, userId)).limit(1);
+      // A user can have duplicate business_settings rows (legacy onboarding
+      // created extras, some with an empty name). Pick deterministically: prefer
+      // a row with a real business name (not empty, not the "Worker Profile"
+      // placeholder), then the most recently updated/created. This keeps owner
+      // detection and displayed business data stable instead of returning an
+      // arbitrary (possibly empty) row.
+      const result = await db
+        .select()
+        .from(businessSettings)
+        .where(eq(businessSettings.userId, userId))
+        .orderBy(
+          sql`CASE WHEN ${businessSettings.businessName} IS NOT NULL AND ${businessSettings.businessName} <> '' AND ${businessSettings.businessName} <> 'Worker Profile' THEN 0 ELSE 1 END`,
+          desc(businessSettings.updatedAt),
+          desc(businessSettings.createdAt),
+        )
+        .limit(1);
       return result[0];
     });
   }
