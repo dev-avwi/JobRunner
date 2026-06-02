@@ -12457,7 +12457,8 @@ Be specific about materials, colors, and features that would be included.`
       signatureHeaders: ['Quote Number', 'Company Name', 'Total', 'Status'],
       mappings: {
         'Quote Number': 'refNumber', 'Description': 'title', 'Quote Description': 'title',
-        'Company Name': 'clientName', 'Email Address': 'clientEmail',
+        'Company Name': 'clientName', 'First Name': 'clientFirstName', 'Last Name': 'clientLastName',
+        'Email Address': 'clientEmail',
         'Status': 'status',
         'Total': 'total', 'Total (Inc Tax)': 'total', 'Amount': 'total',
         'Tax': 'gstAmount', 'GST': 'gstAmount',
@@ -12477,7 +12478,8 @@ Be specific about materials, colors, and features that would be included.`
       mappings: {
         'Invoice Number': 'refNumber', 'Generated Invoice Number': 'refNumber',
         'Description': 'title', 'Invoice Description': 'title',
-        'Company Name': 'clientName', 'Email Address': 'clientEmail',
+        'Company Name': 'clientName', 'First Name': 'clientFirstName', 'Last Name': 'clientLastName',
+        'Email Address': 'clientEmail',
         'Status': 'status', 'Payment Status': 'status',
         'Total': 'total', 'Total (Inc Tax)': 'total', 'Amount': 'total',
         'Tax': 'gstAmount', 'GST': 'gstAmount',
@@ -12617,6 +12619,32 @@ Be specific about materials, colors, and features that would be included.`
       return 'draft';
     }
     return status;
+  }
+
+  // Parse dates from imported CSVs. Australian apps (ServiceM8, Tradify) export
+  // dates as DD/MM/YYYY, which `new Date()` misreads (it assumes US MM/DD) or
+  // rejects outright. Try AU day-first formats explicitly, then fall back to the
+  // native parser for ISO (YYYY-MM-DD) and other recognisable strings.
+  function parseImportDate(raw?: string): Date | undefined {
+    if (!raw) return undefined;
+    const s = raw.trim();
+    if (!s) return undefined;
+    const auMatch = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+    if (auMatch) {
+      const day = parseInt(auMatch[1], 10);
+      let month = parseInt(auMatch[2], 10);
+      let year = parseInt(auMatch[3], 10);
+      if (year < 100) year += 2000;
+      if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+        const dt = new Date(year, month - 1, day);
+        // Reject impossible dates (e.g. 31/02) — JS would silently roll them forward.
+        if (dt.getFullYear() === year && dt.getMonth() === month - 1 && dt.getDate() === day) {
+          return dt;
+        }
+      }
+    }
+    const native = new Date(s);
+    return isNaN(native.getTime()) ? undefined : native;
   }
 
   const csvUpload = multer({
@@ -12871,8 +12899,14 @@ Be specific about materials, colors, and features that would be included.`
         mapped[schemaField] = row[csvHeader];
       }
     }
-    if (!mapped.name && mapped.firstName) {
+    if (!mapped.name && (mapped.firstName || mapped.lastName)) {
       mapped.name = [mapped.firstName, mapped.lastName].filter(Boolean).join(' ');
+    }
+    // ServiceM8 (and similar) put residential customers in First/Last Name with a
+    // blank Company Name. Jobs/quotes/invoices need clientName, so fall back to the
+    // contact's name when no company name is present — otherwise those rows are skipped.
+    if (!mapped.clientName && (mapped.clientFirstName || mapped.clientLastName)) {
+      mapped.clientName = [mapped.clientFirstName, mapped.clientLastName].filter(Boolean).join(' ');
     }
     if (!mapped.address && mapped.street) {
       mapped.address = [mapped.street, mapped.city, mapped.state, mapped.postcode, mapped.country].filter(Boolean).join(', ');
@@ -13028,11 +13062,7 @@ Be specific about materials, colors, and features that would be included.`
             const status = mapped.status ? mapStatusToJobRunner(mapped.status, 'jobs', (platform as ImportPlatform) || 'generic') : 'pending';
             const title = mapped.title || `Job ${mapped.refNumber || ''}`.trim();
 
-            let scheduledAt: Date | undefined;
-            if (mapped.scheduledAt) {
-              const d = new Date(mapped.scheduledAt);
-              if (!isNaN(d.getTime())) scheduledAt = d;
-            }
+            const scheduledAt = parseImportDate(mapped.scheduledAt);
 
             const refTag = mapped.refNumber ? `[Imported-Ref:${mapped.refNumber}]` : '';
             const jobNotes = [mapped.notes, refTag].filter(Boolean).join(' ');
@@ -13072,11 +13102,7 @@ Be specific about materials, colors, and features that would be included.`
 
             const quoteNumber = await storage.generateQuoteNumber(userId);
 
-            let validUntil: Date | undefined;
-            if (mapped.validUntil) {
-              const d = new Date(mapped.validUntil);
-              if (!isNaN(d.getTime())) validUntil = d;
-            }
+            const validUntil = parseImportDate(mapped.validUntil);
 
             const refTag = mapped.refNumber ? `[Imported-Ref:${mapped.refNumber}]` : '';
             const quoteNotes = [mapped.notes, refTag].filter(Boolean).join(' ');
@@ -13141,11 +13167,7 @@ Be specific about materials, colors, and features that would be included.`
 
             const invoiceNumber = await storage.generateInvoiceNumber(userId);
 
-            let dueDate: Date | undefined;
-            if (mapped.dueDate) {
-              const d = new Date(mapped.dueDate);
-              if (!isNaN(d.getTime())) dueDate = d;
-            }
+            const dueDate = parseImportDate(mapped.dueDate);
 
             const refTag = mapped.refNumber ? `[Imported-Ref:${mapped.refNumber}]` : '';
             const invoiceNotes = [mapped.notes, refTag].filter(Boolean).join(' ');
