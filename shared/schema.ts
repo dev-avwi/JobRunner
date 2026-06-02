@@ -1357,6 +1357,10 @@ export const insertClientSchema = createInsertSchema(clients).omit({
   userId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // Validate email format when a real value is provided; allow empty/null so
+  // clients without an email still save.
+  email: z.string().email("Invalid email address").optional().nullable().or(z.literal("")),
 });
 
 export const insertJobSchema = createInsertSchema(jobs).omit({

@@ -219,7 +219,7 @@ export default function LandingPage() {
               <img 
                 src={jobrunnerLogo} 
                 alt=""
-                fetchPriority="high"
+                fetchpriority="high"
                 decoding="async"
                 width="32"
                 height="32"
