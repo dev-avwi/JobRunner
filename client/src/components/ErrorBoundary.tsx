@@ -27,6 +27,9 @@ function reportErrorToServer(data: {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {
+    // Stale lazy-chunk loads after a deploy are transient and self-recover via
+    // lazyWithReload / ChunkErrorBoundary — don't spam the error reporter.
+    if (isChunkLoadError(event.error) || isChunkLoadError(event.message)) return;
     reportErrorToServer({
       message: event.message || 'Unhandled window error',
       stack: event.error?.stack,
@@ -36,6 +39,7 @@ if (typeof window !== 'undefined') {
 
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason;
+    if (isChunkLoadError(reason)) return;
     reportErrorToServer({
       message: reason?.message || String(reason) || 'Unhandled promise rejection',
       stack: reason?.stack,
