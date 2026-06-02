@@ -10637,30 +10637,35 @@ export default function JobDetailScreen() {
                 </View>
               )}
               
-              {/* Native iOS Time Picker */}
+              {/* Time Picker — iOS shows an inline spinner with a Done button;
+                  Android shows a native modal dialog that closes itself, so we
+                  MUST clear showTimePicker in onChange or it re-opens forever. */}
               {showTimePicker && (
                 <View style={{ marginBottom: spacing.md }}>
                   <DateTimePicker
                     value={scheduleDate}
                     mode="time"
-                    display="spinner"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     minuteInterval={5}
                     onChange={(event, selectedDate) => {
-                      if (selectedDate) {
+                      setShowTimePicker(Platform.OS === 'ios');
+                      if (event.type !== 'dismissed' && selectedDate) {
                         setScheduleDate(selectedDate);
                       }
                     }}
                     themeVariant={isDark ? 'dark' : 'light'}
                   />
-                  <TouchableOpacity
-                    style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}
-                    onPress={() => {
-                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                      setShowTimePicker(false);
-                    }}
-                  >
-                    <Text style={{ color: colors.primaryForeground, fontWeight: '600' }}>Done</Text>
-                  </TouchableOpacity>
+                  {Platform.OS === 'ios' && (
+                    <TouchableOpacity
+                      style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}
+                      onPress={() => {
+                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                        setShowTimePicker(false);
+                      }}
+                    >
+                      <Text style={{ color: colors.primaryForeground, fontWeight: '600' }}>Done</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
               
