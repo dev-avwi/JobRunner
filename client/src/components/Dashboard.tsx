@@ -1,8 +1,6 @@
 import { useAppMode } from "@/hooks/use-app-mode";
-import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { useDashboardUnified, unwrapSection } from "@/hooks/use-dashboard-data";
 import OwnerManagerDashboard from "./OwnerManagerDashboard";
-import TeamOwnerDashboard from "./TeamOwnerDashboard";
 import StaffTradieDashboard from "./StaffTradieDashboard";
 
 interface DashboardProps {
@@ -49,9 +47,7 @@ function DashboardInner({
     canCreateJobs,
     canCreateQuotes,
     canCreateInvoices,
-    hasActiveTeam,
   } = useAppMode();
-  const { isSimpleMode } = useSimpleMode();
 
   const firstName = user?.firstName;
   const fullName = user?.name;
@@ -86,38 +82,9 @@ function DashboardInner({
       );
 
     case "owner":
-      if (hasActiveTeam && !isSimpleMode) {
-        return (
-          <TeamOwnerDashboard
-            userName={userName}
-            businessName={businessName}
-            onCreateJob={canCreateJobs ? onCreateJob : undefined}
-            onCreateQuote={canCreateQuotes ? onCreateQuote : undefined}
-            onCreateInvoice={canCreateInvoices ? onCreateInvoice : undefined}
-            onViewJobs={onViewJobs}
-            onViewInvoices={onViewInvoices}
-            onViewQuotes={onViewQuotes}
-            onNavigate={onNavigate}
-          />
-        );
-      }
-      return (
-        <OwnerManagerDashboard
-          userName={userName}
-          businessName={businessName}
-          onCreateJob={canCreateJobs ? onCreateJob : undefined}
-          onCreateQuote={canCreateQuotes ? onCreateQuote : undefined}
-          onCreateInvoice={canCreateInvoices ? onCreateInvoice : undefined}
-          onViewJobs={onViewJobs}
-          onViewInvoices={onViewInvoices}
-          onViewQuotes={onViewQuotes}
-          onNavigate={onNavigate}
-        />
-      );
-
     case "manager":
       return (
-        <TeamOwnerDashboard
+        <OwnerManagerDashboard
           userName={userName}
           businessName={businessName}
           onCreateJob={canCreateJobs ? onCreateJob : undefined}

@@ -1,19 +1,13 @@
-import { useBusinessSettings, useUpdateBusinessSettings } from "@/hooks/use-business-settings";
 import { useCallback } from "react";
 
+// Simple Mode has been removed — every account now uses the full layout and
+// navigation. This hook is kept as a no-op so existing imports keep working.
 export function useSimpleMode() {
-  const { data: businessSettings, isLoading } = useBusinessSettings();
-  const updateSettings = useUpdateBusinessSettings();
-
-  const isSimpleMode = businessSettings?.simpleMode ?? true;
-
-  const setSimpleMode = useCallback((value: boolean) => {
-    updateSettings.mutate({ simpleMode: value });
-  }, [updateSettings]);
+  const setSimpleMode = useCallback((_value: boolean) => {}, []);
 
   return {
-    isSimpleMode,
+    isSimpleMode: false,
     setSimpleMode,
-    isLoading,
+    isLoading: false,
   };
 }

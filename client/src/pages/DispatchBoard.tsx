@@ -69,6 +69,8 @@ import {
   HardHat,
   CircleDot,
   Settings2,
+  Columns3,
+  Eye,
   Sun,
   Moon,
   Coffee,
@@ -79,6 +81,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -1004,6 +1015,22 @@ export default function DispatchBoard() {
     return startOfDay(new Date());
   });
   const [viewMode, setViewMode] = useState<'day' | '3day' | 'week'>('day');
+  const [hiddenWorkerIds, setHiddenWorkerIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('dispatch-hidden-workers');
+      return saved ? new Set<string>(JSON.parse(saved)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+  const toggleWorkerColumn = useCallback((id: string) => {
+    setHiddenWorkerIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
   const [draggedJob, setDraggedJob] = useState<DraggedJob | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
   const [showAISuggestions, setShowAISuggestions] = useState(false);
@@ -1250,6 +1277,56 @@ export default function DispatchBoard() {
       };
     });
   }, [teamMembers, scheduledJobsForDate]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dispatch-hidden-workers', JSON.stringify(Array.from(hiddenWorkerIds)));
+    } catch {}
+  }, [hiddenWorkerIds]);
+
+  const visibleMembers = useMemo(
+    () => teamMembersWithJobs.filter(m => !hiddenWorkerIds.has(m.id)),
+    [teamMembersWithJobs, hiddenWorkerIds]
+  );
+
+  const columnPicker = teamMembersWithJobs.length > 0 ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1.5" data-testid="button-column-picker">
+          <Columns3 className="h-4 w-4" />
+          Workers
+          {hiddenWorkerIds.size > 0 && (
+            <Badge variant="secondary" className="ml-0.5 px-1.5 py-0 text-[10px]">
+              {visibleMembers.length}/{teamMembersWithJobs.length}
+            </Badge>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Show worker columns</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {teamMembersWithJobs.map(member => (
+          <DropdownMenuCheckboxItem
+            key={member.id}
+            checked={!hiddenWorkerIds.has(member.id)}
+            onCheckedChange={() => toggleWorkerColumn(member.id)}
+            onSelect={(e) => e.preventDefault()}
+            data-testid={`toggle-worker-${member.id}`}
+          >
+            {member.firstName} {member.lastName?.[0] ? member.lastName[0] + '.' : ''}
+          </DropdownMenuCheckboxItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() => setHiddenWorkerIds(new Set())}
+          disabled={hiddenWorkerIds.size === 0}
+          data-testid="button-show-all-workers"
+        >
+          <Eye className="h-4 w-4 mr-2" /> Show all
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : null;
 
   const getBestFitWorker = useCallback(() => {
     const available = teamMembersWithJobs.filter(m => m.totalHours < m.capacity);
@@ -1733,6 +1810,7 @@ export default function DispatchBoard() {
                       )}
                     </span>
                   )}
+                  {viewMode === 'day' && columnPicker}
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="ghost" size="icon" data-testid="button-schedule-settings">
@@ -2024,13 +2102,13 @@ export default function DispatchBoard() {
               ) : (
               <div className="relative">
                 <div className="overflow-auto" ref={scheduleScrollRef} onScroll={handleScheduleScroll} style={{ maxHeight: 'calc(100vh - 240px)' }}>
-                  <table className="border-collapse" style={{ minWidth: `${48 + teamMembersWithJobs.length * 140}px` }}>
+                  <table className="border-collapse" style={{ minWidth: `${48 + visibleMembers.length * 140}px` }}>
                     <thead>
                       <tr className="bg-muted/30 sticky top-0 z-20">
                         <th className="sticky left-0 z-30 bg-muted/30 w-12 min-w-[48px] p-1 text-left text-[10px] font-medium text-muted-foreground border-b border-r border-border">
                           Time
                         </th>
-                        {teamMembersWithJobs.map(member => (
+                        {visibleMembers.map(member => (
                           <th key={member.id} className="border-b border-l border-border p-2 text-left" style={{ minWidth: 140 }}>
                             <div className="flex items-center gap-2">
                               <Avatar className="h-7 w-7 flex-shrink-0">
@@ -2069,7 +2147,7 @@ export default function DispatchBoard() {
                           <td className="sticky left-0 z-10 bg-background w-12 min-w-[48px] px-1.5 py-1 text-[11px] text-muted-foreground font-medium border-b border-r border-border align-top" style={{ height: HOUR_HEIGHT }}>
                             {formatTime(hour)}
                           </td>
-                          {teamMembersWithJobs.map(member => {
+                          {visibleMembers.map(member => {
                             const slotId = `${member.id}-${hour}`;
                             const dropSlotHour = dragOverSlot?.startsWith(`${member.id}-`) 
                               ? parseInt(dragOverSlot.split('-').pop() || '0') 
@@ -3104,6 +3182,7 @@ export default function DispatchBoard() {
                 <Users className="h-3 w-3" />
                 {teamMembersWithJobs.length} crew
               </span>
+              {viewMode === 'day' && columnPicker}
               {!unscheduledDrawerOpen && (
                 <Button
                   variant="outline"
@@ -3210,13 +3289,13 @@ export default function DispatchBoard() {
           <div className="flex-1 min-h-0 flex rounded-b-lg overflow-hidden border border-t-0 border-border bg-background">
             <div className={`flex-1 min-w-0 relative transition-all ${unscheduledDrawerOpen ? 'mr-80' : ''}`}>
               <div className="overflow-auto absolute inset-0" ref={scheduleScrollRef} onScroll={handleScheduleScroll}>
-                <table className="border-collapse" style={{ minWidth: `${56 + teamMembersWithJobs.length * 160}px` }}>
+                <table className="border-collapse" style={{ minWidth: `${56 + visibleMembers.length * 160}px` }}>
                   <thead>
                     <tr className="bg-muted/30">
                       <th className="sticky left-0 z-10 bg-muted/30 w-14 min-w-[56px] p-1.5 text-left text-[11px] font-medium text-muted-foreground border-b border-r border-border">
                         Time
                       </th>
-                      {teamMembersWithJobs.map(member => (
+                      {visibleMembers.map(member => (
                         <th key={member.id} className="border-b border-l border-border p-2 text-left" style={{ minWidth: 160 }}>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-7 w-7 flex-shrink-0">
@@ -3255,7 +3334,7 @@ export default function DispatchBoard() {
                         <td className="sticky left-0 z-10 bg-background w-14 min-w-[56px] px-1.5 py-1 text-[11px] text-muted-foreground font-medium border-b border-r border-border align-top" style={{ height: HOUR_HEIGHT }}>
                           {formatTime(hour)}
                         </td>
-                        {teamMembersWithJobs.map((member, colIdx) => {
+                        {visibleMembers.map((member, colIdx) => {
                           const slotId = `${member.id}-${hour}`;
                           const dropSlotHour = dragOverSlot?.startsWith(`${member.id}-`) 
                             ? parseInt(dragOverSlot.split('-').pop() || '0') 

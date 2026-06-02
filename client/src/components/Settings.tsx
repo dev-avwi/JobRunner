@@ -18,7 +18,6 @@ import {
   AccordionTrigger 
 } from "@/components/ui/accordion";
 import { useBusinessSettings } from "@/hooks/use-business-settings";
-import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { useTheme } from "@/components/ThemeProvider";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -193,7 +192,6 @@ export default function Settings({
   onUpgradePlan
 }: SettingsProps) {
   const { data: businessSettings, isLoading: settingsLoading } = useBusinessSettings();
-  const { isSimpleMode, setSimpleMode } = useSimpleMode();
   const { brandTheme, setBrandTheme } = useTheme();
   const { toast } = useToast();
   const { isTradie, isOwner, isManager, isSolo } = useAppMode();
@@ -1482,31 +1480,6 @@ export default function Settings({
         </TabsContent>
 
         <TabsContent value="business" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <SettingsIcon className="w-5 h-5" style={{ color: 'hsl(var(--trade))' }} />
-                <CardTitle>Simple Mode</CardTitle>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Hide team management, dispatch, and advanced reporting features. Best for solo operators.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Simple Mode</Label>
-                  <p className="text-sm text-muted-foreground">Show only essential features for one-person businesses</p>
-                </div>
-                <Switch
-                  checked={isSimpleMode}
-                  onCheckedChange={(checked) => setSimpleMode(checked)}
-                  data-testid="switch-simple-mode"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
