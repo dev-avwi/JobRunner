@@ -5962,6 +5962,12 @@ export default function JobDetailScreen() {
         <Stack.Screen
           options={{
             headerShown: true,
+            // The global <Header /> already consumes the status-bar inset, so on
+            // Android this nested native header must NOT reserve it again (avoids
+            // a phantom gap that pushes the job content too far down).
+            // (headerStatusBarHeight is a valid native-stack option that
+            // expo-router's option type doesn't surface, hence the cast.)
+            ...(Platform.OS === 'android' ? ({ headerStatusBarHeight: 0 } as any) : {}),
             title: '',
             headerBackVisible: false,
             headerShadowVisible: false,
@@ -8977,6 +8983,12 @@ export default function JobDetailScreen() {
         <Stack.Screen 
         options={{
           headerShown: true,
+          // The global <Header /> already consumes the status-bar inset, so on
+          // Android this nested native header must NOT reserve it again (avoids
+          // a phantom gap that pushes the job content too far down).
+          // (headerStatusBarHeight is a valid native-stack option that
+          // expo-router's option type doesn't surface, hence the cast.)
+          ...(Platform.OS === 'android' ? ({ headerStatusBarHeight: 0 } as any) : {}),
           title: '',
           headerBackVisible: false,
           headerShadowVisible: false,
