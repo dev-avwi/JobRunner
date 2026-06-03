@@ -111,8 +111,8 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { path: '/chat', label: 'Chat', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: true },
   { path: '/team-chat', label: 'Team Chat', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: false },
   
-  // Map - owner/solo_owner/manager (solo owners can view job locations)
-  { path: '/map', label: 'Map', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
+  // Map - owner/solo_owner/manager + staff (workers see their assigned jobs on the map)
+  { path: '/map', label: 'Map', allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie'], showInNav: true },
   
   // Reports - owner/manager only
   { path: '/reports', label: 'Reports', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
@@ -156,8 +156,8 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // Integrations - owner only
   { path: '/integrations', label: 'Integrations', allowedRoles: ['owner', 'solo_owner'], showInNav: true },
   
-  // Settings - owner/solo full, manager limited, staff profile only
-  { path: '/settings', label: 'Settings', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
+  // Settings - owner/solo full, manager limited, staff profile/notifications/appearance only
+  { path: '/settings', label: 'Settings', allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie'], showInNav: true },
   
   // Billing - owner only
   { path: '/billing', label: 'Billing', allowedRoles: ['owner', 'solo_owner'], showInNav: false },
@@ -415,7 +415,7 @@ export function getActionPermissions(role: UserRole): ActionPermissions {
         canManageIntegrations: false,
         canViewAllJobs: false,
         canViewReports: false,
-        canViewMap: false,
+        canViewMap: true,
         canUseDispatch: false,
       };
       

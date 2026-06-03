@@ -412,7 +412,7 @@ export default function StaffTradieDashboard({
     ...(hasPermission('create_quotes') ? [{ key: 'create-quote', label: 'New Quote', description: 'Quote a customer', icon: FileText, onClick: () => onNavigate?.('/quotes/new') }] : []),
     ...(hasPermission('create_invoices') ? [{ key: 'create-invoice', label: 'New Invoice', description: 'Bill for work done', icon: Receipt, onClick: () => onNavigate?.('/invoices/new') }] : []),
     { key: 'log-expense', label: 'Log Expense', description: 'Record a cost', icon: Wallet, onClick: () => onNavigate?.('/expenses') },
-    { key: 'safety-forms', label: 'Safety Forms', description: 'SWMS & checklists', icon: ShieldCheck, onClick: () => onNavigate?.('/templates') },
+    { key: 'safety-forms', label: 'Safety Forms', description: 'SWMS & checklists', icon: ShieldCheck, onClick: () => onNavigate?.('/whs') },
     ...((hasPermission('view_invoices') || hasPermission('view_quotes')) ? [{ key: 'view-documents', label: 'Documents', description: 'Quotes & invoices', icon: FolderOpen, onClick: () => onNavigate?.('/documents') }] : []),
   ];
 

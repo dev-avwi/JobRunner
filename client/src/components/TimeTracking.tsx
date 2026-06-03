@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useOfflineTimeTracking } from "@/hooks/useOfflineTimeTracking";
 import { 
@@ -28,7 +34,8 @@ import {
   CircleDollarSign,
   Car,
   Clipboard,
-  GraduationCap
+  GraduationCap,
+  Plus
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -908,6 +915,84 @@ export function TimesheetList({
     queryKey: ['/api/time-entries'],
   });
 
+  // Manual "Add Entry" dialog state
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const [showAddEntry, setShowAddEntry] = useState(false);
+  const [entryJobId, setEntryJobId] = useState<string>("");
+  const [entryDate, setEntryDate] = useState<string>(todayStr);
+  const [entryStart, setEntryStart] = useState<string>("09:00");
+  const [entryEnd, setEntryEnd] = useState<string>("17:00");
+  const [entryDescription, setEntryDescription] = useState<string>("");
+  const [entryBillable, setEntryBillable] = useState<boolean>(true);
+
+  // Jobs for the entry's job selector (only loaded while the dialog is open)
+  const { data: jobsForEntry = [] } = useQuery<any[]>({
+    queryKey: ['/api/jobs'],
+    enabled: showAddEntry,
+  });
+
+  const resetEntryForm = () => {
+    setEntryJobId("");
+    setEntryDate(todayStr);
+    setEntryStart("09:00");
+    setEntryEnd("17:00");
+    setEntryDescription("");
+    setEntryBillable(true);
+  };
+
+  // Create a manual (completed) time entry
+  const addEntryMutation = useMutation({
+    mutationFn: async () => {
+      const start = new Date(`${entryDate}T${entryStart}`);
+      const end = new Date(`${entryDate}T${entryEnd}`);
+      const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+      return apiRequest('POST', '/api/time-entries', {
+        jobId: entryJobId || undefined,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        duration: durationMinutes,
+        description: entryDescription || undefined,
+        isBillable: entryBillable,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/time-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/time-entries/active/current'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/time-tracking/dashboard'] });
+      setShowAddEntry(false);
+      resetEntryForm();
+      toast({
+        title: "Entry Added",
+        description: "Your time entry has been saved.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Couldn't Add Entry",
+        description: error?.message || "Failed to add time entry",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddEntry = () => {
+    if (!entryJobId) {
+      toast({ title: "Select a Job", description: "Please choose a job for this entry.", variant: "destructive" });
+      return;
+    }
+    const start = new Date(`${entryDate}T${entryStart}`);
+    const end = new Date(`${entryDate}T${entryEnd}`);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      toast({ title: "Invalid Time", description: "Please enter a valid date and time.", variant: "destructive" });
+      return;
+    }
+    if (end.getTime() <= start.getTime()) {
+      toast({ title: "Invalid Time", description: "End time must be after start time.", variant: "destructive" });
+      return;
+    }
+    addEntryMutation.mutate();
+  };
+
   // Delete time entry mutation
   const deleteEntryMutation = useMutation({
     mutationFn: async (entryId: string) => {
@@ -930,6 +1015,93 @@ export function TimesheetList({
       });
     },
   });
+
+  const addEntryDialog = (
+    <Dialog open={showAddEntry} onOpenChange={(open) => { setShowAddEntry(open); if (!open) resetEntryForm(); }}>
+      <DialogContent data-testid="dialog-add-time-entry">
+        <DialogHeader>
+          <DialogTitle>Add Time Entry</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="entry-job">Job</Label>
+            <Select value={entryJobId} onValueChange={setEntryJobId}>
+              <SelectTrigger id="entry-job" data-testid="select-entry-job">
+                <SelectValue placeholder="Select a job" />
+              </SelectTrigger>
+              <SelectContent>
+                {jobsForEntry.map((job: any) => (
+                  <SelectItem key={job.id} value={String(job.id)}>
+                    {job.title || job.jobNumber || `Job ${job.id}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="entry-date">Date</Label>
+            <Input
+              id="entry-date"
+              type="date"
+              value={entryDate}
+              max={todayStr}
+              onChange={(e) => setEntryDate(e.target.value)}
+              data-testid="input-entry-date"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="entry-start">Start</Label>
+              <Input
+                id="entry-start"
+                type="time"
+                value={entryStart}
+                onChange={(e) => setEntryStart(e.target.value)}
+                data-testid="input-entry-start"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="entry-end">End</Label>
+              <Input
+                id="entry-end"
+                type="time"
+                value={entryEnd}
+                onChange={(e) => setEntryEnd(e.target.value)}
+                data-testid="input-entry-end"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="entry-description">Description (optional)</Label>
+            <Textarea
+              id="entry-description"
+              placeholder="What did you work on?"
+              value={entryDescription}
+              onChange={(e) => setEntryDescription(e.target.value)}
+              data-testid="input-entry-description"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="entry-billable">Billable</Label>
+            <Switch
+              id="entry-billable"
+              checked={entryBillable}
+              onCheckedChange={setEntryBillable}
+              data-testid="switch-entry-billable"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowAddEntry(false); resetEntryForm(); }} data-testid="button-cancel-entry">
+            Cancel
+          </Button>
+          <Button onClick={handleAddEntry} disabled={addEntryMutation.isPending} data-testid="button-save-entry">
+            {addEntryMutation.isPending ? "Saving..." : "Save Entry"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   const formatDuration = (startTime: string, endTime?: string) => {
     const start = new Date(startTime);
@@ -979,11 +1151,16 @@ export function TimesheetList({
 
   return (
     <Card className="w-full" data-testid="card-timesheet-list">
-      <CardHeader>
+      {addEntryDialog}
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
           Recent Time Entries
         </CardTitle>
+        <Button size="sm" variant="outline" onClick={() => setShowAddEntry(true)} data-testid="button-add-entry">
+          <Plus className="h-4 w-4 mr-1" />
+          Add Entry
+        </Button>
       </CardHeader>
       <CardContent>
         {entriesToShow.length === 0 ? (

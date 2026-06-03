@@ -1766,9 +1766,11 @@ import { logSystemEvent } from "../systemEventService";
       // Staff tradies can only view their assigned jobs
       const hasViewAll = userContext?.permissions?.includes('view_all') || userContext?.isOwner;
       if (!hasViewAll && userContext?.teamMemberId) {
-        // Check if job is assigned to this team member
-        const isAssigned = job.assignedTo === userContext.teamMemberId || 
-                          job.assignedTeamMemberId === userContext.teamMemberId;
+        // Assignment can be stored either as the team member id or the member's
+        // underlying user id depending on how the job was assigned, so match both.
+        const assignIds = [userContext.teamMemberId, req.userId].filter(Boolean);
+        const isAssigned = assignIds.includes(job.assignedTo) ||
+                          assignIds.includes(job.assignedTeamMemberId);
         if (!isAssigned) {
           return res.status(403).json({ error: "You can only view your assigned jobs" });
         }

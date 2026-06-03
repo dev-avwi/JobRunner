@@ -41111,6 +41111,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       const conditions: any[] = [eq(jobPhotos.userId, effectiveUserId)];
 
+      // Workers (no view-all permission) only see media they uploaded themselves
+      const photosHasViewAll = userContext?.isOwner || userContext?.permissions?.includes('view_all');
+      if (!photosHasViewAll) {
+        conditions.push(eq(jobPhotos.uploadedBy, userId));
+      }
+
       if (jobId) conditions.push(eq(jobPhotos.jobId, jobId as string));
       if (clientId) conditions.push(eq(jobs.clientId, clientId as string));
       if (category && category !== 'all') conditions.push(eq(jobPhotos.category, category as string));
@@ -41189,6 +41195,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const userContext = await getUserContext(userId);
       const effectiveUserId = userContext?.effectiveUserId || userId;
 
+      const statsHasViewAll = userContext?.isOwner || userContext?.permissions?.includes('view_all');
+      const statsConditions: any[] = [eq(jobPhotos.userId, effectiveUserId)];
+      if (!statsHasViewAll) {
+        statsConditions.push(eq(jobPhotos.uploadedBy, userId));
+      }
+
       const allPhotos = await db.select({
         id: jobPhotos.id,
         category: jobPhotos.category,
@@ -41199,7 +41211,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       })
         .from(jobPhotos)
         .leftJoin(jobs, eq(jobPhotos.jobId, jobs.id))
-        .where(eq(jobPhotos.userId, effectiveUserId));
+        .where(and(...statsConditions));
 
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);

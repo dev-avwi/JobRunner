@@ -215,8 +215,8 @@ export default function Settings({
         setActiveTab(defaultTab);
         return;
       }
-      // Staff can access account and support tabs only
-      if (isTradie && savedTab !== 'support' && savedTab !== 'account') {
+      // Staff can access account, appearance and support tabs
+      if (isTradie && !['support', 'account', 'appearance'].includes(savedTab)) {
         setActiveTab('account');
       } else if (!canAccessBilling && savedTab === 'billing') {
         setActiveTab(defaultTab);
@@ -246,10 +246,10 @@ export default function Settings({
     };
     const key = requestedRaw.toLowerCase();
     const target = aliases[key] || key;
-    const validTabs = ['account', 'business', 'branding', 'payment', 'notifications', 'communications', 'billing', 'support', 'data', 'developer'];
+    const validTabs = ['account', 'appearance', 'business', 'branding', 'payment', 'notifications', 'communications', 'billing', 'support', 'data', 'developer'];
     if (!validTabs.includes(target)) return;
     // Respect role gating before switching
-    const isAlwaysAvailable = target === 'account' || target === 'support';
+    const isAlwaysAvailable = ['account', 'appearance', 'support'].includes(target);
     const needsBilling = target === 'billing';
     const needsBusiness = !isAlwaysAvailable && !needsBilling;
     if (needsBilling && !canAccessBilling) return;
@@ -905,6 +905,11 @@ export default function Settings({
               <span className="hidden sm:inline">My Account</span>
               <span className="sm:hidden">Me</span>
             </TabsTrigger>
+            <TabsTrigger value="appearance" data-testid="tab-appearance" className="flex-shrink-0">
+              <Palette className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Appearance</span>
+              <span className="sm:hidden">Look</span>
+            </TabsTrigger>
             {canAccessBusinessSettings && (
               <TabsTrigger value="business" data-testid="tab-business" className="flex-shrink-0">
                 <Building className="h-4 w-4 mr-1.5" />
@@ -1111,97 +1116,6 @@ export default function Settings({
                         : "Unknown"}
                     </span>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Palette className="h-5 w-5" />
-                    Your Colour
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Choose your unique colour for map tracking and app theme. Each team member has a different colour so you're easy to spot on the map.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {isLoadingColors ? (
-                    <div className="flex gap-2">
-                      {[...Array(8)].map((_, i) => (
-                        <Skeleton key={i} className="h-10 w-10 rounded-full" />
-                      ))}
-                    </div>
-                  ) : colorAvailability ? (
-                    <>
-                      <div className="grid grid-cols-5 sm:grid-cols-8 gap-3">
-                        {colorAvailability.colors.map((colorOption) => (
-                          <button
-                            key={colorOption.color}
-                            type="button"
-                            disabled={!colorOption.available && !colorOption.isCurrentUser || updateThemeColorMutation.isPending}
-                            onClick={() => {
-                              if (colorOption.available || colorOption.isCurrentUser) {
-                                updateThemeColorMutation.mutate(colorOption.color);
-                              }
-                            }}
-                            className={`
-                              relative h-10 w-10 rounded-full border-2 transition-all
-                              ${colorOption.isCurrentUser 
-                                ? 'ring-2 ring-offset-2 ring-primary border-primary scale-110' 
-                                : colorOption.available 
-                                  ? 'border-transparent hover:scale-110 hover-elevate cursor-pointer' 
-                                  : 'opacity-40 cursor-not-allowed border-muted'
-                              }
-                            `}
-                            style={{ backgroundColor: colorOption.color }}
-                            data-testid={`color-swatch-${colorOption.color.replace('#', '')}`}
-                            title={
-                              colorOption.isCurrentUser 
-                                ? 'Your current colour' 
-                                : colorOption.available 
-                                  ? 'Available - click to select' 
-                                  : 'Already taken by a team member'
-                            }
-                          >
-                            {colorOption.isCurrentUser && (
-                              <Check className="absolute inset-0 m-auto h-5 w-5 text-white drop-shadow-md" />
-                            )}
-                            {updateThemeColorMutation.isPending && colorOption.color === colorAvailability.currentColor && (
-                              <Loader2 className="absolute inset-0 m-auto h-5 w-5 text-white animate-spin" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                      
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 rounded-full bg-primary ring-2 ring-primary ring-offset-1"></div>
-                          <span>Your colour</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 rounded-full bg-muted-foreground/40"></div>
-                          <span>Taken</span>
-                        </div>
-                      </div>
-
-                      {colorAvailability.currentColor && (
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                          <div 
-                            className="h-8 w-8 rounded-full border-2 border-primary" 
-                            style={{ backgroundColor: colorAvailability.currentColor }}
-                          />
-                          <div>
-                            <p className="font-medium text-sm">Current colour</p>
-                            <p className="text-xs text-muted-foreground">
-                              This colour will be shown on the team map and in your profile
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-muted-foreground">Unable to load colour options</p>
-                  )}
                 </CardContent>
               </Card>
 
@@ -1512,6 +1426,254 @@ export default function Settings({
           <ImportDataCard />
         </TabsContent>
 
+        <TabsContent value="appearance" className="space-y-6">
+          {/* Personal colour - available to all team members */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Your Colour
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Choose your unique colour for map tracking and app theme. Each team member has a different colour so you're easy to spot on the map.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoadingColors ? (
+                <div className="flex gap-2">
+                  {[...Array(8)].map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-10 rounded-full" />
+                  ))}
+                </div>
+              ) : colorAvailability ? (
+                <>
+                  <div className="grid grid-cols-5 sm:grid-cols-8 gap-3">
+                    {colorAvailability.colors.map((colorOption) => (
+                      <button
+                        key={colorOption.color}
+                        type="button"
+                        disabled={!colorOption.available && !colorOption.isCurrentUser || updateThemeColorMutation.isPending}
+                        onClick={() => {
+                          if (colorOption.available || colorOption.isCurrentUser) {
+                            updateThemeColorMutation.mutate(colorOption.color);
+                          }
+                        }}
+                        className={`
+                          relative h-10 w-10 rounded-full border-2 transition-all
+                          ${colorOption.isCurrentUser 
+                            ? 'ring-2 ring-offset-2 ring-primary border-primary scale-110' 
+                            : colorOption.available 
+                              ? 'border-transparent hover:scale-110 hover-elevate cursor-pointer' 
+                              : 'opacity-40 cursor-not-allowed border-muted'
+                          }
+                        `}
+                        style={{ backgroundColor: colorOption.color }}
+                        data-testid={`color-swatch-${colorOption.color.replace('#', '')}`}
+                        title={
+                          colorOption.isCurrentUser 
+                            ? 'Your current colour' 
+                            : colorOption.available 
+                              ? 'Available - click to select' 
+                              : 'Already taken by a team member'
+                        }
+                      >
+                        {colorOption.isCurrentUser && (
+                          <Check className="absolute inset-0 m-auto h-5 w-5 text-white drop-shadow-md" />
+                        )}
+                        {updateThemeColorMutation.isPending && colorOption.color === colorAvailability.currentColor && (
+                          <Loader2 className="absolute inset-0 m-auto h-5 w-5 text-white animate-spin" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded-full bg-primary ring-2 ring-primary ring-offset-1"></div>
+                      <span>Your colour</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded-full bg-muted-foreground/40"></div>
+                      <span>Taken</span>
+                    </div>
+                  </div>
+
+                  {colorAvailability.currentColor && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                      <div 
+                        className="h-8 w-8 rounded-full border-2 border-primary" 
+                        style={{ backgroundColor: colorAvailability.currentColor }}
+                      />
+                      <div>
+                        <p className="font-medium text-sm">Current colour</p>
+                        <p className="text-xs text-muted-foreground">
+                          This colour will be shown on the team map and in your profile
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-muted-foreground">Unable to load colour options</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* App brand colour - business owners/managers only */}
+          {canAccessBusinessSettings && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="w-5 h-5" />
+                  App Color
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <p className="text-sm text-muted-foreground">
+                    Choose your accent color for the app. This color will be used for buttons, highlights, and other interactive elements.
+                  </p>
+                  
+                  {/* Color Picker */}
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-3">
+                      {[
+                        { color: '#2563EB', name: 'Blue' },
+                        { color: '#3b82f6', name: 'Blue' },
+                        { color: '#10b981', name: 'Green' },
+                        { color: '#8b5cf6', name: 'Purple' },
+                        { color: '#f59e0b', name: 'Orange' },
+                        { color: '#ef4444', name: 'Red' },
+                        { color: '#ec4899', name: 'Pink' },
+                        { color: '#06b6d4', name: 'Cyan' },
+                        { color: '#84cc16', name: 'Lime' },
+                      ].map((preset) => (
+                        <button
+                          key={preset.color}
+                          type="button"
+                          onClick={() => {
+                            setBrandingDirty(true);
+                            setBrandingData(prev => ({ ...prev, color: preset.color, customThemeEnabled: true }));
+                            setBrandTheme({
+                              primaryColor: preset.color,
+                              customThemeEnabled: true
+                            });
+                            localStorage.setItem('jobrunner-brand-theme', JSON.stringify({
+                              primaryColor: preset.color,
+                              customThemeEnabled: true
+                            }));
+                          }}
+                          className={`w-12 h-12 rounded-xl transition-shadow duration-200 ${
+                            brandingData.color === preset.color && brandingData.customThemeEnabled
+                              ? 'ring-2 ring-offset-2 ring-foreground shadow-lg' 
+                              : 'ring-1 ring-border'
+                          }`}
+                          style={{ 
+                            backgroundColor: preset.color,
+                            WebkitTapHighlightColor: 'transparent',
+                            touchAction: 'manipulation'
+                          }}
+                          title={preset.name}
+                          data-testid={`color-${preset.name.toLowerCase()}`}
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Custom color input */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <div className="flex items-center gap-2 flex-1 max-w-xs">
+                        <input
+                          type="color"
+                          value={brandingData.color}
+                          onChange={(e) => {
+                            setBrandingDirty(true);
+                            setBrandingData(prev => ({ ...prev, color: e.target.value, customThemeEnabled: true }));
+                            setBrandTheme({
+                              primaryColor: e.target.value,
+                              customThemeEnabled: true
+                            });
+                            localStorage.setItem('jobrunner-brand-theme', JSON.stringify({
+                              primaryColor: e.target.value,
+                              customThemeEnabled: true
+                            }));
+                          }}
+                          className="w-12 h-12 rounded-xl cursor-pointer border-0 p-0"
+                          data-testid="input-custom-color"
+                        />
+                        <div className="flex-1">
+                          <Label className="text-sm font-medium">Custom Color</Label>
+                          <Input
+                            value={brandingData.color}
+                            onChange={(e) => {
+                              setBrandingDirty(true);
+                              setBrandingData(prev => ({ ...prev, color: e.target.value, customThemeEnabled: true }));
+                              if (e.target.value.match(/^#[0-9A-Fa-f]{6}$/)) {
+                                setBrandTheme({
+                                  primaryColor: e.target.value,
+                                  customThemeEnabled: true
+                                });
+                                localStorage.setItem('jobrunner-brand-theme', JSON.stringify({
+                                  primaryColor: e.target.value,
+                                  customThemeEnabled: true
+                                }));
+                              }
+                            }}
+                            placeholder="#2563EB"
+                            className="h-8 text-sm font-mono"
+                            data-testid="input-brand-color"
+                          />
+                        </div>
+                      </div>
+                      
+                      {brandingData.customThemeEnabled && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setBrandingDirty(true);
+                            setBrandingData(prev => ({ ...prev, color: '#2563EB', customThemeEnabled: false }));
+                            setBrandTheme({
+                              primaryColor: '#2563EB',
+                              customThemeEnabled: false
+                            });
+                            localStorage.setItem('jobrunner-brand-theme', JSON.stringify({
+                              primaryColor: '#2563EB',
+                              customThemeEnabled: false
+                            }));
+                          }}
+                          className="text-muted-foreground"
+                          data-testid="button-reset-color"
+                        >
+                          Reset to Default
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Preview */}
+                  {brandingData.customThemeEnabled && (
+                    <div className="pt-4 border-t animate-fade-in">
+                      <p className="text-xs text-muted-foreground mb-3">Preview</p>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <Button style={{ backgroundColor: brandingData.color }} className="text-white">
+                          Primary Button
+                        </Button>
+                        <Badge style={{ backgroundColor: brandingData.color }} className="text-white">
+                          Badge
+                        </Badge>
+                        <div 
+                          className="h-2 w-24 rounded-full" 
+                          style={{ backgroundColor: brandingData.color }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="business" className="space-y-6">
           <Card>
             <CardHeader>
@@ -1776,164 +1938,89 @@ export default function Settings({
           </Card>
 
 
-          <DataSafetyBanner />
-        </TabsContent>
-
-        <TabsContent value="branding" className="space-y-6 animate-fade-in-up">
-          {/* Simple App Color Picker */}
+          {/* AI Features Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Palette className="w-5 h-5" />
-                App Color
+                <Sparkles className="h-5 w-5 text-primary" />
+                AI Features
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <p className="text-sm text-muted-foreground">
-                  Choose your accent color for the app. This color will be used for buttons, highlights, and other interactive elements.
-                </p>
-                
-                {/* Color Picker */}
-                <div className="space-y-4">
-                  <div className="flex flex-wrap gap-3">
-                    {[
-                      { color: '#2563EB', name: 'Blue' },
-                      { color: '#3b82f6', name: 'Blue' },
-                      { color: '#10b981', name: 'Green' },
-                      { color: '#8b5cf6', name: 'Purple' },
-                      { color: '#f59e0b', name: 'Orange' },
-                      { color: '#ef4444', name: 'Red' },
-                      { color: '#ec4899', name: 'Pink' },
-                      { color: '#06b6d4', name: 'Cyan' },
-                      { color: '#84cc16', name: 'Lime' },
-                    ].map((preset) => (
-                      <button
-                        key={preset.color}
-                        type="button"
-                        onClick={() => {
-                          setBrandingDirty(true);
-                          setBrandingData(prev => ({ ...prev, color: preset.color, customThemeEnabled: true }));
-                          setBrandTheme({
-                            primaryColor: preset.color,
-                            customThemeEnabled: true
-                          });
-                          // Also update localStorage immediately for faster persistence
-                          localStorage.setItem('jobrunner-brand-theme', JSON.stringify({
-                            primaryColor: preset.color,
-                            customThemeEnabled: true
-                          }));
-                        }}
-                        className={`w-12 h-12 rounded-xl transition-shadow duration-200 ${
-                          brandingData.color === preset.color && brandingData.customThemeEnabled
-                            ? 'ring-2 ring-offset-2 ring-foreground shadow-lg' 
-                            : 'ring-1 ring-border'
-                        }`}
-                        style={{ 
-                          backgroundColor: preset.color,
-                          WebkitTapHighlightColor: 'transparent',
-                          touchAction: 'manipulation'
-                        }}
-                        title={preset.name}
-                        data-testid={`color-${preset.name.toLowerCase()}`}
-                      />
-                    ))}
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                Control which AI-powered features are enabled in your account. AI features help automate documentation and provide smart suggestions.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <Label>Enable AI Features</Label>
+                    <p className="text-sm text-muted-foreground">Master toggle for all AI-powered features</p>
                   </div>
-                  
-                  {/* Custom color input */}
-                  <div className="flex items-center gap-3 pt-2">
-                    <div className="flex items-center gap-2 flex-1 max-w-xs">
-                      <input
-                        type="color"
-                        value={brandingData.color}
-                        onChange={(e) => {
-                          setBrandingDirty(true);
-                          setBrandingData(prev => ({ ...prev, color: e.target.value, customThemeEnabled: true }));
-                          setBrandTheme({
-                            primaryColor: e.target.value,
-                            customThemeEnabled: true
-                          });
-                          localStorage.setItem('jobrunner-brand-theme', JSON.stringify({
-                            primaryColor: e.target.value,
-                            customThemeEnabled: true
-                          }));
-                        }}
-                        className="w-12 h-12 rounded-xl cursor-pointer border-0 p-0"
-                        data-testid="input-custom-color"
-                      />
-                      <div className="flex-1">
-                        <Label className="text-sm font-medium">Custom Color</Label>
-                        <Input
-                          value={brandingData.color}
-                          onChange={(e) => {
-                            setBrandingDirty(true);
-                            setBrandingData(prev => ({ ...prev, color: e.target.value, customThemeEnabled: true }));
-                            if (e.target.value.match(/^#[0-9A-Fa-f]{6}$/)) {
-                              setBrandTheme({
-                                primaryColor: e.target.value,
-                                customThemeEnabled: true
-                              });
-                              localStorage.setItem('jobrunner-brand-theme', JSON.stringify({
-                                primaryColor: e.target.value,
-                                customThemeEnabled: true
-                              }));
-                            }
-                          }}
-                          placeholder="#2563EB"
-                          className="h-8 text-sm font-mono"
-                          data-testid="input-brand-color"
-                        />
-                      </div>
-                    </div>
-                    
-                    {brandingData.customThemeEnabled && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setBrandingDirty(true);
-                          setBrandingData(prev => ({ ...prev, color: '#2563EB', customThemeEnabled: false }));
-                          setBrandTheme({
-                            primaryColor: '#2563EB',
-                            customThemeEnabled: false
-                          });
-                          // Also update localStorage immediately for consistency
-                          localStorage.setItem('jobrunner-brand-theme', JSON.stringify({
-                            primaryColor: '#2563EB',
-                            customThemeEnabled: false
-                          }));
-                        }}
-                        className="text-muted-foreground"
-                        data-testid="button-reset-color"
-                      >
-                        Reset to Default
-                      </Button>
-                    )}
-                  </div>
+                  <Switch 
+                    checked={businessData.aiEnabled !== false}
+                    onCheckedChange={(checked) => {
+                      setBusinessData(prev => ({ ...prev, aiEnabled: checked }));
+                      handleBusinessSave({ aiEnabled: checked });
+                    }}
+                    data-testid="switch-ai-enabled" 
+                  />
                 </div>
-                
-                {/* Preview */}
-                {brandingData.customThemeEnabled && (
-                  <div className="pt-4 border-t animate-fade-in">
-                    <p className="text-xs text-muted-foreground mb-3">Preview</p>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <Button style={{ backgroundColor: brandingData.color }} className="text-white">
-                        Primary Button
-                      </Button>
-                      <Badge style={{ backgroundColor: brandingData.color }} className="text-white">
-                        Badge
-                      </Badge>
-                      <div 
-                        className="h-2 w-24 rounded-full" 
-                        style={{ backgroundColor: brandingData.color }}
-                      />
-                    </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <Label>AI Photo Analysis</Label>
+                    <p className="text-sm text-muted-foreground">Automatically analyse job photos and generate notes</p>
                   </div>
-                )}
+                  <Switch 
+                    checked={businessData.aiPhotoAnalysisEnabled !== false}
+                    onCheckedChange={(checked) => {
+                      setBusinessData(prev => ({ ...prev, aiPhotoAnalysisEnabled: checked }));
+                      handleBusinessSave({ aiPhotoAnalysisEnabled: checked });
+                    }}
+                    disabled={businessData.aiEnabled === false}
+                    data-testid="switch-ai-photo-analysis" 
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <Label>Auto-categorize Photos on Upload</Label>
+                    <p className="text-sm text-muted-foreground">Automatically sort uploaded photos into categories (before, after, progress, materials)</p>
+                  </div>
+                  <Switch 
+                    checked={businessData.aiAutoCategorizationEnabled !== false}
+                    onCheckedChange={(checked) => {
+                      setBusinessData(prev => ({ ...prev, aiAutoCategorizationEnabled: checked }));
+                      handleBusinessSave({ aiAutoCategorizationEnabled: checked });
+                    }}
+                    disabled={businessData.aiEnabled === false}
+                    data-testid="switch-ai-auto-categorization" 
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <Label>AI Suggestions</Label>
+                    <p className="text-sm text-muted-foreground">Smart suggestions for quotes, invoices, and follow-ups</p>
+                  </div>
+                  <Switch 
+                    checked={businessData.aiSuggestionsEnabled !== false}
+                    onCheckedChange={(checked) => {
+                      setBusinessData(prev => ({ ...prev, aiSuggestionsEnabled: checked }));
+                      handleBusinessSave({ aiSuggestionsEnabled: checked });
+                    }}
+                    disabled={businessData.aiEnabled === false}
+                    data-testid="switch-ai-suggestions" 
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
+          <DataSafetyBanner />
+        </TabsContent>
+
+        <TabsContent value="branding" className="space-y-6 animate-fade-in-up">
           {/* Logo Upload */}
           <Card>
             <CardHeader>
@@ -2321,84 +2408,6 @@ export default function Settings({
             </CardContent>
           </Card>
 
-          {/* AI Features Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                AI Features
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Control which AI-powered features are enabled in your account. AI features help automate documentation and provide smart suggestions.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <Label>Enable AI Features</Label>
-                    <p className="text-sm text-muted-foreground">Master toggle for all AI-powered features</p>
-                  </div>
-                  <Switch 
-                    checked={businessData.aiEnabled !== false}
-                    onCheckedChange={(checked) => {
-                      setBusinessData(prev => ({ ...prev, aiEnabled: checked }));
-                      handleBusinessSave({ aiEnabled: checked });
-                    }}
-                    data-testid="switch-ai-enabled" 
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <Label>AI Photo Analysis</Label>
-                    <p className="text-sm text-muted-foreground">Automatically analyse job photos and generate notes</p>
-                  </div>
-                  <Switch 
-                    checked={businessData.aiPhotoAnalysisEnabled !== false}
-                    onCheckedChange={(checked) => {
-                      setBusinessData(prev => ({ ...prev, aiPhotoAnalysisEnabled: checked }));
-                      handleBusinessSave({ aiPhotoAnalysisEnabled: checked });
-                    }}
-                    disabled={businessData.aiEnabled === false}
-                    data-testid="switch-ai-photo-analysis" 
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <Label>Auto-categorize Photos on Upload</Label>
-                    <p className="text-sm text-muted-foreground">Automatically sort uploaded photos into categories (before, after, progress, materials)</p>
-                  </div>
-                  <Switch 
-                    checked={businessData.aiAutoCategorizationEnabled !== false}
-                    onCheckedChange={(checked) => {
-                      setBusinessData(prev => ({ ...prev, aiAutoCategorizationEnabled: checked }));
-                      handleBusinessSave({ aiAutoCategorizationEnabled: checked });
-                    }}
-                    disabled={businessData.aiEnabled === false}
-                    data-testid="switch-ai-auto-categorization" 
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <Label>AI Suggestions</Label>
-                    <p className="text-sm text-muted-foreground">Smart suggestions for quotes, invoices, and follow-ups</p>
-                  </div>
-                  <Switch 
-                    checked={businessData.aiSuggestionsEnabled !== false}
-                    onCheckedChange={(checked) => {
-                      setBusinessData(prev => ({ ...prev, aiSuggestionsEnabled: checked }));
-                      handleBusinessSave({ aiSuggestionsEnabled: checked });
-                    }}
-                    disabled={businessData.aiEnabled === false}
-                    data-testid="switch-ai-suggestions" 
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <BillingTabContent />
