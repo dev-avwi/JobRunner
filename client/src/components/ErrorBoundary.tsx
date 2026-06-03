@@ -5,12 +5,23 @@ import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 import { isChunkLoadError, clearReloadFlag } from "@/lib/lazyWithReload";
 
+// Benign dev-only noise: the Vite HMR client tries to open a WebSocket at
+// `wss://localhost:undefined/?token=...` when its host/port can't resolve.
+// It self-recovers and means nothing to end users — never report it.
+function isBenignWebSocketNoise(msg?: string): boolean {
+  if (!msg) return false;
+  if (msg.includes('localhost:undefined') && msg.includes('WebSocket')) return true;
+  if (msg.includes("Failed to construct 'WebSocket'")) return true;
+  return false;
+}
+
 function reportErrorToServer(data: {
   message: string;
   stack?: string;
   componentStack?: string;
   url?: string;
 }) {
+  if (isBenignWebSocketNoise(data.message)) return;
   try {
     fetch('/api/client-errors', {
       method: 'POST',

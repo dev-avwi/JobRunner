@@ -37523,6 +37523,16 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const { message, stack, componentStack, url, userAgent } = req.body;
       if (!message) return res.status(400).json({ error: 'Message required' });
 
+      // Drop benign Vite HMR dev-socket noise (wss://localhost:undefined/?token=...).
+      // It self-recovers, affects no end user, and was spamming email alerts.
+      const msgStr = String(message);
+      if (
+        (msgStr.includes('localhost:undefined') && msgStr.includes('WebSocket')) ||
+        msgStr.includes("Failed to construct 'WebSocket'")
+      ) {
+        return res.json({ received: true, ignored: true });
+      }
+
       const userId = req.session?.userId || null;
       logger.error('frontend', `Client error: ${String(message).substring(0, 500)}`, {
         userId,
