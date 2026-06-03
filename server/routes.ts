@@ -31007,6 +31007,41 @@ Respond with JSON in this format:
         lastLocationUpdate: locationTime,
       });
 
+      // Bridge the worker's continuous shared location into the client job portal.
+      // The portal reads assignment location_pings + the in-memory travel location,
+      // NOT the team map. Without this bridge the client only ever sees the single
+      // initial "On My Way" ping and the dot never moves. For every active en_route
+      // assignment this worker has, mirror the live location so the portal updates.
+      try {
+        const enRouteAssignments = await storage.getEnRouteAssignmentsForUser(userId);
+        if (enRouteAssignments.length > 0) {
+          const latNum = parseFloat(String(latitude));
+          const lngNum = parseFloat(String(longitude));
+          const speedNum = speed != null ? parseFloat(String(speed)) : undefined;
+          const headingNum = heading != null ? parseFloat(String(heading)) : undefined;
+          const accNum = accuracy != null ? parseFloat(String(accuracy)) : null;
+          const { updateWorkerTravelLocation } = await import('./websocket');
+          for (const a of enRouteAssignments) {
+            // Fast path (same-process portal reads)
+            updateWorkerTravelLocation(a.jobId, latNum, lngNum, speedNum, headingNum);
+            // Durable path (works across autoscale instances + crew-locations endpoint)
+            try {
+              await storage.createLocationPing({
+                assignmentId: a.id,
+                userId,
+                latitude: latNum,
+                longitude: lngNum,
+                accuracyMeters: accNum,
+              } as any);
+            } catch (pingErr) {
+              console.log('[TeamLocations] Could not mirror location ping to portal:', pingErr);
+            }
+          }
+        }
+      } catch (bridgeErr) {
+        console.log('[TeamLocations] Portal location bridge failed:', bridgeErr);
+      }
+
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error updating location:', error);

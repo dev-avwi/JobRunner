@@ -3605,9 +3605,30 @@ import { logSystemEvent } from "../systemEventService";
       const business = await storage.getBusinessSettings(userContext.effectiveUserId);
       const businessName = business?.businessName || 'Your tradesperson';
       const user = await storage.getUser(req.userId);
-      const tradieName = user?.firstName || businessName;
+      const workerFirstName = (user?.firstName || '').trim();
+      const tradieName = workerFirstName || businessName;
+      // Sender label avoids "{businessName} from {businessName}" when the worker
+      // has no first name set (e.g. a worker logged into a business account).
+      const senderLabel = workerFirstName ? `${workerFirstName} from ${businessName}` : businessName;
 
-      const { customMessage, latitude, longitude } = req.body;
+      let { customMessage, latitude, longitude } = req.body;
+
+      // If the app didn't send a fresh GPS fix (e.g. the one-time read failed),
+      // fall back to the worker's most recently shared live location so the ETA
+      // is still real instead of the static default. Only use it if it's recent.
+      if ((latitude == null || longitude == null)) {
+        try {
+          const status = await storage.getTradieStatus(req.userId);
+          const lastUpdate = status?.lastLocationUpdate || status?.lastSeenAt;
+          const fresh = lastUpdate ? (Date.now() - new Date(lastUpdate).getTime()) < 15 * 60 * 1000 : false;
+          if (fresh && status?.currentLatitude && status?.currentLongitude) {
+            latitude = status.currentLatitude;
+            longitude = status.currentLongitude;
+          }
+        } catch (statusErr) {
+          console.log('[OnMyWay] Could not load last shared location for ETA fallback:', statusErr);
+        }
+      }
 
       // Calculate real ETA using GPS coordinates + OSRM routing
       let estimatedMinutes = 20;
@@ -3739,11 +3760,11 @@ import { logSystemEvent } from "../systemEventService";
             try {
               await storage.createLocationPing({
                 assignmentId: myAssignment.id,
+                userId: req.userId,
                 latitude: parseFloat(String(latitude)),
                 longitude: parseFloat(String(longitude)),
                 accuracyMeters: null,
-                recordedAt: new Date(),
-              });
+              } as any);
             } catch (pingErr) {
               console.log('[OnMyWay] Could not store initial location ping:', pingErr);
             }
@@ -3761,7 +3782,7 @@ import { logSystemEvent } from "../systemEventService";
         : `ETA approximately ${estimatedMinutes} minutes`;
       const distanceText = distanceKm !== null ? ` (${distanceKm} km away)` : '';
 
-      let baseMessage = customMessage || `Hi ${client.firstName || 'there'}, ${tradieName} from ${businessName} is on the way to your job at ${job.address || 'your location'}. ${etaText.charAt(0).toUpperCase() + etaText.slice(1)}${distanceKm && distanceKm > 0 ? ` (${distanceKm} km away)` : ''}.`;
+      let baseMessage = customMessage || `Hi ${client.firstName || 'there'}, ${senderLabel} is on the way to your job at ${job.address || 'your location'}. ${etaText.charAt(0).toUpperCase() + etaText.slice(1)}${distanceKm && distanceKm > 0 ? ` (${distanceKm} km away)` : ''}.`;
       baseMessage = baseMessage.replace(/\n*Track arrival:.*$/gims, '').replace(/\n*Track your job:.*$/gims, '').replace(/\n*\[link will be added\].*$/gims, '').replace(/\n*Track arrival:\s*$/gim, '').trim();
       const message = `${baseMessage}\n\nTrack your job: ${trackingUrl}`;
       

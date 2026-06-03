@@ -705,6 +705,7 @@ export interface IStorage {
   getJobAssignments(jobId: string): Promise<JobAssignment[]>;
   getJobAssignment(assignmentId: string): Promise<JobAssignment | undefined>;
   getJobAssignmentForUser(jobId: string, userId: string): Promise<JobAssignment | undefined>;
+  getEnRouteAssignmentsForUser(userId: string): Promise<JobAssignment[]>;
   createJobAssignment(assignment: InsertJobAssignment): Promise<JobAssignment>;
   updateJobAssignment(assignmentId: string, data: Partial<InsertJobAssignment & { lastSmsSentAt: Date; travelStartedAt: Date; arrivedAt: Date; etaMinutes: number; etaUpdatedAt: Date; assignmentStatus: string }>): Promise<JobAssignment | undefined>;
   getTeamMemberByOwnerAndMemberId(businessOwnerId: string, memberId: string): Promise<TeamMember | undefined>;
@@ -8103,6 +8104,11 @@ Thank you for your prompt attention to this matter.`,
       .where(and(eq(jobAssignments.jobId, jobId), eq(jobAssignments.userId, userId), eq(jobAssignments.isActive, true)))
       .limit(1);
     return result;
+  }
+
+  async getEnRouteAssignmentsForUser(userId: string): Promise<JobAssignment[]> {
+    return await db.select().from(jobAssignments)
+      .where(and(eq(jobAssignments.userId, userId), eq(jobAssignments.isActive, true), eq(jobAssignments.assignmentStatus, 'en_route')));
   }
 
   async updateJobAssignment(assignmentId: string, data: any): Promise<JobAssignment | undefined> {

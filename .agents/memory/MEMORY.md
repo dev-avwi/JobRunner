@@ -15,6 +15,7 @@
 - [No storage.db property](storage-db-undefined-footgun.md) — `db` is module-level in storage.ts; `storage.db.*` is undefined at runtime and slips past the non-typechecking esbuild build. Use storage methods.
 - [PressableRow percentage collapse (iOS)](pressablerow-percentage-collapse.md) — % width/maxWidth on PressableRow double-applies and collapses; fix per call-site, don't touch the shared component.
 - [Mobile live-location first ping](mobile-live-location-first-ping.md) — enabling team location must force one immediate send; OS background task only fires after ~50m, so stationary workers never show on owner map.
+- [Client portal live-location sources](portal-live-location-sources.md) — /p/:token dot reads workerTravelLocations + location_pings, NOT team-locations; bridge en_route team-location POSTs into both. location_pings.userId NOT NULL.
 - [SDS Manager integration](sds-manager-integration.md) — integrate, don't rebuild; they have AU-compliant SDS DB + Parser API + QR access; copy their SafetyCulture model; needs partner API key first.
 - [Job start gate paths](job-start-gate-paths.md) — a gate on starting a job must run on ALL status writers (/status, full update, bulk-status), not just /status; resolve assignedTo to user id first.
 - [403 must not clear session](auth-403-clears-session.md) — Bearer-token-only auth; non-owners 403 on owner-only endpoints; clearing token on 403 silently logs them out on reload. Only 401 clears.
