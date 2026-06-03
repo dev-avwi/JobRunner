@@ -1272,9 +1272,9 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
                         <Label className="text-xs text-muted-foreground shrink-0">Custom</Label>
                         <Input
                           type="number"
-                          min="1"
+                          min="0"
                           max="100"
-                          step="5"
+                          step="1"
                           value={watchedValues.depositPercent}
                           onChange={(e) => {
                             const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));

@@ -524,9 +524,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Short URL redirect for quotes: /q/:token -> /public/quote/:token
+  // Short URL redirect for quotes: /q/:token -> /portal/quote/:token
+  // Unified to the client portal so SMS and email links open the SAME quote
+  // viewer (the React portal) the rest of the app links to. 302 (not 301) so
+  // browsers don't permanently cache the destination if routing changes.
   app.get("/q/:token", (req: any, res) => {
-    res.redirect(301, `/public/quote/${req.params.token}`);
+    res.redirect(302, `/portal/quote/${req.params.token}`);
   });
 
   // Public quote acceptance page - client views and accepts/declines quote
@@ -2978,6 +2981,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (quote.status === 'declined') {
         return res.status(400).json({ error: 'Quote was declined' });
+      }
+
+      // Require a name and a valid drawn signature (parity with legacy flow)
+      if (!acceptedBy || !acceptedBy.trim()) {
+        return res.status(400).json({ error: 'Name is required to accept the quote' });
+      }
+      if (!signature || !signature.startsWith('data:image/')) {
+        return res.status(400).json({ error: 'Signature is required to accept the quote' });
+      }
+
+      // Reject expired quotes (parity with legacy flow)
+      if (quote.validUntil && new Date(quote.validUntil) < new Date()) {
+        return res.status(400).json({ error: 'This quote has expired' });
       }
       
       const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
