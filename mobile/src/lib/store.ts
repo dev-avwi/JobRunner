@@ -2024,7 +2024,7 @@ interface TimeTrackingState {
 
   fetchActiveTimer: () => Promise<void>;
   startTimer: (jobId: string, description?: string, isBreak?: boolean) => Promise<boolean>;
-  stopTimer: () => Promise<boolean>;
+  stopTimer: (options?: { keepLiveActivity?: boolean }) => Promise<boolean>;
   pauseTimer: () => Promise<boolean>;
   resumeTimer: () => Promise<boolean>;
   getElapsedMinutes: () => number;
@@ -2188,7 +2188,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     }
   },
 
-  stopTimer: async () => {
+  stopTimer: async (options?: { keepLiveActivity?: boolean }) => {
     const { activeTimer } = get();
     if (!activeTimer) {
       set({ error: 'No active timer to stop' });
@@ -2198,12 +2198,23 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     const timerId = activeTimer.id;
     set({ isLoading: true, error: null });
 
+    // End the lock-screen Live Activity on a real stop. pauseTimer/resumeTimer
+    // pass keepLiveActivity so the activity survives the work<->break transition
+    // (it flips to "on_break"/"in_progress" via update() instead of vanishing).
+    // Local native call — fire-and-forget, never block the stop.
+    const endLiveActivity = () => {
+      if (!options?.keepLiveActivity) {
+        LiveActivity.end().catch(() => {});
+      }
+    };
+
     // Offline path or local-only timer (id starts with "local_") -> stop in SQLite + queue
     const isOnline = useOfflineStore.getState().isOnline;
     if (!isOnline || (typeof timerId === 'string' && timerId.startsWith('local_'))) {
       try {
         await offlineStorage.stopTimeEntryOffline(timerId);
         set({ activeTimer: null, isLoading: false, error: null });
+        endLiveActivity();
         return true;
       } catch (e: any) {
         set({ isLoading: false, error: e?.message || 'Failed to stop timer offline' });
@@ -2215,6 +2226,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
       await api.post(`/api/time-entries/${timerId}/stop`);
       // Clear active timer immediately on success
       set({ activeTimer: null, isLoading: false, error: null });
+      endLiveActivity();
       return true;
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to stop timer';
@@ -2243,8 +2255,9 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      // Stop the current work timer
-      const stopped = await stopTimer();
+      // Stop the current work timer (keep the Live Activity alive — it flips to
+      // "on break" when the break timer starts, instead of disappearing).
+      const stopped = await stopTimer({ keepLiveActivity: true });
       if (!stopped) {
         set({ isLoading: false });
         return false;
@@ -2278,9 +2291,10 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      // If on break, stop the break timer first
+      // If on break, stop the break timer first (keep the Live Activity alive —
+      // the work timer that follows flips it back to "in progress").
       if (wasOnBreak) {
-        const stopped = await stopTimer();
+        const stopped = await stopTimer({ keepLiveActivity: true });
         if (!stopped) {
           set({ isLoading: false });
           return false;
