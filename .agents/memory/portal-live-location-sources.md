@@ -23,4 +23,6 @@ The **continuous** location the mobile app shares (`POST /api/team-locations`) d
 
 **Scale note:** the bridge runs on every team-location POST; mobile already throttles sends (~30s, pauses when stationary), so DB churn is negligible at this app's scale — throttling was considered and deliberately skipped. Add a per-assignment min-interval only if write pressure ever shows up.
 
+**Read-side fallback (most robust — added because the bridge isn't enough):** the bridge only writes `location_pings` for `en_route` assignments, but in practice prod had `location_pings` EMPTY and ZERO en_route assignments (workers tap "On My Way" on jobs they aren't even assigned to → `myAssignment` null → no en_route, no ping; in-memory map also dies on autoscale). So BOTH portal READ endpoints (`/crew-locations` and `/location`) now fall back directly to the assigned worker's `tradie_status` live coords (the same feed the in-app "sharing ON" indicator uses), gated on `isEnRoute || job.workerStatus==='on_my_way'`, fresh `<10min` (stale flag `>5min`), with `Number.isFinite` + lat/long range validation. This shows the worker whenever they're actively sharing, independent of the en_route/ping pipeline. Requires the worker be an ACTIVE ASSIGNMENT on the job (so map job→userId→tradie_status).
+
 These are SERVER-ONLY changes → require a publish to affect jobrunner.com.au.

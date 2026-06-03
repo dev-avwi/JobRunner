@@ -16691,6 +16691,34 @@ Be specific about materials, colors, and features that would be included.`
           }
         }
 
+        // Fallback: if there is no assignment ping yet, use the worker's live
+        // shared location (tradie_status) — the SAME feed that powers the in-app
+        // "location sharing on" indicator. This makes the client see the worker
+        // whenever they are actively sharing, even if the assignment hasn't been
+        // flipped to en_route or the ping pipeline hasn't fired yet.
+        if (!location && (isEnRoute || job.workerStatus === 'on_my_way')) {
+          try {
+            const ts = await storage.getTradieStatus(a.userId);
+            const lastUpd = ts?.lastLocationUpdate || ts?.lastSeenAt;
+            const ageMs = lastUpd ? Date.now() - new Date(lastUpd).getTime() : Infinity;
+            const lat = Number(ts?.currentLatitude);
+            const lng = Number(ts?.currentLongitude);
+            const validCoords = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+            if (validCoords && ageMs < 10 * 60 * 1000) {
+              stale = ageMs > 5 * 60 * 1000;
+              location = {
+                latitude: lat,
+                longitude: lng,
+                accuracyMeters: null,
+                recordedAt: lastUpd,
+              };
+              anyEnRoute = true;
+            }
+          } catch (tsErr) {
+            console.log('[CrewLocations] tradie_status fallback failed:', tsErr);
+          }
+        }
+
         return {
           assignmentId: a.id,
           name: showName ? (a.workerDisplayNameSnapshot || (worker ? `${worker.firstName || ''} ${worker.lastName || ''}`.trim() : 'Worker')) : 'Support Crew',
@@ -16841,7 +16869,42 @@ Be specific about materials, colors, and features that would be included.`
           console.log('[PortalLocation] Could not fetch fallback location ping:', pingErr);
         }
       }
-      
+
+      // Final fallback: the dispatched worker's live shared location
+      // (tradie_status) — same feed as the in-app "sharing on" indicator. Shows
+      // the worker on the client map whenever they are actively sharing, even
+      // before any assignment ping exists.
+      if (!location) {
+        try {
+          const allAssignments = await storage.getJobAssignments(portalToken.jobId);
+          const active = allAssignments.filter((a: any) => a.isActive);
+          const preferred = portalToken.assignmentId
+            ? active.find((a: any) => a.id === portalToken.assignmentId)
+            : null;
+          const candidates = preferred
+            ? [preferred, ...active.filter((a: any) => a.id !== preferred.id)]
+            : active;
+          for (const a of candidates) {
+            const ts = await storage.getTradieStatus(a.userId);
+            const lastUpd = ts?.lastLocationUpdate || ts?.lastSeenAt;
+            const ageMs = lastUpd ? Date.now() - new Date(lastUpd).getTime() : Infinity;
+            const lat = Number(ts?.currentLatitude);
+            const lng = Number(ts?.currentLongitude);
+            const validCoords = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+            if (validCoords && ageMs < 10 * 60 * 1000) {
+              location = {
+                latitude: lat,
+                longitude: lng,
+                updatedAt: Date.now() - ageMs,
+              };
+              break;
+            }
+          }
+        } catch (tsErr) {
+          console.log('[PortalLocation] tradie_status fallback failed:', tsErr);
+        }
+      }
+
       if (!location) {
         return res.json({
           tracking: true,
