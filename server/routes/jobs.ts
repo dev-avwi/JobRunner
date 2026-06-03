@@ -3867,6 +3867,10 @@ import { logSystemEvent } from "../systemEventService";
 
       const type: 'omw' | 'late' = req.body?.type === 'late' ? 'late' : 'omw';
       const { latitude, longitude } = req.body || {};
+      // previewOnly: build the real-ETA message text for a preview WITHOUT any
+      // side effects (no portal token, no en_route flip, no location ping). The
+      // actual /on-my-way call does that work when the worker confirms send.
+      const previewOnly = req.body?.previewOnly === true;
 
       const business = await storage.getBusinessSettings(userContext.effectiveUserId);
       const businessName = business?.businessName || 'your tradesperson';
@@ -3926,7 +3930,7 @@ import { logSystemEvent } from "../systemEventService";
       // Only build a tracking link when the business allows location sharing AND we
       // have a real position to show. Otherwise the message has no link.
       let trackingUrl: string | null = null;
-      if (allowSharing && latitude && longitude) {
+      if (allowSharing && latitude && longitude && !previewOnly) {
         const baseUrl = getProductionBaseUrl(req);
         try {
           let activePortalToken = await storage.getActiveJobPortalToken(job.id);

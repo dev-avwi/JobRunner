@@ -5,7 +5,26 @@ import { useTheme, ThemeColors } from '../lib/theme';
 import { spacing, radius, shadows, iconSizes } from '../lib/design-tokens';
 import { JobUrgency } from '../lib/jobUrgency';
 import { api } from '../lib/api';
+import locationTracking from '../lib/location-tracking';
 import { PressableRow } from './ui/PressableRow';
+
+// Grab a fresh one-time GPS fix for the On My Way / Running Late flow. Prompts
+// for foreground location permission right when the worker needs it (instead of
+// it being buried in Settings). Returns null if denied or unavailable — callers
+// gracefully fall back to a message without a live ETA.
+async function getFreshCoordsForEta(): Promise<{ latitude: number; longitude: number } | null> {
+  try {
+    const granted = await locationTracking.requestForegroundPermission();
+    if (!granted) return null;
+    const loc = await locationTracking.getCurrentLocation();
+    if (loc && typeof loc.latitude === 'number' && typeof loc.longitude === 'number') {
+      return { latitude: loc.latitude, longitude: loc.longitude };
+    }
+  } catch {
+    // ignore — fall back to no-coords message
+  }
+  return null;
+}
 
 type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
 
@@ -582,8 +601,10 @@ export function NextActionCard(props: NextActionCardProps) {
   const styles = createNextActionStyles(colors);
   const nextAction = getNextAction(props);
   const [isSendingSms, setIsSendingSms] = useState(false);
+  const [isPreparingSms, setIsPreparingSms] = useState(false);
   const [showSmsPreview, setShowSmsPreview] = useState(false);
   const [smsPreviewMessage, setSmsPreviewMessage] = useState('');
+  const [smsCoords, setSmsCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   if (!nextAction) return null;
 
@@ -610,9 +631,34 @@ export function NextActionCard(props: NextActionCardProps) {
     return `Hi ${name}, ${trader} from ${business} is on the way to your job at ${address}. ETA approximately 15-20 minutes.\n\nTrack arrival: [link will be added]`;
   };
 
-  const handleOpenSmsPreview = () => {
-    setSmsPreviewMessage(getDefaultSmsMessage());
-    setShowSmsPreview(true);
+  const handleOpenSmsPreview = async () => {
+    if (isPreparingSms) return;
+    setIsPreparingSms(true);
+    try {
+      // Prompt for location + grab a fresh fix, then ask the server for a message
+      // with a REAL driving ETA. Falls back to the generic message if GPS is
+      // unavailable or denied.
+      const coords = await getFreshCoordsForEta();
+      setSmsCoords(coords);
+      let message = getDefaultSmsMessage();
+      if (coords && props.jobId) {
+        try {
+          const res = await api.post<{ message?: string }>(`/api/jobs/${props.jobId}/eta-message`, {
+            type: props.isOverdue ? 'late' : 'omw',
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            previewOnly: true,
+          });
+          if (res.data?.message) message = res.data.message;
+        } catch {
+          // keep the generic fallback message
+        }
+      }
+      setSmsPreviewMessage(message);
+      setShowSmsPreview(true);
+    } finally {
+      setIsPreparingSms(false);
+    }
   };
 
   const fallbackToNativeSms = (phone: string, message: string) => {
@@ -642,7 +688,10 @@ export function NextActionCard(props: NextActionCardProps) {
     setIsSendingSms(true);
     setShowSmsPreview(false);
     try {
-      const response = await api.post(endpoint, { customMessage: smsPreviewMessage });
+      const response = await api.post(endpoint, {
+        customMessage: smsPreviewMessage,
+        ...(smsCoords ? { latitude: smsCoords.latitude, longitude: smsCoords.longitude } : {}),
+      });
       if (response.error) {
         fallbackToNativeSms(props.clientPhone, smsPreviewMessage);
       } else {
@@ -685,7 +734,7 @@ export function NextActionCard(props: NextActionCardProps) {
         )}
       </View>
       {showOnMyWay && (
-        <PressableRow style={[styles.secondaryAction, { borderColor: colors.border }]} onPress={handleOpenSmsPreview} disabled={isSendingSms} >
+        <PressableRow style={[styles.secondaryAction, { borderColor: colors.border }]} onPress={handleOpenSmsPreview} disabled={isSendingSms || isPreparingSms} >
           <Feather name="message-circle" size={16} color={colors.mutedForeground} />
           <Text style={[styles.secondaryActionText, { color: colors.foreground }]}>
             {props.isOverdue ? 'Text Running Late' : 'Text On My Way'}
@@ -1260,8 +1309,10 @@ export function SmsContactCard({
   const { colors } = useTheme();
   const styles = createSmsCardStyles(colors);
   const [isSending, setIsSending] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewMessage, setPreviewMessage] = useState('');
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   if (!clientPhone || (jobStatus !== 'scheduled' && jobStatus !== 'in_progress')) {
     return null;
@@ -1283,9 +1334,34 @@ export function SmsContactCard({
     return `Hi ${name}, ${trader} from ${business} is on the way to your job at ${address}. ETA approximately 15-20 minutes.\n\nTrack arrival: [link will be added]`;
   };
 
-  const handleOpenPreview = () => {
-    setPreviewMessage(getDefaultMessage());
-    setShowPreview(true);
+  const handleOpenPreview = async () => {
+    if (isPreparing) return;
+    setIsPreparing(true);
+    try {
+      // Prompt for location + grab a fresh fix, then ask the server for a message
+      // with a REAL driving ETA. Falls back to the generic message if GPS is
+      // unavailable or denied.
+      const gps = await getFreshCoordsForEta();
+      setCoords(gps);
+      let message = getDefaultMessage();
+      if (gps && jobId) {
+        try {
+          const res = await api.post<{ message?: string }>(`/api/jobs/${jobId}/eta-message`, {
+            type: isOverdue ? 'late' : 'omw',
+            latitude: gps.latitude,
+            longitude: gps.longitude,
+            previewOnly: true,
+          });
+          if (res.data?.message) message = res.data.message;
+        } catch {
+          // keep the generic fallback message
+        }
+      }
+      setPreviewMessage(message);
+      setShowPreview(true);
+    } finally {
+      setIsPreparing(false);
+    }
   };
 
   const fallbackToNativeSms = (phone: string, message: string) => {
@@ -1315,7 +1391,10 @@ export function SmsContactCard({
     setIsSending(true);
     setShowPreview(false);
     try {
-      const response = await api.post(endpoint, { customMessage: previewMessage });
+      const response = await api.post(endpoint, {
+        customMessage: previewMessage,
+        ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
+      });
       if (response.error) {
         fallbackToNativeSms(clientPhone!, previewMessage);
       } else {
@@ -1341,8 +1420,8 @@ export function SmsContactCard({
         <Text style={styles.title}>Heading to the job?</Text>
         <Text style={styles.subtitle}>Let the client know you're heading over</Text>
       </View>
-      <PressableRow style={[styles.actionButton, { backgroundColor: buttonBg }]} onPress={handleOpenPreview} disabled={isSending} >
-        {isSending ? (
+      <PressableRow style={[styles.actionButton, { backgroundColor: buttonBg }]} onPress={handleOpenPreview} disabled={isSending || isPreparing} >
+        {isSending || isPreparing ? (
           <ActivityIndicator size="small" color={colors.white} />
         ) : (
           <>
