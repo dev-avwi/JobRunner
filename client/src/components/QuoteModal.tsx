@@ -478,7 +478,7 @@ export default function QuoteModal({ quoteId, isOpen, onClose, onViewFullQuote }
           documentTitle={quote.title}
           total={quote.total || '0'}
           businessName={businessSettings?.businessName}
-          publicUrl={quote.acceptanceToken ? `${window.location.origin}/public/quote/${quote.acceptanceToken}` : undefined}
+          publicUrl={quote.acceptanceToken ? `${window.location.origin}/q/${quote.acceptanceToken}` : undefined}
           onSend={handleSendQuoteEmail}
         />
       )}
