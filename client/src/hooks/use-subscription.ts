@@ -21,13 +21,6 @@ export interface UsageCounts {
 export function useSubscriptionUsage() {
   return useQuery<UsageCounts>({
     queryKey: ['/api/subscription/usage'],
-    queryFn: async () => {
-      const response = await fetch('/api/subscription/usage', { credentials: 'include' });
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscription usage');
-      }
-      return response.json();
-    },
     staleTime: 30000,
     refetchOnWindowFocus: true,
   });

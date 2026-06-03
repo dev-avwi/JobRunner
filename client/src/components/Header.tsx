@@ -54,8 +54,8 @@ export default function Header({
 }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [location, setLocation] = useLocation();
-  const { isOwner, isManager } = useAppMode();
-  const canViewMap = isOwner || isManager;
+  const { isOwner, isManager, isTradie } = useAppMode();
+  const canViewMap = isOwner || isManager || isTradie;
   
   // Fetch current user data
   const { data: user } = useQuery<{
