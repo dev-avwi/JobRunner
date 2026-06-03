@@ -748,33 +748,47 @@ export default function JobDetailView({
     updateJobMutation.mutate({ status: 'done' });
   };
 
-  // Assign worker mutation
-  const assignWorkerMutation = useMutation({
-    mutationFn: async (assignedTo: string | null) => {
-      return await apiRequest("PATCH", `/api/jobs/${jobId}`, { assignedTo });
+  // Multi-worker assignment mutations
+  const invalidateAssignmentQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'assignments'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId] });
+    queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/jobs/my-jobs'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/jobs/today'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/dashboard/kpis'] });
+  };
+
+  const addWorkersMutation = useMutation({
+    mutationFn: async (workerIds: string[]) => {
+      return await apiRequest("POST", `/api/jobs/${jobId}/multi-assign`, { workerIds });
     },
-    onSuccess: (_data, assignedTo) => {
-      // Invalidate all job-related queries to ensure sync across views
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs/my-jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs/today'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/kpis'] });
-      toast({
-        title: assignedTo ? "Worker Assigned" : "Worker Unassigned",
-        description: assignedTo 
-          ? "Job has been assigned successfully" 
-          : "Worker has been removed from this job",
-      });
+    onSuccess: () => {
+      invalidateAssignmentQueries();
+      toast({ title: "Worker Assigned", description: "Worker has been added to this job" });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update job assignment",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to assign worker", variant: "destructive" });
     },
   });
+
+  const removeWorkerMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest("DELETE", `/api/jobs/${jobId}/assignments/${userId}/remove`);
+    },
+    onSuccess: () => {
+      invalidateAssignmentQueries();
+      toast({ title: "Worker Removed", description: "Worker has been removed from this job" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to remove worker", variant: "destructive" });
+    },
+  });
+
+  // Active worker assignments (multi-worker support)
+  const activeAssignments = jobAssignments.filter((a) => a.isActive !== false);
+  const assignedUserIds = new Set(activeAssignments.map((a) => a.userId));
+  const isMemberAssigned = (memberId: string | null | undefined) => !!memberId && assignedUserIds.has(memberId);
+  const assignBusy = addWorkersMutation.isPending || removeWorkerMutation.isPending;
 
   const updateJobMutation = useMutation({
     mutationFn: async (data: { status?: string; scheduledAt?: string }) => {
@@ -2346,7 +2360,7 @@ export default function JobDetailView({
                 <div className="pt-2 border-t">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Assign Worker</span>
+                    <span className="text-sm font-medium">Assign Workers</span>
                   </div>
                   <Popover open={workerPopoverOpen} onOpenChange={setWorkerPopoverOpen}>
                     <PopoverTrigger asChild>
@@ -2354,18 +2368,16 @@ export default function JobDetailView({
                         variant="outline"
                         role="combobox"
                         aria-expanded={workerPopoverOpen}
-                        className="w-full justify-between font-normal"
-                        disabled={assignWorkerMutation.isPending}
+                        className="w-full justify-between font-normal h-auto min-h-9 py-2 text-left"
+                        disabled={assignBusy}
                         data-testid="select-assign-worker"
                       >
-                        {job.assignedTo ? (
-                          (() => {
-                            const assigned = teamMembers.find(m => m.memberId === job.assignedTo);
-                            return assigned ? getWorkerDisplayName(assigned) : 'Unknown';
-                          })()
-                        ) : (
-                          <span className="text-muted-foreground">Unassigned</span>
-                        )}
+                        {(() => {
+                          const assigned = teamMembers.filter(m => isMemberAssigned(m.memberId));
+                          if (assigned.length === 0) return <span className="text-muted-foreground">Unassigned</span>;
+                          if (assigned.length <= 2) return <span className="truncate">{assigned.map((m) => getWorkerDisplayName(m)).join(', ')}</span>;
+                          return <span>{assigned.length} workers assigned</span>;
+                        })()}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -2375,29 +2387,24 @@ export default function JobDetailView({
                         <CommandEmpty>No worker found.</CommandEmpty>
                         <CommandList>
                           <CommandGroup>
-                            <CommandItem
-                              value="unassigned"
-                              onSelect={() => {
-                                assignWorkerMutation.mutate(null);
-                                setWorkerPopoverOpen(false);
-                              }}
-                            >
-                              <Check className={`mr-2 h-4 w-4 ${!job.assignedTo ? 'opacity-100' : 'opacity-0'}`} />
-                              <span>Unassigned</span>
-                            </CommandItem>
                             {teamMembers.filter(m => m.isActive && m.roleName?.toLowerCase() !== 'administrator').map((member) => {
                               const onOtherJob = isWorkerOnOtherJob(member.memberId);
+                              const checked = isMemberAssigned(member.memberId);
                               return (
                                 <CommandItem
                                   key={member.memberId}
                                   value={`${getWorkerDisplayName(member)} ${member.roleName}`}
                                   onSelect={() => {
-                                    assignWorkerMutation.mutate(member.memberId);
-                                    setWorkerPopoverOpen(false);
+                                    if (assignBusy || !member.memberId) return;
+                                    if (checked) {
+                                      removeWorkerMutation.mutate(member.memberId);
+                                    } else {
+                                      addWorkersMutation.mutate([member.memberId]);
+                                    }
                                   }}
                                   data-testid={`option-worker-${member.memberId}`}
                                 >
-                                  <Check className={`mr-2 h-4 w-4 ${job.assignedTo === member.memberId ? 'opacity-100' : 'opacity-0'}`} />
+                                  <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
                                   <span className="flex-1">{getWorkerDisplayName(member)} ({member.roleName})</span>
                                   {onOtherJob ? (
                                     <Badge variant="outline" className="text-xs text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 ml-2">On a job</Badge>

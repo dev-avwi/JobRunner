@@ -5,7 +5,7 @@ import {
   Users, Plus, Filter, Sparkles, ArrowUpRight, MoreHorizontal,
   ChevronDown, Mail, ArrowRight, UserPlus, Link2, ShieldCheck,
   Search, Loader2, Lock, Crown, AlertCircle, MessageSquare,
-  Phone, MapPin, Clock, CheckCircle2, RefreshCw, X, Activity,
+  Phone, MapPin, Clock, CheckCircle2, RefreshCw, X, Activity, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,6 +28,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/use-subscription";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -949,6 +953,7 @@ function MembersTable({
   const rows = showLockedSample ? sample : members;
 
   const { toast } = useToast();
+  const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null);
   const resendMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("POST", `/api/team/members/${id}/resend-invite`, {});
@@ -960,6 +965,20 @@ function MembersTable({
     },
     onError: (err: any) => {
       toast({ title: "Could not resend invite", description: err?.message || "Please try again.", variant: "destructive" });
+    },
+  });
+  const removeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/team/members/${id}`);
+      return res.json().catch(() => ({}));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/team/members"] });
+      toast({ title: "Member removed", description: "They no longer have access to your team." });
+      setRemoveTarget(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not remove member", description: err?.message || "Please try again.", variant: "destructive" });
     },
   });
 
@@ -1037,7 +1056,9 @@ function MembersTable({
             <div className="text-[12.5px] text-muted-foreground tabular-nums">{timeAgo(m.lastActiveAt)}</div>
             <div className="text-[12.5px] tabular-nums font-medium">{m.hoursThisWeek ? `${m.hoursThisWeek}h` : "—"}</div>
             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end">
-              {status === "pending" && !showLockedSample ? (
+              {showLockedSample ? (
+                <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="w-4 h-4" /></Button>
+              ) : (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -1051,23 +1072,55 @@ function MembersTable({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52">
+                    {status === "pending" && (
+                      <DropdownMenuItem
+                        onSelect={(e) => { e.preventDefault(); resendMutation.mutate(m.id); }}
+                        disabled={resendMutation.isPending}
+                        data-testid={`action-resend-invite-${m.id}`}
+                      >
+                        {resendMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                        Resend invite
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
-                      onSelect={(e) => { e.preventDefault(); resendMutation.mutate(m.id); }}
-                      disabled={resendMutation.isPending}
-                      data-testid={`action-resend-invite-${m.id}`}
+                      className="text-destructive focus:text-destructive"
+                      onSelect={(e) => { e.preventDefault(); setRemoveTarget(m); }}
+                      data-testid={`action-remove-member-${m.id}`}
                     >
-                      {resendMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                      Resend invite
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Remove from team
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              ) : (
-                <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="w-4 h-4" /></Button>
               )}
             </div>
           </div>
         );
       })}
+      <AlertDialog open={!!removeTarget} onOpenChange={(open) => { if (!open) setRemoveTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove from team?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removeTarget
+                ? `${`${removeTarget.firstName || ""} ${removeTarget.lastName || ""}`.trim() || removeTarget.email || "This member"} will lose access to your business. This can't be undone.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removeMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removeMutation.isPending}
+              onClick={(e) => { e.preventDefault(); if (removeTarget) removeMutation.mutate(removeTarget.id); }}
+              data-testid="button-confirm-remove-member"
+            >
+              {removeMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
