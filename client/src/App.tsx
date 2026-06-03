@@ -46,6 +46,7 @@ const JobEditForm = lazyWithReload(() => import("@/components/JobEditForm"));
 const InvoiceForm = lazyWithReload(() => import("@/components/InvoiceForm"));
 const DocumentEditor = lazyWithReload(() => import("@/components/DocumentEditor"));
 const LiveQuoteEditor = lazyWithReload(() => import("@/components/LiveQuoteEditor"));
+const FormBuilder = lazyWithReload(() => import("@/components/CustomFormBuilder").then(m => ({ default: m.FormBuilder })));
 const LiveInvoiceEditor = lazyWithReload(() => import("@/components/LiveInvoiceEditor"));
 const ClientForm = lazyWithReload(() => import("@/components/ClientForm"));
 const InvoiceDetailView = lazyWithReload(() => import("@/components/InvoiceDetailView"));
@@ -655,6 +656,17 @@ function Router({
       
       <Route path="/documents" component={() => (
         <DocumentsHub onNavigate={onNavigate} />
+      )} />
+
+      {/* Inline form builder (SWMS / safety forms) — full page with live preview */}
+      <Route path="/forms/new">
+        <FormBuilder onBack={() => onNavigate('/templates?tab=forms')} />
+      </Route>
+      <Route path="/forms/:id/edit" component={({ params }: { params: { id: string } }) => (
+        <FormBuilder
+          formId={params.id}
+          onBack={() => onNavigate('/templates?tab=forms')}
+        />
       )} />
       
       {/* IMPORTANT: /quotes/new must come BEFORE /quotes redirect to prevent redirect from matching */}

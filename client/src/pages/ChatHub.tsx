@@ -861,6 +861,71 @@ export default function ChatHub() {
       .replace(/\{business_name\}/g, 'Our business');
   };
 
+  // Quick status actions (On my way / Running late / Job done). For On my way /
+  // Running late on a job conversation we fetch the worker's real location and
+  // ask the server for a smart ETA message; otherwise we fall back to the static
+  // template text.
+  const handleSmartStatus = async (template: (typeof QUICK_ACTION_TEMPLATES)[number]) => {
+    // Owner/manager triggering a status on an unassigned job: assign a worker first.
+    if ((template.id === 'omw' || template.id === 'running-late') &&
+        selectedConversation?.type === 'job' &&
+        !selectedConversation?.data?.assignedTo &&
+        (isOwner || isManager)) {
+      setPendingQuickAction(template.id);
+      setAssignWorkerDialogOpen(true);
+      return;
+    }
+
+    const buildStaticMessage = () => {
+      const assignedToId = selectedConversation?.data?.assignedTo;
+      const isSelfAssigned = assignedToId === currentUser?.id ||
+        teamMembers.some((m: any) => (m.id === assignedToId || m.memberId === assignedToId || m.userId === assignedToId) && m.userId === currentUser?.id);
+      const workerName = (!isSelfAssigned && selectedConversation?.assignedWorkerName)
+        ? selectedConversation.assignedWorkerName.split(' ')[0] : null;
+      const namedMsg = workerName ? getWorkerNamedMessage(template.id, workerName) : null;
+      const baseMessage = namedMsg || template.message;
+      return selectedSmsConversation
+        ? applySmsTemplateFields(baseMessage, selectedSmsConversation)
+        : baseMessage;
+    };
+
+    const focusInput = () => setTimeout(() => smsInputRef.current?.focus(), 0);
+
+    // Real ETA only applies to On my way / Running late on a job conversation.
+    const jobId = selectedConversation?.type === 'job'
+      ? selectedConversation?.data?.id
+      : selectedSmsConversation?.jobId;
+    const isEtaAction = template.id === 'omw' || template.id === 'running-late';
+
+    if (isEtaAction && jobId && typeof navigator !== 'undefined' && navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 30000,
+          });
+        });
+        const res = await apiRequest('POST', `/api/jobs/${jobId}/eta-message`, {
+          type: template.id === 'running-late' ? 'late' : 'omw',
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+        const data = await res.json();
+        if (data?.message) {
+          setSmsNewMessage(data.message);
+          focusInput();
+          return;
+        }
+      } catch (err) {
+        // Location denied / unavailable or endpoint failed — fall back to static text.
+      }
+    }
+
+    setSmsNewMessage(buildStaticMessage());
+    focusInput();
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const targetUserId = params.get('to');
@@ -2465,9 +2530,25 @@ export default function ChatHub() {
           {/* Sticky composer - only show if there's an SMS conversation or if we can start one */}
           {selectedSmsConversation ? (
             <div className="shrink-0 border-t bg-background">
-              {/* Quick Actions - ServiceM8 style with primary actions + template picker */}
-              <div className="px-3 py-2 border-b bg-muted/30">
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+              {/* Quick Actions + quick replies merged into a single strip */}
+              <QuickRepliesBar
+                context={{
+                  clientName: selectedSmsConversation?.clientName ?? null,
+                  jobTitle: (selectedSmsConversation?.jobId
+                    ? jobs.find(j => j.id === selectedSmsConversation.jobId)?.title
+                    : undefined) ?? null,
+                  jobDate: (selectedSmsConversation?.jobId
+                    ? jobs.find(j => j.id === selectedSmsConversation.jobId)?.scheduledAt
+                    : undefined) ?? null,
+                }}
+                draft={smsNewMessage}
+                disabled={!twilioConnected || !canTwoWayText}
+                excludeLabels={['On my way', 'Running late', 'Job done']}
+                onInsert={(text) => {
+                  setSmsNewMessage((prev) => (prev.trim().length > 0 ? `${prev.trimEnd()} ${text}` : text));
+                  setTimeout(() => smsInputRef.current?.focus(), 0);
+                }}
+                leadingActions={<>
                   {/* Primary quick actions */}
                   {QUICK_ACTION_TEMPLATES.filter(t => t.primary).map((template) => {
                     const Icon = template.icon;
@@ -2477,27 +2558,7 @@ export default function ChatHub() {
                         variant="outline"
                         size="sm"
                         className="shrink-0 gap-1.5 bg-background"
-                        onClick={() => {
-                          if ((template.id === 'omw' || template.id === 'running-late') && 
-                              selectedConversation?.type === 'job' && 
-                              !selectedConversation?.data?.assignedTo &&
-                              (isOwner || isManager)) {
-                            setPendingQuickAction(template.id);
-                            setAssignWorkerDialogOpen(true);
-                            return;
-                          }
-                          const assignedToId = selectedConversation?.data?.assignedTo;
-                          const isSelfAssigned = assignedToId === currentUser?.id || 
-                            teamMembers.some((m: any) => (m.id === assignedToId || m.memberId === assignedToId || m.userId === assignedToId) && m.userId === currentUser?.id);
-                          const workerName = (!isSelfAssigned && selectedConversation?.assignedWorkerName) 
-                            ? selectedConversation.assignedWorkerName.split(' ')[0] : null;
-                          const namedMsg = workerName ? getWorkerNamedMessage(template.id, workerName) : null;
-                          const baseMessage = namedMsg || template.message;
-                          const message = selectedSmsConversation 
-                            ? applySmsTemplateFields(baseMessage, selectedSmsConversation)
-                            : baseMessage;
-                          setSmsNewMessage(message);
-                        }}
+                        onClick={() => handleSmartStatus(template)}
                         data-testid={`quick-action-${template.id}`}
                       >
                         <Icon className="h-3.5 w-3.5" />
@@ -2624,8 +2685,8 @@ export default function ChatHub() {
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </div>
-              </div>
+                </>}
+              />
               {!twilioConnected && (
                 <div className="px-4 pt-2">
                   <TwilioWarning compact />
@@ -2645,24 +2706,6 @@ export default function ChatHub() {
                   </div>
                 </div>
               )}
-              {/* Quick replies strip */}
-              <QuickRepliesBar
-                context={{
-                  clientName: selectedSmsConversation?.clientName ?? null,
-                  jobTitle: (selectedSmsConversation?.jobId
-                    ? jobs.find(j => j.id === selectedSmsConversation.jobId)?.title
-                    : undefined) ?? null,
-                  jobDate: (selectedSmsConversation?.jobId
-                    ? jobs.find(j => j.id === selectedSmsConversation.jobId)?.scheduledAt
-                    : undefined) ?? null,
-                }}
-                draft={smsNewMessage}
-                disabled={!twilioConnected || !canTwoWayText}
-                onInsert={(text) => {
-                  setSmsNewMessage((prev) => (prev.trim().length > 0 ? `${prev.trimEnd()} ${text}` : text));
-                  setTimeout(() => smsInputRef.current?.focus(), 0);
-                }}
-              />
               {/* Message input */}
               <div className="px-4 py-3 flex gap-2">
                 <Input

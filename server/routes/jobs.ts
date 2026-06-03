@@ -3832,6 +3832,155 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
+  // Build a smart "On my way" / "Running late" message with a REAL ETA for the
+  // chat composer. Unlike /on-my-way this does NOT send an SMS — it returns the
+  // message text so the worker can review and send it from the Chat Hub. A live
+  // tracking link is only included when the business allows location sharing.
+  app.post("/api/jobs/:id/eta-message", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const job = await storage.getJob(req.params.id, userContext.effectiveUserId);
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+
+      const type: 'omw' | 'late' = req.body?.type === 'late' ? 'late' : 'omw';
+      const { latitude, longitude } = req.body || {};
+
+      const business = await storage.getBusinessSettings(userContext.effectiveUserId);
+      const businessName = business?.businessName || 'your tradesperson';
+      const user = await storage.getUser(req.userId);
+      const tradieName = user?.firstName || businessName;
+      const client = job.clientId ? await storage.getClient(job.clientId, userContext.effectiveUserId) : null;
+      const clientFirst = client?.firstName || 'there';
+      const allowSharing = business?.allowLocationSharing !== false;
+
+      // Calculate real ETA using GPS coordinates + OSRM routing (same logic as /on-my-way)
+      let estimatedMinutes: number | null = null;
+      let distanceKm: number | null = null;
+      let etaSource = 'none';
+
+      if (latitude && longitude && (job.address || (job.latitude && job.longitude))) {
+        try {
+          let jobLat = job.latitude ? parseFloat(String(job.latitude)) : null;
+          let jobLng = job.longitude ? parseFloat(String(job.longitude)) : null;
+          if ((!jobLat || !jobLng) && job.address) {
+            const geocoded = await geocodeAddress(job.address);
+            if (geocoded) {
+              jobLat = geocoded.latitude;
+              jobLng = geocoded.longitude;
+            }
+          }
+          if (jobLat && jobLng) {
+            const routeETA = await calculateRouteETA(
+              parseFloat(String(latitude)),
+              parseFloat(String(longitude)),
+              jobLat,
+              jobLng,
+            );
+            if (routeETA) {
+              estimatedMinutes = Math.max(routeETA.durationMinutes, 2);
+              distanceKm = routeETA.distanceKm;
+              etaSource = 'osrm';
+            } else {
+              const dist = haversineDistance(
+                parseFloat(String(latitude)),
+                parseFloat(String(longitude)),
+                jobLat,
+                jobLng,
+              );
+              distanceKm = Math.round(dist * 10) / 10;
+              if (dist <= 5) estimatedMinutes = Math.max(Math.ceil(dist * 3), 3);
+              else if (dist <= 20) estimatedMinutes = Math.ceil(dist * 2.5);
+              else if (dist <= 50) estimatedMinutes = Math.ceil(dist * 2);
+              else estimatedMinutes = Math.ceil(dist * 1.5);
+              etaSource = 'haversine';
+            }
+          }
+        } catch (etaError) {
+          console.log('[EtaMessage] ETA calculation failed:', etaError);
+        }
+      }
+
+      // Only build a tracking link when the business allows location sharing AND we
+      // have a real position to show. Otherwise the message has no link.
+      let trackingUrl: string | null = null;
+      if (allowSharing && latitude && longitude) {
+        const baseUrl = getProductionBaseUrl(req);
+        try {
+          let activePortalToken = await storage.getActiveJobPortalToken(job.id);
+          if (!activePortalToken) {
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 30);
+            activePortalToken = await storage.createJobPortalToken({
+              jobId: job.id,
+              userId: userContext.effectiveUserId,
+              token: randomBytes(32).toString('hex'),
+              expiresAt,
+              createdBy: req.userId,
+            });
+            await storage.updateJob(job.id, userContext.effectiveUserId, { portalEnabled: true });
+          }
+          trackingUrl = `${baseUrl}/p/${activePortalToken.token}`;
+        } catch (portalErr) {
+          console.log('[EtaMessage] Could not create portal token:', portalErr);
+        }
+
+        // Mark assignment en_route + store a ping so the live map shows the worker
+        try {
+          const jobAssignments = await storage.getJobAssignments(job.id);
+          const myAssignment = jobAssignments.find((a: any) => a.userId === req.userId && a.isActive);
+          if (myAssignment) {
+            await storage.updateJobAssignment(myAssignment.id, {
+              assignmentStatus: 'en_route',
+              travelStartedAt: new Date(),
+              etaMinutes: estimatedMinutes ?? undefined,
+              etaUpdatedAt: new Date(),
+            });
+            await storage.createLocationPing({
+              userId: req.userId,
+              assignmentId: myAssignment.id,
+              latitude: parseFloat(String(latitude)),
+              longitude: parseFloat(String(longitude)),
+              accuracyMeters: null,
+            });
+          }
+        } catch (assignErr) {
+          console.log('[EtaMessage] Could not update assignment:', assignErr);
+        }
+      }
+
+      // Build the message text
+      const distanceText = distanceKm && distanceKm > 0 ? ` (${distanceKm} km away)` : '';
+      let message: string;
+      if (type === 'late') {
+        if (estimatedMinutes !== null) {
+          const mins = estimatedMinutes <= 5 ? 'about 5 minutes' : `about ${estimatedMinutes} minutes`;
+          message = `Apologies ${clientFirst}, running a bit behind schedule. ${tradieName} is ${mins} away${distanceText}.`;
+        } else {
+          message = `Apologies ${clientFirst}, ${tradieName} is running a bit behind schedule. Should be there in about 20 minutes.`;
+        }
+      } else {
+        if (estimatedMinutes !== null) {
+          const etaText = estimatedMinutes <= 5
+            ? 'Should be there in about 5 minutes'
+            : `ETA approximately ${estimatedMinutes} minutes`;
+          message = `G'day ${clientFirst}, ${tradieName} from ${businessName} is on the way to ${job.address || 'your location'}. ${etaText}${distanceText}.`;
+        } else {
+          message = `G'day ${clientFirst}, ${tradieName} from ${businessName} is on the way now. Should be there in about 20 minutes.`;
+        }
+      }
+      if (trackingUrl) {
+        message = `${message}\n\nTrack arrival: ${trackingUrl}`;
+      }
+
+      res.json({ message, estimatedMinutes, distanceKm, trackingUrl, etaSource, hasRealEta: estimatedMinutes !== null });
+    } catch (error: any) {
+      console.error("Error building ETA message:", error);
+      res.status(500).json({ error: error.message || "Failed to build ETA message" });
+    }
+  });
+
   app.post("/api/jobs/:jobId/assignments/:assignmentId/on-my-way", requireAuth, async (req: any, res) => {
     try {
       const { handleOnMyWay } = await import('../services/assignmentWorkflowService');

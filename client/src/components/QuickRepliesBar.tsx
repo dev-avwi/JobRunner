@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,8 @@ interface QuickRepliesBarProps {
   onInsert: (text: string) => void;
   disabled?: boolean;
   showSaveDraft?: boolean;
+  leadingActions?: ReactNode;
+  excludeLabels?: string[];
 }
 
 export function QuickRepliesBar({
@@ -58,6 +60,8 @@ export function QuickRepliesBar({
   onInsert,
   disabled,
   showSaveDraft = true,
+  leadingActions,
+  excludeLabels,
 }: QuickRepliesBarProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -86,10 +90,12 @@ export function QuickRepliesBar({
     },
   });
 
-  const sortedReplies = useMemo(
-    () => [...quickReplies].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
-    [quickReplies],
-  );
+  const sortedReplies = useMemo(() => {
+    const excluded = new Set((excludeLabels ?? []).map((l) => l.trim().toLowerCase()));
+    return [...quickReplies]
+      .filter((r) => !excluded.has((r.label ?? "").trim().toLowerCase()))
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }, [quickReplies, excludeLabels]);
 
   const trimmedDraft = draft.trim();
   const canSaveDraft = showSaveDraft && trimmedDraft.length > 0 && !disabled;
@@ -97,6 +103,7 @@ export function QuickRepliesBar({
   return (
     <div className="px-3 py-2 border-b bg-muted/30">
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        {leadingActions}
         {sortedReplies.map((reply) => (
           <Button
             key={reply.id}

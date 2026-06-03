@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +61,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { StylePreset, RateCard, LineItemCatalog, CustomForm, QuoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
 import LiveDocumentPreview from "@/components/LiveDocumentPreview";
-import { FormBuilder } from "@/components/CustomFormBuilder";
 import { SwmsBuilder } from "@/components/SwmsBuilder";
 import { useBusinessSettings } from "@/hooks/use-business-settings";
 import { TemplateId, TemplateCustomization, DOCUMENT_TEMPLATES, DOCUMENT_ACCENT_COLOR } from "@/lib/document-templates";
@@ -1552,8 +1552,8 @@ function FormsTab() {
   const [inspectionFormsOpen, setInspectionFormsOpen] = useState(true);
   const [swmsTemplatesOpen, setSwmsTemplatesOpen] = useState(true);
   const [mySwmsDocsOpen, setMySwmsDocsOpen] = useState(true);
+  const [, setLocation] = useLocation();
   const [selectedForm, setSelectedForm] = useState<FormItem | null>(null);
-  const [editFormId, setEditFormId] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [formToDelete, setFormToDelete] = useState<FormItem | null>(null);
   const [formSearch, setFormSearch] = useState('');
@@ -1673,14 +1673,18 @@ function FormsTab() {
 
   const createFromTemplateMutation = useMutation({
     mutationFn: async (templateKey: string) => {
-      return apiRequest("POST", `/api/safety-form-templates/${templateKey}/create`, {});
+      const res = await apiRequest("POST", `/api/safety-form-templates/${templateKey}/create`, {});
+      return res.json();
     },
-    onSuccess: (newForm) => {
-      toast({ title: "Form created from template" });
+    onSuccess: (newForm: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/custom-forms"] });
-      // Select the newly created form
-      setSelectedForm(newForm);
-      setEditFormId(newForm.id);
+      if (!newForm?.id) {
+        toast({ title: "Failed to create form from template", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Form created from template" });
+      // Open the newly created form in the inline editor
+      setLocation(`/forms/${newForm.id}/edit`);
     },
     onError: () => {
       toast({ title: "Failed to create form from template", variant: "destructive" });
@@ -1689,7 +1693,7 @@ function FormsTab() {
 
   const handleEditForm = (form: FormItem) => {
     if (!form.isSystemTemplate) {
-      setEditFormId(form.id);
+      setLocation(`/forms/${form.id}/edit`);
     }
   };
 
@@ -1901,7 +1905,7 @@ function FormsTab() {
               Safety, compliance, and inspection forms
             </p>
           </div>
-          <Button size="sm" data-testid="button-create-form">
+          <Button size="sm" data-testid="button-create-form" onClick={() => setLocation('/forms/new')}>
             <Plus className="h-4 w-4 mr-2" />
             Create Form
           </Button>
@@ -1914,7 +1918,7 @@ function FormsTab() {
             <p className="text-sm text-muted-foreground mb-4">
               Create safety checklists, compliance forms, and inspection templates for your job sites.
             </p>
-            <Button size="sm" data-testid="button-create-form-empty">
+            <Button size="sm" data-testid="button-create-form-empty" onClick={() => setLocation('/forms/new')}>
               <Plus className="h-4 w-4 mr-2" />
               Create Your First Form
             </Button>
@@ -2315,23 +2319,6 @@ function FormsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {editFormId && (
-        <Dialog open={!!editFormId} onOpenChange={() => setEditFormId(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Form</DialogTitle>
-            </DialogHeader>
-            <FormBuilder
-              formId={editFormId}
-              onBack={() => {
-                setEditFormId(null);
-                queryClient.invalidateQueries({ queryKey: ["/api/custom-forms"] });
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
 
       <AlertDialog open={swmsDeleteConfirmOpen} onOpenChange={setSwmsDeleteConfirmOpen}>
         <AlertDialogContent>
@@ -3416,6 +3403,12 @@ function QuoteTemplatesTab() {
 }
 
 export default function TemplatesHub() {
+  const search = useSearch();
+  const [, setLocation] = useLocation();
+  const tabParam = new URLSearchParams(search).get('tab');
+  const activeTab = ['styles', 'quote-templates', 'components', 'sms-templates', 'forms'].includes(tabParam || '')
+    ? (tabParam as string)
+    : 'styles';
   return (
     <PageShell>
       <PageHeader
@@ -3425,7 +3418,11 @@ export default function TemplatesHub() {
       />
 
       <div className="mt-6">
-        <Tabs defaultValue="styles" className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setLocation(`/templates?tab=${v}`)}
+          className="space-y-6"
+        >
           <TabsList>
             <TabsTrigger value="styles" className="gap-2">
               <Palette className="h-4 w-4" />
