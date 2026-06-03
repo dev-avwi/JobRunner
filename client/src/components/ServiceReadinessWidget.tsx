@@ -219,7 +219,7 @@ export default function ServiceReadinessWidget({
                 variant="ghost" 
                 size="sm" 
                 className="h-auto p-0 text-xs text-primary hover:text-primary/80"
-                onClick={() => onNavigate?.('/settings?tab=subscription')}
+                onClick={() => onNavigate?.('/settings?tab=billing')}
                 data-testid="button-upgrade"
               >
                 Upgrade
@@ -293,7 +293,7 @@ export default function ServiceReadinessWidget({
               <Button 
                 size="sm" 
                 className="mt-2 w-full h-7 text-xs"
-                onClick={() => onNavigate?.('/settings?tab=subscription')}
+                onClick={() => onNavigate?.('/settings?tab=billing')}
               >
                 Upgrade to Pro - $39.99/month
               </Button>

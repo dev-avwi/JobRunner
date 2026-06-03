@@ -172,7 +172,7 @@ export default function GettingStartedChecklist({
       title: "Add your business details",
       description: "Business name, ABN & contact info",
       completed: hasBusinessProfile,
-      action: () => onNavigate?.("/settings"),
+      action: () => onNavigate?.("/settings?tab=business"),
       actionLabel: "Set up",
       icon: Building2,
       timeEstimate: "2 mins",

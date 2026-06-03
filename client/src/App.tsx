@@ -1682,10 +1682,10 @@ function AppLayout() {
               )}
               {/* Trial Banner */}
               {userCheck?.trialStatus === 'active' && userCheck?.trialEndsAt && (
-                <TrialBanner trialEndsAt={userCheck.trialEndsAt} onUpgrade={() => setLocation('/settings?tab=subscription')} />
+                <TrialBanner trialEndsAt={userCheck.trialEndsAt} onUpgrade={() => setLocation('/settings?tab=billing')} />
               )}
               {/* Payment Overdue Banner */}
-              <PaymentOverdueBanner onResolve={() => setLocation('/settings?tab=subscription')} />
+              <PaymentOverdueBanner onResolve={() => setLocation('/settings?tab=billing')} />
               <DemoModeBanner isVisitorDemo={userCheck?.isVisitorDemo === true} />
             </div>
             

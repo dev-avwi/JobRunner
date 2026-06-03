@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -225,6 +225,39 @@ export default function Settings({
       }
     }
   }, [isTradie, canAccessBilling, defaultTab]);
+
+  // Honor ?tab= deep links (e.g. /settings?tab=business) so in-app buttons land
+  // on the correct section. Takes precedence over the saved localStorage tab.
+  // Supports friendly aliases so older links keep working.
+  const tabSearch = useSearch();
+  const appliedTabSearchRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (appliedTabSearchRef.current === tabSearch) return;
+    const requestedRaw = new URLSearchParams(tabSearch).get('tab');
+    if (!requestedRaw) return;
+    const aliases: Record<string, string> = {
+      subscription: 'billing',
+      plan: 'billing',
+      rates: 'payment',
+      brand: 'branding',
+      alerts: 'notifications',
+      comms: 'communications',
+      export: 'data',
+    };
+    const key = requestedRaw.toLowerCase();
+    const target = aliases[key] || key;
+    const validTabs = ['account', 'business', 'branding', 'payment', 'notifications', 'communications', 'billing', 'support', 'data', 'developer'];
+    if (!validTabs.includes(target)) return;
+    // Respect role gating before switching
+    const isAlwaysAvailable = target === 'account' || target === 'support';
+    const needsBilling = target === 'billing';
+    const needsBusiness = !isAlwaysAvailable && !needsBilling;
+    if (needsBilling && !canAccessBilling) return;
+    if (needsBusiness && !canAccessBusinessSettings) return;
+    appliedTabSearchRef.current = tabSearch;
+    setActiveTab(target);
+    try { localStorage.setItem('jobrunner-settings-tab', target); } catch {}
+  }, [tabSearch, canAccessBusinessSettings, canAccessBilling]);
   
   // Business data from API
   const [businessData, setBusinessData] = useState({

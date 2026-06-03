@@ -123,7 +123,7 @@ export default function SetupChecklist({
       icon: Building2,
       completed: hasBusinessProfile,
       timeEstimate: '2 mins',
-      action: () => onNavigate?.('/settings'),
+      action: () => onNavigate?.('/settings?tab=business'),
       helpText: "This info appears on your quotes and invoices. You'll need your ABN (Australian Business Number).",
       steps: [
         "Go to Settings",

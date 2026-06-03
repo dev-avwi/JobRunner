@@ -305,12 +305,12 @@ export default function WebsiteAddon() {
                 <p className="text-2xl font-bold mt-1">Custom quote based on your needs</p>
               </div>
               {canPurchaseAddons ? (
-                <Button onClick={() => setLocation("/settings/subscription")} data-testid="button-upgrade-website">
+                <Button onClick={() => setLocation("/settings?tab=billing")} data-testid="button-upgrade-website">
                   <Sparkles className="h-4 w-4 mr-2" />
                   Get Your Website
                 </Button>
               ) : (
-                <Button onClick={() => setLocation("/settings/subscription")} data-testid="button-upgrade-website">
+                <Button onClick={() => setLocation("/settings?tab=billing")} data-testid="button-upgrade-website">
                   <Sparkles className="h-4 w-4 mr-2" />
                   Upgrade to Pro
                 </Button>
