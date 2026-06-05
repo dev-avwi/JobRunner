@@ -8396,9 +8396,24 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  // Restrict uploads to expected content types (defense against content-type abuse)
+  const imageOnlyFilter = (req: any, file: any, cb: any) => {
+    if (file.mimetype?.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed'));
+  };
+  const imageOrPdfFilter = (req: any, file: any, cb: any) => {
+    if (file.mimetype?.startsWith('image/') || file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only image or PDF files are allowed'));
+  };
+  const imageVideoOrPdfFilter = (req: any, file: any, cb: any) => {
+    if (file.mimetype?.startsWith('image/') || file.mimetype?.startsWith('video/') || file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only image, video, or PDF files are allowed'));
+  };
+
   const businessLogoUpload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: imageOnlyFilter,
   });
 
   app.post("/api/business-settings/logo", requireAuth, ownerOnly(), businessLogoUpload.single('logo'), async (req: any, res) => {
@@ -27171,7 +27186,8 @@ Respond with JSON in this format:
 
   const receiptUpload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: imageOrPdfFilter,
   });
 
   app.post("/api/expenses/scan-receipt", requireAuth, visionPerUserLimiter, receiptUpload.single('receipt'), async (req: any, res) => {
@@ -27755,6 +27771,7 @@ Respond with JSON in this format:
           || '';
         return {
           ...member,
+          inviteToken: undefined, // never expose the invite bearer token to the client
           userId: member.memberId,
           name: displayName,
           username: memberUser?.username || memberUser?.email || displayName,
@@ -31626,7 +31643,8 @@ Respond with JSON in this format:
   // Upload media to a job via multipart form (for large files like videos)
   const upload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit for photos/videos
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit for photos/videos
+    fileFilter: imageVideoOrPdfFilter, // shared with job documents route, which allows PDFs
   });
   
   // Team-aware: multipart uploads stored under effectiveUserId so all team members can see them
@@ -34155,6 +34173,7 @@ Respond with JSON in this format:
   const smsMediaUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: imageOrPdfFilter,
   });
 
   app.post("/api/sms/upload-media", requireAuth, smsMediaUpload.single('file'), async (req: any, res) => {
@@ -42180,6 +42199,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   const hazardScanUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: imageOnlyFilter,
   });
 
   app.post("/api/swms/scan-hazards", requireAuth, visionPerUserLimiter, hazardScanUpload.array('photos', 10), async (req: any, res) => {
