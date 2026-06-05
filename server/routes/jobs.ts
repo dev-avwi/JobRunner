@@ -3774,6 +3774,28 @@ import { logSystemEvent } from "../systemEventService";
         console.log('[OnMyWay] Could not update assignment status:', assignErr);
       }
 
+      // Persist the fresh coords to the worker's live status (tradie_status) too.
+      // The customer portal map reads this feed, so this is what makes a worker
+      // show up even when the job has NO assignment row — e.g. a solo tradie or
+      // owner running their own job (in that case the en_route/ping branch above
+      // is skipped because myAssignment is null). Same feed as the in-app map.
+      if (latitude && longitude) {
+        try {
+          await storage.upsertTradieStatus({
+            userId: req.userId,
+            businessOwnerId: userContext.effectiveUserId,
+            currentLatitude: String(latitude),
+            currentLongitude: String(longitude),
+            activityStatus: 'driving',
+            currentJobId: job.id,
+            lastLocationUpdate: new Date(),
+            lastSeenAt: new Date(),
+          } as any);
+        } catch (statusErr) {
+          console.log('[OnMyWay] Could not persist live status location:', statusErr);
+        }
+      }
+
       const trackingUrl = portalUrl;
 
       // Build smart ETA message based on calculated driving time

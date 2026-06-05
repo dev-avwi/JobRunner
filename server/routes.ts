@@ -16787,6 +16787,56 @@ Be specific about materials, colors, and features that would be included.`
         };
       }));
 
+      // Solo-tradie / no-assignment fallback: if no active assignment surfaced a
+      // location but the job is on its way, show the assigned worker (or job
+      // owner) from their live shared location (tradie_status). Covers owners who
+      // work their own jobs and never create an assignment row, so `workers` would
+      // otherwise be empty and the client map would show nothing.
+      const someoneHasLocation = workers.some((w: any) => w.location) || subcontractors.some((s: any) => s.location);
+      if (!someoneHasLocation && job.workerStatus === 'on_my_way') {
+        const candidateUserIds: string[] = [];
+        if (job.assignedTo) candidateUserIds.push(job.assignedTo);
+        if (portalToken.userId) candidateUserIds.push(portalToken.userId);
+        const seen = new Set<string>();
+        for (const uid of candidateUserIds) {
+          if (!uid || seen.has(uid)) continue;
+          seen.add(uid);
+          try {
+            const ts = await storage.getTradieStatus(uid);
+            const lastUpd = ts?.lastLocationUpdate || ts?.lastSeenAt;
+            const ageMs = lastUpd ? Date.now() - new Date(lastUpd).getTime() : Infinity;
+            const lat = Number(ts?.currentLatitude);
+            const lng = Number(ts?.currentLongitude);
+            const validCoords = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+            if (validCoords && ageMs < 10 * 60 * 1000) {
+              const worker = await storage.getUser(uid);
+              const workerName = (worker ? `${worker.firstName || ''} ${worker.lastName || ''}`.trim() : '') || businessSettingsData?.businessName || 'Worker';
+              workers.push({
+                assignmentId: `synthetic:${uid}`,
+                name: workerName,
+                status: 'en_route',
+                isPrimary: true,
+                etaMinutes: job.workerEtaMinutes || null,
+                etaUpdatedAt: job.workerStatusUpdatedAt || null,
+                travelStartedAt: job.workerStatusUpdatedAt || null,
+                arrivedAt: null,
+                location: {
+                  latitude: lat,
+                  longitude: lng,
+                  accuracyMeters: null,
+                  recordedAt: lastUpd,
+                },
+                stale: ageMs > 5 * 60 * 1000,
+              });
+              anyEnRoute = true;
+              break;
+            }
+          } catch (tsErr) {
+            console.log('[CrewLocations] owner tradie_status fallback failed:', tsErr);
+          }
+        }
+      }
+
       const jobLocation = (job.latitude && job.longitude) ? {
         latitude: parseFloat(String(job.latitude)),
         longitude: parseFloat(String(job.longitude)),
@@ -16809,6 +16859,12 @@ Be specific about materials, colors, and features that would be included.`
       const portalToken = await storage.getJobPortalTokenByToken(req.params.token);
       if (!portalToken) {
         return res.status(404).json({ error: 'Invalid portal link' });
+      }
+      if (portalToken.revokedAt) {
+        return res.status(410).json({ error: 'This tracking link has been revoked' });
+      }
+      if (portalToken.expiresAt && new Date(portalToken.expiresAt) < new Date()) {
+        return res.status(410).json({ error: 'This tracking link has expired' });
       }
       
       const job = await storage.getJob(portalToken.jobId, portalToken.userId);
@@ -16881,11 +16937,21 @@ Be specific about materials, colors, and features that would be included.`
           const preferred = portalToken.assignmentId
             ? active.find((a: any) => a.id === portalToken.assignmentId)
             : null;
-          const candidates = preferred
+          const ordered = preferred
             ? [preferred, ...active.filter((a: any) => a.id !== preferred.id)]
             : active;
-          for (const a of candidates) {
-            const ts = await storage.getTradieStatus(a.userId);
+          // Candidate userIds in priority order: the assignment(s), then the
+          // job's assigned worker, then the job owner. The last two cover solo
+          // tradies / owners who run their own jobs and have NO assignment row.
+          const candidateUserIds: string[] = [];
+          for (const a of ordered) if (a.userId) candidateUserIds.push(a.userId);
+          if (job.assignedTo) candidateUserIds.push(job.assignedTo);
+          if (portalToken.userId) candidateUserIds.push(portalToken.userId);
+          const seen = new Set<string>();
+          for (const uid of candidateUserIds) {
+            if (!uid || seen.has(uid)) continue;
+            seen.add(uid);
+            const ts = await storage.getTradieStatus(uid);
             const lastUpd = ts?.lastLocationUpdate || ts?.lastSeenAt;
             const ageMs = lastUpd ? Date.now() - new Date(lastUpd).getTime() : Infinity;
             const lat = Number(ts?.currentLatitude);
