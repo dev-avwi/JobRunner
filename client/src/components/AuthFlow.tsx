@@ -295,7 +295,17 @@ export default function AuthFlow({ onLoginSuccess, onNeedOnboarding }: AuthFlowP
           description: `Signed in as ${result.user.firstName || result.user.username || result.user.email || 'your account'}`
         });
         onLoginSuccess();
-        setLocation('/');
+        // Send the user back to wherever they were headed before being asked to
+        // log in (deep link), falling back to the dashboard.
+        let postLoginDest = '/';
+        try {
+          const saved = sessionStorage.getItem('postLoginRedirect');
+          if (saved && saved.startsWith('/') && !saved.startsWith('/auth')) {
+            postLoginDest = saved;
+          }
+          sessionStorage.removeItem('postLoginRedirect');
+        } catch {}
+        setLocation(postLoginDest);
       } else {
         const errorMsg = result.error || 'Invalid email or password.';
         if (errorMsg.toLowerCase().includes('verify') || errorMsg.toLowerCase().includes('verification')) {

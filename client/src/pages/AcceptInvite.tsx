@@ -386,6 +386,9 @@ export default function AcceptInvite() {
 
   const invite = inviteData.invite!;
   const isLoggedIn = !!currentUser;
+  const currentEmail = (currentUser as any)?.email as string | undefined;
+  const emailMismatch = isLoggedIn && !!currentEmail && !!invite.email &&
+    currentEmail.toLowerCase() !== invite.email.toLowerCase();
   const hasPermissions = invite.permissionsByCategory && invite.permissionsByCategory.length > 0;
   const hasAvailableToRequest = invite.availableToRequest && invite.availableToRequest.length > 0;
 
@@ -578,9 +581,17 @@ export default function AcceptInvite() {
 
           {isLoggedIn ? (
             <div className="space-y-4">
+              {emailMismatch && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    This invite was sent to <span className="font-medium">{invite.email}</span>, but you're signed in as <span className="font-medium">{currentEmail}</span>. If you accept now, you'll join with your current account. Log out and sign in with {invite.email} if that's the account you meant to use.
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="bg-muted/50 rounded-lg p-4 text-center">
                 <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto mb-2" />
-                <p className="text-sm font-medium">You're signed in</p>
+                <p className="text-sm font-medium">You're signed in{currentEmail ? ` as ${currentEmail}` : ''}</p>
                 <p className="text-xs text-muted-foreground">Click below to accept and join the team</p>
               </div>
               

@@ -1509,6 +1509,13 @@ function AppLayout() {
       return <DemoPage />;
     }
     // Show landing page for all other routes when not authenticated
+    // Remember the deep link a logged-out user tried to reach so we can send
+    // them back there after they sign in.
+    try {
+      if (location && location !== '/' && !location.startsWith('/auth')) {
+        sessionStorage.setItem('postLoginRedirect', location);
+      }
+    } catch {}
     return <LandingPage />;
   }
 

@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { AuthService } from "./auth";
 import { setupGoogleAuth } from "./googleAuth";
+import { verifyAppleIdentityToken, type AppleTokenPayload } from "./appleAuth";
 import { setupXeroAuth } from "./xeroAuth";
 import {
   requireAuth,
@@ -4486,35 +4487,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Identity token required" });
       }
       
-      // ⚠️ SECURITY WARNING: Using jwt.decode() without signature verification
-      // This relies entirely on comprehensive claim validation (issuer, audience, expiry, iat)
-      // to prevent token forgery. While Apple tokens are cryptographically signed,
-      // a production-grade implementation should:
-      // 1. Fetch Apple's public keys from https://appleid.apple.com/auth/keys
-      // 2. Verify JWT signature using the matching JWKS key (kid header)
-      // 3. Exchange authorization code at https://appleid.apple.com/auth/token
-      //    (requires generating a client_secret JWT signed with Apple's private key)
-      // The claim validation below provides interim protection but is not a substitute for
-      // proper signature verification. This should be upgraded to jwt.verify() with JWKS
-      // validation in a future security hardening pass.
+
       
-      const decoded = jwt.decode(identityToken, { complete: true }) as { 
-        header: { kid?: string; alg?: string };
-        payload: {
-          sub: string; 
-          email?: string; 
-          iss?: string; 
-          aud?: string;
-          exp?: number;
-          iat?: number;
-        };
-      } | null;
-      
-      if (!decoded?.payload?.sub) {
+      // Verify the Apple identity token's signature against Apple's published
+      // JWKS (plus issuer + expiry) before trusting any of its claims. A forged
+      // or tampered token throws here and is rejected.
+      let claims: AppleTokenPayload;
+      try {
+        claims = await verifyAppleIdentityToken(identityToken);
+      } catch (verifyErr: any) {
+        console.error('Apple auth: token verification failed:', verifyErr?.message);
         return res.status(400).json({ error: "Invalid identity token" });
       }
-      
-      const claims = decoded.payload;
+
+      if (!claims?.sub) {
+        return res.status(400).json({ error: "Invalid identity token" });
+      }
       
       // Validate issuer is Apple (required claim)
       if (claims.iss !== 'https://appleid.apple.com') {
@@ -4555,11 +4543,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Token expired" });
       }
       
-      // Validate JWT header has expected algorithm
-      if (decoded.header.alg !== 'RS256') {
-        console.error('Apple auth: Unexpected algorithm:', decoded.header.alg);
-        return res.status(400).json({ error: "Invalid token" });
-      }
       
       // Determine if this is a web or mobile request
       const isWebRequest = claims.aud === expectedWebServiceId;
@@ -4691,38 +4674,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect('/auth?error=missing_credentials');
       }
 
-      // ⚠️ SECURITY WARNING: Using jwt.decode() without signature verification
-      // This relies entirely on comprehensive claim validation (issuer, audience, expiry, iat)
-      // to prevent token forgery. While Apple tokens are cryptographically signed,
-      // a production-grade implementation should:
-      // 1. Fetch Apple's public keys from https://appleid.apple.com/auth/keys
-      // 2. Verify JWT signature using the matching JWKS key (kid header)
-      // 3. Exchange authorization code at https://appleid.apple.com/auth/token
-      //    (requires generating a client_secret JWT signed with Apple's private key)
-      // The claim validation below provides interim protection but is not a substitute for
-      // proper signature verification. This should be upgraded to jwt.verify() with JWKS
-      // validation in a future security hardening pass.
 
-      const decoded = jwt.decode(id_token, { complete: true }) as {
-        header: { kid?: string; alg?: string };
-        payload: {
-          sub: string;
-          email?: string;
-          email_verified?: string;
-          iss?: string;
-          aud?: string;
-          exp?: number;
-          iat?: number;
-          nonce?: string;
-        };
-      } | null;
 
-      if (!decoded?.payload?.sub) {
-        console.error('Apple auth: Could not decode id_token');
+      // Verify the Apple identity token's signature against Apple's published
+      // JWKS (plus issuer + expiry) before trusting any of its claims.
+      let claims: AppleTokenPayload;
+      try {
+        claims = await verifyAppleIdentityToken(id_token);
+      } catch (verifyErr: any) {
+        console.error('Apple auth: token verification failed:', verifyErr?.message);
         return res.redirect('/auth?error=invalid_token');
       }
 
-      const claims = decoded.payload;
+      if (!claims?.sub) {
+        console.error('Apple auth: Could not decode id_token');
+        return res.redirect('/auth?error=invalid_token');
+      }
 
       // Validate issuer is Apple (required claim)
       if (claims.iss !== 'https://appleid.apple.com') {
@@ -4750,11 +4717,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect('/auth?error=token_expired');
       }
 
-      // Validate JWT header has expected algorithm (RS256 indicates public key signing)
-      if (decoded.header.alg !== 'RS256') {
-        console.error('Apple auth: Unexpected algorithm:', decoded.header.alg);
-        return res.redirect('/auth?error=invalid_token');
-      }
 
       const appleUserId = claims.sub;
       const userEmail = claims.email;

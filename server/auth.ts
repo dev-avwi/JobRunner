@@ -442,6 +442,14 @@ export class AuthService {
         passwordResetExpiresAt: null,
       });
 
+      // Security: revoke all existing sessions for this user so any device still
+      // logged in with the OLD password is signed out after a reset.
+      try {
+        await db.execute(sql`DELETE FROM session WHERE (sess->>'userId') = ${user.id}`);
+      } catch (revokeErr) {
+        console.error('Failed to revoke sessions after password reset:', revokeErr);
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Reset password error:', error);
