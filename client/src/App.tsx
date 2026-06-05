@@ -1605,10 +1605,18 @@ function AppLayout() {
   //  1) no business_settings row at all (businessSettings === null), OR
   //  2) row exists but onboardingCompleted is false — server-side onboarding
   //     guard will 403 every data API otherwise, leaving the dashboard broken.
+  // Invite/assignment acceptance links must work even for an owner who hasn't
+  // finished onboarding — otherwise clicking a "join the team" link dumps them
+  // into their own business onboarding instead of the invite they clicked.
+  const isInviteAcceptanceRoute =
+    location.startsWith('/accept-invite/') ||
+    location.startsWith('/accept-assignment/');
+
   const ownerNeedsOnboarding =
     !!userCheck &&
     !isStaffOnOtherTeam &&
     !userCheck.isPlatformAdmin &&
+    !isInviteAcceptanceRoute &&
     (businessSettings === null ||
       (businessSettings && businessSettings.onboardingCompleted === false));
 
