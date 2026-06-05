@@ -2755,7 +2755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUBLIC: Unified document view endpoint for client portal
-  app.get("/api/public/document/:type/:token", async (req, res) => {
+  app.get("/api/public/document/:type/:token", portalIpRateLimiterMiddleware, async (req, res) => {
     try {
       const { type, token } = req.params;
       
@@ -3079,7 +3079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create payment intent for quote deposit
-  app.post("/api/public/quote/:token/pay", async (req: any, res) => {
+  app.post("/api/public/quote/:token/pay", portalIpRateLimiterMiddleware, async (req: any, res) => {
     try {
       const { token } = req.params;
       
@@ -23809,7 +23809,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // PUBLIC: Get payment request by token (for customer payment page)
-  app.get("/api/public/payment-request/:token", async (req, res) => {
+  app.get("/api/public/payment-request/:token", portalIpRateLimiterMiddleware, async (req, res) => {
     try {
       const request = await storage.getPaymentRequestByToken(req.params.token);
       
@@ -24457,7 +24457,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // POST /api/business-templates - Create new template
-  app.post("/api/business-templates", requireAuth, async (req: any, res) => {
+  app.post("/api/business-templates", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       console.log('[Templates] Creating template with body:', JSON.stringify(req.body, null, 2));
       const validated = insertBusinessTemplateSchema.parse({
@@ -24496,7 +24496,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // PATCH /api/business-templates/:id - Update template
-  app.patch("/api/business-templates/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/business-templates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const validated = updateBusinessTemplateSchema.parse(req.body);
       
@@ -24539,7 +24539,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // DELETE /api/business-templates/:id - Delete template
-  app.delete("/api/business-templates/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/business-templates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const success = await storage.deleteBusinessTemplate(req.params.id, req.userId);
       if (!success) {
@@ -29807,7 +29807,7 @@ Respond with JSON in this format:
   });
 
   // Create PayPal order
-  app.post("/api/paypal/order", async (req, res) => {
+  app.post("/api/paypal/order", requireAuth, async (req, res) => {
     try {
       const { createPaypalOrder } = await import("./paypal");
       await createPaypalOrder(req, res);
@@ -29818,7 +29818,7 @@ Respond with JSON in this format:
   });
 
   // Capture PayPal order after approval
-  app.post("/api/paypal/order/:orderID/capture", async (req, res) => {
+  app.post("/api/paypal/order/:orderID/capture", requireAuth, async (req, res) => {
     try {
       const { capturePaypalOrder } = await import("./paypal");
       await capturePaypalOrder(req, res);
@@ -29990,7 +29990,7 @@ Respond with JSON in this format:
   });
   
   // Public endpoint: Get invoice details for payment page (no auth required)
-  app.get("/api/public/invoice/:token", async (req, res) => {
+  app.get("/api/public/invoice/:token", portalIpRateLimiterMiddleware, async (req, res) => {
     try {
       const { token } = req.params;
       

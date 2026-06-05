@@ -3,7 +3,7 @@ import { z } from "zod";
 import { storage, db } from "../storage";
 import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
 import { requireAuth } from "./middleware";
-import { ownerOnly, createPermissionMiddleware, PERMISSIONS, getUserContext } from "../permissions";
+import { ownerOnly, ownerOrManagerOnly, createPermissionMiddleware, PERMISSIONS, getUserContext } from "../permissions";
 import {
   equipmentCategories,
   jobEquipment,
@@ -92,7 +92,7 @@ export function registerServiceRemindersRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/service-reminders/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/service-reminders/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const success = await storage.deleteServiceReminder(req.params.id, userContext.effectiveUserId);
