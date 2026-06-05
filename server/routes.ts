@@ -4900,7 +4900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Change password endpoint
-  app.post("/api/auth/change-password", requireAuth, async (req: any, res) => {
+  app.post("/api/auth/change-password", requireAuth, authRateLimiter, async (req: any, res) => {
     try {
       const { currentPassword, newPassword } = req.body;
       if (!currentPassword || !newPassword) {
@@ -4921,8 +4921,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Current password is incorrect" });
       }
 
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
       await storage.updateUser(req.user.id, { password: hashedPassword });
+
+      // Security: revoke all OTHER sessions for this user so any device still
+      // logged in with the old password is signed out. Bearer tokens are session
+      // rows (sid), so keep the current session alive to avoid logging the user
+      // out of the device they just changed the password on.
+      try {
+        // Resolve the current session id the SAME way requireAuth does: it prefers
+        // the cookie session (req.session.userId) and only falls back to the Bearer
+        // token. Mirror that here so we never delete the active session by mistake.
+        const authHeader = req.headers.authorization;
+        const currentSid = req.session?.userId
+          ? req.sessionID
+          : (authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : req.sessionID);
+        await db.execute(
+          sql`DELETE FROM session WHERE (sess->>'userId') = ${req.user.id} AND sid <> ${currentSid ?? ''}`
+        );
+      } catch (revokeErr) {
+        console.error('Failed to revoke other sessions after password change:', revokeErr);
+      }
 
       res.json({ success: true, message: "Password updated successfully" });
     } catch (error) {
@@ -8310,6 +8329,28 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  // Strict write schema: strip server-controlled billing/subscription/Stripe/seat/trial
+  // fields so a client can never mass-assign them (e.g. set subscriptionStatus='active'
+  // or seatCount=100). These are only ever set server-side by webhooks/billing/onboarding.
+  const businessSettingsWriteSchema = insertBusinessSettingsSchema.omit({
+    stripeConnectAccountId: true,
+    stripeConnectOnboardingStatus: true,
+    stripeConnectTosAcceptedAt: true,
+    connectChargesEnabled: true,
+    connectPayoutsEnabled: true,
+    platformFeePercent: true,
+    stripeCustomerId: true,
+    stripeSubscriptionId: true,
+    subscriptionStatus: true,
+    subscriptionPausedAt: true,
+    subscriptionCanceledAt: true,
+    seatCount: true,
+    trialStartDate: true,
+    trialEndDate: true,
+    trialConverted: true,
+    onboardingCompleted: true,
+  });
+
   app.post("/api/business-settings", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       // Extract tradeType from request - it belongs to users table, not business_settings
@@ -8339,7 +8380,7 @@ Be specific about materials, colors, and features that would be included.`
         businessSettingsData.calloutFee = String(businessSettingsData.calloutFee);
       }
       
-      const data = insertBusinessSettingsSchema.parse(businessSettingsData);
+      const data = businessSettingsWriteSchema.parse(businessSettingsData);
       const settings = await storage.createBusinessSettings({ ...data, userId: req.userId });
       res.status(201).json(settings);
     } catch (error) {
@@ -8370,7 +8411,7 @@ Be specific about materials, colors, and features that would be included.`
         businessSettingsData.calloutFee = String(businessSettingsData.calloutFee);
       }
       
-      const data = insertBusinessSettingsSchema.partial().parse(businessSettingsData);
+      const data = businessSettingsWriteSchema.partial().parse(businessSettingsData);
       const settings = await storage.updateBusinessSettings(req.userId, data);
       if (!settings) {
         return res.status(404).json({ error: "Business settings not found" });
@@ -28039,7 +28080,10 @@ Respond with JSON in this format:
       if (lastName !== undefined) updateData.lastName = lastName;
       if (phone !== undefined) updateData.phone = phone;
       if (hourlyRate !== undefined) updateData.hourlyRate = hourlyRate?.toString();
-      if (roleId !== undefined) updateData.roleId = roleId;
+      // Only the business owner may change a member's role. This prevents a
+      // manager (ownerOrManagerOnly) from escalating their own or another
+      // member's role to a more privileged one.
+      if (roleId !== undefined && req.userContext?.isOwner) updateData.roleId = roleId;
       if (workHoursStart !== undefined) updateData.workHoursStart = workHoursStart;
       if (workHoursEnd !== undefined) updateData.workHoursEnd = workHoursEnd;
       if (workDays !== undefined) updateData.workDays = workDays;
@@ -29062,7 +29106,7 @@ Respond with JSON in this format:
   });
   
   // Update custom permissions for a team member (owner only)
-  app.patch("/api/team/members/:id/permissions", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.patch("/api/team/members/:id/permissions", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const memberId = req.params.id;
       const { permissions, useCustomPermissions } = req.body;
