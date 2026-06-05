@@ -499,10 +499,12 @@ export class AuthService {
       // Normalize email
       const normalizedEmail = userData.email.toLowerCase().trim();
 
-      // Block creation if email is already attached to another business as a
-      // client, team member, or pending invitation. (An existing `users` row
-      // for this email is handled by the caller, which prefers linking.)
-      const conflict = await AuthService.findEmailConflict(normalizedEmail);
+      // Google verifies email ownership, so identities under OTHER businesses
+      // (a pending team invitation, a client record, or an unlinked team_member
+      // sharing this email) must NOT block creating the account — same trust as
+      // an accepted invite link. An existing `users` row is still handled by the
+      // caller, which prefers linking.
+      const conflict = await AuthService.findEmailConflict(normalizedEmail, { inviteTrusted: true });
       if (conflict && conflict.source !== 'user') {
         const err = new Error(conflict.message);
         (err as any).code = conflict.code;
@@ -595,6 +597,10 @@ export class AuthService {
       const normalizedEmail = userData.email.toLowerCase().trim();
 
       // Block creation if email is already attached to another business.
+      // NOTE: unlike the Google path, the Apple identityToken signature is not
+      // yet verified server-side, so we do NOT grant the invite-trusted bypass
+      // here — a forged token must not be able to skip cross-business conflict
+      // checks. Re-enable the bypass only once Apple JWT verification is added.
       const conflict = await AuthService.findEmailConflict(normalizedEmail);
       if (conflict && conflict.source !== 'user') {
         const err = new Error(conflict.message);

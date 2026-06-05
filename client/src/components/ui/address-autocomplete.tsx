@@ -219,7 +219,7 @@ export default function AddressAutocomplete({
             className
           )}
           disabled={disabled}
-          autoComplete="street-address"
+          autoComplete="off"
           data-testid={props["data-testid"]}
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2">

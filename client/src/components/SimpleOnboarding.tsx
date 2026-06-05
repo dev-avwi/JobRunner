@@ -243,7 +243,7 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
     hourlyRate: "85",
   });
 
-  const { data: user } = useQuery<{ id: string; firstName?: string; lastName?: string; intendedTier?: string; [key: string]: any }>({
+  const { data: user } = useQuery<{ id: string; firstName?: string; lastName?: string; email?: string; intendedTier?: string; [key: string]: any }>({
     queryKey: ["/api/auth/me"],
   });
 
@@ -251,6 +251,9 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
     if (user) {
       setWorkerName((prev) => prev || user.firstName || "");
       setWorkerLastName((prev) => prev || user.lastName || "");
+      if (user.email) {
+        setFormData((prev) => (prev.email ? prev : { ...prev, email: user.email! }));
+      }
     }
   }, [user]);
 
