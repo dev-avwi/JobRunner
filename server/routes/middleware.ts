@@ -139,6 +139,18 @@ export const aiPerUserLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Per-user (not per-IP) limiter for authenticated send endpoints that contact an
+// arbitrary recipient (e.g. tap-to-pay receipts to a customer-entered address).
+// Per-user keying avoids falsely throttling multiple workers behind one office IP.
+export const messagePerUserLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  keyGenerator: perUserKey,
+  message: { error: 'Too many messages sent. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export const visionPerUserLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,

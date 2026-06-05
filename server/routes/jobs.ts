@@ -560,7 +560,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.get("/api/jobs/:jobId/proof-pack", requireAuth, async (req: any, res) => {
+  app.get("/api/jobs/:jobId/proof-pack", requireAuth, pdfPerUserLimiter, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const jobId = req.params.jobId;
@@ -6904,7 +6904,7 @@ import { logSystemEvent } from "../systemEventService";
         return res.status(404).json({ error: 'Job not found' });
       }
       
-      await db.delete(digitalSignatures).where(eq(digitalSignatures.id, signatureId));
+      await db.delete(digitalSignatures).where(and(eq(digitalSignatures.id, signatureId), eq(digitalSignatures.jobId, jobId)));
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting signature:', error);

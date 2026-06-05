@@ -23,6 +23,7 @@ import {
   passwordResetLimiter,
   paymentRateLimiter,
   messageSendLimiter,
+  messagePerUserLimiter,
   generalApiLimiter,
   setupOnboardingGuard,
   pdfPerUserLimiter,
@@ -6757,7 +6758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI action execution endpoint - handles all AI-triggered workflows
-  app.post("/api/ai/execute-action", requireAuth, requireProSubscription, async (req: any, res) => {
+  app.post("/api/ai/execute-action", requireAuth, aiPerUserLimiter, requireProSubscription, async (req: any, res) => {
     try {
       const { action } = req.body;
       
@@ -7399,7 +7400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Schedule Suggestions endpoint - generates optimal job scheduling recommendations (team-aware)
-  app.post("/api/ai/schedule-suggestions", requireAuth, requireProSubscription, async (req: any, res) => {
+  app.post("/api/ai/schedule-suggestions", requireAuth, aiPerUserLimiter, requireProSubscription, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const { targetDate } = req.body;
@@ -7652,7 +7653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Instant Job Parser - Create job from pasted text (SMS, email, message) (team-aware)
-  app.post("/api/ai/parse-job-text", requireAuth, requireProSubscription, async (req: any, res) => {
+  app.post("/api/ai/parse-job-text", requireAuth, aiPerUserLimiter, requireProSubscription, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const { text } = req.body;
@@ -7677,7 +7678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Visualization - Generate before/after concept images using DALL-E 3
-  app.post("/api/ai/visualization", requireAuth, requireProSubscription, async (req: any, res) => {
+  app.post("/api/ai/visualization", requireAuth, aiPerUserLimiter, requireProSubscription, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const { beforeImageUrl, prompt, style, roomType, jobId } = req.body;
@@ -30821,7 +30822,7 @@ Respond with JSON in this format:
     method: z.enum(['email', 'sms']),
   });
 
-  app.post("/api/payments/send-receipt", requireAuth, async (req: any, res) => {
+  app.post("/api/payments/send-receipt", requireAuth, messagePerUserLimiter, async (req: any, res) => {
     try {
       const userId = req.userId!;
       
