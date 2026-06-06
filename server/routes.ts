@@ -26015,6 +26015,15 @@ Respond with JSON in this format:
         });
       }
 
+      // Validate referenced job belongs to this business (cross-business write guard)
+      if (data.jobId) {
+        const tc = await getUserContext(userId);
+        const ownedJob = await storage.getJob(data.jobId, tc.effectiveUserId);
+        if (!ownedJob) {
+          return res.status(404).json({ error: 'Job not found' });
+        }
+      }
+
       // Multiple workers can now track time on the same job simultaneously
       // Each worker's timer is independent and tracked with their userId
       
@@ -26082,6 +26091,15 @@ Respond with JSON in this format:
       const { id } = req.params;
       const data = insertTimeEntrySchema.partial().parse(req.body);
       const editReason = req.body.editReason || null;
+
+      // Validate referenced job belongs to this business when re-pointing the entry
+      if (data.jobId) {
+        const tc = await getUserContext(userId);
+        const ownedJob = await storage.getJob(data.jobId, tc.effectiveUserId);
+        if (!ownedJob) {
+          return res.status(404).json({ error: 'Job not found' });
+        }
+      }
       
       const existingEntry = await storage.getTimeEntry(id, userId);
       if (!existingEntry) {
@@ -26384,6 +26402,15 @@ Respond with JSON in this format:
       const { id } = req.params;
       const data = insertTimeEntrySchema.partial().parse(req.body);
       const editReason = req.body.editReason || null;
+
+      // Validate referenced job belongs to this business when re-pointing the entry
+      if (data.jobId) {
+        const tc = await getUserContext(userId);
+        const ownedJob = await storage.getJob(data.jobId, tc.effectiveUserId);
+        if (!ownedJob) {
+          return res.status(404).json({ error: 'Job not found' });
+        }
+      }
       
       const existingEntry = await storage.getTimeEntry(id, userId);
       if (!existingEntry) {
@@ -37354,6 +37381,33 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }
 
       const { idempotencyKey: _ik, ...payload } = req.body || {};
+
+      // Validate referenced form (and job) belong to this business (cross-business write guard)
+      const userContext = await getUserContext(userId);
+      if (!payload.formId) {
+        return res.status(400).json({ error: 'formId is required' });
+      }
+      const form = await storage.getCustomForm(payload.formId, userContext.effectiveUserId);
+      if (!form) {
+        return res.status(404).json({ error: 'Form not found' });
+      }
+      if (payload.jobId) {
+        const job = await storage.getJob(payload.jobId, userContext.effectiveUserId);
+        if (!job) {
+          return res.status(404).json({ error: 'Job not found' });
+        }
+      }
+
+      // Strip server-controlled fields (mass-assignment guard) — review status is
+      // only settable via the gated PATCH route, never at submission time.
+      delete payload.id;
+      delete payload.submittedBy;
+      delete payload.submittedAt;
+      delete payload.reviewedBy;
+      delete payload.reviewedAt;
+      delete payload.status;
+      delete payload.customerUserId;
+
       const submission = await storage.createFormSubmission({
         ...payload,
         submittedBy: userId,
