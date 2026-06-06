@@ -86,5 +86,15 @@ each item.inventoryItemId via getInventoryItem, validated BEFORE PO create to av
 team-groups/:id/members POST (teamMemberId via getTeamMembers membership). Note: no singular
 getInventoryCategory/getEquipmentCategory getter exists — verify category FKs via the LIST
 getter + `.some(c=>c.id===fk)`. Categories per business are few, so membership check is cheap.
-Still TODO: job-equipment assign (equipmentId). jobs/:id/assign is already correctly guarded
-(canAssignJobTo + getTeamMembers).
+FIXED: job-equipment assign POST /api/jobs/:id/equipment (equipmentId via getEquipmentById
+before addJobEquipment; previously only the jobId was checked). jobs/:id/assign is already
+correctly guarded (canAssignJobTo + getTeamMembers).
+
+## KNOWN follow-up (logic bug, NOT yet fixed — risky, touches prod data)
+job_equipment.user_id is written inconsistently: POST /api/jobs/:id/equipment inserts
+userId = String(req.user.id) (the ACTOR), but PATCH /api/jobs/:jobId/equipment/:assignmentId
+and the conflict-check filter by effectiveUserId (the OWNER), and DELETE/removeJobEquipment
+filters by the passed userId (actor again). For a TEAM MEMBER (req.user.id != effectiveUserId)
+this means owner can't PATCH a member-created assignment and vice-versa. Fix needs a canonical
+meaning for the column + a backfill migration — do NOT flip insert semantics blindly (strands
+existing rows). Flagged by architect; left for a dedicated, user-gated change.

@@ -890,6 +890,11 @@ import { logSystemEvent } from "../systemEventService";
         return res.status(404).json({ error: "Job not found" });
       }
 
+      const equipmentItem = await storage.getEquipmentById(equipmentId, userContext.effectiveUserId);
+      if (!equipmentItem) {
+        return res.status(404).json({ error: "Equipment not found" });
+      }
+
       if (!forceAssign) {
         const jobDate = job.scheduledAt;
 

@@ -25041,9 +25041,14 @@ Respond with JSON in this format:
 
   app.post("/api/style-presets", requireAuth, async (req: any, res) => {
     try {
-      const preset = await storage.createStylePreset({ ...req.body, userId: req.userId });
+      const { insertStylePresetSchema } = await import('@shared/schema');
+      const validated = insertStylePresetSchema.omit({ userId: true }).parse(req.body);
+      const preset = await storage.createStylePreset({ ...validated, userId: req.userId });
       res.status(201).json(preset);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid style preset", details: error.errors });
+      }
       console.error("Error creating style preset:", error);
       res.status(500).json({ error: "Failed to create style preset" });
     }
@@ -25055,9 +25060,14 @@ Respond with JSON in this format:
       if (!existing || existing.userId !== req.userId) {
         return res.status(404).json({ error: "Style preset not found" });
       }
-      const preset = await storage.updateStylePreset(req.params.id, req.userId, req.body);
+      const { insertStylePresetSchema } = await import('@shared/schema');
+      const validated = insertStylePresetSchema.omit({ userId: true }).partial().parse(req.body);
+      const preset = await storage.updateStylePreset(req.params.id, req.userId, validated);
       res.json(preset);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid style preset", details: error.errors });
+      }
       console.error("Error updating style preset:", error);
       res.status(500).json({ error: "Failed to update style preset" });
     }
