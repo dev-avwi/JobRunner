@@ -22639,7 +22639,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Create a new payment request
-  app.post("/api/payment-requests", requireAuth, async (req: any, res) => {
+  app.post("/api/payment-requests", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
     try {
       const businessForStripeCheck = await storage.getBusinessSettings(req.userId);
       const canAcceptPayments = !!(businessForStripeCheck?.stripeConnectAccountId && businessForStripeCheck?.connectChargesEnabled);
@@ -22696,7 +22696,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Update a payment request
-  app.patch("/api/payment-requests/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/payment-requests/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
     try {
       const { amount, description, reference, status, expiresInHours } = req.body;
       
@@ -22730,7 +22730,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Delete a payment request
-  app.delete("/api/payment-requests/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/payment-requests/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
     try {
       const deleted = await storage.deletePaymentRequest(req.params.id, req.userId);
       if (!deleted) {
@@ -22744,7 +22744,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Cancel a payment request
-  app.post("/api/payment-requests/:id/cancel", requireAuth, async (req: any, res) => {
+  app.post("/api/payment-requests/:id/cancel", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
     try {
       const updated = await storage.updatePaymentRequest(req.params.id, req.userId, {
         status: 'cancelled'
@@ -22842,7 +22842,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Share payment request via email
-  app.post("/api/payment-requests/:id/send-email", requireAuth, messageSendLimiter, async (req: any, res) => {
+  app.post("/api/payment-requests/:id/send-email", requireAuth, messageSendLimiter, createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
     try {
       const { email } = req.body;
       if (!email) {
@@ -23396,7 +23396,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Create a receipt (typically called after payment is collected)
-  app.post("/api/receipts", requireAuth, async (req: any, res) => {
+  app.post("/api/receipts", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
     try {
       const effectiveUserId = req.effectiveUserId || req.userId;
       
@@ -23597,7 +23597,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Send receipt via email
-  app.post("/api/receipts/:id/send-email", requireAuth, messageSendLimiter, async (req: any, res) => {
+  app.post("/api/receipts/:id/send-email", requireAuth, messageSendLimiter, createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
     try {
       const effectiveUserId = req.effectiveUserId || req.userId;
       const { email, customSubject, customMessage } = req.body;
@@ -23742,7 +23742,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Send receipt via SMS
-  app.post("/api/receipts/:id/send-sms", requireAuth, requirePaidTierForSms, messageSendLimiter, async (req: any, res) => {
+  app.post("/api/receipts/:id/send-sms", requireAuth, requirePaidTierForSms, messageSendLimiter, createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
     try {
       const effectiveUserId = req.effectiveUserId || req.userId;
       const { sendSmsToClient } = await import('./services/smsService');
@@ -24229,7 +24229,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/message-templates", requireAuth, async (req: any, res) => {
+  app.post("/api/message-templates", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const { insertMessageTemplateSchema } = await import('@shared/schema');
       const validated = insertMessageTemplateSchema.parse({
@@ -24247,7 +24247,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.patch("/api/message-templates/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/message-templates/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const { updateMessageTemplateSchema } = await import('@shared/schema');
       const validated = updateMessageTemplateSchema.parse(req.body);
@@ -24265,7 +24265,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.delete("/api/message-templates/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/message-templates/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const success = await storage.deleteMessageTemplate(req.params.id, req.userId);
       if (!success) {
@@ -27233,7 +27233,7 @@ Respond with JSON in this format:
     fileFilter: imageOrPdfFilter,
   });
 
-  app.post("/api/expenses/scan-receipt", requireAuth, visionPerUserLimiter, requireProSubscription, receiptUpload.single('receipt'), async (req: any, res) => {
+  app.post("/api/expenses/scan-receipt", requireAuth, visionPerUserLimiter, requirePaidTier(), receiptUpload.single('receipt'), async (req: any, res) => {
     try {
       let imageBuffer: Buffer;
 
@@ -31715,7 +31715,7 @@ Respond with JSON in this format:
   
   // Update voice note title (team-aware)
 
-  app.post("/api/voice-notes/transcribe", requireAuth, transcribePerUserLimiter, requireProSubscription, async (req: any, res) => {
+  app.post("/api/voice-notes/transcribe", requireAuth, transcribePerUserLimiter, requirePaidTier(), async (req: any, res) => {
     try {
       let { audioUrl } = req.body;
       const safeUrlLog = audioUrl?.startsWith('/objects/') ? audioUrl.substring(0, 60) : `https://...${audioUrl?.split('/').pop()?.split('?')[0] || ''}`;
@@ -43465,7 +43465,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.patch("/api/ai-receptionist/configs/:configId/label", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.patch("/api/ai-receptionist/configs/:configId/label", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const config = await storage.getAiReceptionistConfigById(req.params.configId);
@@ -43549,7 +43549,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     autoReplyMessage: z.string().max(500).optional(),
   });
 
-  app.post("/api/ai-receptionist/config", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/ai-receptionist/config", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       
@@ -43613,7 +43613,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.patch("/api/ai-receptionist/config", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.patch("/api/ai-receptionist/config", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const parsed = aiReceptionistConfigSchema.safeParse(req.body);
@@ -43698,7 +43698,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.post("/api/ai-receptionist/resync", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.post("/api/ai-receptionist/resync", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const config = await storage.getAiReceptionistConfig(userId);
@@ -43747,7 +43747,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.post("/api/ai-receptionist/measure-latency", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.post("/api/ai-receptionist/measure-latency", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const { refreshLatencyEstimate } = await import('./vapiService');
@@ -43767,7 +43767,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.patch("/api/ai-receptionist/configs/:configId", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.patch("/api/ai-receptionist/configs/:configId", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const config = await storage.getAiReceptionistConfigById(req.params.configId);
@@ -43836,7 +43836,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.post("/api/ai-receptionist/enable", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.post("/api/ai-receptionist/enable", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
 
@@ -44064,7 +44064,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   const testCallRateLimit = new Map<string, number>();
-  app.post("/api/ai-receptionist/test-call", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.post("/api/ai-receptionist/test-call", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const lastCall = testCallRateLimit.get(userId);
@@ -44768,7 +44768,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.post("/api/ai-receptionist/voice-requests", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.post("/api/ai-receptionist/voice-requests", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId;
       const schema = z.object({ requestedDescription: z.string().min(5).max(500) });

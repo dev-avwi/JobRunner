@@ -19,6 +19,7 @@ import { setupXeroAuth } from "../xeroAuth";
 import {
   requireAuth,
   requireProSubscription,
+  requirePaidTier,
   requirePaidTierForSms,
   requireDevelopment,
   authRateLimiter,
@@ -583,7 +584,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.get("/api/jobs/:jobId/photos/analyze", requireAuth, visionPerUserLimiter, requireProSubscription, async (req: any, res) => {
+  app.get("/api/jobs/:jobId/photos/analyze", requireAuth, visionPerUserLimiter, requirePaidTier(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const jobId = req.params.jobId;
@@ -3115,7 +3116,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.post("/api/jobs/:id/assign", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:id/assign", requireAuth, createPermissionMiddleware(PERMISSIONS.ASSIGN_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const { assignedTo } = req.body;
@@ -3216,7 +3217,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.post("/api/jobs/:id/multi-assign", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:id/multi-assign", requireAuth, createPermissionMiddleware(PERMISSIONS.ASSIGN_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const canManage = userContext.isOwner || userContext.permissions.includes('view_all');
@@ -3304,7 +3305,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.delete("/api/jobs/:jobId/assignments/:userId/remove", requireAuth, async (req: any, res) => {
+  app.delete("/api/jobs/:jobId/assignments/:userId/remove", requireAuth, createPermissionMiddleware(PERMISSIONS.ASSIGN_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const canManage = userContext.isOwner || userContext.permissions.includes('view_all');
