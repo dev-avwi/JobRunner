@@ -301,7 +301,10 @@ export async function startTrial(userId: string, tier?: 'pro' | 'team'): Promise
   }
   
   // Determine trial tier: explicit param > user's intendedTier > default to 'pro'
-  const trialTier = tier || (user.intendedTier === 'team' ? 'team' : 'pro');
+  // Whitelist the requested tier — never trust a client-supplied tier that could
+  // grant a higher plan (e.g. 'business') for free during the trial.
+  const requestedTier = tier === 'pro' || tier === 'team' ? tier : undefined;
+  const trialTier = requestedTier || (user.intendedTier === 'team' ? 'team' : 'pro');
   
   const now = new Date();
   const endsAt = new Date(now.getTime() + (TIER_LIMITS.trial.durationDays * 24 * 60 * 60 * 1000));

@@ -5656,7 +5656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/subscription/reactivate - Reactivates cancelled subscription
-  app.post("/api/subscription/reactivate", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/reactivate", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { resumeSubscription } = await import('./billingService');
       const userId = req.userId!;
@@ -5677,7 +5677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subscription/pause", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/pause", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { pauseSubscription } = await import('./billingService');
       const userId = req.userId!;
@@ -5698,7 +5698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subscription/unpause", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/unpause", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { unpauseSubscription } = await import('./billingService');
       const userId = req.userId!;
@@ -23286,6 +23286,31 @@ Be specific about materials, colors, and features that would be included.`
       if (!paymentIntentId) {
         return res.status(400).json({ error: "Payment intent ID is required" });
       }
+
+      // Ownership: the terminal payment must belong to the authenticated business.
+      const existingPayment = await storage.getTerminalPaymentByIntent(paymentIntentId);
+      if (!existingPayment || existingPayment.userId !== req.userId) {
+        return res.status(404).json({ error: "Terminal payment not found" });
+      }
+      if (existingPayment.status === 'succeeded') {
+        return res.json({ success: true, payment: existingPayment, alreadyPaid: true });
+      }
+
+      // Verify the charge actually succeeded with Stripe before marking it paid —
+      // never trust the client callback. Demo bypass only for the demo business.
+      const termOwner = await storage.getUser(req.userId);
+      const isDemoTerminalBusiness = termOwner?.email === DEMO_USER.email || termOwner?.email === VISITOR_USER.email;
+      const isDemoTerminalPayment = isDemoTerminalBusiness && String(paymentIntentId).startsWith('demo_pi_');
+      if (!isDemoTerminalPayment) {
+        const stripe = await getUncachableStripeClient();
+        if (!stripe) {
+          return res.status(503).json({ error: "Payment processing is not available" });
+        }
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (pi.status !== 'succeeded') {
+          return res.status(400).json({ error: "Payment has not been completed" });
+        }
+      }
       
       // Update the terminal payment record
       const updatedPayment = await storage.updateTerminalPaymentByIntent(paymentIntentId, {
@@ -24074,12 +24099,41 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(404).json({ error: "Payment request not found" });
       }
       
-      // For demo mode payments (no real Stripe), allow demo payment intent IDs
-      const isDemoPayment = paymentMethod === 'demo' || (paymentIntentId && paymentIntentId.startsWith('demo_pi_'));
-      
-      // Verify payment intent matches (skip for demo payments)
-      if (!isDemoPayment && request.stripePaymentIntentId !== paymentIntentId) {
-        return res.status(400).json({ error: "Payment intent mismatch" });
+      // Idempotency / state guards
+      if (request.status === 'paid') {
+        return res.json({ success: true, alreadyPaid: true });
+      }
+      if (request.status === 'cancelled') {
+        return res.status(410).json({ error: "Payment request has been cancelled" });
+      }
+
+      // Demo-mode bypass is allowed ONLY when the receiving business is the demo
+      // account — never on a client-supplied flag. Otherwise any client could mark
+      // their own payment request paid for free by sending paymentMethod:'demo'.
+      const payReqOwner = await storage.getUser(request.userId);
+      const isDemoBusiness = payReqOwner?.email === DEMO_USER.email || payReqOwner?.email === VISITOR_USER.email;
+      const isDemoPayment = isDemoBusiness && (paymentMethod === 'demo' || (paymentIntentId && String(paymentIntentId).startsWith('demo_pi_')));
+
+      if (!isDemoPayment) {
+        // Real payment: the intent must match the one we created AND Stripe must
+        // confirm it actually succeeded. Never trust the client's claim of payment.
+        if (!paymentIntentId || request.stripePaymentIntentId !== paymentIntentId) {
+          return res.status(400).json({ error: "Payment intent mismatch" });
+        }
+        const stripe = await getUncachableStripeClient();
+        if (!stripe) {
+          return res.status(503).json({ error: "Payment processing is not available" });
+        }
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (pi.status !== 'succeeded') {
+          return res.status(400).json({ error: "Payment has not been completed" });
+        }
+        // Defense-in-depth: the confirmed charge must match this request's amount/currency.
+        const expectedCents = Math.round(parseFloat(request.amount) * 100);
+        const paidCents = pi.amount_received ?? pi.amount;
+        if ((pi.currency || '').toLowerCase() !== 'aud' || paidCents !== expectedCents) {
+          return res.status(400).json({ error: "Payment amount mismatch" });
+        }
       }
       
       // Update payment request status
@@ -35892,7 +35946,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Cancel subscription
-  app.post("/api/billing/cancel", requireAuth, async (req: any, res) => {
+  app.post("/api/billing/cancel", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { cancelSubscription } = await import('./billingService');
       const result = await cancelSubscription(req.userId!);
@@ -35909,7 +35963,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Resume canceled subscription
-  app.post("/api/billing/resume", requireAuth, async (req: any, res) => {
+  app.post("/api/billing/resume", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { resumeSubscription } = await import('./billingService');
       const result = await resumeSubscription(req.userId!);
@@ -35926,7 +35980,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create customer portal session for self-service billing management
-  app.post("/api/billing/portal", requireAuth, async (req: any, res) => {
+  app.post("/api/billing/portal", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { createBillingPortalSession } = await import('./billingService');
       
