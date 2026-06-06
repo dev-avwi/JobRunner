@@ -261,7 +261,20 @@ import { registerCustomFormsRoutes } from "./routes/custom-forms";
 import { registerRebatesRoutes } from "./routes/rebates";
 import { registerTeamGroupsRoutes } from "./routes/team-groups";
 
-
+// Mass-assignment guard: strip server-controlled identity/ownership/timestamp
+// fields from a client-supplied update payload before it reaches a storage
+// method that does a blind `.set({ ...updates })`. Ownership is still enforced
+// by the storage WHERE clause / route check; this prevents a client from
+// forging identity, reassigning ownership, or overwriting audit timestamps.
+function stripServerControlledFields<T extends Record<string, any>>(body: T): Partial<T> {
+  const updates: Partial<T> = { ...body };
+  delete (updates as any).id;
+  delete (updates as any).userId;
+  delete (updates as any).businessOwnerId;
+  delete (updates as any).createdAt;
+  delete (updates as any).updatedAt;
+  return updates;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/', generalApiLimiter);
@@ -15421,8 +15434,24 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
   
+  // Authorize a location read: the assignment's job must belong to the caller's
+  // business, or the caller must be the assigned worker. Prevents IDOR — reading
+  // another tenant's live worker location by guessing the assignment id.
+  const authorizeAssignmentLocationRead = async (req: any): Promise<boolean> => {
+    const assignment = await storage.getJobAssignment(req.params.assignmentId);
+    if (!assignment) return false;
+    if (assignment.userId === req.userId) return true;
+    const ctx = await getUserContext(req.userId);
+    const effectiveUserId = ctx?.effectiveUserId || req.userId;
+    const job = await storage.getJob(assignment.jobId, effectiveUserId);
+    return !!job;
+  };
+
   app.get("/api/assignments/:assignmentId/location", requireAuth, async (req: any, res) => {
     try {
+      if (!(await authorizeAssignmentLocationRead(req))) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
       const ping = await storage.getLatestLocationPing(req.params.assignmentId);
       res.json(ping || null);
     } catch (error: any) {
@@ -15432,6 +15461,9 @@ Be specific about materials, colors, and features that would be included.`
   
   app.get("/api/assignments/:assignmentId/location-history", requireAuth, async (req: any, res) => {
     try {
+      if (!(await authorizeAssignmentLocationRead(req))) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
       const limit = parseInt(req.query.limit as string) || 50;
       const pings = await storage.getLocationPings(req.params.assignmentId, limit);
       res.json(pings);
@@ -34148,6 +34180,13 @@ Respond with JSON in this format:
       if (!conversation) {
         return res.status(404).json({ error: 'Conversation not found' });
       }
+      // Authorization: a conversation may only be read by its owning business
+      // (prevents IDOR — reading another tenant's customer thread by guessing the id).
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext?.effectiveUserId || req.userId;
+      if ((conversation as any).businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
       res.json(conversation);
     } catch (error: any) {
       console.error('Error fetching SMS conversation:', error);
@@ -34550,7 +34589,8 @@ Respond with JSON in this format:
   app.patch("/api/sms/conversations/:id", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const businessOwnerId = req.businessOwnerId || userId;
+      const smsPatchContext = await getUserContext(userId);
+      const businessOwnerId = smsPatchContext?.effectiveUserId || userId;
       const { id } = req.params;
       const { clientId, clientName, jobId } = req.body;
       
@@ -34580,7 +34620,8 @@ Respond with JSON in this format:
   app.post("/api/sms/messages/:messageId/create-job", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const businessOwnerId = req.businessOwnerId || userId;
+      const smsJobContext = await getUserContext(userId);
+      const businessOwnerId = smsJobContext?.effectiveUserId || userId;
       const { messageId } = req.params;
       
       // Get the SMS message
@@ -34593,6 +34634,11 @@ Respond with JSON in this format:
       const conversation = await storage.getSmsConversation(message.conversationId);
       if (!conversation) {
         return res.status(404).json({ error: 'Conversation not found' });
+      }
+      // Authorization: the message/conversation must belong to the caller's
+      // business before we read its contents or create a job from it (IDOR guard).
+      if ((conversation as any).businessOwnerId !== businessOwnerId) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
       }
       
       // Get or create client from conversation
@@ -40000,7 +40046,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const userId = req.userId!;
       const { id } = req.params;
       
-      const defect = await storage.updateDefect(id, userId, req.body);
+      const defect = await storage.updateDefect(id, userId, stripServerControlledFields(req.body));
       if (!defect) {
         return res.status(404).json({ error: 'Defect not found' });
       }
@@ -40225,7 +40271,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const userId = req.userId!;
       const { id } = req.params;
       
-      const contract = await storage.updateRecurringContract(id, userId, req.body);
+      const contract = await storage.updateRecurringContract(id, userId, stripServerControlledFields(req.body));
       if (!contract) {
         return res.status(404).json({ error: 'Recurring contract not found' });
       }
@@ -40410,7 +40456,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const userId = req.userId!;
       const { id } = req.params;
       
-      const lead = await storage.updateLead(id, userId, req.body);
+      const lead = await storage.updateLead(id, userId, stripServerControlledFields(req.body));
       if (!lead) {
         return res.status(404).json({ error: 'Lead not found' });
       }
@@ -42742,7 +42788,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.patch("/api/whs/incidents/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const report = await storage.updateIncidentReport(req.params.id, userId, req.body);
+      const report = await storage.updateIncidentReport(req.params.id, userId, stripServerControlledFields(req.body));
       if (!report) return res.status(404).json({ error: "Incident report not found" });
       res.json(report);
     } catch (error) {
@@ -42805,7 +42851,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.patch("/api/whs/emergency-info/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const info = await storage.updateSiteEmergencyInfo(req.params.id, userId, req.body);
+      const info = await storage.updateSiteEmergencyInfo(req.params.id, userId, stripServerControlledFields(req.body));
       if (!info) return res.status(404).json({ error: "Emergency info not found" });
       res.json(info);
     } catch (error) {
@@ -42978,7 +43024,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.patch("/api/whs/hazardous-environments/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const env = await storage.updateSiteHazardousEnvironment(req.params.id, userId, req.body);
+      const env = await storage.updateSiteHazardousEnvironment(req.params.id, userId, stripServerControlledFields(req.body));
       if (!env) return res.status(404).json({ error: "Hazardous environment not found" });
       res.json(env);
     } catch (error) {
@@ -43029,7 +43075,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.patch("/api/whs/safety-signage/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const sign = await storage.updateSiteSafetySignage(req.params.id, userId, req.body);
+      const sign = await storage.updateSiteSafetySignage(req.params.id, userId, stripServerControlledFields(req.body));
       if (!sign) return res.status(404).json({ error: "Safety signage not found" });
       res.json(sign);
     } catch (error) {
@@ -43156,7 +43202,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.patch("/api/whs/hazard-reports/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const updated = await storage.updateHazardReport(req.params.id, userId, req.body);
+      const updated = await storage.updateHazardReport(req.params.id, userId, stripServerControlledFields(req.body));
       if (!updated) return res.status(404).json({ error: "Hazard report not found" });
       res.json(updated);
     } catch (error) {
@@ -43240,7 +43286,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.patch("/api/whs/training-records/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const updated = await storage.updateTrainingRecord(req.params.id, userId, req.body);
+      const updated = await storage.updateTrainingRecord(req.params.id, userId, stripServerControlledFields(req.body));
       if (!updated) return res.status(404).json({ error: "Training record not found" });
       res.json(updated);
     } catch (error) {
