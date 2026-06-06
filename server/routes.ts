@@ -17541,6 +17541,14 @@ Be specific about materials, colors, and features that would be included.`
       const userContext = await getUserContext(req.userId);
       const { lineItems, ...quoteBody } = req.body;
       const data = updateQuoteSchema.parse(quoteBody);
+
+      const editClaim = await storage.claimQuoteForEdit(req.params.id, userContext.effectiveUserId);
+      if (!editClaim.found) {
+        return res.status(404).json({ error: "Quote not found" });
+      }
+      if (!editClaim.ok) {
+        return res.status(403).json({ error: 'This quote has been accepted by the client and cannot be edited. Create a new quote instead.' });
+      }
       
       // Capture pre-edit snapshot (saved only after successful update)
       let versionSnapshot: any = null;

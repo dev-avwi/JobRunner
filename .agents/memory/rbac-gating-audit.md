@@ -38,6 +38,23 @@ a multi-business member can SEE a row in the list but get a false 404 editing it
 list to pass `effectiveUserId` too. Rows are created under `effectiveUserId`, so members
 never own copies under their own raw id — passing effectiveUserId loses nothing.
 
+## Accepted quotes must be locked from edits (parallels invoice lock)
+PATCH /api/invoices/:id blocks edits when `lockedAt || status==='paid'`. PATCH /api/quotes/:id
+historically had NO equivalent guard, so a WRITE_QUOTES staffer could alter line items/totals
+AFTER a client digitally accepted (accept flow sets `status='accepted'` + `acceptedAt`),
+undermining the signed agreement. Fix: `storage.claimQuoteForEdit(id,userId)` does one atomic
+conditional UPDATE (`where status<>'accepted' and acceptedAt is null`); 0 rows → 403 (accepted)
+or 404 (not found). Handler calls it FIRST. **Why atomic claim not just a read:** a read-then-write
+check is TOCTOU-racy. **Known residual (deliberately not fixed):** the later line-item
+delete/recreate + totals writes in that handler are separate non-transactional writes, so a
+portal-accept landing mid-edit can still interleave. Full fix = wrap handler in a tx with
+`SELECT ... FOR UPDATE`, but that refactors a 150-line financial editor + shared storage methods
+(updateQuote/createQuoteLineItem use module-level db) — higher risk to 57 prod users than the
+rare same-quote accept-vs-edit race it closes. Both actors are authorized; it's an ordering
+question, not a breach. Architect will FAIL anything short of the tx — that's an accepted
+tradeoff for a low-risk pass, not an oversight. If quote editing ever needs hard concurrency
+correctness, do the tx refactor as its own scoped task.
+
 ## IDOR-by-id storage footgun
 Several storage methods take only an `id` with no owner predicate (e.g. `getStylePreset(id)`,
 `deleteStylePreset(id)`, `getQuoteTemplate(id)`). GET/PATCH/DELETE-by-id handlers that call

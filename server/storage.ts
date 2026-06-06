@@ -1,7 +1,7 @@
 import { getErrorMessage } from "./lib/errors";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
-import { eq, desc, asc, sql, and, or, lt, gt, gte, lte, isNull, isNotNull, inArray } from "drizzle-orm";
+import { eq, ne, desc, asc, sql, and, or, lt, gt, gte, lte, isNull, isNotNull, inArray } from "drizzle-orm";
 import crypto from "crypto";
 import {
   type User,
@@ -561,6 +561,7 @@ export interface IStorage {
   getQuotes(userId: string, includeArchived?: boolean): Promise<Quote[]>;
   getQuote(id: string, userId: string): Promise<Quote | undefined>;
   createQuote(quote: InsertQuote): Promise<Quote>;
+  claimQuoteForEdit(id: string, userId: string): Promise<{ ok: boolean; found: boolean }>;
   updateQuote(id: string, userId: string, quote: Partial<InsertQuote>): Promise<Quote | undefined>;
   deleteQuote(id: string, userId: string): Promise<boolean>;
   getQuoteWithLineItems(id: string, userId: string): Promise<(Quote & { lineItems: QuoteLineItem[] }) | undefined>;
@@ -2524,6 +2525,21 @@ export class PostgresStorage implements IStorage {
     const { invalidateAggregateDashboard } = await import('./cache');
     invalidateAggregateDashboard(quote.userId);
     return result[0];
+  }
+
+  async claimQuoteForEdit(id: string, userId: string): Promise<{ ok: boolean; found: boolean }> {
+    const result = await db
+      .update(quotes)
+      .set({ updatedAt: new Date() })
+      .where(and(eq(quotes.id, id), eq(quotes.userId, userId), ne(quotes.status, 'accepted'), isNull(quotes.acceptedAt)))
+      .returning({ id: quotes.id });
+    if (result[0]) return { ok: true, found: true };
+    const existing = await db
+      .select({ id: quotes.id })
+      .from(quotes)
+      .where(and(eq(quotes.id, id), eq(quotes.userId, userId)))
+      .limit(1);
+    return { ok: false, found: existing.length > 0 };
   }
 
   async updateQuote(id: string, userId: string, quote: Partial<InsertQuote>): Promise<Quote | undefined> {
