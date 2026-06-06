@@ -80,7 +80,8 @@ export function registerRebatesRoutes(app: Express): void {
   app.patch("/api/rebates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const rebate = await storage.updateRebate(req.params.id, userContext.effectiveUserId, req.body);
+      const patchData = { ...req.body }; delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const rebate = await storage.updateRebate(req.params.id, userContext.effectiveUserId, patchData);
       if (!rebate) {
         return res.status(404).json({ error: "Rebate not found" });
       }

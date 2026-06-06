@@ -86,7 +86,8 @@ export function registerTeamGroupsRoutes(app: Express): void {
   app.patch("/api/team-groups/:id", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const group = await storage.updateTeamGroup(req.params.id, userContext.effectiveUserId, req.body);
+      const patchData = { ...req.body }; delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const group = await storage.updateTeamGroup(req.params.id, userContext.effectiveUserId, patchData);
       if (!group) {
         return res.status(404).json({ error: "Team group not found" });
       }

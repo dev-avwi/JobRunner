@@ -52,7 +52,8 @@ export function registerInventoryRoutes(app: Express): void {
   app.patch("/api/inventory/categories/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const updated = await storage.updateInventoryCategory(req.params.id, userContext.effectiveUserId, req.body);
+      const patchData = { ...req.body }; delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const updated = await storage.updateInventoryCategory(req.params.id, userContext.effectiveUserId, patchData);
       if (!updated) return res.status(404).json({ error: "Category not found" });
       res.json(updated);
     } catch (error) {
@@ -118,7 +119,8 @@ export function registerInventoryRoutes(app: Express): void {
   app.patch("/api/inventory/items/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const updated = await storage.updateInventoryItem(req.params.id, userContext.effectiveUserId, req.body);
+      const patchData = { ...req.body }; delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const updated = await storage.updateInventoryItem(req.params.id, userContext.effectiveUserId, patchData);
       if (!updated) return res.status(404).json({ error: "Item not found" });
       res.json(updated);
     } catch (error) {
@@ -245,7 +247,8 @@ export function registerInventoryRoutes(app: Express): void {
   app.patch("/api/suppliers/:id", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const updated = await storage.updateSupplier(req.params.id, userContext.effectiveUserId, req.body);
+      const patchData = { ...req.body }; delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const updated = await storage.updateSupplier(req.params.id, userContext.effectiveUserId, patchData);
       if (!updated) return res.status(404).json({ error: "Supplier not found" });
       res.json(updated);
     } catch (error) {
@@ -335,7 +338,8 @@ export function registerInventoryRoutes(app: Express): void {
   app.patch("/api/purchase-orders/:id", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const updated = await storage.updatePurchaseOrder(req.params.id, userContext.effectiveUserId, req.body);
+      const patchData = { ...req.body }; delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const updated = await storage.updatePurchaseOrder(req.params.id, userContext.effectiveUserId, patchData);
       if (!updated) return res.status(404).json({ error: "Purchase order not found" });
       res.json(updated);
     } catch (error) {

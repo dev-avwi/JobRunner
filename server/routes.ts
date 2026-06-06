@@ -25086,7 +25086,9 @@ Respond with JSON in this format:
       if (template.userId !== req.user.id) {
         return res.status(403).json({ error: "Not authorized" });
       }
-      const updated = await storage.updateQuoteTemplate(req.params.id, req.body);
+      const patchData = { ...req.body };
+      delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const updated = await storage.updateQuoteTemplate(req.params.id, patchData);
       res.json(updated);
     } catch (error: any) {
       console.error('Error updating quote template:', error);
@@ -29825,7 +29827,9 @@ Respond with JSON in this format:
       const userId = req.userId!;
       const scheduleId = req.params.id;
       
-      const updated = await storage.updateStaffSchedule(scheduleId, userId, req.body);
+      const patchData = { ...req.body };
+      delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const updated = await storage.updateStaffSchedule(scheduleId, userId, patchData);
       res.json(updated);
     } catch (error) {
       console.error('Error updating schedule:', error);
@@ -35803,7 +35807,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
   
   // Start free trial
-  app.post("/api/subscription/trial", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/trial", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { tier } = req.body || {};
@@ -37051,7 +37055,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const { id } = req.params;
       
-      const automation = await storage.updateAutomation(id, userId, req.body);
+      const patchData = { ...req.body };
+      delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const automation = await storage.updateAutomation(id, userId, patchData);
       
       if (!automation) {
         return res.status(404).json({ error: 'Automation not found' });
@@ -37334,7 +37340,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const userId = req.userId!;
       const { id } = req.params;
       
-      const form = await storage.updateCustomForm(id, userId, req.body);
+      const patchData = { ...req.body };
+      delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      const form = await storage.updateCustomForm(id, userId, patchData);
       
       if (!form) {
         return res.status(404).json({ error: 'Form not found' });
@@ -42934,7 +42942,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.post("/api/whs/incidents", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const report = await storage.createIncidentReport({ ...req.body, userId });
+      const createData = { ...req.body }; delete createData.id; delete createData.createdAt; delete createData.updatedAt;
+      const report = await storage.createIncidentReport({ ...createData, userId });
       res.status(201).json(report);
     } catch (error) {
       console.error("Create incident report error:", error);
@@ -42997,7 +43006,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.post("/api/whs/emergency-info", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const info = await storage.createSiteEmergencyInfo({ ...req.body, userId });
+      const createData = { ...req.body }; delete createData.id; delete createData.createdAt; delete createData.updatedAt;
+      const info = await storage.createSiteEmergencyInfo({ ...createData, userId });
       res.status(201).json(info);
     } catch (error) {
       console.error("Create emergency info error:", error);
@@ -43170,7 +43180,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.post("/api/whs/hazardous-environments", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const env = await storage.createSiteHazardousEnvironment({ ...req.body, userId });
+      const createData = { ...req.body }; delete createData.id; delete createData.createdAt; delete createData.updatedAt;
+      const env = await storage.createSiteHazardousEnvironment({ ...createData, userId });
       res.status(201).json(env);
     } catch (error) {
       console.error("Create hazardous environment error:", error);
@@ -43221,7 +43232,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.post("/api/whs/safety-signage", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const sign = await storage.createSiteSafetySignage({ ...req.body, userId });
+      const createData = { ...req.body }; delete createData.id; delete createData.createdAt; delete createData.updatedAt;
+      const sign = await storage.createSiteSafetySignage({ ...createData, userId });
       res.status(201).json(sign);
     } catch (error) {
       console.error("Create safety signage error:", error);
@@ -43348,7 +43360,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.post("/api/whs/hazard-reports", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const report = await storage.createHazardReport({ ...req.body, userId });
+      const createData = { ...req.body }; delete createData.id; delete createData.createdAt; delete createData.updatedAt;
+      const report = await storage.createHazardReport({ ...createData, userId });
       res.status(201).json(report);
     } catch (error) {
       console.error("Create hazard report error:", error);
@@ -43397,7 +43410,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.post("/api/whs/ppe-checklists", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const checklist = await storage.createPpeChecklist({ ...req.body, userId });
+      const createData = { ...req.body }; delete createData.id; delete createData.createdAt; delete createData.updatedAt;
+      const checklist = await storage.createPpeChecklist({ ...createData, userId });
       res.status(201).json(checklist);
     } catch (error) {
       console.error("Create PPE checklist error:", error);
@@ -43432,7 +43446,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.post("/api/whs/training-records", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const record = await storage.createTrainingRecord({ ...req.body, userId });
+      const createData = { ...req.body }; delete createData.id; delete createData.createdAt; delete createData.updatedAt;
+      const record = await storage.createTrainingRecord({ ...createData, userId });
       res.status(201).json(record);
     } catch (error) {
       console.error("Create training record error:", error);
