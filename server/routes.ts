@@ -17477,6 +17477,16 @@ Be specific about materials, colors, and features that would be included.`
 
       const { lineItems, ...quoteData } = reqBody;
       const data = insertQuoteSchema.parse(quoteData);
+
+      // Verify referenced foreign keys belong to this business (cross-business write guard)
+      if (data.clientId) {
+        const client = await storage.getClient(data.clientId, userContext.effectiveUserId);
+        if (!client) return res.status(404).json({ error: "Client not found" });
+      }
+      if (data.jobId) {
+        const job = await storage.getJob(data.jobId, userContext.effectiveUserId);
+        if (!job) return res.status(404).json({ error: "Job not found" });
+      }
       
       // Generate quote number if not provided
       if (!data.number) {
@@ -18447,6 +18457,20 @@ Be specific about materials, colors, and features that would be included.`
       invoiceData.total = calculatedTotal.toFixed(2);
       
       const data = insertInvoiceSchema.parse(invoiceData);
+
+      // Verify referenced foreign keys belong to this business (cross-business write guard)
+      if (data.clientId) {
+        const client = await storage.getClient(data.clientId, userContext.effectiveUserId);
+        if (!client) return res.status(404).json({ error: "Client not found" });
+      }
+      if (data.jobId) {
+        const job = await storage.getJob(data.jobId, userContext.effectiveUserId);
+        if (!job) return res.status(404).json({ error: "Job not found" });
+      }
+      if (data.quoteId) {
+        const quote = await storage.getQuote(data.quoteId, userContext.effectiveUserId);
+        if (!quote) return res.status(404).json({ error: "Quote not found" });
+      }
       
       // Generate invoice number if not provided
       if (!data.number) {

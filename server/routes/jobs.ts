@@ -2298,6 +2298,12 @@ import { logSystemEvent } from "../systemEventService";
       }
 
       const data = insertJobSchema.parse(body);
+
+      // Verify referenced client belongs to this business (cross-business write guard)
+      if (data.clientId) {
+        const client = await storage.getClient(data.clientId, effectiveUserId);
+        if (!client) return res.status(404).json({ error: "Client not found" });
+      }
       
       // Validate job assignment RBAC if assignedTo is provided
       if (data.assignedTo) {

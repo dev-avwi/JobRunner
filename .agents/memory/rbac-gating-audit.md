@@ -64,3 +64,20 @@ signatures — other callers): fetch first, then
 don't leak existence. Match the existing per-resource scoping field (some handlers use
 `req.user.id`, some `req.userId`, some `effectiveUserId` — mirror the sibling list/POST
 handler for that resource rather than introducing a new one).
+
+## Cross-business write-association IDOR on create endpoints
+Create handlers (POST /api/quotes, /api/invoices, /api/jobs) accept foreign-key ids
+(clientId/jobId/quoteId) in the body and set the new row's own userId=effectiveUserId, but
+historically did NOT verify the *referenced* FK belongs to the caller. So an authenticated user
+could attach their quote/job/invoice to ANOTHER business's clientId/jobId/quoteId.
+**Fix at route layer, before the create:** if the FK is present, fetch via the owner-scoped
+getter (getClient(id,uid)/getJob(id,uid)/getQuote(id,uid) all filter id+userId) and 404 if it
+returns undefined. Gate each check with `if (data.fk)` since jobId/quoteId are optional
+(clientId is notNull on all three). **Why 404 not 403:** don't leak existence of other
+businesses' records. **Offline-sync safe:** mobile sync_queue is FIFO by created_at with
+local->server id remapping (offline-storage.ts updateLocalIdWithServerId rewrites queued
+payloads), so a client always syncs before the quote/job that references it — no false 404.
+Same pattern still TODO on lower-traffic creates flagged by explorers but not yet fixed:
+inventory items (categoryId), equipment (categoryId) + maintenance (equipmentId in path),
+purchase-orders (supplierId), job-equipment assign (equipmentId), team-group add member
+(teamMemberId). jobs/:id/assign is already correctly guarded (canAssignJobTo + getTeamMembers).
