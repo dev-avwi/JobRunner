@@ -1220,6 +1220,7 @@ export interface IStorage {
   updateJsaDocument(id: string, userId: string, updates: Partial<InsertJsaDocument>): Promise<JsaDocument | undefined>;
   deleteJsaDocument(id: string, userId: string): Promise<boolean>;
   getJsaSteps(jsaId: string): Promise<JsaStep[]>;
+  getJsaStep(id: string): Promise<JsaStep | undefined>;
   createJsaStep(step: InsertJsaStep): Promise<JsaStep>;
   updateJsaStep(id: string, updates: Partial<InsertJsaStep>): Promise<JsaStep | undefined>;
   deleteJsaStep(id: string): Promise<boolean>;
@@ -8603,6 +8604,11 @@ Thank you for your prompt attention to this matter.`,
 
   async getJsaSteps(jsaId: string): Promise<JsaStep[]> {
     return await db.select().from(jsaSteps).where(eq(jsaSteps.jsaId, jsaId)).orderBy(asc(jsaSteps.sortOrder));
+  }
+
+  async getJsaStep(id: string): Promise<JsaStep | undefined> {
+    const [result] = await db.select().from(jsaSteps).where(eq(jsaSteps.id, id));
+    return result;
   }
 
   async createJsaStep(step: InsertJsaStep): Promise<JsaStep> {

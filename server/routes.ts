@@ -24666,14 +24666,15 @@ Be specific about materials, colors, and features that would be included.`
   // PATCH /api/templates/:id/set-default - Set a template as the default
   app.patch("/api/templates/:id/set-default", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
+      const effectiveUserId = req.userContext?.effectiveUserId || req.userId;
       const template = await storage.getDocumentTemplate(req.params.id);
       
-      if (!template) {
+      if (!template || template.userId !== effectiveUserId) {
         return res.status(404).json({ error: "Template not found" });
       }
 
       // Update business settings to use this template
-      await storage.updateBusinessSettings(req.userId, {
+      await storage.updateBusinessSettings(effectiveUserId, {
         documentTemplate: template.name,
         documentTemplateSettings: template.settings as any,
       });
@@ -31954,6 +31955,8 @@ Respond with JSON in this format:
       
       // Recalculate GST if amount changed
       let updates = { ...req.body };
+      // Strip server-controlled identity/ownership fields (mass-assignment guard)
+      delete updates.id; delete updates.userId; delete updates.jobId; delete updates.createdAt; delete updates.updatedAt;
       if (req.body.additionalAmount !== undefined) {
         const additionalAmount = parseFloat(req.body.additionalAmount || '0');
         const gstAmount = additionalAmount * 0.10;
@@ -32158,6 +32161,8 @@ Respond with JSON in this format:
       }
 
       let updates = { ...req.body };
+      // Strip server-controlled identity/ownership fields (mass-assignment guard)
+      delete updates.id; delete updates.userId; delete updates.jobId; delete updates.createdAt; delete updates.updatedAt;
 
       if (updates.quantity !== undefined || updates.unitCost !== undefined) {
         const quantity = parseFloat(String(updates.quantity ?? existing.quantity ?? '1'));
@@ -37284,6 +37289,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const { id } = req.params;
       
       const updates: any = { ...req.body };
+      // Strip server-controlled identity/ownership fields (mass-assignment guard).
+      // reviewedBy/reviewedAt are set by the server below, never trusted from the client.
+      delete updates.id; delete updates.userId; delete updates.formId; delete updates.createdAt; delete updates.updatedAt; delete updates.reviewedBy; delete updates.reviewedAt;
       
       if (updates.reviewStatus === 'approved' || updates.reviewStatus === 'rejected') {
         updates.reviewedBy = userId;
@@ -41326,6 +41334,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       
       const businessOwnerId = user.businessOwnerId || userId;
       const updates = { ...req.body };
+      // Strip server-controlled identity/ownership fields (mass-assignment guard)
+      delete updates.id; delete updates.userId; delete updates.businessOwnerId; delete updates.createdAt; delete updates.updatedAt;
       if (updates.expiryDate) {
         updates.expiryDate = new Date(updates.expiryDate);
       }
@@ -42903,7 +42913,16 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
   app.patch("/api/whs/jsa/steps/:stepId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
-      const step = await storage.updateJsaStep(req.params.stepId, req.body);
+      const userId = req.userId!;
+      // Verify the step belongs to a JSA document owned by this business (prevents cross-tenant IDOR)
+      const existingStep = await storage.getJsaStep(req.params.stepId);
+      if (!existingStep) return res.status(404).json({ error: "JSA step not found" });
+      const parent = await storage.getJsaDocument(existingStep.jsaId, userId);
+      if (!parent) return res.status(404).json({ error: "JSA step not found" });
+      const updates = { ...req.body };
+      // Strip server-controlled identity fields (mass-assignment guard)
+      delete updates.id; delete updates.jsaId; delete updates.createdAt; delete updates.updatedAt;
+      const step = await storage.updateJsaStep(req.params.stepId, updates);
       if (!step) return res.status(404).json({ error: "JSA step not found" });
       res.json(step);
     } catch (error) {
@@ -42914,6 +42933,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
   app.delete("/api/whs/jsa/steps/:stepId", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
+      const userId = req.userId!;
+      // Verify the step belongs to a JSA document owned by this business (prevents cross-tenant IDOR)
+      const existingStep = await storage.getJsaStep(req.params.stepId);
+      if (!existingStep) return res.status(404).json({ error: "JSA step not found" });
+      const parent = await storage.getJsaDocument(existingStep.jsaId, userId);
+      if (!parent) return res.status(404).json({ error: "JSA step not found" });
       const deleted = await storage.deleteJsaStep(req.params.stepId);
       if (!deleted) return res.status(404).json({ error: "JSA step not found" });
       res.json({ success: true });
