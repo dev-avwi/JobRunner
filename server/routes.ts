@@ -22719,6 +22719,30 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(400).json({ error: "Description is required" });
       }
 
+      // Ownership check: any invoice/job/client reference supplied in the body
+      // must belong to the caller's business, otherwise a user could attach a
+      // foreign tenant's record id to their own payment request.
+      const paymentReqContext = await getUserContext(req.userId);
+      const paymentReqOwnerId = paymentReqContext?.effectiveUserId || req.userId;
+      if (invoiceId) {
+        const ownedInvoice = await storage.getInvoice(invoiceId, paymentReqOwnerId);
+        if (!ownedInvoice) {
+          return res.status(404).json({ error: "Invoice not found" });
+        }
+      }
+      if (jobId) {
+        const ownedJob = await storage.getJob(jobId, paymentReqOwnerId);
+        if (!ownedJob) {
+          return res.status(404).json({ error: "Job not found" });
+        }
+      }
+      if (clientId) {
+        const ownedClient = await storage.getClient(clientId, paymentReqOwnerId);
+        if (!ownedClient) {
+          return res.status(404).json({ error: "Client not found" });
+        }
+      }
+
       // Generate secure token for payment link
       const token = randomBytes(32).toString('hex');
       
@@ -27781,7 +27805,8 @@ Respond with JSON in this format:
       const userId = req.userId!;
       const { jobId } = req.params;
       
-      const checkins = await storage.getJobCheckins(jobId, userId);
+      const checkinContext = await getUserContext(userId);
+      const checkins = await storage.getJobCheckins(jobId, checkinContext?.effectiveUserId || userId);
       res.json(checkins);
     } catch (error) {
       console.error('Error fetching job check-ins:', error);
@@ -27797,6 +27822,15 @@ Respond with JSON in this format:
       
       if (!jobId || !type) {
         return res.status(400).json({ error: 'jobId and type are required' });
+      }
+      
+      // Authorization: the job must belong to the caller's business before a
+      // check-in (GPS/notes) can be recorded against it. Prevents cross-tenant
+      // writes — injecting check-in records onto another business's job by id.
+      const createCheckinContext = await getUserContext(userId);
+      const checkinJob = await storage.getJob(jobId, createCheckinContext?.effectiveUserId || userId);
+      if (!checkinJob) {
+        return res.status(404).json({ error: 'Job not found' });
       }
       
       const checkin = await storage.createJobCheckin({
@@ -27821,6 +27855,14 @@ Respond with JSON in this format:
     try {
       const userId = req.userId!;
       const { jobId } = req.params;
+      
+      // Authorization: confirm the job belongs to the caller's business before
+      // returning any check-in (defense in depth; also screens legacy rows).
+      const latestCheckinContext = await getUserContext(userId);
+      const latestCheckinJob = await storage.getJob(jobId, latestCheckinContext?.effectiveUserId || userId);
+      if (!latestCheckinJob) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
       
       const latestCheckin = await storage.getLatestCheckin(jobId, userId);
       res.json(latestCheckin || null);
@@ -41639,6 +41681,11 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       switch (action) {
         case 'attachToJob':
           if (!targetJobId) return res.status(400).json({ error: 'jobId required for attachToJob' });
+          // Ownership: the destination job must belong to the caller's business
+          // so photos can't be reassigned onto another tenant's job.
+          if (!(await storage.getJob(targetJobId, effectiveUserId))) {
+            return res.status(404).json({ error: 'Job not found' });
+          }
           await db.update(jobPhotos).set({ jobId: targetJobId }).where(inArray(jobPhotos.id, validIds));
           break;
         case 'setCategory':
@@ -41697,6 +41744,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }
 
       if (targetJobId) {
+        // Ownership: the target job must belong to the caller's business so a
+        // photo can't be uploaded onto another tenant's job.
+        const standaloneCtx = await getUserContext(userId);
+        const standaloneOwnerId = standaloneCtx?.effectiveUserId || userId;
+        if (!(await storage.getJob(targetJobId, standaloneOwnerId))) {
+          return res.status(404).json({ error: 'Job not found' });
+        }
         const { uploadJobPhoto } = await import('./photoService');
         const result = await uploadJobPhoto(userId, targetJobId, buffer, {
           fileName: fileName || 'photo.jpg',
