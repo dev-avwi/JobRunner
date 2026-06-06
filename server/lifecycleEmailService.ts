@@ -309,10 +309,10 @@ async function sendLifecycleEmail(user: UserWithMilestones, emailConfig: typeof 
     const { invalidateUser } = await import('./cache');
     invalidateUser(user.id);
 
-    logger.info(`[Lifecycle] Sent ${emailConfig.key} to ${user.email}`);
+    logger.info('email', `[Lifecycle] Sent ${emailConfig.key} to ${user.email}`);
     return true;
   } catch (error) {
-    logger.error(`[Lifecycle] Failed to send ${emailConfig.key} to ${user.email}:`, error);
+    logger.error('email', `[Lifecycle] Failed to send ${emailConfig.key} to ${user.email}`, { error });
     return false;
   }
 }
@@ -341,10 +341,10 @@ export async function processLifecycleEmails(): Promise<void> {
     }
 
     if (sent > 0) {
-      logger.info(`[Lifecycle] Processed ${usersToProcess.length} users, sent ${sent} emails`);
+      logger.info('email', `[Lifecycle] Processed ${usersToProcess.length} users, sent ${sent} emails`);
     }
   } catch (error) {
-    logger.error('[Lifecycle] Error processing lifecycle emails:', error);
+    logger.error('email', '[Lifecycle] Error processing lifecycle emails', { error });
   }
 }
 

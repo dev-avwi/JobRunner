@@ -30,11 +30,17 @@ const TRANSIENT_ERROR_PATTERNS: RegExp[] = [
   /timeout exceeded when trying to connect/i,
 ];
 
-function isTransientInfraError(entry: { message?: string; error?: unknown }): boolean {
-  const haystack = [
-    typeof entry.message === 'string' ? entry.message : '',
-    entry.error instanceof Error ? entry.error.message : '',
-  ].join(' ');
+function isTransientInfraError(entry: { message?: unknown; error?: unknown }): boolean {
+  // Defense-in-depth: callers sometimes pass an Error object in the message
+  // slot (wrong signature) — coerce everything to text so the patterns below
+  // still match no matter which slot the connection error landed in.
+  const parts: string[] = [];
+  if (typeof entry.message === 'string') parts.push(entry.message);
+  else if (entry.message instanceof Error) parts.push(entry.message.message);
+  else if (entry.message != null) parts.push(String(entry.message));
+  if (entry.error instanceof Error) parts.push(entry.error.message);
+  else if (entry.error != null) parts.push(String(entry.error));
+  const haystack = parts.join(' ');
   if (!haystack) return false;
   return TRANSIENT_ERROR_PATTERNS.some(re => re.test(haystack));
 }
