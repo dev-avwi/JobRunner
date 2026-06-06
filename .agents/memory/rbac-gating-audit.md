@@ -77,7 +77,14 @@ returns undefined. Gate each check with `if (data.fk)` since jobId/quoteId are o
 businesses' records. **Offline-sync safe:** mobile sync_queue is FIFO by created_at with
 local->server id remapping (offline-storage.ts updateLocalIdWithServerId rewrites queued
 payloads), so a client always syncs before the quote/job that references it — no false 404.
-Same pattern still TODO on lower-traffic creates flagged by explorers but not yet fixed:
-inventory items (categoryId), equipment (categoryId) + maintenance (equipmentId in path),
-purchase-orders (supplierId), job-equipment assign (equipmentId), team-group add member
-(teamMemberId). jobs/:id/assign is already correctly guarded (canAssignJobTo + getTeamMembers).
+FIXED (route-layer FK ownership guards, 404 on foreign id): inventory items POST (categoryId
+via getInventoryCategories membership), inventory items/:id/transactions POST (itemId via
+getInventoryItem — was creating txn BEFORE the ownership fetch; architect caught it),
+equipment POST (categoryId via getEquipmentCategories), equipment/:id/maintenance POST
+(equipmentId path via getEquipmentById), purchase-orders POST (supplierId via getSupplier +
+each item.inventoryItemId via getInventoryItem, validated BEFORE PO create to avoid partial PO),
+team-groups/:id/members POST (teamMemberId via getTeamMembers membership). Note: no singular
+getInventoryCategory/getEquipmentCategory getter exists — verify category FKs via the LIST
+getter + `.some(c=>c.id===fk)`. Categories per business are few, so membership check is cheap.
+Still TODO: job-equipment assign (equipmentId). jobs/:id/assign is already correctly guarded
+(canAssignJobTo + getTeamMembers).

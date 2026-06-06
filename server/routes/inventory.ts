@@ -101,6 +101,12 @@ export function registerInventoryRoutes(app: Express): void {
     try {
       const userContext = await getUserContext(req.userId);
       const parsed = insertInventoryItemSchema.parse(req.body);
+      if (parsed.categoryId) {
+        const categories = await storage.getInventoryCategories(userContext.effectiveUserId);
+        if (!categories.some(c => c.id === parsed.categoryId)) {
+          return res.status(404).json({ error: "Category not found" });
+        }
+      }
       const item = await storage.createInventoryItem({ ...parsed, userId: userContext.effectiveUserId });
       res.status(201).json(item);
     } catch (error) {
@@ -147,6 +153,10 @@ export function registerInventoryRoutes(app: Express): void {
   app.post("/api/inventory/items/:id/transactions", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
+      const item = await storage.getInventoryItem(req.params.id, userContext.effectiveUserId);
+      if (!item) {
+        return res.status(404).json({ error: "Item not found" });
+      }
       const parsed = insertInventoryTransactionSchema.parse(req.body);
       const transaction = await storage.createInventoryTransaction({
         ...parsed,
@@ -154,7 +164,6 @@ export function registerInventoryRoutes(app: Express): void {
         userId: userContext.effectiveUserId,
       });
 
-      const item = await storage.getInventoryItem(req.params.id, userContext.effectiveUserId);
       if (item) {
         const currentStock = parseInt(String(item.currentStock || '0'));
         const qty = parsed.quantity || 0;
@@ -290,6 +299,22 @@ export function registerInventoryRoutes(app: Express): void {
       const userContext = await getUserContext(req.userId);
       const { items: poItems, ...poData } = req.body;
       const parsed = insertPurchaseOrderSchema.parse(poData);
+      if (parsed.supplierId) {
+        const supplier = await storage.getSupplier(parsed.supplierId, userContext.effectiveUserId);
+        if (!supplier) {
+          return res.status(404).json({ error: "Supplier not found" });
+        }
+      }
+      if (poItems && Array.isArray(poItems)) {
+        for (const item of poItems) {
+          if (item?.inventoryItemId) {
+            const invItem = await storage.getInventoryItem(item.inventoryItemId, userContext.effectiveUserId);
+            if (!invItem) {
+              return res.status(404).json({ error: "Inventory item not found" });
+            }
+          }
+        }
+      }
       const po = await storage.createPurchaseOrder({ ...parsed, userId: userContext.effectiveUserId });
 
       if (poItems && Array.isArray(poItems)) {

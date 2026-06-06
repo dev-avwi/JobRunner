@@ -123,7 +123,12 @@ export function registerTeamGroupsRoutes(app: Express): void {
       if (!teamMemberId) {
         return res.status(400).json({ error: "Team member ID is required" });
       }
-      
+
+      const teamMembers = await storage.getTeamMembers(userContext.effectiveUserId);
+      if (!teamMembers.some((tm: any) => tm.id === teamMemberId)) {
+        return res.status(404).json({ error: "Team member not found" });
+      }
+
       const member = await storage.addMemberToGroup(req.params.id, teamMemberId, role || 'member');
       res.status(201).json(member);
     } catch (error) {

@@ -69,6 +69,12 @@ export function registerEquipmentRoutes(app: Express): void {
     try {
       const userContext = await getUserContext(req.userId);
       const validatedData = insertEquipmentSchema.parse(req.body);
+      if (validatedData.categoryId) {
+        const categories = await storage.getEquipmentCategories(userContext.effectiveUserId);
+        if (!categories.some(c => c.id === validatedData.categoryId)) {
+          return res.status(404).json({ error: "Category not found" });
+        }
+      }
       const item = await storage.createEquipment({
         ...validatedData,
         userId: userContext.effectiveUserId,
@@ -125,6 +131,10 @@ export function registerEquipmentRoutes(app: Express): void {
   app.post("/api/equipment/:id/maintenance", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
+      const equipmentItem = await storage.getEquipmentById(req.params.id, userContext.effectiveUserId);
+      if (!equipmentItem) {
+        return res.status(404).json({ error: "Equipment not found" });
+      }
       const validatedData = insertEquipmentMaintenanceSchema.parse({
         ...req.body,
         equipmentId: req.params.id,
