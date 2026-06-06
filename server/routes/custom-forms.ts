@@ -83,6 +83,12 @@ export function registerCustomFormsRoutes(app: Express): void {
         return res.status(400).json({ error: "Validation failed", errors });
       }
 
+      // Ensure any linked job belongs to this business (prevent cross-business linking)
+      if (jobId) {
+        const job = await storage.getJob(jobId, userContext.effectiveUserId);
+        if (!job) return res.status(404).json({ error: "Job not found" });
+      }
+
       const submission = await storage.createFormSubmission({
         formId,
         jobId: jobId || null,

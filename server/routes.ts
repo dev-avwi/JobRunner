@@ -27233,7 +27233,7 @@ Respond with JSON in this format:
     fileFilter: imageOrPdfFilter,
   });
 
-  app.post("/api/expenses/scan-receipt", requireAuth, visionPerUserLimiter, receiptUpload.single('receipt'), async (req: any, res) => {
+  app.post("/api/expenses/scan-receipt", requireAuth, visionPerUserLimiter, requireProSubscription, receiptUpload.single('receipt'), async (req: any, res) => {
     try {
       let imageBuffer: Buffer;
 
@@ -31715,7 +31715,7 @@ Respond with JSON in this format:
   
   // Update voice note title (team-aware)
 
-  app.post("/api/voice-notes/transcribe", requireAuth, transcribePerUserLimiter, async (req: any, res) => {
+  app.post("/api/voice-notes/transcribe", requireAuth, transcribePerUserLimiter, requireProSubscription, async (req: any, res) => {
     try {
       let { audioUrl } = req.body;
       const safeUrlLog = audioUrl?.startsWith('/objects/') ? audioUrl.substring(0, 60) : `https://...${audioUrl?.split('/').pop()?.split('?')[0] || ''}`;

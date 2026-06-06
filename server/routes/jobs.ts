@@ -583,7 +583,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.get("/api/jobs/:jobId/photos/analyze", requireAuth, async (req: any, res) => {
+  app.get("/api/jobs/:jobId/photos/analyze", requireAuth, visionPerUserLimiter, requireProSubscription, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const jobId = req.params.jobId;
