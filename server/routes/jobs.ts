@@ -3445,7 +3445,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.post("/api/jobs/:id/send", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:id/send", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const { method, subject, body } = req.body;
       const userContext = await getUserContext(req.userId);
@@ -5230,7 +5230,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.post("/api/jobs/:id/generate-quote", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:id/generate-quote", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_QUOTES), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const job = await storage.getJob(req.params.id, userContext.effectiveUserId);

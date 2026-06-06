@@ -8915,7 +8915,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Integration Test Routes
-  app.post("/api/integrations/test-email", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/test-email", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_SETTINGS), async (req: any, res) => {
     try {
       const { sendEmailViaIntegration } = await import("./emailIntegrationService");
       const user = await storage.getUser(req.userId);
@@ -9172,7 +9172,7 @@ Be specific about materials, colors, and features that would be included.`
   });
   
   // Test SMS Route - Disabled for beta
-  app.post("/api/integrations/test-sms", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/test-sms", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_SETTINGS), async (req: any, res) => {
     try {
       const { checkTwilioAvailability } = await import('./twilioClient');
       const available = checkTwilioAvailability();
@@ -12197,7 +12197,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/onboarding/complete", requireAuth, async (req: any, res) => {
+  app.post("/api/onboarding/complete", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       let settings = await storage.getBusinessSettings(userId);
@@ -12312,7 +12312,7 @@ Be specific about materials, colors, and features that would be included.`
   // Endpoint to clear demo data when user is ready to start fresh
   // Removes ONLY the sample records created during onboarding (tracked by ID)
   // User's own data is never touched
-  app.post("/api/onboarding/clear-demo-data", requireAuth, async (req: any, res) => {
+  app.post("/api/onboarding/clear-demo-data", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { clearUserDemoData } = await import('./demoData');
       const userId = req.userId!;
@@ -13565,7 +13565,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/email-integration/connect-smtp", requireAuth, async (req: any, res) => {
+  app.post("/api/email-integration/connect-smtp", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_SETTINGS), async (req: any, res) => {
     try {
       const { host, port, user, password, emailAddress, displayName, secure } = req.body;
       
@@ -13617,7 +13617,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/email-integration/disconnect", requireAuth, async (req: any, res) => {
+  app.post("/api/email-integration/disconnect", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_SETTINGS), async (req: any, res) => {
     try {
       const { disconnectEmail } = await import("./emailIntegrationService");
       const result = await disconnectEmail(req.userId);
@@ -24657,7 +24657,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/catalog", requireAuth, async (req: any, res) => {
+  app.post("/api/catalog", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const data = insertLineItemCatalogSchema.parse(req.body);
       const item = await storage.createLineItemCatalogItem({ ...data, userId: req.userId });
@@ -24823,7 +24823,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.post("/api/rate-cards", requireAuth, async (req: any, res) => {
+  app.post("/api/rate-cards", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const data = insertRateCardSchema.parse(req.body);
       const rateCard = await storage.createRateCard({ ...data, userId: req.userId });
@@ -24897,6 +24897,9 @@ Respond with JSON in this format:
       if (!template) {
         return res.status(404).json({ error: "Template not found" });
       }
+      if (template.userId !== req.user.id && template.userId !== 'shared') {
+        return res.status(404).json({ error: "Template not found" });
+      }
       res.json(template);
     } catch (error: any) {
       console.error('Error fetching quote template:', error);
@@ -24904,7 +24907,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.post("/api/quote-templates", requireAuth, async (req: any, res) => {
+  app.post("/api/quote-templates", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const template = await storage.createQuoteTemplate({
@@ -24983,6 +24986,9 @@ Respond with JSON in this format:
       if (!preset) {
         return res.status(404).json({ error: "Style preset not found" });
       }
+      if (preset.userId !== req.userId) {
+        return res.status(404).json({ error: "Style preset not found" });
+      }
       res.json(preset);
     } catch (error) {
       console.error("Error fetching style preset:", error);
@@ -25002,6 +25008,10 @@ Respond with JSON in this format:
 
   app.patch("/api/style-presets/:id", requireAuth, async (req: any, res) => {
     try {
+      const existing = await storage.getStylePreset(req.params.id);
+      if (!existing || existing.userId !== req.userId) {
+        return res.status(404).json({ error: "Style preset not found" });
+      }
       const preset = await storage.updateStylePreset(req.params.id, req.userId, req.body);
       res.json(preset);
     } catch (error) {
@@ -25012,6 +25022,10 @@ Respond with JSON in this format:
 
   app.delete("/api/style-presets/:id", requireAuth, async (req: any, res) => {
     try {
+      const existing = await storage.getStylePreset(req.params.id);
+      if (!existing || existing.userId !== req.userId) {
+        return res.status(404).json({ error: "Style preset not found" });
+      }
       await storage.deleteStylePreset(req.params.id);
       res.status(204).send();
     } catch (error) {
@@ -27288,7 +27302,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.post("/api/expenses", requireAuth, async (req: any, res) => {
+  app.post("/api/expenses", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const data = insertExpenseSchema.parse(req.body);
@@ -27312,7 +27326,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.put("/api/expenses/:id", requireAuth, async (req: any, res) => {
+  app.put("/api/expenses/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
@@ -27337,7 +27351,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.delete("/api/expenses/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/expenses/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
@@ -33761,7 +33775,7 @@ Respond with JSON in this format:
   });
 
   // Purchase a Twilio phone number and assign to user's business
-  app.post("/api/sms/purchase-number", requireAuth, async (req: any, res) => {
+  app.post("/api/sms/purchase-number", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       let businessOwnerId = userId;
@@ -33972,7 +33986,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.post("/api/sms/release-number", requireAuth, async (req: any, res) => {
+  app.post("/api/sms/release-number", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       let businessOwnerId = userId;
@@ -37045,7 +37059,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create custom form
-  app.post("/api/custom-forms", requireAuth, async (req: any, res) => {
+  app.post("/api/custom-forms", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const userId = req.userId!;
       
@@ -40097,7 +40111,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create a new recurring contract
-  app.post("/api/recurring-contracts", requireAuth, async (req: any, res) => {
+  app.post("/api/recurring-contracts", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const validated = insertRecurringContractSchema.parse(req.body);
