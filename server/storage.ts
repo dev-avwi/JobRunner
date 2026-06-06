@@ -1178,7 +1178,7 @@ export interface IStorage {
   // Compliance Documents
   getComplianceDocuments(businessOwnerId: string): Promise<ComplianceDocument[]>;
   getComplianceDocument(id: string, businessOwnerId: string): Promise<ComplianceDocument | undefined>;
-  getComplianceDocumentsByHolder(holderUserId: string): Promise<ComplianceDocument[]>;
+  getComplianceDocumentsByHolder(holderUserId: string, businessOwnerId?: string): Promise<ComplianceDocument[]>;
   createComplianceDocument(doc: InsertComplianceDocument): Promise<ComplianceDocument>;
   updateComplianceDocument(id: string, businessOwnerId: string, updates: Partial<InsertComplianceDocument>): Promise<ComplianceDocument | undefined>;
   deleteComplianceDocument(id: string, businessOwnerId: string): Promise<boolean>;
@@ -8377,8 +8377,10 @@ Thank you for your prompt attention to this matter.`,
     return doc;
   }
 
-  async getComplianceDocumentsByHolder(holderUserId: string): Promise<ComplianceDocument[]> {
-    return await db.select().from(complianceDocuments).where(eq(complianceDocuments.holderUserId, holderUserId)).orderBy(desc(complianceDocuments.createdAt));
+  async getComplianceDocumentsByHolder(holderUserId: string, businessOwnerId?: string): Promise<ComplianceDocument[]> {
+    const conditions = [eq(complianceDocuments.holderUserId, holderUserId)];
+    if (businessOwnerId) conditions.push(eq(complianceDocuments.businessOwnerId, businessOwnerId));
+    return await db.select().from(complianceDocuments).where(and(...conditions)).orderBy(desc(complianceDocuments.createdAt));
   }
 
   async createComplianceDocument(doc: InsertComplianceDocument): Promise<ComplianceDocument> {

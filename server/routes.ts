@@ -41277,18 +41277,17 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.get("/api/compliance-documents", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(401).json({ error: "Not authenticated" });
-      
-      const businessOwnerId = user.businessOwnerId || userId;
-      
-      const isStaff = user.role === 'staff_tradie';
-      if (isStaff) {
-        const docs = await storage.getComplianceDocumentsByHolder(userId);
+      const userContext = await getUserContext(userId);
+      const effectiveUserId = userContext.effectiveUserId;
+
+      // Non-owners without view-all only see compliance docs they personally hold (within this business)
+      const hasViewAll = userContext.isOwner || userContext.permissions.includes(PERMISSIONS.VIEW_ALL);
+      if (!hasViewAll) {
+        const docs = await storage.getComplianceDocumentsByHolder(userId, effectiveUserId);
         return res.json(docs);
       }
-      
-      const docs = await storage.getComplianceDocuments(businessOwnerId);
+
+      const docs = await storage.getComplianceDocuments(effectiveUserId);
       res.json(docs);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -41299,13 +41298,21 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.get("/api/compliance-documents/expiring", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(401).json({ error: "Not authenticated" });
-      
-      const businessOwnerId = user.businessOwnerId || userId;
+      const userContext = await getUserContext(userId);
+      const effectiveUserId = userContext.effectiveUserId;
       const days = parseInt(req.query.days as string) || 30;
       
-      const docs = await storage.getExpiringComplianceDocuments(businessOwnerId, days);
+      // Non-owners without view-all only see expiring docs they personally hold
+      const hasViewAll = userContext.isOwner || userContext.permissions.includes(PERMISSIONS.VIEW_ALL);
+      if (!hasViewAll) {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() + days);
+        const held = await storage.getComplianceDocumentsByHolder(userId, effectiveUserId);
+        const expiring = held.filter(d => d.expiryDate && new Date(d.expiryDate) <= cutoff);
+        return res.json(expiring);
+      }
+      
+      const docs = await storage.getExpiringComplianceDocuments(effectiveUserId, days);
       res.json(docs);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -41316,16 +41323,14 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.get("/api/compliance-documents/export/pack", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(401).json({ error: "Not authenticated" });
+      const userContext = await getUserContext(userId);
       
-      const isOwner = !user.businessOwnerId || user.businessOwnerId === userId;
-      const isManager = user.role === 'manager';
-      if (!isOwner && !isManager) {
+      const isOwnerOrManager = userContext.isOwner || userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+      if (!isOwnerOrManager) {
         return res.status(403).json({ error: "Only owners and managers can export compliance packs" });
       }
       
-      const businessOwnerId = user.businessOwnerId || userId;
+      const businessOwnerId = userContext.effectiveUserId;
       const docs = await storage.getComplianceDocuments(businessOwnerId);
       const businessRaw = await storage.getBusinessSettingsByUserId(businessOwnerId);
       const businessName = businessRaw?.businessName || 'Business';
@@ -41454,21 +41459,14 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.get("/api/compliance-documents/:id", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(401).json({ error: "Not authenticated" });
-      
-      const businessOwnerId = user.businessOwnerId || userId;
+      const userContext = await getUserContext(userId);
+      const businessOwnerId = userContext.effectiveUserId;
       const doc = await storage.getComplianceDocument(req.params.id, businessOwnerId);
       if (!doc) return res.status(404).json({ error: "Document not found" });
       
-      // RBAC check: determine user role
-      const isOwner = !user.businessOwnerId || user.businessOwnerId === userId;
-      const isManager = user.role === 'manager';
-      const isOfficeAdmin = user.role === 'office_admin';
-      
-      // Staff tradies can only access their own white card documents
-      if (!isOwner && !isManager && !isOfficeAdmin) {
-        // This is a staff tradie - restrict access
+      // Staff (non-owner without view-all) can only access their own white card documents
+      const hasViewAll = userContext.isOwner || userContext.permissions.includes(PERMISSIONS.VIEW_ALL);
+      if (!hasViewAll) {
         if (doc.type !== 'white_card' || doc.holderUserId !== userId) {
           return res.status(403).json({ error: "Access denied" });
         }
@@ -41484,16 +41482,14 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.post("/api/compliance-documents", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(401).json({ error: "Not authenticated" });
+      const userContext = await getUserContext(userId);
       
-      const isOwner = !user.businessOwnerId || user.businessOwnerId === userId;
-      const isManager = user.role === 'manager';
-      if (!isOwner && !isManager) {
+      const isOwnerOrManager = userContext.isOwner || userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+      if (!isOwnerOrManager) {
         return res.status(403).json({ error: "Only owners and managers can add compliance documents" });
       }
       
-      const businessOwnerId = user.businessOwnerId || userId;
+      const businessOwnerId = userContext.effectiveUserId;
       const validTypes = ['licence', 'insurance', 'white_card', 'vehicle_rego', 'certification', 'other'];
       
       if (!req.body.type || !validTypes.includes(req.body.type)) {
@@ -41519,16 +41515,14 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.patch("/api/compliance-documents/:id", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(401).json({ error: "Not authenticated" });
+      const userContext = await getUserContext(userId);
       
-      const isOwner = !user.businessOwnerId || user.businessOwnerId === userId;
-      const isManager = user.role === 'manager';
-      if (!isOwner && !isManager) {
+      const isOwnerOrManager = userContext.isOwner || userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+      if (!isOwnerOrManager) {
         return res.status(403).json({ error: "Only owners and managers can edit compliance documents" });
       }
       
-      const businessOwnerId = user.businessOwnerId || userId;
+      const businessOwnerId = userContext.effectiveUserId;
       const updates = { ...req.body };
       // Strip server-controlled identity/ownership fields (mass-assignment guard)
       delete updates.id; delete updates.userId; delete updates.businessOwnerId; delete updates.createdAt; delete updates.updatedAt;
@@ -41552,16 +41546,14 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.delete("/api/compliance-documents/:id", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(401).json({ error: "Not authenticated" });
+      const userContext = await getUserContext(userId);
       
-      const isOwner = !user.businessOwnerId || user.businessOwnerId === userId;
-      const isManager = user.role === 'manager';
-      if (!isOwner && !isManager) {
+      const isOwnerOrManager = userContext.isOwner || userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+      if (!isOwnerOrManager) {
         return res.status(403).json({ error: "Only owners and managers can delete compliance documents" });
       }
       
-      const businessOwnerId = user.businessOwnerId || userId;
+      const businessOwnerId = userContext.effectiveUserId;
       const deleted = await storage.deleteComplianceDocument(req.params.id, businessOwnerId);
       if (!deleted) return res.status(404).json({ error: "Document not found" });
       
