@@ -23516,12 +23516,13 @@ Be specific about materials, colors, and features that would be included.`
       // Generate receipt number
       const receiptNumber = await storage.generateReceiptNumber(effectiveUserId);
       
-      const receiptData = {
+      const { insertReceiptSchema } = await import('@shared/schema');
+      const receiptData = insertReceiptSchema.parse({
         ...req.body,
         userId: effectiveUserId,
         receiptNumber,
         paidAt: req.body.paidAt ? new Date(req.body.paidAt) : new Date(),
-      };
+      });
       
       const receipt = await storage.createReceipt(receiptData);
       
@@ -25064,8 +25065,9 @@ Respond with JSON in this format:
   app.post("/api/quote-templates", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const userId = req.user.id;
+      const { insertQuoteTemplateSchema } = await import('@shared/schema');
       const template = await storage.createQuoteTemplate({
-        ...req.body,
+        ...insertQuoteTemplateSchema.parse(req.body),
         userId,
       });
       res.status(201).json(template);
@@ -37302,8 +37304,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     try {
       const userId = req.userId!;
       
+      const { insertCustomFormSchema } = await import('@shared/schema');
       const form = await storage.createCustomForm({
-        ...req.body,
+        ...insertCustomFormSchema.parse(req.body),
         userId,
       });
       
