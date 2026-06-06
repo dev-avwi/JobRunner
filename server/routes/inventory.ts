@@ -221,7 +221,7 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/suppliers", requireAuth, async (req: any, res) => {
+  app.post("/api/suppliers", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const parsed = insertSupplierSchema.parse(req.body);
@@ -285,7 +285,7 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/purchase-orders", requireAuth, async (req: any, res) => {
+  app.post("/api/purchase-orders", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const { items: poItems, ...poData } = req.body;

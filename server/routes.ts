@@ -5316,7 +5316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // session and emails it to the user. Used by the Android app where
   // Google Play billing isn't wired up yet — gives the user a clean way to
   // upgrade by tapping the link in their email on a desktop browser.
-  app.post("/api/subscription/email-payment-link", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/email-payment-link", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { IS_BETA } = await import('./freemiumService');
       const userId = req.userId!;
@@ -5562,7 +5562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/subscription/manage - Creates Stripe customer portal session
-  app.post("/api/subscription/manage", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/manage", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { createBillingPortalSession } = await import('./billingService');
       const userId = req.userId!;
@@ -5621,7 +5621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/subscription/cancel - Cancels subscription at period end
-  app.post("/api/subscription/cancel", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/cancel", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { cancelSubscription } = await import('./billingService');
       const userId = req.userId!;
@@ -5707,7 +5707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/subscription/upgrade-to-team - Upgrades Pro subscription to flat Team ($89.99/mo) with trial
-  app.post("/api/subscription/upgrade-to-team", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/upgrade-to-team", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { upgradeProToTeamTrial } = await import('./billingService');
       const userId = req.userId!;
@@ -5731,7 +5731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/subscription/upgrade-to-business - Upgrades to flat Business ($129.99/mo) with trial
-  app.post("/api/subscription/upgrade-to-business", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/upgrade-to-business", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { upgradeProToBusinessTrial } = await import('./billingService');
       const userId = req.userId!;
@@ -5755,7 +5755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/subscription/downgrade-to-pro - Downgrades Team subscription to Pro
-  app.post("/api/subscription/downgrade-to-pro", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/downgrade-to-pro", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { downgradeTeamToPro } = await import('./billingService');
       const userId = req.userId!;
@@ -8958,7 +8958,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Send demo email to a specified address (for testing/demo purposes)
-  app.post("/api/demo/send-email", requireAuth, async (req: any, res) => {
+  app.post("/api/demo/send-email", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { toEmail, subject, message } = req.body;
       const { sendEmail } = await import("./emailService");
@@ -10445,7 +10445,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/push-invoice/:invoiceId", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/integrations/xero/push-invoice/:invoiceId", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
     try {
       const { invoiceId } = req.params;
       const result = await xeroService.syncSingleInvoiceToXero(req.userId, invoiceId);
@@ -10475,7 +10475,7 @@ Be specific about materials, colors, and features that would be included.`
   // Push a quote to Xero using the *real* Xero Quotes API (Task #91).
   // syncQuoteToXero (legacy fallback that creates a DRAFT invoice) is kept
   // available at /push-quote-legacy/:quoteId for backwards-compat.
-  app.post("/api/integrations/xero/push-quote-real/:quoteId", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/integrations/xero/push-quote-real/:quoteId", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.WRITE_QUOTES), async (req: any, res) => {
     try {
       const result = await xeroService.pushQuoteToXero(req.userId, req.params.quoteId);
       if (result.success) {
@@ -10492,7 +10492,7 @@ Be specific about materials, colors, and features that would be included.`
   // Push a quote to Xero. Task #91: prefer the real Xero Quotes API
   // (pushQuoteToXero); only fall back to the legacy syncQuoteToXero (DRAFT
   // invoice) if the Quotes API call fails AND the user has no quote ID yet.
-  app.post("/api/integrations/xero/push-quote/:quoteId", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/integrations/xero/push-quote/:quoteId", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.WRITE_QUOTES), async (req: any, res) => {
     try {
       const { quoteId } = req.params;
       const real = await xeroService.pushQuoteToXero(req.userId, quoteId);
@@ -10545,7 +10545,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Bulk sync all clients to Xero
-  app.post("/api/integrations/xero/sync-all-clients", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/integrations/xero/sync-all-clients", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.WRITE_CLIENTS), async (req: any, res) => {
     try {
       const result = await xeroService.syncAllClientsToXero(req.userId);
       res.json({ success: true, ...result });
@@ -10556,7 +10556,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Bulk sync all quotes to Xero
-  app.post("/api/integrations/xero/sync-all-quotes", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/integrations/xero/sync-all-quotes", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.WRITE_QUOTES), async (req: any, res) => {
     try {
       const result = await xeroService.syncAllQuotesToXero(req.userId);
       res.json({ success: true, ...result });
@@ -10708,7 +10708,7 @@ Be specific about materials, colors, and features that would be included.`
 
   // Run full bidirectional Xero sync - All sync operations in one call
   // This is the main endpoint for periodic sync (every 5-30 minutes)
-  app.post("/api/integrations/xero/full-sync", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/integrations/xero/full-sync", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.MANAGE_SETTINGS), async (req: any, res) => {
     try {
       const result = await xeroService.runFullXeroSync(req.userId);
       res.json({ 
@@ -11271,7 +11271,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/sync", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/integrations/myob/sync", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.MANAGE_SETTINGS), async (req: any, res) => {
     try {
       const { type } = req.body;
       let result;
@@ -11613,7 +11613,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/full-sync", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/full-sync", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.MANAGE_SETTINGS), async (req: any, res) => {
     try {
       const result = await quickbooksService.runFullQuickbooksSync(req.userId);
       res.json(result);
@@ -24123,7 +24123,8 @@ Be specific about materials, colors, and features that would be included.`
   app.get("/api/templates", requireAuth, async (req: any, res) => {
     try {
       const { type, tradeType } = req.query;
-      const templates = await storage.getDocumentTemplates(req.userId, type, tradeType);
+      const { effectiveUserId } = await getUserContext(req.userId);
+      const templates = await storage.getDocumentTemplates(effectiveUserId, type, tradeType);
       res.json(templates);
     } catch (error) {
       console.error("Error fetching templates:", error);
@@ -24159,6 +24160,11 @@ Be specific about materials, colors, and features that would be included.`
   app.patch("/api/templates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const data = insertDocumentTemplateSchema.partial().parse(req.body);
+      const effectiveUserId = req.userContext?.effectiveUserId || req.userId;
+      const existingTemplate = await storage.getDocumentTemplate(req.params.id);
+      if (!existingTemplate || existingTemplate.userId !== effectiveUserId) {
+        return res.status(404).json({ error: "Template not found" });
+      }
       const template = await storage.updateDocumentTemplate(req.params.id, data);
       
       // Broadcast template change for cross-device sync
@@ -24184,6 +24190,11 @@ Be specific about materials, colors, and features that would be included.`
 
   app.delete("/api/templates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
+      const effectiveUserId = req.userContext?.effectiveUserId || req.userId;
+      const existingTemplate = await storage.getDocumentTemplate(req.params.id);
+      if (!existingTemplate || existingTemplate.userId !== effectiveUserId) {
+        return res.status(404).json({ error: "Template not found" });
+      }
       await storage.deleteDocumentTemplate(req.params.id);
       
       // Broadcast template change for cross-device sync
@@ -33588,7 +33599,7 @@ Respond with JSON in this format:
   });
   
   // Create a new SMS template
-  app.post("/api/sms/templates", requireAuth, async (req: any, res) => {
+  app.post("/api/sms/templates", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const validatedData = insertSmsTemplateSchema.parse({
@@ -33630,7 +33641,7 @@ Respond with JSON in this format:
   });
   
   // Delete an SMS template
-  app.delete("/api/sms/templates/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/sms/templates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
@@ -34707,7 +34718,7 @@ Respond with JSON in this format:
   });
   
   // Create new automation rule
-  app.post("/api/sms/automations", requireAuth, async (req: any, res) => {
+  app.post("/api/sms/automations", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_SETTINGS), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { name, triggerType, delayMinutes, templateId, customMessage, conditions, isActive } = req.body;

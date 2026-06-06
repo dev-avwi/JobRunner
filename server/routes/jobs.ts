@@ -3534,7 +3534,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.post("/api/jobs/:id/send-confirmation", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:id/send-confirmation", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const job = await storage.getJob(req.params.id, userContext.effectiveUserId);
@@ -5138,7 +5138,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.post("/api/jobs/:id/share-portal-email", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:id/share-portal-email", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const effectiveUserId = req.effectiveUserId || req.userId;
       const job = await storage.getJob(req.params.id, effectiveUserId);

@@ -122,7 +122,7 @@ export function registerEquipmentRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/equipment/:id/maintenance", requireAuth, async (req: any, res) => {
+  app.post("/api/equipment/:id/maintenance", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const validatedData = insertEquipmentMaintenanceSchema.parse({

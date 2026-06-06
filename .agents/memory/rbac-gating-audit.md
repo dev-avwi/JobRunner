@@ -26,6 +26,18 @@ isOwner false. So gating `/api/onboarding/complete` + `/clear-demo-data` with `o
 both blocks workers AND prevents a worker from creating a spurious business_settings row
 (the owner-self-membership misclassification path).
 
+## Business-shared resources must key on effectiveUserId end-to-end
+For resources owned by the business (templates, presets, catalog, etc.) where team
+members share the owner's data, list/create/update/delete must ALL resolve identity the
+same way: `getUserContext(req.userId).effectiveUserId` (or `req.userContext.effectiveUserId`
+if a permission middleware already ran). **Why:** `getUserContext` honors
+`users.activeBusinessId` (workspace switching), but `storage.getTeamMembershipByMemberId()`
+just returns the FIRST membership. If a GET/list uses raw `req.userId` (which internally
+falls back to first-membership) while a mutation's ownership check uses `effectiveUserId`,
+a multi-business member can SEE a row in the list but get a false 404 editing it. Fix the
+list to pass `effectiveUserId` too. Rows are created under `effectiveUserId`, so members
+never own copies under their own raw id — passing effectiveUserId loses nothing.
+
 ## IDOR-by-id storage footgun
 Several storage methods take only an `id` with no owner predicate (e.g. `getStylePreset(id)`,
 `deleteStylePreset(id)`, `getQuoteTemplate(id)`). GET/PATCH/DELETE-by-id handlers that call
