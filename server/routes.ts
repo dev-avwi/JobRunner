@@ -25331,8 +25331,20 @@ Respond with JSON in this format:
       const isDmAttachment = entityId.startsWith('.private/dm-attachments/');
       const isTeamChatAttachment = entityId.startsWith('.private/team-chat-attachments/');
       const isJobChatAttachment = entityId.startsWith('.private/chat-attachments/');
+      const isKnownChatAttachment = isDmAttachment || isTeamChatAttachment || isJobChatAttachment;
 
-      if (isDmAttachment || isTeamChatAttachment || isJobChatAttachment) {
+      // Default-deny for the private namespace: this open route only authorizes the
+      // three chat-attachment prefixes above (each with an ownership check below).
+      // Everything else under `.private/` (e.g. job photos `.private/jobs/...`, voice
+      // notes `.private/voice-notes/...`) is served exclusively via short-lived signed
+      // URLs from its own auth + ownership-scoped endpoints, never through /objects/.
+      // Refusing any other `.private/` path here prevents a new sensitive category from
+      // leaking by default if its prefix is ever added to storage but not authorized.
+      if (entityId.startsWith('.private/') && !isKnownChatAttachment) {
+        return res.sendStatus(404);
+      }
+
+      if (isKnownChatAttachment) {
         const userId = await resolveOptionalUser(req);
         if (!userId) {
           return res.status(401).json({ error: 'Authentication required' });

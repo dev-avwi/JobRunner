@@ -98,3 +98,11 @@ filters by the passed userId (actor again). For a TEAM MEMBER (req.user.id != ef
 this means owner can't PATCH a member-created assignment and vice-versa. Fix needs a canonical
 meaning for the column + a backfill migration — do NOT flip insert semantics blindly (strands
 existing rows). Flagged by architect; left for a dedicated, user-gated change.
+
+## Destructive-endpoint IDOR sweep — CLEAN
+Audited 40+ DELETE/PATCH/PUT-by-:id handlers across routes.ts + routes/*.ts. All scope
+mutations to the caller's business (storage call takes effectiveUserId, or a pre-fetch
+ownership check returns 404). Two explorer "weak spots" verified FALSE POSITIVE:
+deleteSavedFilter(id,userId) WHERE id AND userId; updateJobRequestByClient(id,clientId)
+WHERE id AND clientId AND status='pending' (intended client-portal self-edit). Rule
+confirmed: destructive storage methods consistently put the owner column in the WHERE.
