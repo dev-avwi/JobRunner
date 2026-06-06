@@ -832,9 +832,17 @@ function Router({
         </FeatureGate>
       )} />
 
-      <Route path="/reports/profitability" component={ProfitabilityReport} />
+      <Route path="/reports/profitability" component={() => (
+        <FeatureGate requiredTier="pro" featureName="Profitability Reports" description="See profit by job, client, and worker. Available on paid plans.">
+          <ProfitabilityReport />
+        </FeatureGate>
+      )} />
 
-      <Route path="/reports/payroll" component={PayrollReports} />
+      <Route path="/reports/payroll" component={() => (
+        <FeatureGate requiredTier="pro" featureName="Payroll Reports" description="Track team hours and payroll. Available on paid plans.">
+          <PayrollReports />
+        </FeatureGate>
+      )} />
 
       <Route path="/reports" component={() => (
         <FeatureGate requiredTier="pro" featureName="Reports" description="Access detailed reports on jobs, revenue, team performance, and more.">
@@ -848,10 +856,16 @@ function Router({
       
       <Route path="/payment-hub" component={PaymentHub} />
 
-      <Route path="/expenses" component={ExpensesPage} />
+      <Route path="/expenses" component={() => (
+        <FeatureGate requiredTier="pro" featureName="Expenses" description="Track and report business expenses. Available on paid plans.">
+          <ExpensesPage />
+        </FeatureGate>
+      )} />
       
       <Route path="/automations" component={() => (
-        <Automations />
+        <FeatureGate requiredTier="pro" featureName="Automations" description="Automate follow-ups, reminders, and routine tasks. Available on paid plans.">
+          <Automations />
+        </FeatureGate>
       )} />
       {/* Automations controls moved to Communications Hub - route kept for backward compatibility */}
       
@@ -884,7 +898,9 @@ function Router({
       )} />
       
       <Route path="/leads" component={() => (
-        <Leads />
+        <FeatureGate requiredTier="pro" featureName="Leads" description="Capture and convert leads with the CRM pipeline. Available on paid plans.">
+          <Leads />
+        </FeatureGate>
       )} />
       
       <Route path="/custom-forms">

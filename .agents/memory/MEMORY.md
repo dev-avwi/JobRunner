@@ -18,6 +18,7 @@
 - [Client portal live-location sources](portal-live-location-sources.md) — /p/:token dot reads workerTravelLocations + location_pings, NOT team-locations; bridge en_route team-location POSTs into both. location_pings.userId NOT NULL.
 - [SDS Manager integration](sds-manager-integration.md) — integrate, don't rebuild; they have AU-compliant SDS DB + Parser API + QR access; copy their SafetyCulture model; needs partner API key first.
 - [Job start gate paths](job-start-gate-paths.md) — a gate on starting a job must run on ALL status writers (/status, full update, bulk-status), not just /status; resolve assignedTo to user id first.
+- [Paid-tier gating siblings](paid-tier-gating-siblings.md) — locking a feature to paid = gate EVERY write/action route in the group (accounting has ~35), not just connect/sync; leave callbacks/webhooks/status/disconnect/test open.
 - [403 must not clear session](auth-403-clears-session.md) — Bearer-token-only auth; non-owners 403 on owner-only endpoints; clearing token on 403 silently logs them out on reload. Only 401 clears.
 - [Onboarding guard blocks job routes](onboarding-guard-blocks-jobs.md) — owner with business_settings.onboardingCompleted=false 403s /api/jobs(/:id) (dashboard exempt) → "Job Not Found"; demo seed must set it; settings are cached (restart after DB patch).
 - [Mobile offline SQLite init NPE](mobile-sqlite-init-race.md) — prepareAsync/execAsync NullPointerException = concurrent double-init race; fix is an initPromise singleton guard; graceful fallbacks must warn not error.

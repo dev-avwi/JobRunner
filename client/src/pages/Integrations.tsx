@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageShell, PageHeader } from "@/components/ui/page-shell";
+import FeatureGate from "@/components/FeatureGate";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useBusinessSettings, useUpdateBusinessSettings } from "@/hooks/use-business-settings";
@@ -1686,6 +1687,7 @@ export default function Integrations() {
         </div>
 
         {/* Accounting */}
+        <FeatureGate requiredTier="pro" compact featureName="Accounting Sync" description="Connect Xero, QuickBooks, or MYOB. Available on paid plans.">
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Accounting</h3>
 
@@ -2242,6 +2244,7 @@ export default function Integrations() {
             </CardContent>
           </Card>
         </div>
+        </FeatureGate>
 
         {/* Calendar */}
         <div className="space-y-3">

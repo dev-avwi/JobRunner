@@ -429,6 +429,72 @@ export const requirePaidTierForSms = async (req: any, res: any, next: any) => {
   }
 };
 
+// Generic server-side tier gate. Resolves the BUSINESS OWNER (so team members
+// inherit the owner's plan and aren't wrongly blocked) and checks the owner's
+// subscriptionTier — the same value requireProSubscription / requirePaidTierForSms
+// use. This stays correct for manually-assigned tiers (demo, founding members)
+// that have no active Stripe status, and converges to 'free' on trial expiry
+// (scheduler) and cancellation (webhook + on-read sync). Defense-in-depth for
+// features the UI already gates but whose API was otherwise reachable directly.
+const PAID_TIER_RANK: Record<string, number> = {
+  free: 0,
+  trial: 1,
+  pro: 2,
+  team: 3,
+  business: 4,
+  beta: 5,
+};
+
+export const requirePaidTier = (minTier: 'pro' | 'team' | 'business' = 'pro') => async (req: any, res: any, next: any) => {
+  try {
+    if (IS_BETA) return next();
+
+    const userContext = req.userContext || (await getUserContext(req.userId));
+    req.userContext = userContext;
+    const ownerId = userContext?.effectiveUserId || req.userId;
+    req.effectiveUserId = ownerId;
+
+    const owner = await storage.getUser(ownerId);
+    if (!owner) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+    if (owner.betaLifetimeAccess) return next();
+
+    // Honor the raw subscriptionTier (works for manual tiers like demo/founding
+    // that have no active Stripe status), BUT if the subscription has explicitly
+    // lapsed (canceled/past_due/unpaid/paused) treat them as free — same set
+    // getEffectiveTier downgrades — so a stale tier can't grant access after
+    // cancellation/payment failure. A null/'none'/'active'/'trialing' status
+    // keeps the stored tier.
+    let tier = (owner.subscriptionTier as string) || 'free';
+    try {
+      const businessSettings = await storage.getBusinessSettings(ownerId);
+      const status = businessSettings?.subscriptionStatus || 'none';
+      if (status === 'past_due' || status === 'canceled' || status === 'unpaid' || status === 'paused') {
+        tier = 'free';
+      }
+    } catch {
+      // If settings can't be read, fall back to the raw tier (fail open to the
+      // owner's stored plan rather than locking out a paying customer).
+    }
+
+    if ((PAID_TIER_RANK[tier] ?? 0) >= (PAID_TIER_RANK[minTier] ?? 99)) {
+      return next();
+    }
+
+    const label = minTier === 'pro' ? 'Pro' : minTier === 'team' ? 'Team' : 'Business';
+    return res.status(402).json({
+      error: `This feature requires a ${label} plan or higher. Upgrade to unlock it.`,
+      type: 'SUBSCRIPTION_LIMIT',
+      requiredTier: minTier,
+      upgradeUrl: '/pricing',
+    });
+  } catch (err) {
+    console.error('requirePaidTier error:', err);
+    return res.status(500).json({ error: 'Failed to verify subscription access' });
+  }
+};
+
 export const requireDevelopment = (req: any, res: any, next: any) => {
   if (!isDevelopment) {
     return res.status(403).json({ error: "This endpoint is only available in development mode" });

@@ -15,6 +15,7 @@ import {
   requireAuth,
   requireProSubscription,
   requirePaidTierForSms,
+  requirePaidTier,
   requireDevelopment,
   authRateLimiter,
   registerRateLimiter,
@@ -9999,7 +10000,7 @@ Be specific about materials, colors, and features that would be included.`
   }, 5 * 60 * 1000);
 
   // Xero connect for mobile app - returns auth URL for in-app browser OAuth
-  app.post("/api/integrations/xero/mobile-connect", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/integrations/xero/mobile-connect", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       if (!xeroService.isXeroConfigured()) {
         return res.status(400).json({ 
@@ -10024,7 +10025,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/connect", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/integrations/xero/connect", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       if (!xeroService.isXeroConfigured()) {
         return res.status(400).json({ 
@@ -10405,7 +10406,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Switch to a different Xero tenant (organization)
-  app.post("/api/integrations/xero/switch-tenant", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/integrations/xero/switch-tenant", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       const { tenantId } = req.body;
       if (!tenantId) {
@@ -10419,7 +10420,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/sync", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/sync", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const { type } = req.body;
       let result;
@@ -10444,7 +10445,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/push-invoice/:invoiceId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/push-invoice/:invoiceId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const { invoiceId } = req.params;
       const result = await xeroService.syncSingleInvoiceToXero(req.userId, invoiceId);
@@ -10474,7 +10475,7 @@ Be specific about materials, colors, and features that would be included.`
   // Push a quote to Xero using the *real* Xero Quotes API (Task #91).
   // syncQuoteToXero (legacy fallback that creates a DRAFT invoice) is kept
   // available at /push-quote-legacy/:quoteId for backwards-compat.
-  app.post("/api/integrations/xero/push-quote-real/:quoteId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/push-quote-real/:quoteId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await xeroService.pushQuoteToXero(req.userId, req.params.quoteId);
       if (result.success) {
@@ -10491,7 +10492,7 @@ Be specific about materials, colors, and features that would be included.`
   // Push a quote to Xero. Task #91: prefer the real Xero Quotes API
   // (pushQuoteToXero); only fall back to the legacy syncQuoteToXero (DRAFT
   // invoice) if the Quotes API call fails AND the user has no quote ID yet.
-  app.post("/api/integrations/xero/push-quote/:quoteId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/push-quote/:quoteId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const { quoteId } = req.params;
       const real = await xeroService.pushQuoteToXero(req.userId, quoteId);
@@ -10523,7 +10524,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Push a client to Xero (two-way sync)
-  app.post("/api/integrations/xero/push-client/:clientId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/push-client/:clientId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const { clientId } = req.params;
       const result = await xeroService.pushClientToXero(req.userId, clientId);
@@ -10544,7 +10545,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Bulk sync all clients to Xero
-  app.post("/api/integrations/xero/sync-all-clients", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/sync-all-clients", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await xeroService.syncAllClientsToXero(req.userId);
       res.json({ success: true, ...result });
@@ -10555,7 +10556,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Bulk sync all quotes to Xero
-  app.post("/api/integrations/xero/sync-all-quotes", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/sync-all-quotes", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await xeroService.syncAllQuotesToXero(req.userId);
       res.json({ success: true, ...result });
@@ -10615,7 +10616,7 @@ Be specific about materials, colors, and features that would be included.`
 
   // Sync payments FROM Xero - Mark invoices paid when Xero shows payment received
   // This matches ServiceM8 and Tradify's bidirectional payment sync
-  app.post("/api/integrations/xero/sync-payments-from-xero", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/sync-payments-from-xero", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await xeroService.syncPaymentsFromXero(req.userId);
       res.json({ 
@@ -10635,7 +10636,7 @@ Be specific about materials, colors, and features that would be included.`
 
   // Sync invoice status FROM Xero - Detect voided/cancelled invoices
   // Matches Tradify: Void invoice in Xero → Cancelled in JobRunner
-  app.post("/api/integrations/xero/sync-invoice-status", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/sync-invoice-status", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await xeroService.syncInvoiceStatusFromXero(req.userId);
       res.json({ 
@@ -10653,7 +10654,7 @@ Be specific about materials, colors, and features that would be included.`
 
   // Void invoice in Xero when cancelled in JobRunner
   // Tradify feature: Cancel invoice → Voided in Xero
-  app.post("/api/integrations/xero/void-invoice/:invoiceId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/void-invoice/:invoiceId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const { invoiceId } = req.params;
       const result = await xeroService.voidInvoiceInXero(req.userId, invoiceId);
@@ -10671,7 +10672,7 @@ Be specific about materials, colors, and features that would be included.`
 
   // Sync credit notes FROM Xero
   // Tradify feature: Credit notes applied in Xero sync back
-  app.post("/api/integrations/xero/sync-credit-notes", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/sync-credit-notes", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await xeroService.syncCreditNotesFromXero(req.userId);
       res.json({ 
@@ -10689,7 +10690,7 @@ Be specific about materials, colors, and features that would be included.`
 
   // Sync inventory items FROM Xero to JobRunner catalog
   // ServiceM8 & Tradify feature: Inventory items sync from Xero
-  app.post("/api/integrations/xero/sync-inventory", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/sync-inventory", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await xeroService.syncInventoryFromXero(req.userId);
       res.json({ 
@@ -10707,7 +10708,7 @@ Be specific about materials, colors, and features that would be included.`
 
   // Run full bidirectional Xero sync - All sync operations in one call
   // This is the main endpoint for periodic sync (every 5-30 minutes)
-  app.post("/api/integrations/xero/full-sync", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/full-sync", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await xeroService.runFullXeroSync(req.userId);
       res.json({ 
@@ -10793,7 +10794,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/pull-invoices", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/pull-invoices", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const ids = Array.isArray(req.body?.ids) ? (req.body.ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
       if (ids.length === 0) return res.status(400).json({ error: "No invoice ids provided" });
@@ -10806,7 +10807,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/pull-quotes", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/pull-quotes", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const ids = Array.isArray(req.body?.ids) ? (req.body.ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
       if (ids.length === 0) return res.status(400).json({ error: "No quote ids provided" });
@@ -10819,7 +10820,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/push-selected-invoices", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/push-selected-invoices", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const ids = Array.isArray(req.body?.ids) ? (req.body.ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
       if (ids.length === 0) return res.status(400).json({ error: "No invoice ids provided" });
@@ -10937,7 +10938,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/xero/push-selected-quotes", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/push-selected-quotes", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const ids = Array.isArray(req.body?.ids) ? (req.body.ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
       if (ids.length === 0) return res.status(400).json({ error: "No quote ids provided" });
@@ -10962,7 +10963,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Seed mock Xero jobs for testing (development only)
-  app.post("/api/integrations/xero/seed-mock-jobs", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/xero/seed-mock-jobs", requireAuth, requirePaidTier(), async (req: any, res) => {
     // Block this endpoint in production to prevent data pollution
     if (process.env.NODE_ENV === 'production') {
       return res.status(404).json({ error: 'Not found' });
@@ -11175,7 +11176,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // MYOB Integration Routes
-  app.post("/api/integrations/myob/mobile-connect", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/integrations/myob/mobile-connect", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       if (!myobService.isMyobConfigured()) {
         return res.status(400).json({ 
@@ -11195,7 +11196,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/connect", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/integrations/myob/connect", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       if (!myobService.isMyobConfigured()) {
         return res.status(400).json({ 
@@ -11270,7 +11271,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/sync", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/sync", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const { type } = req.body;
       let result;
@@ -11295,7 +11296,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/credentials", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/integrations/myob/credentials", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       const { cfUsername, cfPassword } = req.body;
       
@@ -11311,7 +11312,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/sync-quotes", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/sync-quotes", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await myobService.syncQuotesToMyob(req.userId);
       res.json(result);
@@ -11320,7 +11321,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/sync-payments", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/sync-payments", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await myobService.syncPaymentsFromMyob(req.userId);
       res.json(result);
@@ -11329,7 +11330,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/push-invoice/:invoiceId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/push-invoice/:invoiceId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await myobService.syncSingleInvoiceToMyob(req.userId, req.params.invoiceId);
       res.json(result);
@@ -11338,7 +11339,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/void-invoice/:invoiceId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/void-invoice/:invoiceId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await myobService.voidInvoiceInMyob(req.userId, req.params.invoiceId);
       // MYOB does not support API void — surface the structured result so the
@@ -11357,7 +11358,7 @@ Be specific about materials, colors, and features that would be included.`
   // Task #89: MYOB credit-note workaround. Posts a negative-amount Sale.Invoice
   // mirroring the original invoice so MYOB users can offset it (since MYOB has
   // no API void). Surfaced from the void dialog when voidMethod === 'unsupported'.
-  app.post("/api/integrations/myob/credit-note/:invoiceId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/credit-note/:invoiceId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await myobService.createCreditNoteInMyob(req.userId, req.params.invoiceId);
       if (result.success) {
@@ -11370,7 +11371,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/myob/full-sync", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/myob/full-sync", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await myobService.runFullMyobSync(req.userId);
       res.json(result);
@@ -11398,7 +11399,7 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // QuickBooks Integration Routes
-  app.post("/api/integrations/quickbooks/mobile-connect", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/mobile-connect", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       if (!quickbooksService.isQuickbooksConfigured()) {
         return res.status(400).json({ 
@@ -11418,7 +11419,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/connect", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/connect", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       if (!quickbooksService.isQuickbooksConfigured()) {
         return res.status(400).json({ 
@@ -11435,7 +11436,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.get("/api/integrations/quickbooks/auth-url", requireAuth, async (req: any, res) => {
+  app.get("/api/integrations/quickbooks/auth-url", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       if (!quickbooksService.isQuickbooksConfigured()) {
         return res.status(400).json({ 
@@ -11514,7 +11515,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/sync", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/sync", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const [contactsResult, invoicesResult, paymentsResult] = await Promise.all([
         quickbooksService.syncContactsToQuickbooks(req.userId),
@@ -11534,7 +11535,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/sync-invoices", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/sync-invoices", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await quickbooksService.syncInvoicesToQuickbooks(req.userId);
       res.json({ success: true, ...result });
@@ -11544,7 +11545,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/sync-contacts", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/sync-contacts", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await quickbooksService.syncContactsToQuickbooks(req.userId);
       res.json({ success: true, ...result });
@@ -11554,7 +11555,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/sync-quotes", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/sync-quotes", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await quickbooksService.syncQuotesToQuickbooks(req.userId);
       res.json(result);
@@ -11563,7 +11564,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/sync-payments", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/sync-payments", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await quickbooksService.syncPaymentsFromQuickbooks(req.userId);
       res.json(result);
@@ -11572,7 +11573,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/push-invoice/:invoiceId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/push-invoice/:invoiceId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await quickbooksService.syncSingleInvoiceToQuickbooks(req.userId, req.params.invoiceId);
       res.json(result);
@@ -11581,7 +11582,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/void-invoice/:invoiceId", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/void-invoice/:invoiceId", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await quickbooksService.voidInvoiceInQuickbooks(req.userId, req.params.invoiceId);
       if (result.success) {
@@ -11594,7 +11595,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/sync-credit-notes", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/sync-credit-notes", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await quickbooksService.syncCreditNotesFromQuickbooks(req.userId);
       res.json(result);
@@ -11603,7 +11604,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/sync-inventory", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/sync-inventory", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await quickbooksService.syncInventoryFromQuickbooks(req.userId);
       res.json(result);
@@ -11612,7 +11613,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/integrations/quickbooks/full-sync", requireAuth, async (req: any, res) => {
+  app.post("/api/integrations/quickbooks/full-sync", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await quickbooksService.runFullQuickbooksSync(req.userId);
       res.json(result);
@@ -15763,7 +15764,7 @@ Be specific about materials, colors, and features that would be included.`
   // REPORTING & OPS ENDPOINTS
   // ============================================
 
-  app.get("/api/payroll/summary", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.get("/api/payroll/summary", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const ownerId = userContext.effectiveUserId;
@@ -15868,7 +15869,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.get("/api/reports/receivables", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.get("/api/reports/receivables", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const ownerId = userContext.effectiveUserId;
@@ -27354,7 +27355,7 @@ Respond with JSON in this format:
   // Job Profitability Reports
 
   // Expense Reports
-  app.get("/api/reports/expenses", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
+  app.get("/api/reports/expenses", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const { period = 'month', startDate, endDate, groupBy = 'category' } = req.query;
@@ -35762,7 +35763,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // ===== REPORTING ROUTES =====
 
   // Multi-job profitability overview report
-  app.get("/api/reports/profitability", requireAuth, async (req: any, res) => {
+  app.get("/api/reports/profitability", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const userContext = await getUserContext(userId);
@@ -35920,7 +35921,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/reports/profitability/by-client", requireAuth, async (req: any, res) => {
+  app.get("/api/reports/profitability/by-client", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const userContext = await getUserContext(userId);
@@ -35988,7 +35989,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/reports/profitability/by-worker", requireAuth, async (req: any, res) => {
+  app.get("/api/reports/profitability/by-worker", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const userContext = await getUserContext(userId);
@@ -36054,7 +36055,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/reports/profitability/by-job-type", requireAuth, async (req: any, res) => {
+  app.get("/api/reports/profitability/by-job-type", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const userContext = await getUserContext(userId);
@@ -36233,7 +36234,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/reports/profitability/trend", requireAuth, async (req: any, res) => {
+  app.get("/api/reports/profitability/trend", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const userContext = await getUserContext(userId);
@@ -36331,7 +36332,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Get business performance summary
-  app.get("/api/reports/summary", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
+  app.get("/api/reports/summary", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const { startDate, endDate } = req.query;
@@ -36423,7 +36424,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
   
   // Get monthly revenue breakdown
-  app.get("/api/reports/revenue", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
+  app.get("/api/reports/revenue", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const { year } = req.query;
@@ -36478,7 +36479,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
   
   // Get top clients report
-  app.get("/api/reports/clients", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
+  app.get("/api/reports/clients", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const { limit } = req.query;
@@ -36533,7 +36534,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Get team performance report (Owner/Admin only)
-  app.get("/api/reports/team", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
+  app.get("/api/reports/team", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { startDate, endDate } = req.query;
@@ -36614,7 +36615,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Get Stripe payment history - actual payments processed through Stripe Connect
-  app.get("/api/reports/stripe-payments", requireAuth, async (req: any, res) => {
+  app.get("/api/reports/stripe-payments", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { startDate, endDate } = req.query;
@@ -36745,7 +36746,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // ============================================
 
   // Get all automations
-  app.get("/api/automations", requireAuth, async (req: any, res) => {
+  app.get("/api/automations", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const automations = await storage.getAutomations(userId);
@@ -36757,7 +36758,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create automation
-  app.post("/api/automations", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.post("/api/automations", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const { name, description, isActive, trigger, actions } = req.body;
@@ -36790,7 +36791,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Update automation
-  app.patch("/api/automations/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.patch("/api/automations/:id", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const { id } = req.params;
@@ -36809,7 +36810,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Delete automation
-  app.delete("/api/automations/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.delete("/api/automations/:id", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const { id } = req.params;
@@ -36828,7 +36829,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Get automation execution history/logs
-  app.get("/api/automations/history", requireAuth, async (req: any, res) => {
+  app.get("/api/automations/history", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const limit = parseInt(req.query.limit as string) || 50;
@@ -36852,7 +36853,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Manually trigger time-based automation processing (for testing)
-  app.post("/api/automations/process-time-based", requireAuth, async (req: any, res) => {
+  app.post("/api/automations/process-time-based", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const result = await processTimeBasedAutomations();
       res.json({
@@ -39603,7 +39604,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Unified Autopilot Activity Log — aggregates all automation execution history
-  app.get("/api/autopilot/activity-log", requireAuth, async (req: any, res) => {
+  app.get("/api/autopilot/activity-log", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const typeFilter = req.query.type as string | undefined;
@@ -40269,7 +40270,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // ========================
 
   // Get all leads for user
-  app.get("/api/leads", requireAuth, async (req: any, res) => {
+  app.get("/api/leads", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const leads = await storage.getLeads(userId);
@@ -40281,7 +40282,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create a new lead
-  app.post("/api/leads", requireAuth, async (req: any, res) => {
+  app.post("/api/leads", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const validated = insertLeadSchema.omit({ userId: true }).parse(req.body);
@@ -40299,7 +40300,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Get a single lead
-  app.get("/api/leads/:id", requireAuth, async (req: any, res) => {
+  app.get("/api/leads/:id", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
@@ -40317,7 +40318,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Update a lead
-  app.put("/api/leads/:id", requireAuth, async (req: any, res) => {
+  app.put("/api/leads/:id", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
@@ -40335,7 +40336,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Delete a lead
-  app.delete("/api/leads/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/leads/:id", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
@@ -40349,7 +40350,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Convert lead to client (and optionally create job/quote)
-  app.post("/api/leads/:id/convert", requireAuth, async (req: any, res) => {
+  app.post("/api/leads/:id/convert", requireAuth, requirePaidTier(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
