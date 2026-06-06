@@ -24940,13 +24940,13 @@ Respond with JSON in this format:
     }
   });
 
-  app.patch("/api/quote-templates/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/quote-templates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const template = await storage.getQuoteTemplate(req.params.id);
       if (!template) {
         return res.status(404).json({ error: "Template not found" });
       }
-      if (template.userId !== req.user.id && template.userId !== 'shared') {
+      if (template.userId !== req.user.id) {
         return res.status(403).json({ error: "Not authorized" });
       }
       const updated = await storage.updateQuoteTemplate(req.params.id, req.body);
@@ -24957,7 +24957,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.delete("/api/quote-templates/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/quote-templates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
       const template = await storage.getQuoteTemplate(req.params.id);
       if (!template) {
