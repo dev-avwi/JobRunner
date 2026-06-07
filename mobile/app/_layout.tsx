@@ -348,7 +348,14 @@ function ServicesInitializer() {
         if (currentGpsOptOut) {
           if (__DEV__) console.log('[App] GPS Privacy Mode enabled — skipping location init');
         } else {
-          const locationGranted = await location.initialize();
+          // Use the store's initializer so permissionGranted, the location/
+          // status callbacks, AND the 60s window scheduler are all wired up at
+          // boot. The bare hook init only flips local hook state, which left
+          // applyTrackingSchedule() early-returning (permissionGranted=false)
+          // so the owner tracking window never engaged until App Settings was
+          // opened.
+          await useLocationStore.getState().initializeTracking();
+          const locationGranted = useLocationStore.getState().permissionGranted;
           
           if (locationGranted) {
             const { locationTracking } = await import('../src/lib/location-tracking');
@@ -472,6 +479,12 @@ function ServicesInitializer() {
     // Apple Requirement 1.4: Re-initialize Terminal when app comes to foreground
     // This ensures Terminal is ready for quick payment processing
     const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
+      // On foreground, re-evaluate the owner tracking window so GPS resumes if
+      // work hours have opened (or stops if they've closed) while backgrounded.
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        void useLocationStore.getState().applyTrackingSchedule();
+      }
+
       if (
         appState.current.match(/inactive|background/) &&
         nextAppState === 'active' &&
@@ -617,6 +630,28 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, isOnboardingScreen, globalSearchParams?.resume, businessSettings?.onboardingCompleted]);
+
+  // Push the owner's team-wide tracking window into the location tracker so the
+  // worker's phone only runs GPS during work hours (with a clocked-in / on-job
+  // override). Re-runs whenever the settings load or the owner changes them.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const window = businessSettings
+      ? {
+          enabled: !!businessSettings.trackingHoursEnabled,
+          start: businessSettings.workHoursStart || '07:00',
+          end: businessSettings.workHoursEnd || '17:00',
+          days: Array.isArray(businessSettings.workDays) ? businessSettings.workDays : [1, 2, 3, 4, 5],
+        }
+      : null;
+    useLocationStore.getState().setTrackingWindow(window);
+  }, [
+    isAuthenticated,
+    businessSettings?.trackingHoursEnabled,
+    businessSettings?.workHoursStart,
+    businessSettings?.workHoursEnd,
+    businessSettings?.workDays,
+  ]);
   const showFab = !isChatScreen && !isOnboardingScreen && !isOpsScreen;
   const isTeamOwner = isOwner() && hasActiveTeam();
 

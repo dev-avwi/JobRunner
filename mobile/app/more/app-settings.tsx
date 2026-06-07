@@ -760,7 +760,8 @@ export default function AppSettingsScreen() {
                           batteryLevel,
                           isMoving,
                           permissionGranted,
-                          errorMessage: locationError
+                          errorMessage: locationError,
+                          trackingWindow: null,
                         })} • Accuracy: {formatAccuracy(lastLocation.accuracy)}
                       </Text>
                     </View>

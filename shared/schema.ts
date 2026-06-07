@@ -620,6 +620,15 @@ export const businessSettings = pgTable("business_settings", {
   simpleMode: boolean("simple_mode").default(true),
   scheduleStartHour: integer("schedule_start_hour").default(6),
   scheduleEndHour: integer("schedule_end_hour").default(20),
+  // Owner-set, team-wide location tracking window. When trackingHoursEnabled is
+  // true, each worker's phone STOPS background GPS outside this window / on
+  // non-work days (battery saver) — unless they are clocked in or on the way to
+  // a job, which overrides the window. Columns added via raw ALTER on the live
+  // DB; mirrored here so Drizzle select/update map them.
+  trackingHoursEnabled: boolean("tracking_hours_enabled").default(false),
+  workHoursStart: text("work_hours_start").default('07:00'),
+  workHoursEnd: text("work_hours_end").default('17:00'),
+  workDays: json("work_days").$type<number[]>().default([1, 2, 3, 4, 5]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1350,6 +1359,11 @@ export const insertBusinessSettingsSchema = createInsertSchema(businessSettings)
   userId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // Drizzle-zod infers a loose record type for the json() column, which doesn't
+  // match the typed number[] Drizzle expects on insert/update. Pin it so the
+  // storage layer's typed .set()/.values() accept the owner's work-day list.
+  workDays: z.array(z.number()).optional().nullable(),
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({

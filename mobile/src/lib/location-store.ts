@@ -14,6 +14,13 @@ import locationTracking, {
   TrackingStatus 
 } from './location-tracking';
 
+interface TrackingWindow {
+  enabled: boolean;
+  start: string;
+  end: string;
+  days: number[];
+}
+
 interface LocationState {
   isEnabled: boolean;
   gpsOptOut: boolean;
@@ -24,6 +31,7 @@ interface LocationState {
   isMoving: boolean;
   permissionGranted: boolean;
   errorMessage: string | null;
+  trackingWindow: TrackingWindow | null;
 }
 
 interface LocationActions {
@@ -38,9 +46,16 @@ interface LocationActions {
   setBatteryLevel: (level: number) => void;
   refreshCurrentLocation: () => Promise<LocationUpdate | null>;
   initializeTracking: () => Promise<void>;
+  setTrackingWindow: (window: TrackingWindow | null) => void;
+  setTrackingOverride: (active: boolean) => Promise<void>;
+  applyTrackingSchedule: () => Promise<void>;
 }
 
 type LocationStore = LocationState & LocationActions;
+
+// Module-level so the timer survives store re-creation and isn't part of state.
+const SCHEDULE_INTERVAL_MS = 60000;
+let scheduleInterval: ReturnType<typeof setInterval> | null = null;
 
 export const useLocationStore = create<LocationStore>()(
   persist(
@@ -54,6 +69,7 @@ export const useLocationStore = create<LocationStore>()(
       isMoving: false,
       permissionGranted: false,
       errorMessage: null,
+      trackingWindow: null,
 
       setGpsOptOut: async (optOut: boolean) => {
         set({ gpsOptOut: optOut });
@@ -89,8 +105,23 @@ export const useLocationStore = create<LocationStore>()(
 
             const wasEnabled = get().isEnabled;
             if (wasEnabled) {
-              await locationTracking.startTracking();
+              if (locationTracking.shouldTrackNow()) {
+                await locationTracking.startTracking();
+              } else {
+                set({ status: 'paused' });
+              }
             }
+          }
+
+          // Periodic scheduler: re-evaluate the owner window so tracking starts
+          // when work hours open and stops when they close, even if the app
+          // stays in the foreground across the boundary. setInterval is
+          // throttled in the background — the OS location task handles the
+          // background self-stop (see handleLocationUpdate).
+          if (!scheduleInterval) {
+            scheduleInterval = setInterval(() => {
+              void get().applyTrackingSchedule();
+            }, SCHEDULE_INTERVAL_MS);
           }
         } catch (error: any) {
           if (__DEV__) console.log('[LocationStore] Initialization:', error?.message || 'Skipped');
@@ -143,8 +174,16 @@ export const useLocationStore = create<LocationStore>()(
           get().updateStatus(status);
         });
 
-        // Set status to starting immediately
+        // Mark enabled (persisted user intent) immediately.
         set({ status: 'starting', isEnabled: true, errorMessage: null });
+
+        // Respect the owner's tracking window: if we're outside work hours and
+        // there's no active-work override, arm tracking but leave GPS paused —
+        // the scheduler starts it once the window opens.
+        if (!locationTracking.shouldTrackNow()) {
+          set({ status: 'paused' });
+          return true;
+        }
 
         const success = await locationTracking.startTracking();
         
@@ -197,6 +236,38 @@ export const useLocationStore = create<LocationStore>()(
           set({ lastLocation: location });
         }
         return location;
+      },
+
+      setTrackingWindow: (window: TrackingWindow | null) => {
+        set({ trackingWindow: window });
+        locationTracking.setTrackingWindow(window);
+        void get().applyTrackingSchedule();
+      },
+
+      setTrackingOverride: async (active: boolean) => {
+        locationTracking.setTrackingOverride(active);
+        // Clocking in eases sampling to on-site; clocking out returns to
+        // balanced. Driving auto-bumps to high frequency regardless.
+        await locationTracking.setCadenceMode(active ? 'onsite' : 'balanced');
+        await get().applyTrackingSchedule();
+      },
+
+      applyTrackingSchedule: async () => {
+        const { gpsOptOut, isEnabled, permissionGranted } = get();
+        // Respect privacy opt-out and the user's own on/off intent.
+        if (gpsOptOut || !isEnabled || !permissionGranted) return;
+
+        const shouldTrack = locationTracking.shouldTrackNow();
+        const tracking = await locationTracking.isCurrentlyTracking();
+
+        if (shouldTrack && !tracking) {
+          set({ status: 'starting' });
+          const ok = await locationTracking.startTracking();
+          if (!ok) set({ status: 'error' });
+        } else if (!shouldTrack && tracking) {
+          await locationTracking.stopTracking();
+          set({ status: 'paused' });
+        }
       },
     }),
     {

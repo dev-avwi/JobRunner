@@ -1713,6 +1713,99 @@ export default function Settings({
 
           <Card>
             <CardHeader>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" style={{ color: 'hsl(var(--trade))' }} />
+                <CardTitle>Team Location Tracking Hours</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Save your team's battery by only tracking GPS during work hours. Outside these hours and on non-work days, phones stop tracking — unless a worker is clocked into a job or on their way to one.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label>Limit tracking to work hours</Label>
+                  <p className="text-sm text-muted-foreground">When off, phones track whenever a worker has tracking enabled.</p>
+                </div>
+                <Switch
+                  checked={!!(businessSettings as any)?.trackingHoursEnabled}
+                  onCheckedChange={(checked) => handleBusinessSave({ trackingHoursEnabled: checked } as any)}
+                  data-testid="switch-tracking-hours-enabled"
+                />
+              </div>
+
+              {!!(businessSettings as any)?.trackingHoursEnabled && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="tracking-start" className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-muted-foreground" /> Start time
+                      </Label>
+                      <Input
+                        id="tracking-start"
+                        type="time"
+                        value={(businessSettings as any)?.workHoursStart || '07:00'}
+                        onChange={(e) => handleBusinessSave({ workHoursStart: e.target.value } as any)}
+                        data-testid="input-tracking-start"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tracking-end" className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-muted-foreground" /> End time
+                      </Label>
+                      <Input
+                        id="tracking-end"
+                        type="time"
+                        value={(businessSettings as any)?.workHoursEnd || '17:00'}
+                        onChange={(e) => handleBusinessSave({ workHoursEnd: e.target.value } as any)}
+                        data-testid="input-tracking-end"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Work days</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 1, label: 'Mon' },
+                        { value: 2, label: 'Tue' },
+                        { value: 3, label: 'Wed' },
+                        { value: 4, label: 'Thu' },
+                        { value: 5, label: 'Fri' },
+                        { value: 6, label: 'Sat' },
+                        { value: 0, label: 'Sun' },
+                      ].map((day) => {
+                        const currentDays: number[] = Array.isArray((businessSettings as any)?.workDays)
+                          ? (businessSettings as any).workDays
+                          : [1, 2, 3, 4, 5];
+                        const active = currentDays.includes(day.value);
+                        return (
+                          <Button
+                            key={day.value}
+                            type="button"
+                            variant={active ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => {
+                              const next = active
+                                ? currentDays.filter((d) => d !== day.value)
+                                : [...currentDays, day.value].sort((a, b) => a - b);
+                              handleBusinessSave({ workDays: next } as any);
+                            }}
+                            data-testid={`button-tracking-day-${day.value}`}
+                          >
+                            {day.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Business Profile</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

@@ -85,6 +85,25 @@ interface BusinessSettings {
   dedicatedPhoneNumber?: string;
   aiReceptionistEnabled?: boolean;
   aiReceptionistMode?: string;
+  // Owner-set, team-wide location tracking window.
+  trackingHoursEnabled?: boolean;
+  workHoursStart?: string;
+  workHoursEnd?: string;
+  workDays?: number[];
+}
+
+/**
+ * Bridge a clock-in/out into the location tracker's "override" so GPS keeps
+ * running outside the owner's tracking hours while a worker is actively on the
+ * clock. Lazy-imported to avoid a static cycle with the location store.
+ */
+async function setLocationTrackingOverride(active: boolean): Promise<void> {
+  try {
+    const { useLocationStore } = await import('./location-store');
+    await useLocationStore.getState().setTrackingOverride(active);
+  } catch {
+    // location store unavailable (e.g. Expo Go) — ignore
+  }
 }
 
 export interface Job {
@@ -2054,6 +2073,10 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
         pausedDuration: 0,
       } as any;
       set({ activeTimer: localTimer, isLoading: false, error: null });
+      // Restore the GPS window override: a clocked-in worker keeps tracking
+      // even outside the owner's hours. Without this, an app restart while on
+      // the clock would drop the override and stop GPS.
+      void setLocationTrackingOverride(true);
       return;
     }
 
@@ -2067,12 +2090,17 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     try {
       const response = await api.get<TimeEntry>('/api/time-entries/active');
       set({ activeTimer: response.data || null, isLoading: false, error: null });
+      // Mirror the clocked-in state into the tracking override on hydrate.
+      void setLocationTrackingOverride(!!response.data);
     } catch (error: any) {
       // 404 means no active timer, which is fine
       if (error.response?.status === 404) {
         set({ activeTimer: null, isLoading: false, error: null });
+        void setLocationTrackingOverride(false);
       } else {
-        // Silently fail - don't show errors for timer fetch failures
+        // Silently fail - don't show errors for timer fetch failures. Leave the
+        // override untouched: a transient network blip must NOT drop GPS for a
+        // worker who may still be on the clock.
         set({ activeTimer: null, isLoading: false, error: null });
       }
     }
@@ -2102,6 +2130,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
           pausedDuration: 0,
         } as any;
         set({ activeTimer: localTimer, isLoading: false, error: null });
+        void setLocationTrackingOverride(true);
         return true;
       } catch (e: any) {
         set({ isLoading: false, error: e?.message || 'Failed to start timer offline' });
@@ -2120,6 +2149,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
       if (response.data) {
         // Set active timer from the response
         set({ activeTimer: response.data, isLoading: false, error: null });
+        void setLocationTrackingOverride(true);
 
         // If a BREAK timer is starting, flip the existing Live Activity to
         // the on_break state so the lock screen reflects that the worker
@@ -2180,6 +2210,8 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
         isLoading: false, 
         error: activeResponse.data ? null : 'Timer created but not returned' 
       });
+      // Keep the GPS window override in sync with the confirmed clocked-in state.
+      void setLocationTrackingOverride(!!activeResponse.data);
       return !!activeResponse.data;
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to start timer';
@@ -2214,6 +2246,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
       try {
         await offlineStorage.stopTimeEntryOffline(timerId);
         set({ activeTimer: null, isLoading: false, error: null });
+        void setLocationTrackingOverride(false);
         endLiveActivity();
         return true;
       } catch (e: any) {
@@ -2226,6 +2259,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
       await api.post(`/api/time-entries/${timerId}/stop`);
       // Clear active timer immediately on success
       set({ activeTimer: null, isLoading: false, error: null });
+      void setLocationTrackingOverride(false);
       endLiveActivity();
       return true;
     } catch (error: any) {

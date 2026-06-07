@@ -8251,6 +8251,8 @@ Be specific about materials, colors, and features that would be included.`
     'warrantyPeriod', 'lateFeeRate', 'quoteTerms', 'invoiceTerms', 'defaultPaymentTermsDays',
     'documentTemplate', 'documentTemplateSettings',
     'timezone', 'scheduleStartHour', 'scheduleEndHour',
+    'workHoursStart', 'workHoursEnd', 'workDays', 'afterHoursGhostMode', 'trackingHoursEnabled',
+    'allowLocationSharing', 'locationEnabledByOwner',
     'simpleMode', 'onboardingCompleted', 'hasSeenWalkthrough', 'onboardingLevel',
     'aiEnabled', 'aiPhotoAnalysisEnabled', 'aiSuggestionsEnabled',
     'geofenceSmsAlerts', 'smsMode', 'smartRunningLateEnabled', 'pushNotificationsEnabled',

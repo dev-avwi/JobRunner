@@ -78,6 +78,15 @@ class LocationTrackingService {
   private _stationaryCount: number = 0;
   private _heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private _sendInFlight: boolean = false;
+  // Owner-set, team-wide tracking window. When enabled, GPS only runs inside
+  // these hours/days unless an override is active (clocked in / on the way) or
+  // the worker is on an active subcontractor job.
+  private _trackingWindow: { enabled: boolean; start: string; end: string; days: number[] } | null = null;
+  private _overrideActive: boolean = false;
+  // Adaptive GPS cadence. 'driving' = frequent/high accuracy (heading to a job),
+  // 'onsite' = relaxed (clocked in, mostly stationary), 'balanced' = default.
+  private _cadenceMode: 'driving' | 'onsite' | 'balanced' = 'balanced';
+  private _cadenceSwitching: boolean = false;
 
   /**
    * Silently check current permission state WITHOUT triggering any OS prompts.
@@ -176,6 +185,112 @@ class LocationTrackingService {
     return this._isSubcontractor;
   }
 
+  /**
+   * Set the owner-defined, team-wide tracking window. Pass null to clear (no
+   * restriction). Called when the worker's business settings load/refresh.
+   */
+  setTrackingWindow(window: { enabled: boolean; start: string; end: string; days: number[] } | null): void {
+    this._trackingWindow = window;
+  }
+
+  /**
+   * Override the window — keep tracking outside owner hours while the worker is
+   * actively working (clocked in / on the way to a job).
+   */
+  setTrackingOverride(active: boolean): void {
+    this._overrideActive = active;
+  }
+
+  /**
+   * Whether GPS should be running right now. True when: no window configured or
+   * disabled, an override is active, the worker is on a subcontractor job, or
+   * the current local time is inside the window on a configured work day.
+   */
+  shouldTrackNow(): boolean {
+    const w = this._trackingWindow;
+    if (!w || !w.enabled) return true;
+    if (this._overrideActive) return true;
+    if (this._activeJobContext) return true;
+    return this.isWithinWindow(w);
+  }
+
+  private isWithinWindow(w: { start: string; end: string; days: number[] }): boolean {
+    try {
+      const now = new Date();
+      const days = Array.isArray(w.days) && w.days.length > 0 ? w.days : [1, 2, 3, 4, 5];
+      const parse = (t: string): number | null => {
+        const [h, m] = (t || '').split(':').map((n) => parseInt(n, 10));
+        if (Number.isNaN(h)) return null;
+        return h * 60 + (Number.isNaN(m) ? 0 : m);
+      };
+      const mins = now.getHours() * 60 + now.getMinutes();
+      const start = parse(w.start) ?? 7 * 60;
+      const end = parse(w.end) ?? 17 * 60;
+      const today = now.getDay();
+      const prevDay = (today + 6) % 7;
+      // Overnight window (e.g. 22:00–06:00) wraps midnight. The evening portion
+      // (mins >= start) belongs to TODAY's shift; the early-morning portion
+      // (mins < end) belongs to the PREVIOUS day's shift, so it must check
+      // whether that prior day is a configured work day.
+      if (end <= start) {
+        if (mins >= start) return days.includes(today);
+        if (mins < end) return days.includes(prevDay);
+        return false;
+      }
+      if (!days.includes(today)) return false;
+      return mins >= start && mins < end;
+    } catch {
+      return true;
+    }
+  }
+
+  /** True if the OS background task is running, or we're in foreground-only mode. */
+  async isCurrentlyTracking(): Promise<boolean> {
+    if (this.status === 'foreground_only') return true;
+    try {
+      return await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
+    } catch {
+      return false;
+    }
+  }
+
+  /** GPS options for a cadence mode — frequency/accuracy tuned per worker state. */
+  private cadenceOptions(mode: 'driving' | 'onsite' | 'balanced'): {
+    accuracy: Location.Accuracy;
+    timeInterval: number;
+    distanceInterval: number;
+  } {
+    switch (mode) {
+      case 'driving':
+        return { accuracy: Location.Accuracy.High, timeInterval: 15000, distanceInterval: 25 };
+      case 'onsite':
+        return { accuracy: Location.Accuracy.Balanced, timeInterval: 60000, distanceInterval: 100 };
+      default:
+        return { accuracy: Location.Accuracy.Balanced, timeInterval: 30000, distanceInterval: 50 };
+    }
+  }
+
+  /**
+   * Switch GPS cadence. If we're actively tracking via the OS task (and still
+   * inside the window), restart updates so the new sampling rate takes effect.
+   */
+  async setCadenceMode(mode: 'driving' | 'onsite' | 'balanced'): Promise<void> {
+    if (this._cadenceMode === mode || this._cadenceSwitching) return;
+    this._cadenceSwitching = true;
+    this._cadenceMode = mode;
+    try {
+      const isTracking = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
+      if (isTracking && this.shouldTrackNow()) {
+        await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+        await this.startTracking();
+      }
+    } catch (err: any) {
+      if (__DEV__) console.log('[Location] Cadence switch failed:', err?.message);
+    } finally {
+      this._cadenceSwitching = false;
+    }
+  }
+
   getActiveJobContext(): SubcontractorJobContext | null {
     return this._activeJobContext;
   }
@@ -240,10 +355,11 @@ class LocationTrackingService {
           ? `Sharing location with ${this._activeJobContext.businessName} for: ${this._activeJobContext.jobTitle}`
           : 'Location tracking active for team visibility';
 
+        const cadence = this.cadenceOptions(this._cadenceMode);
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 30000,
-          distanceInterval: 50,
+          accuracy: cadence.accuracy,
+          timeInterval: cadence.timeInterval,
+          distanceInterval: cadence.distanceInterval,
           showsBackgroundLocationIndicator: true,
           foregroundService: {
             notificationTitle: 'JobRunner',
@@ -636,6 +752,15 @@ class LocationTrackingService {
    * Handle location update from background task
    */
   handleLocationUpdate(location: LocationUpdate): void {
+    // Owner-set tracking window: if we're outside the allowed hours/days (and
+    // not overridden by an active job/timer), stop background GPS entirely to
+    // save battery. The foreground scheduler restarts it when hours reopen.
+    if (!this.shouldTrackNow()) {
+      void this.stopTracking();
+      this.updateStatus('paused');
+      return;
+    }
+
     this.currentLocation = location;
 
     if (this.onLocationUpdate) {
@@ -643,6 +768,14 @@ class LocationTrackingService {
     }
 
     const speed = location.speed ?? 0;
+    // Adaptive cadence: ramp up sampling while driving, ease off once stopped.
+    const driving = speed >= 3; // ~10.8 km/h
+    if (driving && this._cadenceMode !== 'driving') {
+      void this.setCadenceMode('driving');
+    } else if (!driving && this._cadenceMode === 'driving') {
+      void this.setCadenceMode(this._overrideActive ? 'onsite' : 'balanced');
+    }
+
     if (speed < STATIONARY_SPEED_THRESHOLD) {
       this._stationaryCount++;
       if (this._stationaryCount > 1 && this._stationaryCount % STATIONARY_SKIP_COUNT !== 0) {
