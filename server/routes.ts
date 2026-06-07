@@ -3822,6 +3822,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } as Partial<InsertTeamMember>);
 
       try {
+        const { broadcastTeamMemberChange } = await import('./websocket');
+        broadcastTeamMemberChange(targetMember.businessOwnerId, 'accepted', teamMemberId);
+      } catch (e) { console.error('Broadcast team_member_changed (accept) failed:', e); }
+
+      try {
         let settings = await storage.getBusinessSettings(effectiveUserId);
         if (settings && !settings.onboardingCompleted) {
           await storage.updateBusinessSettings(effectiveUserId, { onboardingCompleted: true });
@@ -3954,6 +3959,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         inviteAcceptedAt: new Date(),
         inviteToken: null,
       } as any);
+
+      try {
+        const { broadcastTeamMemberChange } = await import('./websocket');
+        broadcastTeamMemberChange(teamMember.businessOwnerId, 'accepted', teamMember.id);
+      } catch (e) { console.error('Broadcast team_member_changed (accept) failed:', e); }
 
       // Backfill profile name/phone if invited user is brand new and supplied them.
       if (isNewUser && (bodyFirst || bodyLast || bodyPhone)) {
@@ -28845,6 +28855,11 @@ Respond with JSON in this format:
         }
       }
 
+      try {
+        const { broadcastTeamMemberChange } = await import('./websocket');
+        broadcastTeamMemberChange(inviteCode.businessOwnerId, 'accepted', userId);
+      } catch (e) { console.error('Broadcast team_member_changed (accept) failed:', e); }
+
       const businessSettingsData = await storage.getBusinessSettings(inviteCode.businessOwnerId);
 
       await storage.updateUser(userId, { activeBusinessId: inviteCode.businessOwnerId } as any);
@@ -29088,6 +29103,11 @@ Respond with JSON in this format:
         inviteAcceptedAt: new Date(),
         inviteToken: null, // Clear the token so it can't be reused
       });
+
+      try {
+        const { broadcastTeamMemberChange } = await import('./websocket');
+        broadcastTeamMemberChange(teamMember.businessOwnerId, 'accepted', teamMember.id);
+      } catch (e) { console.error('Broadcast team_member_changed (accept) failed:', e); }
       
       try {
         const owner = await storage.getUser(teamMember.businessOwnerId);
