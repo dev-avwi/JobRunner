@@ -867,7 +867,7 @@ export default function ReportsScreen() {
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
   
   const { 
-    summary, 
+    summary: summaryRaw, 
     revenueReport, 
     clientReport,
     profitabilityReport,
@@ -880,6 +880,39 @@ export default function ReportsScreen() {
     isLoading,
     error 
   } = useReportsStore();
+
+  // The API can return a partial summary (missing nested sections). Normalise
+  // once so every `summary.x.y` access below is crash-safe, while keeping the
+  // null state intact for the `!summary` loading/empty gates.
+  const summary = useMemo(() => {
+    if (!summaryRaw) return summaryRaw;
+    return {
+      ...summaryRaw,
+      revenue: {
+        total: summaryRaw.revenue?.total ?? 0,
+        pending: summaryRaw.revenue?.pending ?? 0,
+        overdue: summaryRaw.revenue?.overdue ?? 0,
+        gstCollected: summaryRaw.revenue?.gstCollected ?? 0,
+      },
+      jobs: {
+        total: summaryRaw.jobs?.total ?? 0,
+        completed: summaryRaw.jobs?.completed ?? 0,
+        inProgress: summaryRaw.jobs?.inProgress ?? 0,
+      },
+      quotes: {
+        total: summaryRaw.quotes?.total ?? 0,
+        accepted: summaryRaw.quotes?.accepted ?? 0,
+        pending: summaryRaw.quotes?.pending ?? 0,
+        conversionRate: summaryRaw.quotes?.conversionRate ?? 0,
+      },
+      invoices: {
+        total: summaryRaw.invoices?.total ?? 0,
+        paid: summaryRaw.invoices?.paid ?? 0,
+        unpaid: summaryRaw.invoices?.unpaid ?? 0,
+        overdue: summaryRaw.invoices?.overdue ?? 0,
+      },
+    };
+  }, [summaryRaw]);
   
   const [showPeriodPicker, setShowPeriodPicker] = useState(false);
   const [activeReportTab, setActiveReportTab] = useState<ReportTab>('overview');
@@ -1089,7 +1122,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
     return Math.max(...monthlyData.map(d => d.value), 1);
   }, [monthlyData]);
 
-  const conversionRate = summary?.quotes.conversionRate || 0;
+  const conversionRate = summary?.quotes?.conversionRate || 0;
 
   return (
     <>

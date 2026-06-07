@@ -295,9 +295,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexShrink: 0,
   },
   headerSection: {
-    marginHorizontal: 18,
+    marginHorizontal: 12,
     marginBottom: 12,
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     backgroundColor: colors.card,
     borderRadius: 10,
@@ -435,7 +435,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     gap: 10,
   },
   logoutText: {

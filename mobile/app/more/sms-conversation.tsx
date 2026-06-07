@@ -201,9 +201,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 9,
   },
   bubbleOutbound: {
-    // Use a fixed brand blue so light mode reads as "blue iMessage-style" rather than dark navy.
-    // Dark mode gets a slightly deeper shade for contrast.
-    backgroundColor: colors.isDark ? '#1D4ED8' : '#3B82F6',
+    // Muted, calm blue (not bright/neon) — same single colour for every outbound
+    // message so the thread doesn't read as loud or multi-coloured.
+    backgroundColor: colors.isDark ? '#34506F' : '#5C7FA6',
     borderRadius: 18,
     borderBottomRightRadius: 4,
   },
@@ -550,10 +550,6 @@ export default function SmsConversationScreen() {
               const prevDate = index > 0 ? new Date(messages[index - 1].createdAt).toDateString() : null;
               const showDateSep = index === 0 || msgDate !== prevDate;
 
-              // Color-code outbound messages by sender so multi-sender
-              // conversations stay readable. Falls back to the default primary
-              // bubble color when there's no senderUserId on the record.
-              const senderTint = isOutbound ? colorForSender(msg.senderUserId) : null;
               const prevMsg = index > 0 ? messages[index - 1] : null;
               const showSenderLabel =
                 isOutbound &&
@@ -577,7 +573,7 @@ export default function SmsConversationScreen() {
                         alignSelf: 'flex-end',
                         fontSize: 11,
                         fontWeight: '600',
-                        color: senderTint || colors.mutedForeground,
+                        color: colors.mutedForeground,
                         marginRight: spacing.sm,
                         marginBottom: 2,
                       }}
@@ -590,7 +586,6 @@ export default function SmsConversationScreen() {
                       style={[
                         styles.bubble,
                         isOutbound ? styles.bubbleOutbound : styles.bubbleInbound,
-                        senderTint ? { backgroundColor: senderTint } : null,
                       ]}
                     >
                       {msg.mediaUrls && Array.isArray(msg.mediaUrls) && msg.mediaUrls.length > 0 && (
