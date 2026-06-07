@@ -295,7 +295,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexShrink: 0,
   },
   headerSection: {
-    paddingHorizontal: 26,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     marginBottom: 4,
     borderBottomWidth: 1,
@@ -305,6 +305,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingLeft: 28,
+    paddingRight: 14,
   },
   logoContainer: {
     width: 40,
@@ -432,7 +434,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingLeft: 28,
+    paddingRight: 14,
     gap: 10,
   },
   logoutText: {
