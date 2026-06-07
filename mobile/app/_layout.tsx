@@ -504,7 +504,7 @@ function useIsTablet() {
   
   useEffect(() => {
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      setTablet(isTablet());
+      setTablet(isTablet(window));
     });
     return () => subscription.remove();
   }, []);

@@ -3,9 +3,14 @@ import { useState, useEffect } from 'react';
 
 const IPAD_WIDTH_THRESHOLD = 768;
 // Tablet detection threshold (drives sidebar navigation, grid columns, etc.).
-// Kept at 744 so iPad mini qualifies but unfolded foldables (~600pt) still
-// use phone navigation — sidebar would feel cramped on a Z Fold inner display.
-const TABLET_MIN_DIMENSION = 744;
+// 672 so that:
+//  - iPad mini (min 744) and larger tablets qualify;
+//  - an UNFOLDED foldable (Z Fold / Pixel Fold inner display) gets the sidebar,
+//    including landscape where the live `window` min-dimension is the height and
+//    is shaved by the status/nav bars to ~700pt (below the old 744 → it was
+//    wrongly treated as a phone and never reverted to sidebar on unfold);
+//  - the largest phones (min-dimension ~430-480pt) stay on phone navigation.
+const TABLET_MIN_DIMENSION = 672;
 // Wide-content threshold — purely for content-column centring on Android
 // foldables. Lower than the tablet threshold so a Z Fold (unfolded ~600pt)
 // gets a centred reading column without flipping to sidebar navigation.
@@ -13,12 +18,18 @@ export const WIDE_CONTENT_THRESHOLD = 600;
 // Maximum reading width for primary content columns on wide screens.
 export const OPTIMAL_CONTENT_MAX_WIDTH = 720;
 
-export function isTablet(): boolean {
+// Accepts optional explicit window dimensions. The reactive hooks pass the
+// fresh `window` payload from the Dimensions 'change' event so detection never
+// races a stale global Dimensions.get() snapshot during a fold/unfold transition
+// (Android emits intermediate change events while the posture settles).
+export function isTablet(windowDims?: { width: number; height: number }): boolean {
   // Check Platform.isPad first (most reliable for iOS)
   const isPad = Platform.OS === 'ios' && Platform.isPad;
   if (isPad) {
     return true;
   }
+
+  const win = windowDims ?? Dimensions.get('window');
 
   if (Platform.OS === 'android') {
     // On Android foldables (Z Fold, Pixel Fold) the 'screen' dimension keeps
@@ -28,17 +39,15 @@ export function isTablet(): boolean {
     // The live 'window' dimensions track the currently active display, so use
     // those alone: unfolded → inner display (large) → tablet/sidebar; folded →
     // outer display (small) → phone layout.
-    const { width, height } = Dimensions.get('window');
-    return Math.min(width, height) >= TABLET_MIN_DIMENSION;
+    return Math.min(win.width, win.height) >= TABLET_MIN_DIMENSION;
   }
 
   // iOS (non-iPad): 'screen' is more reliable than 'window' for split view/zoom,
   // so use the larger of screen/window min-dimension.
   const { width: screenWidth, height: screenHeight } = Dimensions.get('screen');
-  const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
   const effectiveWidth = Math.max(
     Math.min(screenWidth, screenHeight),
-    Math.min(windowWidth, windowHeight)
+    Math.min(win.width, win.height)
   );
 
   return effectiveWidth >= TABLET_MIN_DIMENSION;
@@ -50,8 +59,8 @@ export function isTablet(): boolean {
 export function useIsTablet(): boolean {
   const [tablet, setTablet] = useState<boolean>(() => isTablet());
   useEffect(() => {
-    const sub = Dimensions.addEventListener('change', () => {
-      setTablet(isTablet());
+    const sub = Dimensions.addEventListener('change', ({ window }) => {
+      setTablet(isTablet(window));
     });
     return () => sub.remove();
   }, []);
@@ -105,7 +114,7 @@ export function useShouldUseSidebar(): boolean {
         const orientation = window.width > window.height ? 'landscape' : 'portrait';
         setShouldUseSidebar(orientation === 'landscape');
       } else {
-        setShouldUseSidebar(isTablet());
+        setShouldUseSidebar(isTablet(window));
       }
     });
     return () => subscription.remove();
