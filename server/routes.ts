@@ -32812,10 +32812,14 @@ Respond with JSON in this format:
       const userContext = await getUserContext(req.userId);
       let jobs = await storage.getJobs(userContext.effectiveUserId);
       
-      if (userContext.isSubcontractor) {
+      // Team members without VIEW_ALL (staff tradies and subcontractors) only see
+      // their assigned jobs on the map — must match the /api/jobs (Work view) gate,
+      // otherwise the map leaks every business job to a plain worker.
+      const mapHasViewAll = userContext.permissions.includes('view_all') || userContext.isOwner;
+      if (!mapHasViewAll && userContext.teamMemberId) {
         jobs = jobs.filter(job => 
           job.assignedTo === userContext.userId || 
-          (userContext.teamMemberId && job.assignedTo === userContext.teamMemberId)
+          job.assignedTo === userContext.teamMemberId
         );
       }
       

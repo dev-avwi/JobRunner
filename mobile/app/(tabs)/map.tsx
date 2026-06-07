@@ -655,6 +655,9 @@ export default function MapScreen() {
   const showTeamToggle = isAuthenticated && !isSubcontractor && (isOwner || isManager || canAccessMap);
   const canViewTeamMode = isAuthenticated && !isSubcontractor && (isOwner || isManager || canAccessMap);
   const canAssignJobs = !isSubcontractor && (isOwner || isManager);
+  // Mirrors the server VIEW_ALL gate: only owners/managers/solo see every job.
+  // Staff tradies and subcontractors are restricted to their assigned jobs.
+  const canViewAllJobs = isOwner || isManager || isSolo;
   
   // Map jobs state - uses /api/map/jobs which geocodes addresses
   const [mapJobs, setMapJobs] = useState<JobWithLocation[]>([]);
@@ -774,12 +777,15 @@ export default function MapScreen() {
 
   const filteredJobs = useMemo(() => {
     let jobs = mapJobs;
-    if (isSubcontractor && user?.id) {
+    // Defense in depth: the server already restricts non-VIEW_ALL team members to
+    // their assigned jobs, but mirror it client-side for any worker (not just
+    // subcontractors) so the map can never show jobs they aren't assigned to.
+    if (!canViewAllJobs && user?.id) {
       jobs = jobs.filter(job => job.assignedTo === user.id || (teamMemberId && job.assignedTo === teamMemberId));
     }
     if (statusFilter === 'all') return jobs;
     return jobs.filter(job => job.status === statusFilter);
-  }, [mapJobs, statusFilter, isSubcontractor, user?.id, teamMemberId]);
+  }, [mapJobs, statusFilter, canViewAllJobs, user?.id, teamMemberId]);
 
   const fetchTeamLocations = useCallback(async () => {
     try {
