@@ -187,6 +187,66 @@ async function getOrCreateBusinessPrice(stripe: Stripe): Promise<string> {
   return price.id;
 }
 
+/**
+ * Determines whether a user has ALREADY consumed their one free trial.
+ * The 7-day trial is once-per-user across ALL tiers — a user cannot start a
+ * Team trial, cancel, and then claim a fresh Pro trial (or vice versa).
+ *
+ * Stripe is the authoritative source (can't be cheated by clearing our DB):
+ * any subscription in the customer's history (any status, including canceled)
+ * that ever had a trial means the trial is spent. DB markers are a fast-path.
+ */
+export async function hasUsedTrial(
+  userId: string,
+  stripe?: Stripe | null,
+  customerId?: string,
+): Promise<boolean> {
+  const user = await storage.getUser(userId);
+  if (user?.trialStartedAt) return true;
+  if (user?.trialStatus && user.trialStatus !== 'none') return true;
+
+  const businessSettings = await storage.getBusinessSettings(userId);
+  if (businessSettings?.trialStartDate || businessSettings?.trialConverted) return true;
+
+  const resolvedStripe = stripe ?? await getUncachableStripeClient();
+  const resolvedCustomer = customerId || businessSettings?.stripeCustomerId || undefined;
+  if (resolvedStripe && resolvedCustomer) {
+    try {
+      // Scan the FULL subscription history (auto-paginates past the 100/page cap)
+      // so a trial-bearing sub on a high-churn customer can't slip detection.
+      let usedOnStripe = false;
+      for await (const sub of resolvedStripe.subscriptions.list({
+        customer: resolvedCustomer,
+        status: 'all',
+        limit: 100,
+      })) {
+        if ((sub as any).trial_start || (sub as any).trial_end) {
+          usedOnStripe = true;
+          break;
+        }
+      }
+      if (usedOnStripe) {
+        // Persist a durable marker so future checks short-circuit on the DB
+        // fast-path and no longer depend on a successful Stripe lookup.
+        try {
+          if (!user?.trialStartedAt && (!user?.trialStatus || user.trialStatus === 'none')) {
+            await storage.updateUser(userId, { trialStatus: 'converted' });
+          }
+          if (businessSettings && !businessSettings.trialStartDate && !businessSettings.trialConverted) {
+            await storage.updateBusinessSettings(userId, { trialConverted: true });
+          }
+        } catch (persistErr) {
+          console.warn('[Trial] Failed to persist trial-used marker:', persistErr);
+        }
+        return true;
+      }
+    } catch (e) {
+      console.warn('[Trial] Failed to check Stripe trial history:', e);
+    }
+  }
+  return false;
+}
+
 export async function createSubscriptionCheckout(
   userId: string,
   email: string,
@@ -203,6 +263,22 @@ export async function createSubscriptionCheckout(
   try {
     const customerId = await getOrCreateStripeCustomer(stripe, userId, email, businessName);
     const priceId = await getOrCreateProPrice(stripe);
+
+    // One free trial per user across all tiers — repeat subscribers pay immediately.
+    const trialUsed = await hasUsedTrial(userId, stripe, customerId);
+    const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
+      metadata: {
+        userId,
+        tier: 'pro',
+        platform: 'jobrunner',
+      },
+    };
+    if (!trialUsed && trialDays > 0) {
+      subscriptionData.trial_period_days = trialDays;
+      subscriptionData.trial_settings = {
+        end_behavior: { missing_payment_method: 'cancel' },
+      };
+    }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -222,19 +298,7 @@ export async function createSubscriptionCheckout(
         address: 'auto',
         name: 'auto',
       },
-      subscription_data: {
-        metadata: {
-          userId,
-          tier: 'pro',
-          platform: 'jobrunner',
-        },
-        trial_period_days: trialDays,
-        trial_settings: {
-          end_behavior: {
-            missing_payment_method: 'cancel',
-          },
-        },
-      },
+      subscription_data: subscriptionData,
       metadata: {
         userId,
         type: 'subscription',
@@ -313,6 +377,22 @@ async function createFlatTierCheckout(
       ? await getOrCreateBusinessPrice(stripe)
       : await getOrCreateTeamPrice(stripe);
 
+    // One free trial per user across all tiers — repeat subscribers pay immediately.
+    const trialUsed = await hasUsedTrial(userId, stripe, customerId);
+    const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
+      metadata: {
+        userId,
+        tier,
+        platform: 'jobrunner',
+      },
+    };
+    if (!trialUsed && trialDays > 0) {
+      subscriptionData.trial_period_days = trialDays;
+      subscriptionData.trial_settings = {
+        end_behavior: { missing_payment_method: 'cancel' },
+      };
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_collection: 'always',
@@ -326,19 +406,7 @@ async function createFlatTierCheckout(
         address: 'auto',
         name: 'auto',
       },
-      subscription_data: {
-        metadata: {
-          userId,
-          tier,
-          platform: 'jobrunner',
-        },
-        trial_period_days: trialDays,
-        trial_settings: {
-          end_behavior: {
-            missing_payment_method: 'cancel',
-          },
-        },
-      },
+      subscription_data: subscriptionData,
       metadata: {
         userId,
         type: 'subscription',
@@ -403,22 +471,25 @@ export async function createTrialSubscription(
       priceId = await getOrCreateProPrice(stripe);
     }
 
-    // Create subscription with 7-day trial
-    const subscription = await stripe.subscriptions.create({
+    // One free trial per user across all tiers — repeat subscribers pay immediately.
+    const trialUsed = await hasUsedTrial(userId, stripe, customerId);
+    const subscriptionParams: Stripe.SubscriptionCreateParams = {
       customer: customerId,
       items: [{ price: priceId }],
-      trial_period_days: 7,
-      trial_settings: {
-        end_behavior: {
-          missing_payment_method: 'cancel',
-        },
-      },
       metadata: {
         userId,
         tier,
         platform: 'jobrunner',
       },
-    });
+    };
+    if (!trialUsed) {
+      subscriptionParams.trial_period_days = 7;
+      subscriptionParams.trial_settings = {
+        end_behavior: { missing_payment_method: 'cancel' },
+      };
+    }
+
+    const subscription = await stripe.subscriptions.create(subscriptionParams);
 
     const trialEnd = subscription.trial_end 
       ? new Date(subscription.trial_end * 1000) 
@@ -427,8 +498,8 @@ export async function createTrialSubscription(
     await storage.updateUser(userId, {
       subscriptionTier: tier,
       subscriptionSource: 'stripe',
-      trialStatus: 'active',
-      trialStartedAt: new Date(),
+      trialStatus: trialEnd ? 'active' : 'converted',
+      trialStartedAt: trialEnd ? new Date() : undefined,
       trialEndsAt: trialEnd,
     });
 
@@ -438,7 +509,7 @@ export async function createTrialSubscription(
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: customerId,
         subscriptionStatus: subscription.status,
-        trialStartDate: new Date(),
+        trialStartDate: trialEnd ? new Date() : undefined,
         trialEndDate: trialEnd,
         nextBillingDate: trialEnd,
       };
@@ -1161,6 +1232,10 @@ async function upgradeProToFlatTierTrial(
       ? await getOrCreateBusinessPrice(stripe)
       : await getOrCreateTeamPrice(stripe);
 
+    // One free trial per user across all tiers. If the trial is already spent
+    // (e.g. user is on a PAID Pro plan), the upgrade bills with proration
+    // instead of granting a fresh free trial on the new tier.
+    const trialUsed = await hasUsedTrial(userId, stripe, businessSettings.stripeCustomerId);
     const trialEndTimestamp = Math.floor(Date.now() / 1000) + (trialDays * 24 * 60 * 60);
 
     // Replace ALL existing items (handles legacy multi-line per-seat subs too)
@@ -1171,34 +1246,38 @@ async function upgradeProToFlatTierTrial(
     }));
     itemUpdates.push({ price: newPriceId, quantity: 1 });
 
+    const updateParams: Stripe.SubscriptionUpdateParams = {
+      items: itemUpdates,
+      proration_behavior: trialUsed ? 'create_prorations' : 'none',
+      metadata: {
+        ...currentSubscription.metadata,
+        tier: targetTier,
+        upgradedFromPro: 'true',
+        upgradeTrialStart: new Date().toISOString(),
+      },
+    };
+    if (!trialUsed) {
+      updateParams.trial_end = trialEndTimestamp;
+    }
+
     const updatedSubscription = await stripe.subscriptions.update(
       businessSettings.stripeSubscriptionId,
-      {
-        items: itemUpdates,
-        trial_end: trialEndTimestamp,
-        proration_behavior: 'none',
-        metadata: {
-          ...currentSubscription.metadata,
-          tier: targetTier,
-          upgradedFromPro: 'true',
-          upgradeTrialStart: new Date().toISOString(),
-        },
-      }
+      updateParams,
     );
 
-    const trialEndsAt = new Date(trialEndTimestamp * 1000);
+    const trialEndsAt = trialUsed ? undefined : new Date(trialEndTimestamp * 1000);
 
     await storage.updateUser(userId, {
       subscriptionTier: targetTier,
-      trialStatus: 'active',
-      trialStartedAt: new Date(),
+      trialStatus: trialUsed ? undefined : 'active',
+      trialStartedAt: trialUsed ? undefined : new Date(),
       trialEndsAt: trialEndsAt,
     });
 
     const bsUpdate: Record<string, any> = {
       subscriptionTier: targetTier,
       subscriptionStatus: updatedSubscription.status,
-      trialStartDate: new Date(),
+      trialStartDate: trialUsed ? undefined : new Date(),
       trialEndDate: trialEndsAt,
     };
     if (!businessSettings.teamSize || businessSettings.teamSize === 'solo') {
