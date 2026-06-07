@@ -1312,16 +1312,20 @@ export const db = drizzle(pool);
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
   async upsertUser(userData: UpsertUser): Promise<User> {
+    const normalizedEmail = userData.email
+      ? userData.email.toLowerCase().trim()
+      : userData.email;
     const [user] = await db
       .insert(users)
       .values({
         ...userData,
+        email: normalizedEmail,
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          email: userData.email,
+          email: normalizedEmail,
           firstName: userData.firstName,
           lastName: userData.lastName,
           profileImageUrl: userData.profileImageUrl,
@@ -1352,7 +1356,18 @@ export class PostgresStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+    // Case-INSENSITIVE match. The DB unique index on users.email is
+    // case-sensitive and some legacy rows were stored with mixed case, so a
+    // plain eq() against a lowercased input would MISS those rows — which both
+    // breaks their login AND lets a "Sign in with Google" (which lowercases the
+    // email) create a SECOND account for an email that already exists. Matching
+    // on lower(email) closes that duplicate-account hole.
+    const result = await db
+      .select()
+      .from(users)
+      .where(sql`lower(${users.email}) = ${email.toLowerCase().trim()}`)
+      .orderBy(asc(users.createdAt))
+      .limit(1);
     return result[0];
   }
 
@@ -1362,7 +1377,14 @@ export class PostgresStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
+    // Normalize email to lowercase on write so we never store mixed-case rows.
+    // Combined with the case-insensitive getUserByEmail, this keeps emails
+    // unique in practice even though the DB index is case-sensitive — and stops
+    // a second account being created for the same address under a different case.
+    const normalizedUser = insertUser.email
+      ? { ...insertUser, email: insertUser.email.toLowerCase().trim() }
+      : insertUser;
+    const result = await db.insert(users).values(normalizedUser).returning();
     const created = result[0];
     // Seed day-0 activity (signup day) so retention cohorts are populated even
     // before the user takes a tracked action. Best-effort, never blocks signup.
@@ -1375,9 +1397,14 @@ export class PostgresStorage implements IStorage {
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    // Normalize email on any update so a profile edit can't reintroduce a
+    // mixed-case row (which would re-open the duplicate-account hole).
+    const normalizedUpdates = updates.email
+      ? { ...updates, email: updates.email.toLowerCase().trim() }
+      : updates;
     const result = await db
       .update(users)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...normalizedUpdates, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     const { invalidateUser } = await import('./cache');
@@ -1516,12 +1543,12 @@ export class PostgresStorage implements IStorage {
     // Invalidate any existing codes for this email
     await db
       .delete(loginCodes)
-      .where(eq(loginCodes.email, email.toLowerCase()));
+      .where(eq(loginCodes.email, email.toLowerCase().trim()));
 
     // Create new code with 10-minute expiry
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await db.insert(loginCodes).values({
-      email: email.toLowerCase(),
+      email: email.toLowerCase().trim(),
       code,
       expiresAt,
       verified: false,
@@ -1534,7 +1561,7 @@ export class PostgresStorage implements IStorage {
       .from(loginCodes)
       .where(
         and(
-          eq(loginCodes.email, email.toLowerCase()),
+          eq(loginCodes.email, email.toLowerCase().trim()),
           eq(loginCodes.code, code)
         )
       )
@@ -1554,7 +1581,7 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select()
       .from(loginCodes)
-      .where(eq(loginCodes.email, email.toLowerCase()))
+      .where(eq(loginCodes.email, email.toLowerCase().trim()))
       .orderBy(desc(loginCodes.createdAt))
       .limit(1);
     
@@ -1571,7 +1598,7 @@ export class PostgresStorage implements IStorage {
   }
 
   async verifyLoginCodeAndCreateUser(email: string, code: string): Promise<User | null> {
-    const normalizedEmail = email.toLowerCase();
+    const normalizedEmail = email.toLowerCase().trim();
     
     // Wrap entire verification flow in a transaction for atomicity
     return await db.transaction(async (tx) => {
@@ -1599,11 +1626,13 @@ export class PostgresStorage implements IStorage {
         return null;
       }
       
-      // Find existing user or create new one
+      // Find existing user or create new one. Case-insensitive so a legacy
+      // mixed-case row isn't missed (which would create a duplicate account).
       const existingUserResult = await tx
         .select()
         .from(users)
-        .where(eq(users.email, normalizedEmail))
+        .where(sql`lower(${users.email}) = ${normalizedEmail}`)
+        .orderBy(asc(users.createdAt))
         .limit(1);
       
       let user = existingUserResult[0];
@@ -4138,7 +4167,7 @@ export class PostgresStorage implements IStorage {
   async getPendingTeamMembersByEmail(email: string): Promise<TeamMember[]> {
     return await db.select().from(teamMembers)
       .where(and(
-        eq(teamMembers.email, email),
+        sql`lower(${teamMembers.email}) = ${email.toLowerCase().trim()}`,
         inArray(teamMembers.inviteStatus, ['pending', 'invited'])
       ))
       .orderBy(teamMembers.createdAt);
