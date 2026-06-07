@@ -23,6 +23,7 @@ import { spacing, radius, typography, shadows, sizes } from '../../src/lib/desig
 
 import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
+import { useTeamMemberColors, memberColorFor } from '../../src/lib/team-colors';
 
 function decodeHtmlEntities(text: string): string {
   return text
@@ -49,28 +50,6 @@ interface SmsMessage {
   mediaUrls?: string[] | null;
   senderUserId?: string | null;
   senderName?: string | null;
-}
-
-// Stable palette for color-coding outbound senders (multiple team members)
-const SENDER_PALETTE = [
-  '#2563eb', // blue
-  '#0d9488', // teal
-  '#9333ea', // purple
-  '#ea580c', // orange
-  '#16a34a', // green
-  '#db2777', // pink
-  '#0891b2', // cyan
-  '#ca8a04', // amber
-];
-
-function colorForSender(userId?: string | null): string | null {
-  if (!userId) return null;
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    hash = (hash * 31 + userId.charCodeAt(i)) | 0;
-  }
-  const idx = Math.abs(hash) % SENDER_PALETTE.length;
-  return SENDER_PALETTE[idx];
 }
 
 function buildQuickReplies(clientFirstName: string, senderName: string) {
@@ -329,6 +308,7 @@ export default function SmsConversationScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, businessSettings } = useAuthStore();
+  const memberColors = useTeamMemberColors();
 
   const styles = useMemo(() => createStyles(colors), [colors]);
   const scrollRef = useRef<ScrollView>(null);
@@ -551,9 +531,15 @@ export default function SmsConversationScreen() {
               const showDateSep = index === 0 || msgDate !== prevDate;
 
               const prevMsg = index > 0 ? messages[index - 1] : null;
+              const isMine = isOutbound && !!user?.id && msg.senderUserId === user.id;
+              // Outbound: my own messages use the app blue; teammates use their chosen
+              // colour. Inbound (the client) keeps the neutral bubble.
+              const senderColor = isOutbound
+                ? (isMine ? colors.primary : (msg.senderUserId ? memberColorFor(memberColors, msg.senderUserId) : null))
+                : null;
               const showSenderLabel =
                 isOutbound &&
-                !!msg.senderName &&
+                (isMine || !!msg.senderName) &&
                 (!prevMsg ||
                   prevMsg.direction !== 'outbound' ||
                   prevMsg.senderUserId !== msg.senderUserId);
@@ -573,12 +559,12 @@ export default function SmsConversationScreen() {
                         alignSelf: 'flex-end',
                         fontSize: 11,
                         fontWeight: '600',
-                        color: colors.mutedForeground,
+                        color: senderColor || colors.mutedForeground,
                         marginRight: spacing.sm,
                         marginBottom: 2,
                       }}
                     >
-                      {msg.senderName}
+                      {isMine ? 'You' : msg.senderName}
                     </Text>
                   )}
                   <View style={[styles.messageRow, isOutbound ? styles.messageRowOutbound : styles.messageRowInbound]}>
@@ -586,6 +572,7 @@ export default function SmsConversationScreen() {
                       style={[
                         styles.bubble,
                         isOutbound ? styles.bubbleOutbound : styles.bubbleInbound,
+                        isOutbound && senderColor ? { backgroundColor: senderColor } : null,
                       ]}
                     >
                       {msg.mediaUrls && Array.isArray(msg.mediaUrls) && msg.mediaUrls.length > 0 && (

@@ -1811,6 +1811,21 @@ export default function SettingsScreen() {
 
               <PressableRow 
                 style={styles.settingsCard}
+                onPress={() => router.push('/more/my-color' as any)}
+                data-testid="button-my-color"
+              >
+                <View style={styles.settingsCardHeader}>
+                  <Feather name="droplet" size={20} color={colors.primary} />
+                  <View style={styles.settingsCardInfo}>
+                    <Text style={styles.settingsCardTitle}>My Team Colour</Text>
+                    <Text style={styles.settingsCardSubtitle}>Your colour across chat, scheduling & map</Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+              </PressableRow>
+
+              <PressableRow 
+                style={styles.settingsCard}
                 onPress={() => router.push('/more/app-settings')}
                 data-testid="button-app-settings"
               >

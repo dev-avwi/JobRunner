@@ -34364,6 +34364,25 @@ Respond with JSON in this format:
     }
   });
   
+  // Access gate for a single SMS conversation. Assumes the conversation already
+  // belongs to the caller's business. Owners and managers (VIEW_ALL / MANAGE_TEAM)
+  // may access any conversation; plain workers may only access conversations tied
+  // to a job they are currently assigned to (mirrors getSmsConversationsForUser).
+  const workerCanAccessConversation = async (
+    userId: string,
+    userContext: any,
+    conversation: any,
+  ): Promise<boolean> => {
+    if (userContext?.isOwner) return true;
+    const perms = userContext?.permissions || [];
+    if (perms.includes(PERMISSIONS.VIEW_ALL) || perms.includes(PERMISSIONS.MANAGE_TEAM)) {
+      return true;
+    }
+    if (!conversation?.jobId) return false;
+    const assigned = await storage.getJobsByAssignee(userId);
+    return assigned.some((j: any) => j.id === conversation.jobId);
+  };
+
   app.get("/api/sms/conversations/:id", requireAuth, async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -34376,6 +34395,9 @@ Respond with JSON in this format:
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext?.effectiveUserId || req.userId;
       if ((conversation as any).businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
+      if (!(await workerCanAccessConversation(req.userId, userContext, conversation))) {
         return res.status(403).json({ error: 'Not authorized to access this conversation' });
       }
       res.json(conversation);
@@ -34400,6 +34422,9 @@ Respond with JSON in this format:
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext?.effectiveUserId || req.userId;
       if ((conversation as any).businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
+      if (!(await workerCanAccessConversation(req.userId, userContext, conversation))) {
         return res.status(403).json({ error: 'Not authorized to access this conversation' });
       }
 
@@ -34454,6 +34479,10 @@ Respond with JSON in this format:
       
       // Verify the conversation belongs to the user's business
       if (conversation.businessOwnerId !== userContext.effectiveUserId) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
+      // Workers may only read insights for conversations on jobs assigned to them.
+      if (!(await workerCanAccessConversation(req.userId, userContext, conversation))) {
         return res.status(403).json({ error: 'Not authorized to access this conversation' });
       }
       
@@ -34750,7 +34779,21 @@ Respond with JSON in this format:
     try {
       const userId = req.userId!;
       const { id } = req.params;
-      
+
+      // Workers may only mark conversations they can access (assigned jobs).
+      const conversation = await storage.getSmsConversation(id);
+      if (!conversation) {
+        return res.status(404).json({ error: 'Conversation not found' });
+      }
+      const readCtx = await getUserContext(userId);
+      const readEffId = readCtx?.effectiveUserId || userId;
+      if ((conversation as any).businessOwnerId !== readEffId) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
+      if (!(await workerCanAccessConversation(userId, readCtx, conversation))) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
+
       const { markConversationAsRead } = await import('./services/smsService');
       await markConversationAsRead(id, userId);
       
@@ -34765,7 +34808,23 @@ Respond with JSON in this format:
   app.delete("/api/sms/conversations/:id", requireAuth, async (req: any, res) => {
     try {
       const { id } = req.params;
-      
+
+      // Authorization: conversation must belong to the caller's business, and the
+      // caller must be able to access it (owner/manager, or a worker assigned to
+      // the linked job). Prevents cross-tenant IDOR deletes.
+      const conversation = await storage.getSmsConversation(id);
+      if (!conversation) {
+        return res.status(404).json({ error: 'Conversation not found' });
+      }
+      const delCtx = await getUserContext(req.userId);
+      const delEff = delCtx?.effectiveUserId || req.userId;
+      if ((conversation as any).businessOwnerId !== delEff) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
+      if (!(await workerCanAccessConversation(req.userId, delCtx, conversation))) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
+
       const { deleteConversation } = await import('./services/smsService');
       await deleteConversation(id);
       
@@ -34792,6 +34851,9 @@ Respond with JSON in this format:
       }
       if (conversation.businessOwnerId !== businessOwnerId) {
         return res.status(403).json({ error: 'Unauthorized access to this conversation' });
+      }
+      if (!(await workerCanAccessConversation(userId, smsPatchContext, conversation))) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
       }
       
       const updates: { clientId?: string; clientName?: string; jobId?: string } = {};

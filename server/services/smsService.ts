@@ -216,8 +216,26 @@ export async function sendSmsToClient(options: SendSmsOptions): Promise<SmsMessa
         (sender as any)?.name ||
         (sender as any)?.username ||
         null;
-      if (displayName && !brandedMessage.toLowerCase().startsWith(`from ${String(displayName).toLowerCase()}:`)) {
-        brandedMessage = `From ${displayName}: ${brandedMessage}`;
+      // Resolve the sender's role within this business (e.g. "Plumber",
+      // "Manager") so the client knows who and in what capacity is texting.
+      let roleName: string | null = null;
+      try {
+        const member = await storage.getTeamMemberByUserIdAndBusiness(
+          options.senderUserId,
+          options.businessOwnerId,
+        );
+        if (member?.roleId) {
+          const role = await storage.getUserRole(member.roleId);
+          roleName = (role as any)?.name || null;
+        }
+      } catch {}
+      if (displayName) {
+        const prefix = roleName
+          ? `${displayName} (${roleName}): `
+          : `${displayName}: `;
+        if (!brandedMessage.toLowerCase().startsWith(prefix.toLowerCase())) {
+          brandedMessage = `${prefix}${brandedMessage}`;
+        }
       }
     }
   } catch {

@@ -147,9 +147,9 @@ export default function DispatchBoardScreen() {
         api.get<JobData[]>('/api/jobs'),
         api.get<TeamPresence[]>('/api/team/presence'),
       ]);
-      if (membersRes.data) setTeamMembers(membersRes.data.filter(m => m.inviteStatus === 'accepted'));
-      if (jobsRes.data) setJobs(jobsRes.data);
-      if (presenceRes.data) setPresence(presenceRes.data);
+      if (Array.isArray(membersRes.data)) setTeamMembers(membersRes.data.filter(m => m.inviteStatus === 'accepted'));
+      if (Array.isArray(jobsRes.data)) setJobs(jobsRes.data);
+      if (Array.isArray(presenceRes.data)) setPresence(presenceRes.data);
       setLastSyncedAt(new Date());
     } catch (error) {
       console.error('Error fetching dispatch data:', error);

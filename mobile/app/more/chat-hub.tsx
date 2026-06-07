@@ -132,7 +132,7 @@ const formatPhoneDisplay = (phone: string): string => {
 
 interface ConversationItem {
   id: string;
-  type: 'job' | 'team' | 'client' | 'sms' | 'direct' | 'member';
+  type: 'job' | 'jobchat' | 'team' | 'client' | 'sms' | 'direct' | 'member';
   title: string;
   subtitle?: string;
   avatarFallback: string;
@@ -153,7 +153,7 @@ const SMS_QUICK_ACTIONS = [
   { id: 'job-done', label: 'Job done', icon: 'check-circle' as const, message: "All done! The job's been completed. Let me know if you have any questions or need anything else." },
 ];
 
-type FilterType = 'jobs' | 'enquiries' | 'team';
+type FilterType = 'jobs' | 'jobchats' | 'team';
 
 const JOB_STATUS_FILTERS = [
   { key: 'all', label: 'All' },
@@ -757,12 +757,10 @@ export default function ChatHubScreen() {
     return set;
   }, [jobs]);
 
-  const enquiriesUnreadCount = useMemo(() => {
+  // Unread SMS across conversations tied to a job (the "Clients" tab signal).
+  const clientsUnreadCount = useMemo(() => {
     return smsConversations
-      .filter(sms => {
-        const hasJob = sms.jobId || (sms.clientId && clientsWithJobs.has(sms.clientId));
-        return !hasJob;
-      })
+      .filter(sms => sms.jobId || (sms.clientId && clientsWithJobs.has(sms.clientId)))
       .reduce((sum, sms) => sum + (sms.unreadCount || 0), 0);
   }, [smsConversations, clientsWithJobs]);
 
@@ -832,37 +830,37 @@ export default function ChatHubScreen() {
           avatarFallback: job.title.substring(0, 2).toUpperCase(),
           lastMessage,
           lastMessageTime,
-          unreadCount: smsUnread + (pendingChatCounts[`job:${job.id}`] || 0),
+          unreadCount: smsUnread,
           status: job.status,
           data: { ...job, linkedSms },
         });
       });
     }
     
-    if (activeFilter === 'enquiries') {
-      const unassignedSms = smsConversations.filter(sms => {
-        const hasJob = sms.jobId || (sms.clientId && clientsWithJobs.has(sms.clientId));
-        return !hasJob;
-      });
-      unassignedSms.forEach(sms => {
-        const displayName = sms.clientName || formatPhoneDisplay(sms.clientPhone);
-        const lastMsg = sms.messages && sms.messages.length > 0
-          ? sms.messages[sms.messages.length - 1]
-          : null;
-        const lastMessageText = lastMsg
-          ? (lastMsg.direction === 'outbound' ? 'You: ' : '') + lastMsg.body
-          : 'No messages yet';
+    if (activeFilter === 'jobchats') {
+      // Internal team chat for each job (workers only see jobs assigned to them,
+      // which `jobs` is already filtered to above).
+      jobs.forEach(job => {
+        const clientName = getClientName(job.clientId);
+        const latestChat = latestJobChats.get(job.id);
+        let lastMessage = 'Tap to open team job chat';
+        let lastMessageTime: string | undefined;
+        if (latestChat) {
+          const prefix = latestChat.isSystemMessage ? '' : 'Note: ';
+          lastMessage = prefix + latestChat.message;
+          lastMessageTime = latestChat.createdAt || undefined;
+        }
         items.push({
-          id: `sms-${sms.id}`,
-          type: 'sms',
-          title: displayName,
-          subtitle: 'New enquiry',
-          avatarFallback: displayName.substring(0, 2).toUpperCase(),
-          lastMessage: lastMessageText,
-          lastMessageTime: lastMsg?.createdAt || sms.lastMessageAt || undefined,
-          unreadCount: sms.unreadCount || 0,
-          phone: sms.clientPhone,
-          data: sms,
+          id: `jobchat-${job.id}`,
+          type: 'jobchat',
+          title: job.title,
+          subtitle: clientName || job.address || 'Team job chat',
+          avatarFallback: job.title.substring(0, 2).toUpperCase(),
+          lastMessage,
+          lastMessageTime,
+          unreadCount: pendingChatCounts[`job:${job.id}`] || 0,
+          status: job.status,
+          data: job,
         });
       });
     }
@@ -1093,52 +1091,8 @@ export default function ChatHubScreen() {
     }
   };
 
-  const handleLinkEnquiryToJob = (item: ConversationItem) => {
-    const pendingJobs = jobs.filter(j => ['pending', 'scheduled'].includes(j.status));
-    if (pendingJobs.length === 0) {
-      Alert.alert('No Jobs Available', 'There are no pending or scheduled jobs to link this enquiry to. Create a new job first.');
-      return;
-    }
-    showActionSheet({
-      title: 'Link to Job',
-      message: 'Choose a job to link this enquiry to:',
-      actions: pendingJobs.slice(0, 8).map(j => ({
-        label: `${j.title}${j.status === 'scheduled' ? ' (Scheduled)' : ''}`,
-        icon: 'link' as const,
-        onPress: () => {
-          (async () => {
-            try {
-              await api.patch(`/api/sms/conversations/${item.data.id}`, { jobId: j.id });
-              Alert.alert('Linked', `Enquiry linked to "${j.title}". Future messages from this number will appear under that job.`);
-              loadData();
-            } catch {
-              Alert.alert('Error', 'Could not link enquiry to job. Please try again.');
-            }
-          })();
-        },
-      })),
-    });
-  };
-
-  const handleCreateJobFromEnquiry = (item: ConversationItem) => {
-    const clientName = item.title || 'Unknown';
-    const phone = item.phone || item.data?.clientPhone || '';
-    router.push(`/more/create-job?enquiryName=${encodeURIComponent(clientName)}&enquiryPhone=${encodeURIComponent(phone)}&smsConversationId=${item.data.id}` as any);
-  };
-
   const showQuickActions = (item: ConversationItem) => {
     const buttons: { text: string; onPress: () => void; style?: string }[] = [];
-
-    if (item.type === 'sms' && activeFilter === 'enquiries') {
-      buttons.push({
-        text: 'Create Job from Enquiry',
-        onPress: () => handleCreateJobFromEnquiry(item),
-      });
-      buttons.push({
-        text: 'Link to Existing Job',
-        onPress: () => handleLinkEnquiryToJob(item),
-      });
-    }
 
     SMS_QUICK_ACTIONS.forEach(action => {
       buttons.push({
@@ -1151,8 +1105,8 @@ export default function ChatHubScreen() {
       onPress: () => handleSendPhoto(item),
     });
     showActionSheet({
-      title: item.type === 'sms' && activeFilter === 'enquiries' ? 'Enquiry Actions' : 'Quick SMS',
-      message: item.type === 'sms' && activeFilter === 'enquiries' ? 'Manage this enquiry or send a quick reply:' : 'Send a quick message:',
+      title: 'Quick SMS',
+      message: 'Send a quick message:',
       actions: buttons.map(b => ({ label: b.text, onPress: b.onPress })),
     });
   };
@@ -1168,6 +1122,8 @@ export default function ChatHubScreen() {
       } else {
         router.push(`/job/chat?jobId=${item.data.id}` as any);
       }
+    } else if (item.type === 'jobchat') {
+      router.push(`/job/chat?jobId=${item.data.id}` as any);
     } else if (item.type === 'sms') {
       router.push(`/more/sms-conversation?id=${item.data.id}&phone=${encodeURIComponent(item.phone || '')}&name=${encodeURIComponent(item.title)}` as any);
     } else if (item.type === 'direct') {
@@ -1243,11 +1199,13 @@ export default function ChatHubScreen() {
   const getFilterUnreadCount = (filter: FilterType): number => {
     switch (filter) {
       case 'jobs':
-        return unreadCounts?.jobChats || 0;
+        return clientsUnreadCount;
       case 'team':
         return (unreadCounts?.teamChat || 0) + (unreadCounts?.directMessages || 0);
-      case 'enquiries':
-        return enquiriesUnreadCount;
+      case 'jobchats':
+        return (unreadCounts?.jobChats || 0) + Object.entries(pendingChatCounts)
+          .filter(([k]) => k.startsWith('job:'))
+          .reduce((sum, [, v]) => sum + v, 0);
       default:
         return 0;
     }
@@ -1270,6 +1228,8 @@ export default function ChatHubScreen() {
           item.type === 'member' && styles.conversationAvatarMember,
         ]}>
           {item.type === 'job' ? (
+            <Feather name="message-square" size={20} color={colors.primary} />
+          ) : item.type === 'jobchat' ? (
             <Feather name="briefcase" size={20} color={colors.primary} />
           ) : item.type === 'team' ? (
             <Feather name="users" size={20} color={colors.info} />
@@ -1382,11 +1342,11 @@ export default function ChatHubScreen() {
 
   const getEmptyStateMessage = () => {
     switch (activeFilter) {
-      case 'enquiries':
+      case 'jobchats':
         return {
-          title: 'No enquiries yet',
-          text: 'New SMS conversations that aren\'t linked to a job will appear here.',
-          icon: 'smartphone' as const,
+          title: 'No job chats yet',
+          text: 'Create a job to start an internal team chat for it. Workers see only their assigned jobs.',
+          icon: 'message-circle' as const,
           iconColor: colors.success,
         };
       case 'team':
@@ -1409,8 +1369,8 @@ export default function ChatHubScreen() {
 
   const getSectionInfo = () => {
     switch (activeFilter) {
-      case 'jobs': return { title: 'JOB CONVERSATIONS', icon: 'briefcase' as const };
-      case 'enquiries': return { title: 'SMS ENQUIRIES', icon: 'smartphone' as const };
+      case 'jobs': return { title: 'CLIENT CONVERSATIONS', icon: 'message-square' as const };
+      case 'jobchats': return { title: 'TEAM JOB CHATS', icon: 'briefcase' as const };
       case 'team': return { title: 'TEAM & DIRECT MESSAGES', icon: 'users' as const };
       default: return { title: 'CONVERSATIONS', icon: 'message-circle' as const };
     }
@@ -1472,13 +1432,13 @@ export default function ChatHubScreen() {
           contentContainerStyle={styles.filterContainerContent}
           keyboardShouldPersistTaps="handled"
         >
-          {(isSubcontractor ? ['jobs'] as FilterType[] : ['jobs', 'team', 'enquiries'] as FilterType[]).map((filter) => {
+          {(isSubcontractor ? ['jobs', 'jobchats'] as FilterType[] : ['jobs', 'jobchats', 'team'] as FilterType[]).map((filter) => {
             const count = getFilterUnreadCount(filter);
             const isActive = activeFilter === filter;
             return (
               <PressableRow key={filter} style={[styles.filterButton, isActive && styles.filterButtonActive]} onPress={() => { setActiveFilter(filter); if (filter !== 'jobs') setJobStatusFilter('all'); }} >
                 <Feather
-                  name={filter === 'jobs' ? 'briefcase' : filter === 'team' ? 'users' : 'smartphone'}
+                  name={filter === 'jobs' ? 'message-square' : filter === 'jobchats' ? 'briefcase' : 'users'}
                   size={14}
                   color={isActive ? colors.primaryForeground : colors.mutedForeground}
                 />
@@ -1486,7 +1446,7 @@ export default function ChatHubScreen() {
                   styles.filterButtonText,
                   isActive && styles.filterButtonTextActive
                 ]}>
-                  {filter === 'jobs' ? 'Jobs' : filter === 'team' ? 'Team' : 'Enquiries'}
+                  {filter === 'jobs' ? 'Clients' : filter === 'jobchats' ? 'Job Chats' : 'Team'}
                 </Text>
                 {count > 0 && (
                   <View style={[styles.filterBadge, isActive && styles.filterBadgeActive]}>
