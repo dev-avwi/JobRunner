@@ -137,6 +137,18 @@ class ApiClient {
     } catch (error) {
       if (__DEV__) console.error('Failed to save session token:', error);
     }
+    // On a fresh (re)login, immediately retry any buffered/401'd location pings
+    // so a worker who was already sharing reappears on the team map without
+    // waiting for the heartbeat. Lazy require avoids a circular import
+    // (location-tracking imports this api module at load time). Fire-and-forget.
+    if (token) {
+      try {
+        const { locationTracking } = require('./location-tracking');
+        locationTracking?.onAuthChanged?.();
+      } catch {
+        // location-tracking not available in this context — ignore.
+      }
+    }
   }
 
   async getToken(): Promise<string | null> {

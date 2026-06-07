@@ -62,6 +62,7 @@ export interface SubcontractorJobContext {
 const LOCATION_BUFFER_MAX = 20;
 const STATIONARY_SPEED_THRESHOLD = 0.5;
 const STATIONARY_SKIP_COUNT = 3;
+const HEARTBEAT_INTERVAL_MS = 60000;
 
 class LocationTrackingService {
   private status: TrackingStatus = 'stopped';
@@ -75,6 +76,8 @@ class LocationTrackingService {
   private _onJobContextChange?: (context: SubcontractorJobContext | null) => void;
   private _locationBuffer: { payload: Record<string, any> }[] = [];
   private _stationaryCount: number = 0;
+  private _heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private _sendInFlight: boolean = false;
 
   /**
    * Silently check current permission state WITHOUT triggering any OS prompts.
@@ -224,6 +227,11 @@ class LocationTrackingService {
       if (isTracking) {
         if (__DEV__) console.log('[Location] Already tracking');
         this.updateStatus('tracking');
+        // The OS task is still registered (common on app restart / re-login),
+        // but the JS heartbeat is not — re-arm it and push a ping now, or a
+        // stationary worker resuming a session would never re-post.
+        this.startHeartbeat();
+        await this.sendImmediateLocation();
         return true;
       }
 
@@ -248,6 +256,7 @@ class LocationTrackingService {
 
         if (__DEV__) console.log('[Location] Background tracking started');
         this.updateStatus('tracking');
+        this.startHeartbeat();
         await this.sendImmediateLocation();
         return true;
       } catch (bgError: any) {
@@ -263,6 +272,7 @@ class LocationTrackingService {
         if (location) {
           this.updateStatus('foreground_only');
           this._stationaryCount = 0;
+          this.startHeartbeat();
           if (this.onLocationUpdate) this.onLocationUpdate(location);
           await this.sendLocationToServer(location);
           return true;
@@ -280,6 +290,8 @@ class LocationTrackingService {
    * Stop background location tracking
    */
   async stopTracking(): Promise<void> {
+    // Clear the heartbeat first so a throw below can't leave the timer running.
+    this.stopHeartbeat();
     try {
       const isTracking = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
       if (isTracking) {
@@ -411,19 +423,50 @@ class LocationTrackingService {
       activeJobId: this._activeJobContext?.jobId || undefined,
     };
 
-    try {
-      await api.post('/api/team-locations', payload);
-      await this.flushLocationBuffer();
-    } catch (error) {
-      const entry = { payload };
-      if (this._locationBuffer.length < LOCATION_BUFFER_MAX) {
-        this._locationBuffer.push(entry);
-      } else {
-        this._locationBuffer.shift();
-        this._locationBuffer.push(entry);
-      }
-      if (__DEV__) console.warn(`[Location] Buffered update (${this._locationBuffer.length} pending)`);
+    // Reentrancy guard: a slow network could let a heartbeat tick (or auth hook)
+    // fire while a previous send/flush is still running, causing overlapping
+    // flushes and out-of-order writes. If one is in flight, buffer this payload
+    // and let the in-progress cycle (or the next tick) pick it up.
+    if (this._sendInFlight) {
+      this.bufferPayload(payload);
+      return;
     }
+    this._sendInFlight = true;
+    try {
+      // Flush older buffered pings FIRST so this fresh ping is the last write —
+      // the server derives lastSeenAt from the payload timestamp, so flushing
+      // stale entries afterwards would drag the worker's "last seen" backwards.
+      await this.flushLocationBuffer();
+
+      if (!(await this.postLocation(payload))) {
+        this.bufferPayload(payload);
+        if (__DEV__) console.warn(`[Location] Send failed; buffered (${this._locationBuffer.length} pending)`);
+      }
+    } finally {
+      this._sendInFlight = false;
+    }
+  }
+
+  /**
+   * POST one location payload. Returns true only on a real success. api.post
+   * resolves with `{ error }` on HTTP failures (e.g. a 401 sent before the auth
+   * token is ready) instead of throwing, so we must inspect the result — not
+   * just rely on catch — or auth failures get silently treated as success.
+   */
+  private async postLocation(payload: Record<string, any>): Promise<boolean> {
+    try {
+      const res = await api.post('/api/team-locations', payload);
+      return !(res && (res as any).error);
+    } catch {
+      return false;
+    }
+  }
+
+  private bufferPayload(payload: Record<string, any>): void {
+    if (this._locationBuffer.length >= LOCATION_BUFFER_MAX) {
+      this._locationBuffer.shift();
+    }
+    this._locationBuffer.push({ payload });
   }
 
   private async flushLocationBuffer(): Promise<void> {
@@ -431,14 +474,24 @@ class LocationTrackingService {
     const buffered = [...this._locationBuffer];
     this._locationBuffer = [];
     for (let i = 0; i < buffered.length; i++) {
-      const entry = buffered[i];
-      try {
-        await api.post('/api/team-locations', entry.payload);
-      } catch {
+      if (!(await this.postLocation(buffered[i].payload))) {
+        // Keep the unsent remainder (oldest first), ahead of anything buffered
+        // since we snapshotted, and stop — retry on the next call.
         this._locationBuffer = buffered.slice(i).concat(this._locationBuffer);
         break;
       }
     }
+  }
+
+  /**
+   * Call right after a (re)login sets a fresh auth token. Immediately retries
+   * buffered pings and re-sends the current location, so a worker whose first
+   * ping 401'd before the token was ready reappears on the map without waiting
+   * for the next heartbeat or 50m of movement.
+   */
+  async onAuthChanged(): Promise<void> {
+    if (this.status !== 'tracking' && this.status !== 'foreground_only') return;
+    await this.heartbeatTick();
   }
 
   /**
@@ -518,6 +571,46 @@ class LocationTrackingService {
 
   getLastLocation(): LocationUpdate | null {
     return this.currentLocation;
+  }
+
+  /**
+   * Heartbeat: while sharing is active, re-send the last known location on a
+   * fixed interval. This solves two real failure modes:
+   *  1. A ping sent before the auth token was ready returns 401 and gets
+   *     buffered. The buffer otherwise only flushes when the OS delivers a NEW
+   *     location, which needs ~50m of movement — so a worker who turns sharing
+   *     on, hits a 401, then re-logs in but stands still never re-sends and
+   *     never appears on the team map.
+   *  2. The server marks a worker inactive after 15 min of silence, so a
+   *     stationary worker greys out / drops off even when still sharing.
+   * setInterval is throttled while backgrounded, so this mainly helps in the
+   * foreground (exactly the "turned it on while standing still" case);
+   * background movement is still covered by the OS location task.
+   */
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this._heartbeatTimer = setInterval(() => {
+      void this.heartbeatTick();
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  private stopHeartbeat(): void {
+    if (this._heartbeatTimer) {
+      clearInterval(this._heartbeatTimer);
+      this._heartbeatTimer = null;
+    }
+  }
+
+  private async heartbeatTick(): Promise<void> {
+    if (this.status !== 'tracking' && this.status !== 'foreground_only') return;
+    if (this.currentLocation) {
+      // Stamp a fresh timestamp so the server's lastSeenAt advances and the
+      // worker stays "active" even when standing still. A successful send also
+      // flushes any earlier buffered (e.g. 401'd) pings.
+      await this.sendLocationToServer({ ...this.currentLocation, timestamp: Date.now() });
+    } else {
+      await this.flushLocationBuffer();
+    }
   }
 
   /**
