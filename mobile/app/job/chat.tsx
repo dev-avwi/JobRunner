@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import type { ReactElement } from 'react';
 import {
   View,
   Text,
@@ -1181,7 +1182,7 @@ export default function JobChatScreen() {
       );
     }
 
-    const elements: JSX.Element[] = [];
+    const elements: ReactElement[] = [];
     let lastDateKey = '';
     let lastSenderId = '';
 
