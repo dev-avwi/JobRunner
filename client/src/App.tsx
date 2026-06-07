@@ -8,7 +8,6 @@ import { NetworkProvider } from "@/contexts/NetworkContext";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import AuthFlow from "@/components/AuthFlow";
 import SimpleOnboarding from "@/components/SimpleOnboarding";
-import { useCompleteOnboarding } from "@/hooks/useCompleteOnboarding";
 import { useRealtimeUpdates } from "@/hooks/use-realtime-updates";
 import { JobCollaborationProvider, JobCollaborationCtxRaw } from "@/contexts/JobCollaborationContext";
 import { Toaster } from "@/components/ui/toaster";
@@ -32,7 +31,6 @@ import { useFeatureAccess } from "@/hooks/use-subscription";
 import GuidedTour, { useGuidedTour } from "@/components/GuidedTour";
 import { useAppMode } from "@/hooks/use-app-mode";
 import { KeyboardShortcutsDialog, useKeyboardShortcuts } from "@/components/KeyboardShortcuts";
-import FirstTimeWalkthrough from "@/components/FirstTimeWalkthrough";
 import WhatYouMissedModal from "@/components/WhatYouMissedModal";
 import AdminAppShell from "@/components/AdminAppShell";
 
@@ -1071,8 +1069,6 @@ function AppLayout() {
     }
   }, []);
   
-  // Onboarding mutation hook
-  const { mutateAsync: completeOnboarding } = useCompleteOnboarding();
 
   // Check if user is authenticated
   const { data: userCheck, isLoading, error } = useQuery({
@@ -1381,39 +1377,6 @@ function AppLayout() {
     // User successfully authenticated but needs onboarding
     // Only invalidate business settings to trigger onboarding check
     queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
-  };
-
-  const handleOnboardingComplete = async (onboardingData: OnboardingData) => {
-    try {
-      await completeOnboarding(onboardingData);
-      
-      // If user chose to start with demo data, seed it now
-      if (onboardingData.demoData?.useDemoData) {
-        try {
-          await apiRequest('POST', '/api/onboarding/seed-demo-data');
-          // Invalidate all data queries so demo data appears
-          await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ["/api/clients"] }),
-            queryClient.invalidateQueries({ queryKey: ["/api/jobs"] }),
-            queryClient.invalidateQueries({ queryKey: ["/api/quotes"] }),
-            queryClient.invalidateQueries({ queryKey: ["/api/invoices"] }),
-            queryClient.invalidateQueries({ queryKey: ["/api/dashboard/unified"] }),
-          ]);
-        } catch (demoError) {
-          console.error('Failed to seed demo data:', demoError);
-          // Don't block onboarding completion if demo data fails
-        }
-      }
-      
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/unified"] }),
-      ]);
-      handleLoginSuccess();
-    } catch (error) {
-      throw error;
-    }
   };
 
   const handleSimpleOnboardingComplete = async () => {

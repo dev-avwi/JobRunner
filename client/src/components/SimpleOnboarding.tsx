@@ -29,6 +29,7 @@ import {
   DollarSign,
   Smartphone,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -218,6 +219,7 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
   const [selectedRole, setSelectedRole] = useState<OnboardingRole>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [useSampleData, setUseSampleData] = useState(true);
 
   const [inviteCode, setInviteCode] = useState("");
   const [inviteValidation, setInviteValidation] = useState<{
@@ -504,8 +506,26 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
     setIsSubmitting(true);
     try {
       await apiRequest("POST", "/api/onboarding/complete", {});
+      // Owners who opted in get a few example records seeded so the app isn't
+      // empty on first load. Flagged isSample server-side, removable in one tap.
+      // Non-blocking: a seed failure must not trap the user in onboarding.
+      if (selectedRole === "owner" && useSampleData) {
+        try {
+          await apiRequest("POST", "/api/onboarding/seed-sample-data", {
+            tradeType: formData.tradeType,
+          });
+        } catch {
+          // Best effort — continue to the dashboard regardless.
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/onboarding/sample-data"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/unified"] });
       onComplete();
     } catch (error) {
       toast({
@@ -940,6 +960,28 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
                           </li>
                         ))}
                       </ul>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-4 mb-6">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <span
+                          className="h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: BRAND_BLUE_TINT, color: BRAND_BLUE }}
+                        >
+                          <Sparkles className="h-5 w-5" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-900">Add sample data to explore</p>
+                          <p className="text-sm text-slate-500">
+                            A few example clients, jobs and invoices so the app isn't empty. Remove them anytime in one tap.
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        data-testid="switch-sample-data"
+                        checked={useSampleData}
+                        onCheckedChange={setUseSampleData}
+                      />
                     </div>
 
                     <div
