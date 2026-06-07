@@ -434,7 +434,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingLeft: 28,
+    paddingLeft: 23,
     paddingRight: 14,
     gap: 10,
   },
