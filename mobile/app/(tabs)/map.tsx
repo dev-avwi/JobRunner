@@ -670,6 +670,10 @@ export default function MapScreen() {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamMarkersReady, setTeamMarkersReady] = useState(false);
+  // Android: custom-view markers must have tracksViewChanges=true while the view
+  // lays out, otherwise the marker never paints (Android react-native-maps bug).
+  // We keep it on briefly after data/selection changes, then turn it off for perf.
+  const [trackTeamChanges, setTrackTeamChanges] = useState(true);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   
   // Tap-to-assign state
@@ -1075,6 +1079,16 @@ export default function MapScreen() {
       }
     };
   }, [showTeamMembers, fetchTeamLocations, canViewTeamMode, isLive]);
+
+  // Android only: re-enable marker view tracking briefly whenever the team data
+  // or selection changes so the custom marker views actually render, then turn it
+  // back off to avoid the iOS-style (0,0) flash and keep the map performant.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    setTrackTeamChanges(true);
+    const t = setTimeout(() => setTrackTeamChanges(false), 800);
+    return () => clearTimeout(t);
+  }, [teamMembers, selectedWorker, teamMarkersReady]);
 
   // WebSocket for real-time location updates - Life360 style instant updates
   useEffect(() => {
@@ -1701,7 +1715,7 @@ export default function MapScreen() {
               }}
               onPress={() => handleWorkerTap(member)}
               anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
+              tracksViewChanges={Platform.OS === 'android' ? trackTeamChanges : false}
             >
               <View 
                 style={{ 

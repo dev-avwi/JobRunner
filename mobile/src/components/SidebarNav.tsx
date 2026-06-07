@@ -86,8 +86,12 @@ export function SidebarNav() {
     if (r === 'office_admin') return 'office_admin';
     // Fallback based on roleInfo.isOwner
     if (roleInfo?.isOwner) return 'owner';
-    // Ultimate fallback: if user is authenticated but no role, treat as owner
+    // Authenticated but no role string at all → treat as owner (solo default)
     if (user?.id && !r) return 'owner';
+    // Authenticated worker with an unrecognized/custom role → treat as staff so
+    // the sidebar shows worker-appropriate items ('staff' is in allowedRoles).
+    // Without this, custom roles match no allowedRoles and the menu is empty.
+    if (user?.id) return 'staff';
     return r as UserRole;
   }, [rawRole, roleInfo?.isOwner, user?.id]);
   

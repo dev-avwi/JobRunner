@@ -138,7 +138,7 @@ export default function LeadsScreen() {
     setError(null);
     try {
       const res = await api.get<Lead[]>('/api/leads');
-      if (res.data) setLeads(res.data);
+      setLeads(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
       setError('Failed to load leads. Pull down to retry.');
       console.error('Error fetching leads:', e);
@@ -156,7 +156,7 @@ export default function LeadsScreen() {
   }, [fetchLeads]);
 
   const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
+    return (Array.isArray(leads) ? leads : []).filter((lead) => {
       const matchesSearch = searchQuery === '' ||
         lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
