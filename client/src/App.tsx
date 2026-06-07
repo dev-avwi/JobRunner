@@ -30,6 +30,7 @@ import { lazyWithReload } from "@/lib/lazyWithReload";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useFeatureAccess } from "@/hooks/use-subscription";
 import GuidedTour, { useGuidedTour } from "@/components/GuidedTour";
+import { useAppMode } from "@/hooks/use-app-mode";
 import { KeyboardShortcutsDialog, useKeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import FirstTimeWalkthrough from "@/components/FirstTimeWalkthrough";
 import WhatYouMissedModal from "@/components/WhatYouMissedModal";
@@ -1163,6 +1164,15 @@ function AppLayout() {
   // Owners without business settings still need to complete onboarding
   const isStaffOnOtherTeam = !!teamRoleInfo && teamRoleInfo.role !== 'owner';
 
+  // Choose which guided tour to run. Field workers (those who can't open the
+  // Clients page) get a job-focused tour instead of the owner tour, which
+  // references pages they don't have (Clients, quotes, business settings).
+  // Route access is role-gated, so this stays correct even when a worker holds
+  // the VIEW_CLIENTS permission (which doesn't grant /clients route access).
+  const { isOwner: tourIsOwner, canAccessRoute: tourCanAccessRoute } = useAppMode();
+  const tourAudience: 'owner' | 'worker' =
+    (!tourIsOwner && !tourCanAccessRoute('/clients')) ? 'worker' : 'owner';
+
   // Get the businessId for real-time updates
   // For team members, use their business owner's ID; for owners, use their own ID
   const realtimeBusinessId = teamRoleInfo?.businessOwnerId || userCheck?.id || '';
@@ -1825,6 +1835,7 @@ function AppLayout() {
         isOpen={showTour}
         onClose={closeTour}
         onComplete={completeTour}
+        audience={tourAudience}
       />
       
       

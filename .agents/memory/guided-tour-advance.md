@@ -29,3 +29,23 @@ next route differs from the current `location`, so it won't re-fire).
   `/documents?tab=quotes`; the quote create button lives on that quotes tab.
 - Do not reintroduce a global time-based advance lock — it drops legitimate
   back-to-back advances (e.g. mobile More → Clients).
+
+## Role-aware tour audience
+
+The tour has two step sets: the owner tour (`TOUR_STEPS`, includes Clients/quotes/
+business-settings steps) and a worker tour (`WORKER_TOUR_STEPS`, job-focused: work,
+time-tracking, expenses, schedule, whs, chat). `GuidedTour` takes an
+`audience: 'owner'|'worker'` prop; `baseSteps`/`filteredSteps` switch on it.
+
+**Rule: pick the audience by ROUTE access (`canAccessRoute('/clients')`), NOT by the
+`VIEW_CLIENTS` worker permission.**
+
+**Why:** `DEFAULT_WORKER_PERMISSIONS` (shared/schema.ts) already includes `VIEW_CLIENTS`,
+so `useAppMode().canViewClients` is true for typical `staff_tradie` workers — gating on
+it would still hand them the owner tour with a "Go to Clients" step for a page they
+can't open. Route access is role-gated separately (`/clients` allowedRoles excludes
+`staff_tradie` in `permissions.ts`), so it matches what the worker can actually navigate.
+
+**How to apply:** in App.tsx `audience = (!isOwner && !canAccessRoute('/clients')) ? 'worker' : 'owner'`
+(both from `useAppMode`). Owners + managers/office_admins get the owner tour; field
+workers get the worker tour.

@@ -17,7 +17,11 @@ import {
   Plus,
   ArrowRight,
   LogOut,
-  MoreHorizontal
+  MoreHorizontal,
+  Clock,
+  Calendar,
+  ShieldCheck,
+  MessageSquare
 } from "lucide-react";
 
 interface TourStep {
@@ -298,15 +302,95 @@ const TOUR_STEPS: TourStep[] = [
   }
 ];
 
+// Worker tour — for team members who work on jobs but don't manage clients,
+// quotes, invoices or business settings. These are informational steps that
+// auto-navigate to each page; the user taps Next to move on. We deliberately
+// avoid "click Clients" style steps because workers don't have those pages.
+const WORKER_TOUR_STEPS: TourStep[] = [
+  {
+    id: "w-welcome",
+    title: "Welcome to JobRunner",
+    description: "This is your work hub. I'll show you where to find your jobs, log your hours, track expenses and stay safe on site. Skip any step or leave the tour whenever you like.",
+    route: "/",
+    icon: Sparkles
+  },
+  {
+    id: "w-dashboard",
+    title: "Your Dashboard",
+    description: "Your day at a glance — today's jobs, hours logged, and quick actions. Everything starts from this screen.",
+    route: "/",
+    icon: LayoutDashboard,
+    targetSelector: '[data-testid="dashboard-content"], main, .dashboard-container'
+  },
+  {
+    id: "w-work",
+    title: "Your Jobs",
+    description: "Every job you're put on shows up here. Tap one to see the address, what needs doing, and any notes from the boss.",
+    route: "/work",
+    icon: Briefcase,
+    targetSelector: '[data-testid="work-content"], [data-testid="jobs-list"], main'
+  },
+  {
+    id: "w-time",
+    title: "Track Your Hours",
+    description: "Clock on and off here so your hours are recorded against the right job. No more paper timesheets.",
+    route: "/time-tracking",
+    icon: Clock,
+    targetSelector: 'main'
+  },
+  {
+    id: "w-expenses",
+    title: "Log Expenses",
+    description: "Bought materials or fuel for a job? Snap the receipt here and it's tracked against the job — nothing gets lost.",
+    route: "/expenses",
+    icon: Receipt,
+    targetSelector: 'main'
+  },
+  {
+    id: "w-schedule",
+    title: "Your Schedule",
+    description: "See what's booked in and where you need to be. All your upcoming jobs in one calendar.",
+    route: "/schedule",
+    icon: Calendar,
+    targetSelector: 'main'
+  },
+  {
+    id: "w-safety",
+    title: "Stay Safe on Site",
+    description: "Fill in safety forms and sign off SWMS before you start. Keeps you and the team compliant.",
+    route: "/whs",
+    icon: ShieldCheck,
+    targetSelector: 'main'
+  },
+  {
+    id: "w-chat",
+    title: "Talk to the Team",
+    description: "Message the boss and your workmates, share photos from site, and stay in the loop — all in one place.",
+    route: "/chat",
+    icon: MessageSquare,
+    targetSelector: 'main'
+  },
+  {
+    id: "w-complete",
+    title: "You're All Set",
+    description: "That's the basics. Jump into your jobs, log your hours, and you're good to go. You can replay this tour anytime from Settings.",
+    route: "/",
+    icon: CheckCircle2
+  }
+];
+
 interface GuidedTourProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
+  // Which step set to run. Workers get a job-focused tour with no clients,
+  // quotes, invoices or business-settings steps (they can't access those).
+  audience?: 'owner' | 'worker';
 }
 
 type CardPosition = 'top' | 'bottom' | 'left' | 'right' | 'center';
 
-export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourProps) {
+export default function GuidedTour({ isOpen, onClose, onComplete, audience = 'owner' }: GuidedTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -328,9 +412,12 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Pick the step set for this audience (workers get a job-focused tour).
+  const baseSteps = audience === 'worker' ? WORKER_TOUR_STEPS : TOUR_STEPS;
+
   // Transform steps based on screen size - apply desktop alternatives for mobile-only steps (memoized for stability)
   const filteredSteps = useMemo(() =>
-    TOUR_STEPS.map(s => {
+    baseSteps.map(s => {
       if (s.mobileOnly && !isMobileView && s.desktopAlternative) {
         return {
           ...s,
@@ -352,7 +439,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
       }
       return s;
     }).filter(s => !s.mobileOnly || isMobileView),
-    [isMobileView]
+    [isMobileView, baseSteps]
   );
 
   // Guard currentStep to stay within bounds when filteredSteps changes
