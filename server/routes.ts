@@ -16958,6 +16958,11 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  // Cache computed road ETAs per job so the 10s portal poll doesn't hit OSRM
+  // on every request. Recompute only when older than 30s OR the worker has
+  // moved more than ~0.4km since the last route call.
+  const portalEtaCache = new Map<string, { eta: number; at: number; lat: number; lng: number }>();
+
   app.get("/api/public/job-portal/:token/location", async (req: any, res) => {
     try {
       const portalToken = await storage.getJobPortalTokenByToken(req.params.token);
@@ -17090,9 +17095,53 @@ Be specific about materials, colors, and features that would be included.`
       
       const ageMs = Date.now() - location.updatedAt;
       const stale = ageMs > 5 * 60 * 1000;
-      
+
+      // ETA freshness: the stored job.workerEtaMinutes is only refreshed by the
+      // mobile travel-location endpoint, which doesn't fire on every position
+      // update — so relying on it alone leaves the portal showing a stale ETA
+      // (e.g. "10 min" while the worker is already at the door). Whenever we
+      // have a non-stale live location, recompute the ETA from it instead.
       let computedEta = etaMinutes;
-      if (!computedEta && location && jobLocation) {
+      let computedEtaUpdatedAt: Date | null = etaUpdatedAt;
+      if (location && jobLocation && !stale) {
+        const distanceKm = haversineDistance(
+          location.latitude, location.longitude,
+          jobLocation.latitude, jobLocation.longitude
+        );
+        if (distanceKm <= 0.3) {
+          // Effectively on-site — skip the routing call.
+          computedEta = 1;
+        } else {
+          const cached = portalEtaCache.get(portalToken.jobId);
+          const movedKm = cached
+            ? haversineDistance(cached.lat, cached.lng, location.latitude, location.longitude)
+            : Infinity;
+          if (cached && Date.now() - cached.at < 30_000 && movedKm < 0.4) {
+            computedEta = cached.eta;
+          } else {
+            const routeEta = await calculateRouteETA(
+              location.latitude, location.longitude,
+              jobLocation.latitude, jobLocation.longitude
+            );
+            if (routeEta) {
+              computedEta = routeEta.durationMinutes;
+            } else {
+              // OSRM unavailable — straight-line estimate from current speed.
+              const speedKmh = (location.speed && location.speed > 5) ? location.speed : 40;
+              computedEta = Math.max(1, Math.round((distanceKm / speedKmh) * 60));
+            }
+            if (portalEtaCache.size > 1000) portalEtaCache.clear();
+            portalEtaCache.set(portalToken.jobId, {
+              eta: computedEta!,
+              at: Date.now(),
+              lat: location.latitude,
+              lng: location.longitude,
+            });
+          }
+        }
+        computedEtaUpdatedAt = new Date(location.updatedAt);
+      } else if (!computedEta && location && jobLocation) {
+        // No stored ETA and the live location is stale — best-effort road ETA.
         const routeEta = await calculateRouteETA(
           location.latitude, location.longitude,
           jobLocation.latitude, jobLocation.longitude
@@ -17115,7 +17164,7 @@ Be specific about materials, colors, and features that would be included.`
         },
         jobLocation,
         etaMinutes: computedEta,
-        etaUpdatedAt,
+        etaUpdatedAt: computedEtaUpdatedAt,
         lastUpdated: new Date(location.updatedAt),
       });
     } catch (error) {

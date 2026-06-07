@@ -171,9 +171,17 @@ export async function calculateRouteETA(
   toLat: number, toLng: number
 ): Promise<{ durationMinutes: number; distanceKm: number } | null> {
   try {
-    const res = await fetch(
-      `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=false`
-    );
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=false`,
+        { signal: controller.signal }
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
     if (!res.ok) return null;
     const data = await res.json();
     if (data.routes && data.routes[0]) {
