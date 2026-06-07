@@ -295,14 +295,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexShrink: 0,
   },
   headerSection: {
-    marginHorizontal: 12,
-    marginBottom: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 26,
     paddingVertical: 12,
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerRow: {
     flexDirection: 'row',
