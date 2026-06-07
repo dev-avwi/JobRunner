@@ -9004,37 +9004,46 @@ export default function JobDetailScreen() {
               <Text style={{ fontSize: 16, color: colors.primary, marginLeft: -1 }}>Back</Text>
             </Pressable>
           ),
-          headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              {(isOwnerOrManager || isSoloOwner) && (
-                <Pressable
-                  onPress={() => {
-                    setNewJobTitle(job.title);
-                    setShowRenameModal(true);
-                  }}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
-                  testID="button-edit-header"
-                >
-                  <Feather name="edit-2" size={18} color={colors.primary} />
-                </Pressable>
-              )}
-              {(isOwnerOrManager || isSoloOwner || canDeleteJobs) && (
-                <Pressable
-                  onPress={showJobActionsMenu}
-                  disabled={isCloningJob || isDeletingJob}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
-                  testID="button-job-actions-menu"
-                >
-                  {(isCloningJob || isDeletingJob)
-                    ? <ActivityIndicator size="small" color={colors.primary} />
-                    : <Feather name="more-horizontal" size={18} color={colors.primary} />
-                  }
-                </Pressable>
-              )}
-            </View>
-          ),
+          headerRight: () => {
+            const canEditTitle = isOwnerOrManager || isSoloOwner;
+            const canOpenActions = isOwnerOrManager || isSoloOwner || canDeleteJobs;
+            // Workers have no header actions. We MUST return null (not an empty
+            // View) — on iOS 26 any non-null headerRight is wrapped in a circular
+            // glass capsule, so an empty View renders as a hollow, non-responsive
+            // circle next to the Back button.
+            if (!canEditTitle && !canOpenActions) return null;
+            return (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                {canEditTitle && (
+                  <Pressable
+                    onPress={() => {
+                      setNewJobTitle(job.title);
+                      setShowRenameModal(true);
+                    }}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
+                    testID="button-edit-header"
+                  >
+                    <Feather name="edit-2" size={18} color={colors.primary} />
+                  </Pressable>
+                )}
+                {canOpenActions && (
+                  <Pressable
+                    onPress={showJobActionsMenu}
+                    disabled={isCloningJob || isDeletingJob}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
+                    testID="button-job-actions-menu"
+                  >
+                    {(isCloningJob || isDeletingJob)
+                      ? <ActivityIndicator size="small" color={colors.primary} />
+                      : <Feather name="more-horizontal" size={18} color={colors.primary} />
+                    }
+                  </Pressable>
+                )}
+              </View>
+            );
+          },
         }} 
       />
 
