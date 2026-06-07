@@ -122,7 +122,9 @@ export default function AcceptInvite() {
         setCountdown(prev => {
           if (prev <= 1) {
             clearInterval(timer);
-            setLocation('/');
+            // Hard navigation so every gate (auth, business settings, active
+            // workspace) re-resolves cleanly from the server after joining.
+            window.location.assign('/');
             return 0;
           }
           return prev - 1;
@@ -130,7 +132,7 @@ export default function AcceptInvite() {
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [acceptStatus, setLocation]);
+  }, [acceptStatus]);
 
   const handlePermissionToggle = (permissionId: string) => {
     setSelectedPermissions(prev => 
@@ -365,7 +367,7 @@ export default function AcceptInvite() {
 
             <div className="space-y-3">
               <Button
-                onClick={() => setLocation('/')}
+                onClick={() => window.location.assign('/')}
                 className="w-full"
                 size="lg"
                 data-testid="button-go-to-dashboard"

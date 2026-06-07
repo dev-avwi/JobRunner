@@ -927,6 +927,10 @@ function Router({
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/verify-email-pending" component={VerifyEmailPending} />
       <Route path="/reset-password" component={ResetPassword} />
+      {/* NOTE: /accept-invite and /accept-assignment are normally handled by a
+          standalone short-circuit in AppLayout (rendered full-screen, outside this
+          shell) for both logged-in and logged-out users. These in-shell routes are
+          a defensive fallback only and are effectively unreachable in normal flow. */}
       <Route path="/accept-invite/:token" component={AcceptInvite} />
       <Route path="/accept-assignment/:jobId/:assignmentId" component={AcceptAssignment} />
       <Route path="/invite/:code">
@@ -1645,6 +1649,24 @@ function AppLayout() {
 
   if (ownerNeedsOnboarding) {
     return <SimpleOnboarding onComplete={handleSimpleOnboardingComplete} onSkip={handleSimpleOnboardingComplete} />;
+  }
+
+  // Invite/assignment acceptance pages are full-screen standalone flows. Even
+  // when the user is already signed in, render them on their own — never embed
+  // them inside the authenticated app shell (sidebar + header). Otherwise a
+  // logged-in owner who clicks a "join the team" link sees the invite card
+  // stuffed inside their dashboard, and the post-accept redirect looks like
+  // nothing happened. Both pages read their params via useRoute internally.
+  if (isInviteAcceptanceRoute) {
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      }>
+        {location.startsWith('/accept-assignment/') ? <AcceptAssignment /> : <AcceptInvite />}
+      </Suspense>
+    );
   }
 
   // If authenticated, show main app below (existing code continues...)
