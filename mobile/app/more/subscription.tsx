@@ -34,6 +34,8 @@ import { getBottomNavHeight } from '../../src/components/BottomNav';
 interface SubscriptionStatus {
   tier: 'free' | 'pro' | 'team' | 'business' | 'trial';
   status: string;
+  isTrial?: boolean;
+  daysRemaining?: number | null;
   trialEndsAt?: string | null;
   nextBillingDate?: string | null;
   currentPeriodEnd?: string;
@@ -738,8 +740,9 @@ export default function SubscriptionPage() {
   };
 
   const currentTier = subscriptionStatus?.tier || 'free';
+  const isOnTrial = subscriptionStatus?.isTrial === true || subscriptionStatus?.status === 'trialing' || currentTier === 'trial';
   const planInfo = PLAN_DETAILS[currentTier] || PLAN_DETAILS.free;
-  const hasActiveSubscription = currentTier === 'pro' || currentTier === 'team' || currentTier === 'business' || currentTier === 'trial';
+  const hasActiveSubscription = currentTier === 'pro' || currentTier === 'team' || currentTier === 'business' || isOnTrial;
   const isBeta = subscriptionStatus?.isBeta || subscriptionStatus?.betaUser;
 
   const getUsagePercent = (used: number, limit: number | null) => {
@@ -778,13 +781,15 @@ export default function SubscriptionPage() {
           </View>
         )}
 
-        {currentTier === 'trial' && subscriptionStatus?.trialEndsAt && (
+        {isOnTrial && subscriptionStatus?.trialEndsAt && (
           <View style={[styles.trialBanner, isDark && styles.trialBannerDark]}>
             <Feather name="clock" size={20} color="#92400E" />
             <View style={styles.trialBannerText}>
               <Text style={styles.trialBannerTitle}>Trial Active</Text>
               <Text style={styles.trialBannerSubtitle}>
-                Your business trial ends {formatDate(subscriptionStatus.trialEndsAt)}.
+                {typeof subscriptionStatus.daysRemaining === 'number'
+                  ? `${subscriptionStatus.daysRemaining} day${subscriptionStatus.daysRemaining === 1 ? '' : 's'} left — trial ends ${formatDate(subscriptionStatus.trialEndsAt)}.`
+                  : `Your trial ends ${formatDate(subscriptionStatus.trialEndsAt)}.`}
               </Text>
             </View>
           </View>

@@ -2455,9 +2455,12 @@ function BillingTabContent() {
 
   // Fetch billing status
   const { data: billingStatus, isLoading: billingLoading } = useQuery<{
-    tier: 'free' | 'pro' | 'team' | 'business';
+    tier: 'free' | 'pro' | 'team' | 'business' | 'trial';
     status: 'active' | 'past_due' | 'canceled' | 'none' | 'trialing';
+    isTrial?: boolean;
+    trialEndsAt?: string;
     currentPeriodEnd?: string;
+    daysRemaining?: number;
     cancelAtPeriodEnd?: boolean;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
@@ -2672,16 +2675,20 @@ function BillingTabContent() {
   const isTeam = billingStatus?.tier === 'team';
   const isBusiness = billingStatus?.tier === 'business';
   const hasPaidPlan = isPro || isTeam || isBusiness;
-  const isTrialing = billingStatus?.status === 'trialing';
+  const isTrialing = billingStatus?.isTrial === true || billingStatus?.status === 'trialing';
   const isCanceled = billingStatus?.cancelAtPeriodEnd === true;
   const periodEnd = billingStatus?.currentPeriodEnd ? new Date(billingStatus.currentPeriodEnd) : null;
-  
-  // For trials, use trialEndDate from business settings (more accurate than currentPeriodEnd)
-  const trialEndDate = businessSettings?.trialEndDate 
-    ? new Date(businessSettings.trialEndDate as string) 
-    : null;
+
+  // Prefer the trial end from the live billing status, falling back to business settings.
+  const trialEndDate = billingStatus?.trialEndsAt
+    ? new Date(billingStatus.trialEndsAt)
+    : (businessSettings?.trialEndDate ? new Date(businessSettings.trialEndDate as string) : null);
   // Use trial end date when trialing, otherwise use period end
   const effectiveEndDate = isTrialing && trialEndDate ? trialEndDate : periodEnd;
+  const daysRemaining = billingStatus?.daysRemaining ?? (effectiveEndDate
+    ? Math.max(0, Math.ceil((effectiveEndDate.getTime() - Date.now()) / 86_400_000))
+    : null);
+  const fmtDate = (d: Date) => d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
     <TabsContent value="billing" className="space-y-6">
@@ -2713,9 +2720,11 @@ function BillingTabContent() {
                     <p className="text-sm text-muted-foreground">
                       {hasPaidPlan
                         ? isTrialing
-                          ? 'Trial active — all paid features unlocked'
+                          ? (daysRemaining !== null
+                              ? `Free trial — ${daysRemaining} day${daysRemaining === 1 ? '' : 's'} left`
+                              : 'Free trial active — all paid features unlocked')
                           : isCanceled
-                            ? 'Cancels at period end'
+                            ? (effectiveEndDate ? `Cancels on ${fmtDate(effectiveEndDate)}` : 'Cancels at period end')
                             : isBusiness
                               ? `$${businessMonthly}/month (up to 15 team members)`
                               : isTeam
@@ -2736,9 +2745,9 @@ function BillingTabContent() {
                   ) : (
                     <Badge variant="secondary">Free</Badge>
                   )}
-                  {effectiveEndDate && !isTrialing && (
+                  {effectiveEndDate && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {isCanceled ? 'Ends' : 'Renews'}: {effectiveEndDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {isCanceled ? 'Ends' : isTrialing ? 'Billing starts' : 'Renews'}: {fmtDate(effectiveEndDate)}
                     </p>
                   )}
                 </div>

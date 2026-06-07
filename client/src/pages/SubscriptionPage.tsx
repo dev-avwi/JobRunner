@@ -40,6 +40,8 @@ import { useLocation } from "wouter";
 interface SubscriptionStatus {
   tier: 'free' | 'trial' | 'pro' | 'team' | 'business';
   status: string;
+  isTrial?: boolean;
+  daysRemaining?: number | null;
   trialEndsAt: string | null;
   nextBillingDate: string | null;
   cancelAtPeriodEnd: boolean;
@@ -276,7 +278,8 @@ export default function SubscriptionPage() {
     return status.tier === tierId || (tierId === 'free' && status.tier === 'free');
   };
 
-  const hasActiveSubscription = status && (status.tier === 'pro' || status.tier === 'team' || status.tier === 'business' || status.tier === 'trial');
+  const isOnTrial = !!status && (status.isTrial === true || status.status === 'trialing' || status.tier === 'trial');
+  const hasActiveSubscription = status && (status.tier === 'pro' || status.tier === 'team' || status.tier === 'business' || isOnTrial);
   const hasPaidPlan = hasActiveSubscription || status?.isBeta;
 
   if (statusLoading) {
@@ -345,7 +348,7 @@ export default function SubscriptionPage() {
                     <Crown className="w-4 h-4 text-primary" />
                   ) : (status?.tier === 'team') ? (
                     <Users className="w-4 h-4 text-primary" />
-                  ) : (status?.tier === 'pro' || status?.tier === 'trial') ? (
+                  ) : (status?.tier === 'pro' || isOnTrial) ? (
                     <Crown className="w-4 h-4 text-primary" />
                   ) : (
                     <Zap className="w-4 h-4 text-muted-foreground" />
@@ -353,7 +356,7 @@ export default function SubscriptionPage() {
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Plan</span>
                 </div>
                 <p className="font-semibold capitalize">
-                  {status?.tier === 'trial' ? 'Pro (Trial)' : status?.tier || 'Free'} Plan
+                  {(status?.tier && status.tier !== 'free' ? status.tier : 'Free')} Plan{isOnTrial ? ' (Trial)' : ''}
                 </p>
                 {status?.isBeta && (
                   <Badge variant="outline" className="mt-1 border-green-400 text-green-600 bg-green-50 text-xs">
@@ -524,10 +527,10 @@ export default function SubscriptionPage() {
                           ) : (
                             <Zap className="w-4 h-4 mr-2" />
                           )}
-                          {status?.tier === 'trial' ? 'Upgrade Now' : 'Start 7-Day Free Trial'}
+                          {isOnTrial ? 'Upgrade Now' : 'Start 7-Day Free Trial'}
                         </Button>
                         <p className="text-xs text-center text-muted-foreground">
-                          {status?.tier === 'trial' ? 'Upgrade your subscription' : 'No credit card required to start'}
+                          {isOnTrial ? 'Upgrade your subscription' : 'No credit card required to start'}
                         </p>
                       </>
                     );

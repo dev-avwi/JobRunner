@@ -5211,7 +5211,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         tier: status.tier,
         status: status.status,
-        trialEndsAt: user?.trialEndsAt || null,
+        isTrial: status.isTrial || false,
+        daysRemaining: status.daysRemaining ?? null,
+        trialEndsAt: status.trialEndsAt || user?.trialEndsAt || null,
         nextBillingDate: status.currentPeriodEnd || null,
         cancelAtPeriodEnd: status.cancelAtPeriodEnd || false,
         subscriptionSource: user?.subscriptionSource || null,

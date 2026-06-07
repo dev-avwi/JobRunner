@@ -14,8 +14,11 @@ export interface CheckoutSessionResult {
 
 export interface SubscriptionStatus {
   tier: 'free' | 'pro' | 'team' | 'business' | 'trial';
-  status: 'active' | 'past_due' | 'canceled' | 'none';
+  status: 'active' | 'past_due' | 'canceled' | 'trialing' | 'none';
+  isTrial?: boolean;
+  trialEndsAt?: Date;
   currentPeriodEnd?: Date;
+  daysRemaining?: number; // Days until trial ends (if trialing) or period renews/ends
   cancelAtPeriodEnd?: boolean;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
@@ -663,80 +666,103 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
     return { tier: 'free', status: 'none' };
   }
 
+  const subscriptionId = businessSettings?.stripeSubscriptionId;
+  const seatCount = (businessSettings as any)?.seatCount || 0;
+  const customerId = businessSettings?.stripeCustomerId || undefined;
+
+  const daysUntil = (d?: Date | null): number | undefined =>
+    d ? Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86_400_000)) : undefined;
+
+  // Prefer authoritative LIVE Stripe state whenever a subscription exists. This
+  // correctly reports a trial (status 'trialing') with its REAL tier, the
+  // cancel-at-period-end flag, and the days remaining — instead of the old
+  // ambiguous `tier: 'trial'` shortcut that the UI couldn't render.
+  if (stripe && subscriptionId) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
+
+      const subscriptionTier = subscription.metadata?.tier || user.subscriptionTier;
+      const isTrialing = subscription.status === 'trialing';
+      const isActive = subscription.status === 'active' || isTrialing;
+
+      let tier: 'free' | 'pro' | 'team' | 'business' = 'free';
+      if (isActive) {
+        if (subscriptionTier === 'business') tier = 'business';
+        else if (subscriptionTier === 'team') tier = 'team';
+        else tier = 'pro';
+      }
+
+      const liveStatus = subscription.status as string;
+      const storedStatus = businessSettings?.subscriptionStatus;
+      const storedTier = user.subscriptionTier;
+
+      if (liveStatus !== storedStatus || tier !== storedTier) {
+        try {
+          if (liveStatus !== storedStatus) {
+            await storage.updateBusinessSettings(userId, { subscriptionStatus: liveStatus } as any);
+          }
+          if (tier !== storedTier) {
+            await storage.updateUser(userId, { subscriptionTier: tier } as any);
+          }
+          console.log(`[BillingSync] Persisted live Stripe state for ${userId}: status=${liveStatus} (was ${storedStatus}), tier=${tier} (was ${storedTier})`);
+        } catch (syncErr) {
+          console.error('[BillingSync] Failed to persist Stripe state:', syncErr);
+        }
+      }
+
+      const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : undefined;
+      const periodEnd = subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000)
+        : undefined;
+      const endRef = isTrialing && trialEnd ? trialEnd : periodEnd;
+
+      return {
+        tier,
+        status: liveStatus as SubscriptionStatus['status'],
+        isTrial: isTrialing,
+        trialEndsAt: isTrialing ? trialEnd : undefined,
+        currentPeriodEnd: periodEnd,
+        daysRemaining: daysUntil(endRef),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
+        seatCount: (tier === 'team' || tier === 'business') ? seatCount : undefined,
+      };
+    } catch (error: unknown) {
+      console.error('Error fetching subscription:', error);
+      // Fall through to the local fallbacks below.
+    }
+  }
+
+  // Fallback: local trial markers (no Stripe subscription on file, or the
+  // Stripe lookup failed). Report the REAL tier being trialed, not 'trial'.
   if (user.trialStatus === 'active' && user.trialEndsAt) {
     const trialEnd = new Date(user.trialEndsAt);
     if (trialEnd > new Date()) {
+      const stored = user.subscriptionTier as string | undefined;
+      const tier: 'pro' | 'team' | 'business' =
+        stored === 'business' ? 'business' : stored === 'team' ? 'team' : 'pro';
       return {
-        tier: 'trial',
-        status: 'active',
+        tier,
+        status: 'trialing',
+        isTrial: true,
+        trialEndsAt: trialEnd,
         currentPeriodEnd: trialEnd,
+        daysRemaining: daysUntil(trialEnd),
+        stripeCustomerId: customerId,
+        seatCount: (tier === 'team' || tier === 'business') ? seatCount : undefined,
       };
     }
   }
 
-  const subscriptionId = businessSettings?.stripeSubscriptionId;
-  const seatCount = (businessSettings as any)?.seatCount || 0;
-
-  if (!stripe || !subscriptionId) {
-    const tier = (user.subscriptionTier as 'free' | 'pro' | 'team' | 'business') || 'free';
-    return {
-      tier,
-      status: tier !== 'free' ? 'active' : 'none',
-      stripeCustomerId: businessSettings?.stripeCustomerId || undefined,
-      seatCount: (tier === 'team' || tier === 'business') ? seatCount : undefined,
-    };
-  }
-
-  try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
-    
-    const subscriptionTier = subscription.metadata?.tier || user.subscriptionTier;
-    const isActive = subscription.status === 'active' || subscription.status === 'trialing';
-    
-    let tier: 'free' | 'pro' | 'team' | 'business' = 'free';
-    if (isActive) {
-      if (subscriptionTier === 'business') tier = 'business';
-      else if (subscriptionTier === 'team') tier = 'team';
-      else tier = 'pro';
-    }
-
-    const liveStatus = subscription.status as string;
-    const storedStatus = businessSettings?.subscriptionStatus;
-    const storedTier = user.subscriptionTier;
-
-    if (liveStatus !== storedStatus || tier !== storedTier) {
-      try {
-        if (liveStatus !== storedStatus) {
-          await storage.updateBusinessSettings(userId, { subscriptionStatus: liveStatus } as any);
-        }
-        if (tier !== storedTier) {
-          await storage.updateUser(userId, { subscriptionTier: tier } as any);
-        }
-        console.log(`[BillingSync] Persisted live Stripe state for ${userId}: status=${liveStatus} (was ${storedStatus}), tier=${tier} (was ${storedTier})`);
-      } catch (syncErr) {
-        console.error('[BillingSync] Failed to persist Stripe state:', syncErr);
-      }
-    }
-
-    return {
-      tier,
-      status: liveStatus as 'active' | 'past_due' | 'canceled',
-      currentPeriodEnd: new Date((subscription.current_period_end || 0) * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      stripeCustomerId: businessSettings?.stripeCustomerId || undefined,
-      stripeSubscriptionId: subscriptionId,
-      seatCount: (tier === 'team' || tier === 'business') ? seatCount : undefined,
-    };
-  } catch (error: unknown) {
-    console.error('Error fetching subscription:', error);
-    const tier = (user.subscriptionTier as 'free' | 'pro' | 'team' | 'business') || 'free';
-    return {
-      tier,
-      status: 'none',
-      stripeCustomerId: businessSettings?.stripeCustomerId || undefined,
-      seatCount: (tier === 'team' || tier === 'business') ? seatCount : undefined,
-    };
-  }
+  // Fallback: stored tier (no live data available).
+  const tier = (user.subscriptionTier as 'free' | 'pro' | 'team' | 'business') || 'free';
+  return {
+    tier,
+    status: tier !== 'free' ? 'active' : 'none',
+    stripeCustomerId: customerId,
+    seatCount: (tier === 'team' || tier === 'business') ? seatCount : undefined,
+  };
 }
 
 export async function cancelSubscription(userId: string): Promise<{ success: boolean; error?: string }> {
