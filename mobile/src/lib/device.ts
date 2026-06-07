@@ -19,24 +19,29 @@ export function isTablet(): boolean {
   if (isPad) {
     return true;
   }
-  
-  // Use screen dimensions (more reliable than window for split view/zoom)
+
+  if (Platform.OS === 'android') {
+    // On Android foldables (Z Fold, Pixel Fold) the 'screen' dimension keeps
+    // reporting the larger physical *inner* display even after you fold back to
+    // the small outer/cover display. A Math.max(screen, window) check therefore
+    // stays stuck on the tablet/sidebar layout when folding back to portrait.
+    // The live 'window' dimensions track the currently active display, so use
+    // those alone: unfolded → inner display (large) → tablet/sidebar; folded →
+    // outer display (small) → phone layout.
+    const { width, height } = Dimensions.get('window');
+    return Math.min(width, height) >= TABLET_MIN_DIMENSION;
+  }
+
+  // iOS (non-iPad): 'screen' is more reliable than 'window' for split view/zoom,
+  // so use the larger of screen/window min-dimension.
   const { width: screenWidth, height: screenHeight } = Dimensions.get('screen');
   const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
-  
-  // Use the larger of screen or window width (min of w/h for portrait mode check)
   const effectiveWidth = Math.max(
     Math.min(screenWidth, screenHeight),
     Math.min(windowWidth, windowHeight)
   );
 
-  // Detect via min-dimension threshold. On a Z Fold while folded the inner
-  // display is not active so window.width returns the small outer width — we
-  // correctly fall back to phone layout. When unfolded both screen and window
-  // dimensions report the inner display.
-  const isLargeScreen = effectiveWidth >= TABLET_MIN_DIMENSION;
-
-  return isLargeScreen;
+  return effectiveWidth >= TABLET_MIN_DIMENSION;
 }
 
 // Reactive version of isTablet() — subscribes to Dimensions changes so layouts
