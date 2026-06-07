@@ -1,6 +1,6 @@
 import { db } from './storage';
 import { users, jobs, quotes, invoices, clients } from '@shared/schema';
-import { eq, sql, and, gt, isNull, isNotNull, count } from 'drizzle-orm';
+import { eq, sql, and, gt, isNull, isNotNull, count, inArray } from 'drizzle-orm';
 import { sendSystemEmail } from './emailService';
 import { logger } from './logger';
 import { getProductionBaseUrl } from './urlHelper';
@@ -261,33 +261,52 @@ async function getUsersWithMilestones(): Promise<UserWithMilestones[]> {
       )
     );
 
-  const result: UserWithMilestones[] = [];
+  // Filter out demo/admin accounts before any per-user work
+  const candidates = allUsers.filter(
+    (u) => u.email && !u.email.includes('demo@') && !u.email.includes('admin@avweb')
+  );
 
-  for (const user of allUsers) {
-    if (!user.email || user.email.includes('demo@') || user.email.includes('admin@avweb')) continue;
+  if (candidates.length === 0) return [];
 
-    const [jobResult] = await db.select({ value: count() }).from(jobs).where(eq(jobs.userId, user.id));
-    const [quoteResult] = await db.select({ value: count() }).from(quotes).where(eq(quotes.userId, user.id));
-    const [invoiceResult] = await db.select({ value: count() }).from(invoices).where(eq(invoices.userId, user.id));
-    const [clientResult] = await db.select({ value: count() }).from(clients).where(eq(clients.userId, user.id));
+  // Aggregate all counts in 4 grouped queries instead of 4 queries PER user.
+  // The previous N+1 pattern ran hundreds of sequential queries and starved the
+  // Neon connection pool, causing "Connection terminated due to connection timeout".
+  const userIds = candidates.map((u) => u.id);
 
-    result.push({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      createdAt: user.createdAt,
-      lifecycleEmailsSent: (user.lifecycleEmailsSent as LifecycleEmailsSent) ?? {},
-      lastLifecycleEmailAt: user.lastLifecycleEmailAt,
-      subscriptionTier: user.subscriptionTier,
-      jobCount: jobResult?.value || 0,
-      quoteCount: quoteResult?.value || 0,
-      invoiceCount: invoiceResult?.value || 0,
-      clientCount: clientResult?.value || 0,
-    });
-  }
+  const countByUser = async (table: typeof jobs | typeof quotes | typeof invoices | typeof clients) => {
+    const rows = await db
+      .select({ userId: table.userId, value: count() })
+      .from(table)
+      .where(inArray(table.userId, userIds))
+      .groupBy(table.userId);
+    const map = new Map<string, number>();
+    for (const row of rows) {
+      if (row.userId) map.set(row.userId, Number(row.value) || 0);
+    }
+    return map;
+  };
 
-  return result;
+  const [jobCounts, quoteCounts, invoiceCounts, clientCounts] = await Promise.all([
+    countByUser(jobs),
+    countByUser(quotes),
+    countByUser(invoices),
+    countByUser(clients),
+  ]);
+
+  return candidates.map((user) => ({
+    id: user.id,
+    email: user.email!,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    createdAt: user.createdAt,
+    lifecycleEmailsSent: (user.lifecycleEmailsSent as LifecycleEmailsSent) ?? {},
+    lastLifecycleEmailAt: user.lastLifecycleEmailAt,
+    subscriptionTier: user.subscriptionTier,
+    jobCount: jobCounts.get(user.id) || 0,
+    quoteCount: quoteCounts.get(user.id) || 0,
+    invoiceCount: invoiceCounts.get(user.id) || 0,
+    clientCount: clientCounts.get(user.id) || 0,
+  }));
 }
 
 async function sendLifecycleEmail(user: UserWithMilestones, emailConfig: typeof LIFECYCLE_EMAILS[0]): Promise<boolean> {
