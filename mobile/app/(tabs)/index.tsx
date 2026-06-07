@@ -40,6 +40,7 @@ import UsageLimitBanner from '../../src/components/UsageLimitBanner';
 import { SubcontractorDashboard } from '../../src/components/SubcontractorDashboard';
 import { showToast } from '../../src/lib/toast';
 import { Button } from '../../src/components/ui/Button';
+import LiveActivity from '../../modules/LiveActivity/src';
 
 interface WeatherData {
   temperature: number;
@@ -803,6 +804,7 @@ function TimeTrackingWidget() {
                 await offlineStorage.discardLocalTimeEntry(activeTimer.id);
                 useTimeTrackingStore.setState({ activeTimer: null });
                 fetchActiveTimer();
+                LiveActivity.end().catch(() => {});
                 showToast({ type: 'success', message: 'Timer Cancelled', description: 'Time was not recorded' });
                 loadDashboardData();
                 setIsCancelling(false);
@@ -817,9 +819,10 @@ function TimeTrackingWidget() {
 
               const { default: api } = await import('../../src/lib/api');
               await api.delete(`/api/time-entries/${activeTimer.id}`);
-              
+
               // Refresh from store to clear activeTimer
               fetchActiveTimer();
+              LiveActivity.end().catch(() => {});
               showToast({ type: 'success', message: 'Timer Cancelled', description: 'Time was not recorded' });
               loadDashboardData();
             } catch (error: any) {
