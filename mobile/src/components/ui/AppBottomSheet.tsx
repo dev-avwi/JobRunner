@@ -18,7 +18,7 @@ import {
   ScrollView,
   ScrollViewProps,
   FlatList,
-  Dimensions,
+  useWindowDimensions,
   Animated,
   PanResponder,
   Keyboard,
@@ -112,7 +112,11 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
 
-    const screenHeight = Dimensions.get('window').height;
+    // Reactive window dims — Dimensions.get('window') is read once and goes
+    // stale on Android foldables (fold/unfold changes the active display),
+    // leaving the sheet sized to the wrong screen. useWindowDimensions tracks
+    // the live active display.
+    const { width: screenWidth, height: screenHeight } = useWindowDimensions();
     const maxSheetHeight = screenHeight * 0.92;
     // autoHeight defaults to true UNLESS snapPoints is provided.
     const useAutoHeight = autoHeight ?? !snapPoints;
@@ -293,6 +297,10 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
 
     return (
       <Modal
+        // Remount on dimension change so the native Android dialog window
+        // re-measures after a foldable fold/unfold; otherwise it can keep a
+        // stale (too-short) window and clip the sheet to just its header.
+        key={`${screenWidth}x${screenHeight}`}
         visible={mounted}
         transparent
         animationType="none"
@@ -360,9 +368,19 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
                 </View>
               )}
 
-              {scrollable ? (
+              {scrollable || useAutoHeight ? (
+                // Auto-height non-scroll sheets (ActionSheet / QuickActionSheet)
+                // also use a ScrollView with flexShrink so their rows stay
+                // reachable (scroll) instead of being hard-clipped by the
+                // sheet's overflow:hidden when vertical space is squeezed.
                 <ScrollView
-                  style={useAutoHeight ? undefined : { flex: 1, backgroundColor: colors.card }}
+                  style={
+                    scrollable
+                      ? useAutoHeight
+                        ? undefined
+                        : { flex: 1, backgroundColor: colors.card }
+                      : { flexShrink: 1, backgroundColor: colors.card }
+                  }
                   contentContainerStyle={innerContentStyle}
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
@@ -375,7 +393,7 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
                   style={[
                     innerContentStyle,
                     { backgroundColor: colors.card },
-                    !useAutoHeight && { flex: 1 },
+                    { flex: 1 },
                   ]}
                 >
                   {children}
