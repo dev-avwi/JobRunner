@@ -5243,6 +5243,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/subscription/reconcile - Self-healing sync after returning from
+  // Stripe checkout. The subscription webhook can be delayed or (for new trials)
+  // not delivered, so the user can land back on the app still showing "Free".
+  // This pulls the live subscription straight from Stripe by customer id, saves
+  // its id, then lets getSubscriptionStatus persist the correct tier.
+  app.post("/api/subscription/reconcile", requireAuth, ownerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { getUncachableStripeClient } = await import('./stripeClient');
+      const { getSubscriptionStatus } = await import('./billingService');
+      const stripe = await getUncachableStripeClient();
+      const businessSettings = await storage.getBusinessSettings(userId);
+      const customerId = businessSettings?.stripeCustomerId;
+
+      let reconciled = false;
+      if (stripe && customerId) {
+        const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 10 });
+        // Most recent first so multi-subscription histories pick the latest.
+        const sorted = [...subs.data].sort((a: any, b: any) => (b.created || 0) - (a.created || 0));
+        const live = sorted.find((s: any) => s.status === 'trialing' || s.status === 'active')
+          || sorted.find((s: any) => s.status === 'past_due');
+        if (live && businessSettings?.stripeSubscriptionId !== live.id) {
+          await storage.updateBusinessSettings(userId, {
+            stripeSubscriptionId: live.id,
+            subscriptionStatus: live.status,
+          } as any);
+          reconciled = true;
+        }
+      }
+
+      // getSubscriptionStatus reads the now-saved subscription id and persists
+      // the live tier (e.g. team/business) back onto the user record.
+      const status = await getSubscriptionStatus(userId);
+      res.json({ tier: status.tier, status: status.status, reconciled });
+    } catch (error: any) {
+      console.error('Error reconciling subscription:', error);
+      res.status(500).json({ error: error.message || 'Failed to reconcile subscription' });
+    }
+  });
+
   // POST /api/subscription/create-checkout - Creates Stripe checkout session with trial
   // During beta: Skip Stripe and grant free access directly
   app.post("/api/subscription/create-checkout", requireAuth, async (req: any, res) => {

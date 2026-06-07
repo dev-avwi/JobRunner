@@ -1,0 +1,10 @@
+---
+name: Stripe trial/subscription tier not updating after checkout
+description: Why a started Stripe trial can still show "Free", and the webhook-independent reconcile fix.
+---
+
+After a user completes a Stripe subscription/trial checkout the app can still show the old (free) tier.
+
+**Why:** the live tier is only trustworthy in `getSubscriptionStatus` (server/billingService.ts) AFTER `businessSettings.stripeSubscriptionId` is saved — only then does it retrieve the subscription and self-persist `user.subscriptionTier` from `subscription.metadata.tier`. Saving that id depends on the webhook, but the active webhook path (`server/webhookHandlers.ts` via `WebhookHandlers.processWebhook`) does NOT handle `customer.subscription.created`, and its `customer.subscription.updated` case writes only `subscriptionStatus` — never the id or tier. `checkout.session.completed` there only handles one-off invoice payments. The correct logic in `billingService.handleSubscriptionWebhook` is dead code (only `server/webhooks.ts`, which is not wired up, calls it). The managed webhook also only subscribes to `updated`/`deleted` (not `created`), and registration is skipped entirely on ephemeral/dev domains.
+
+**How to apply:** don't rely on the webhook to set the tier. The customer id IS persisted at checkout creation (`getOrCreateStripeCustomer` → `businessSettings.stripeCustomerId`). The webhook-independent fix is a reconcile endpoint (`POST /api/subscription/reconcile`, requireAuth + ownerOnly): list the customer's Stripe subscriptions, pick the most-recent trialing/active/past_due one, save its id to `businessSettings.stripeSubscriptionId`, then return `getSubscriptionStatus()` which self-syncs the tier. The frontend (SubscriptionPage) calls it on the `?success=true` return from the Stripe `success_url` (`/settings?tab=billing&success=true`). If you instead "fix the webhook", you must add `customer.subscription.created` to BOTH the enabled_events list and a handler that persists id + tier.

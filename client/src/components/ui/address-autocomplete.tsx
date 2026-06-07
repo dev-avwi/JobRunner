@@ -2,6 +2,17 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { MapPin, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getSessionToken } from "@/lib/queryClient";
+
+// The address search endpoints require auth. On the deployed domain the app
+// authenticates with the Bearer session token (cookies aren't reliably sent),
+// so a bare fetch() 401s and no suggestions ever appear. Attach the token.
+function authFetch(url: string): Promise<Response> {
+  const token = getSessionToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return fetch(url, { headers, credentials: "include" });
+}
 
 interface AddressAutocompleteProps {
   value: string;
@@ -76,7 +87,7 @@ export default function AddressAutocomplete({
     setIsLoading(true);
     try {
       const encoded = encodeURIComponent(query);
-      const response = await fetch(`/api/address-search?q=${encoded}`);
+      const response = await authFetch(`/api/address-search?q=${encoded}`);
       lastFetchRef.current = Date.now();
       if (response.ok) {
         const data: AddressResult[] = await response.json();
@@ -126,7 +137,7 @@ export default function AddressAutocomplete({
 
     if (result.provider === "google" && result.place_id && onAddressSelect) {
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `/api/address-search/details?place_id=${result.place_id}`
         );
         if (res.ok) {

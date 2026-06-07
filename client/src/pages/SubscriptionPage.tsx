@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +153,36 @@ export default function SubscriptionPage() {
   const { data: status, isLoading: statusLoading } = useQuery<SubscriptionStatus>({
     queryKey: ['/api/subscription/status'],
   });
+
+  // After returning from Stripe checkout the webhook can be delayed, so the page
+  // may still show "Free". Reconcile straight from Stripe, then refresh.
+  const reconciledRef = useRef(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true' && !reconciledRef.current) {
+      reconciledRef.current = true;
+      (async () => {
+        try {
+          await apiRequest('POST', '/api/subscription/reconcile');
+          toast({
+            title: "Subscription updated",
+            description: "Your plan is now active.",
+          });
+        } catch {
+          toast({
+            title: "Almost there",
+            description: "Your payment went through. If your plan doesn't update shortly, please refresh.",
+          });
+        } finally {
+          queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
+        }
+      })();
+      // Clean the success flag out of the URL so a refresh doesn't re-run this.
+      params.delete('success');
+      const cleaned = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState({}, '', cleaned);
+    }
+  }, [toast]);
 
   const createCheckoutMutation = useMutation({
     mutationFn: async ({ tier }: { tier: string }) => {
