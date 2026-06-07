@@ -161,7 +161,7 @@ export const shadows = {
       shadowRadius: 2,
     },
     android: {
-      elevation: 1,
+      elevation: 0,
       shadowColor: '#1c2130',
     },
   }) as object,
@@ -173,7 +173,7 @@ export const shadows = {
       shadowRadius: 4,
     },
     android: {
-      elevation: 3,
+      elevation: 0,
       shadowColor: '#1c2130',
     },
   }) as object,
@@ -185,7 +185,7 @@ export const shadows = {
       shadowRadius: 8,
     },
     android: {
-      elevation: 6,
+      elevation: 0,
       shadowColor: '#1c2130',
     },
   }) as object,

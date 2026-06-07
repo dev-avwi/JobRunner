@@ -1651,6 +1651,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingBottom: spacing.sm,
     backgroundColor: colors.background,
   },
+  androidNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
   tabSection: {
     marginBottom: spacing.lg,
   },
@@ -5961,7 +5967,7 @@ export default function JobDetailScreen() {
       <View style={styles.loadingContainer}>
         <Stack.Screen
           options={{
-            headerShown: true,
+            headerShown: Platform.OS !== 'android',
             // The global <Header /> already consumes the status-bar inset, so on
             // Android this nested native header must NOT reserve it again (avoids
             // a phantom gap that pushes the job content too far down).
@@ -8982,7 +8988,7 @@ export default function JobDetailScreen() {
       <View style={styles.container}>
         <Stack.Screen 
         options={{
-          headerShown: true,
+          headerShown: Platform.OS !== 'android',
           // The global <Header /> already consumes the status-bar inset, so on
           // Android this nested native header must NOT reserve it again (avoids
           // a phantom gap that pushes the job content too far down).
@@ -9049,6 +9055,50 @@ export default function JobDetailScreen() {
 
       {/* Fixed Header */}
       <View style={styles.fixedHeader}>
+        {Platform.OS === 'android' && (
+          <View style={styles.androidNavRow}>
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ flexDirection: 'row', alignItems: 'center' }}
+            >
+              <Feather name="chevron-left" size={20} color={colors.primary} />
+              <Text style={{ fontSize: 16, color: colors.primary, marginLeft: -1 }}>Back</Text>
+            </Pressable>
+            {(() => {
+              const canEditTitle = isOwnerOrManager || isSoloOwner;
+              const canOpenActions = isOwnerOrManager || isSoloOwner || canDeleteJobs;
+              if (!canEditTitle && !canOpenActions) return null;
+              return (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  {canEditTitle && (
+                    <Pressable
+                      onPress={() => { setNewJobTitle(job.title); setShowRenameModal(true); }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
+                      testID="button-edit-header-android"
+                    >
+                      <Feather name="edit-2" size={18} color={colors.primary} />
+                    </Pressable>
+                  )}
+                  {canOpenActions && (
+                    <Pressable
+                      onPress={showJobActionsMenu}
+                      disabled={isCloningJob || isDeletingJob}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
+                      testID="button-job-actions-menu-android"
+                    >
+                      {(isCloningJob || isDeletingJob)
+                        ? <ActivityIndicator size="small" color={colors.primary} />
+                        : <Feather name="more-horizontal" size={18} color={colors.primary} />}
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })()}
+          </View>
+        )}
         <View style={styles.statusRow}>
           <StatusBadge status={job.status} />
           {(() => {

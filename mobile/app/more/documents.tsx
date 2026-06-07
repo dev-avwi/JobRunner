@@ -192,10 +192,10 @@ export default function DocumentsScreen() {
     fetchData();
   }, [fetchData]);
 
-  // Reset viewMode to list when switching to invoices/receipts (grid only works for quotes)
+  // Grid view is supported for quotes and invoices; receipts are list-only.
   // Also reset sort state to prevent stale data combinations
   useEffect(() => {
-    if (activeTab !== 'quotes') {
+    if (activeTab === 'receipts') {
       setViewMode('list');
     }
     // Reset to default sort when switching tabs
@@ -927,7 +927,7 @@ export default function DocumentsScreen() {
 }
 
 const createStyles = (colors: ThemeColors, contentWidth: number, responsivePadding: number = spacing.lg) => {
-  const GRID_CARD_WIDTH = (contentWidth - responsivePadding * 2 - CARD_GAP) / 2;
+  const GRID_CARD_WIDTH = '48%' as const;
   return StyleSheet.create({
   container: {
     flex: 1,

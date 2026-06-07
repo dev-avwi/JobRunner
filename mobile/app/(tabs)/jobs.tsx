@@ -2195,7 +2195,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.sm,
-    width: (contentWidth - horizontalPadding * 2 - spacing.sm) / 2,
+    width: '48%',
     borderWidth: 1,
     borderColor: colors.cardBorder,
     ...shadows.md,
