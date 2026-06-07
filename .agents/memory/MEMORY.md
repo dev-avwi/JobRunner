@@ -64,3 +64,4 @@
 - [Worker sidebar empty for unknown roles](mobile-sidebar-unknown-role-empty.md) — SidebarNav normalizedRole must fall back to 'staff' for authenticated non-owners with unrecognized roles, else filterSidebarItems strips the whole menu.
 - [One-trial-per-user enforcement](trial-abuse-prevention.md) — 7-day trial is once-per-user across ALL tiers; gate every trial-granting path with hasUsedTrial (DB markers + authoritative Stripe history, persists durable marker, fail-open).
 - [Stripe trial tier not syncing](stripe-trial-tier-not-syncing.md) — trial shows "Free" after checkout; active webhook never saves stripeSubscriptionId/tier; fix is reconcile-from-Stripe-by-customer-id on the success redirect, not the webhook.
+- [Mobile typecheck vs stale router types](mobile-typecheck-stale-router-types.md) — new mobile/app route fails tsc as TS2345 until expo dev server regenerates .expo/types/router.d.ts; boot expo briefly, dont cast to any.

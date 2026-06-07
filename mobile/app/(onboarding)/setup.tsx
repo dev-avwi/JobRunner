@@ -21,6 +21,8 @@ import { useAuthStore } from '../../src/lib/store';
 import { validateABN, formatABN } from '../../src/lib/format';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { OnboardingMagicScreen } from '../../src/components/OnboardingMagicScreen';
+import { OnboardingTour, hasCompletedOnboarding } from '../../src/components/OnboardingTour';
 
 const ONBOARDING_DRAFT_KEY = 'onboarding:owner-draft:v1';
 
@@ -107,6 +109,10 @@ export default function OnboardingSetupScreen() {
 
   const [demoDataSeeded, setDemoDataSeeded] = useState(false);
   const [hasHydratedDraft, setHasHydratedDraft] = useState(false);
+  const [showMagic, setShowMagic] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   const searchParams = useLocalSearchParams<{ resume?: string }>();
   const isResuming = searchParams?.resume === '1';
@@ -353,9 +359,26 @@ export default function OnboardingSetupScreen() {
   const handleOwnerComplete = async () => {
     const saved = await handleSaveBusinessSettings();
     if (!saved) return;
-    await markOnboardingComplete();
     clearOnboardingDraft();
-    setOwnerStep('complete');
+    // Fire-and-forget: seeding + completion run in the background while the
+    // magic screen plays its timed animation. We do NOT await here — the
+    // screen advances on its own timer regardless of network speed.
+    markOnboardingComplete();
+    setShowMagic(true);
+  };
+
+  const proceedToNotifications = () => {
+    router.replace('/(onboarding)/notifications-permission');
+  };
+
+  const handleMagicDone = async () => {
+    const tourSeen = await hasCompletedOnboarding();
+    if (!tourSeen) {
+      setShowMagic(false);
+      setShowTour(true);
+    } else {
+      proceedToNotifications();
+    }
   };
 
   const handleWorkerRedeem = async () => {
@@ -489,7 +512,7 @@ export default function OnboardingSetupScreen() {
   };
 
   const handleComplete = () => {
-    router.replace('/(tabs)');
+    proceedToNotifications();
   };
 
   const handleSkipOnboarding = () => {
@@ -1202,6 +1225,32 @@ export default function OnboardingSetupScreen() {
   const currentStep = getCurrentStep();
   const { current, total } = getStepCount();
 
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: total > 0 ? current / total : 0,
+      duration: 350,
+      useNativeDriver: false,
+    }).start();
+  }, [current, total]);
+
+  if (showMagic) {
+    return (
+      <OnboardingMagicScreen
+        firstName={user?.firstName}
+        businessName={businessData.businessName}
+        onDone={handleMagicDone}
+      />
+    );
+  }
+
+  if (showTour) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <OnboardingTour onComplete={proceedToNotifications} />
+      </View>
+    );
+  }
+
   if (isCheckingSettings) {
     return (
       <View style={[styles.loadingWrap, { backgroundColor: colors.background }]}>
@@ -1250,18 +1299,18 @@ export default function OnboardingSetupScreen() {
             )}
 
             {total > 1 && (
-              <View style={styles.dotsRow}>
-                {Array.from({ length: total }).map((_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.dot,
-                      i < current
-                        ? { backgroundColor: colors.primary }
-                        : { backgroundColor: colors.border },
-                    ]}
-                  />
-                ))}
+              <View style={styles.progressTrack}>
+                <Animated.View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: progressAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0%', '100%'],
+                      }),
+                    },
+                  ]}
+                />
               </View>
             )}
 
@@ -1329,15 +1378,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dotsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  progressTrack: {
+    flex: 1,
+    height: 5,
+    borderRadius: 3,
+    marginHorizontal: 16,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: colors.primary,
   },
 
   contentArea: {

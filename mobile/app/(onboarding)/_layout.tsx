@@ -14,6 +14,7 @@ export default function OnboardingLayout() {
       }}
     >
       <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="notifications-permission" options={{ gestureEnabled: false }} />
     </Stack>
   );
 }
