@@ -154,12 +154,20 @@ export default function RegisterScreen() {
           const api = (await import('../../src/lib/api')).default;
           await api.setToken(token);
           await checkAuth();
-          await resolvePostAuthRedirect();
+          if (isNewUser) {
+            router.replace('/(onboarding)/setup');
+          } else {
+            await resolvePostAuthRedirect();
+          }
         } else if (auth === 'success' || auth === 'google_success') {
           await checkAuth();
           const { isAuthenticated } = useAuthStore.getState();
           if (isAuthenticated) {
-            await resolvePostAuthRedirect();
+            if (isNewUser) {
+              router.replace('/(onboarding)/setup');
+            } else {
+              await resolvePostAuthRedirect();
+            }
           } else {
             Alert.alert('Error', 'Failed to complete sign-up. Please try again.');
           }
@@ -229,7 +237,11 @@ export default function RegisterScreen() {
         }
         
         await checkAuth();
-        await resolvePostAuthRedirect();
+        if (response.data?.isNewUser) {
+          router.replace('/(onboarding)/setup');
+        } else {
+          await resolvePostAuthRedirect();
+        }
       } else {
         if (__DEV__) console.log('🍎 No identity token received from Apple (register)');
         Alert.alert('Error', 'No identity token received from Apple. Please try again.');

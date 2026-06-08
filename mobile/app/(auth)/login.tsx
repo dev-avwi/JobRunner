@@ -100,7 +100,14 @@ export default function LoginScreen() {
       checkAuth().then(async () => {
         const { isAuthenticated: loggedIn } = useAuthStore.getState();
         if (loggedIn) {
-          await resolvePostAuthRedirect();
+          // Brand-new accounts must always go through the onboarding wizard,
+          // exactly like email signup — don't rely on the (possibly misclassified)
+          // onboardingCompleted flag for first-time OAuth users.
+          if (params.isNewUser === 'true') {
+            router.replace('/(onboarding)/setup');
+          } else {
+            await resolvePostAuthRedirect();
+          }
         }
       });
     }
@@ -214,12 +221,20 @@ export default function LoginScreen() {
           const api = (await import('../../src/lib/api')).default;
           await api.setToken(token);
           await checkAuth();
-          await resolvePostAuthRedirect();
+          if (isNewUser) {
+            router.replace('/(onboarding)/setup');
+          } else {
+            await resolvePostAuthRedirect();
+          }
         } else if (auth === 'success' || auth === 'google_success') {
           await checkAuth();
           const { isAuthenticated: loggedIn } = useAuthStore.getState();
           if (loggedIn) {
-            await resolvePostAuthRedirect();
+            if (isNewUser) {
+              router.replace('/(onboarding)/setup');
+            } else {
+              await resolvePostAuthRedirect();
+            }
           } else {
             Alert.alert('Error', 'Failed to complete sign-in. Please try again.');
           }
@@ -289,7 +304,11 @@ export default function LoginScreen() {
         }
         
         await checkAuth();
-        await resolvePostAuthRedirect();
+        if (response.data?.isNewUser) {
+          router.replace('/(onboarding)/setup');
+        } else {
+          await resolvePostAuthRedirect();
+        }
       } else {
         if (__DEV__) console.log('🍎 No identity token received from Apple');
         Alert.alert('Error', 'No identity token received from Apple. Please try again.');
