@@ -35,6 +35,7 @@ import { getAvatarColor } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { TrustBanner } from '../../src/components/ui/TrustBanner';
 import { OnboardingReminderBanner } from '../../src/components/ui/OnboardingReminderBanner';
+import { OnboardingSetupFailedBanner } from '../../src/components/ui/OnboardingSetupFailedBanner';
 import { useScrollToTop } from '../../src/contexts/ScrollContext';
 import UsageLimitBanner from '../../src/components/UsageLimitBanner';
 import { SubcontractorDashboard } from '../../src/components/SubcontractorDashboard';
@@ -3277,6 +3278,9 @@ function OwnerDashboardScreen() {
 
       {/* Onboarding skip reminder - shown until owner finishes business profile */}
       <OnboardingReminderBanner />
+
+      {/* Background setup failure - retryable if the magic-screen seed/complete failed */}
+      <OnboardingSetupFailedBanner />
 
       {/* Trust Banner - Dismissible */}
       <TrustBanner />

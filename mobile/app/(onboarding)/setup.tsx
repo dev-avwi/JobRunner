@@ -23,6 +23,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingMagicScreen } from '../../src/components/OnboardingMagicScreen';
 import { OnboardingTour, hasCompletedOnboarding } from '../../src/components/OnboardingTour';
+import { markOnboardingSetupFailed, clearOnboardingSetupFailure } from '../../src/lib/onboardingSetupStatus';
 
 const ONBOARDING_DRAFT_KEY = 'onboarding:owner-draft:v1';
 
@@ -341,18 +342,43 @@ export default function OnboardingSetupScreen() {
   };
 
   const markOnboardingComplete = async () => {
+    const userId = useAuthStore.getState().user?.id;
+    let seedFailed = false;
+    let completeFailed = false;
+
     try {
-      try {
-        await api.post('/api/onboarding/seed-demo-data', {});
+      const seedRes = await api.post('/api/onboarding/seed-demo-data', {});
+      if (seedRes?.error) {
+        seedFailed = true;
+        if (__DEV__) console.log('Demo data seeding failed:', seedRes.error);
+      } else {
         setDemoDataSeeded(true);
-      } catch (error) {
-        if (__DEV__) console.log('Demo data seeding skipped:', error);
       }
-      
-      await api.post('/api/onboarding/complete', {});
-      await fetchBusinessSettings();
     } catch (error) {
+      seedFailed = true;
+      if (__DEV__) console.log('Demo data seeding failed:', error);
+    }
+
+    try {
+      const completeRes = await api.post('/api/onboarding/complete', {});
+      if (completeRes?.error) {
+        completeFailed = true;
+        console.error('Failed to mark onboarding complete:', completeRes.error);
+      } else {
+        await fetchBusinessSettings();
+      }
+    } catch (error) {
+      completeFailed = true;
       console.error('Failed to mark onboarding complete:', error);
+    }
+
+    // Persist the outcome so the dashboard can show a non-blocking, retryable
+    // banner if the background setup failed (the magic screen already advanced
+    // the owner into the app without waiting on these calls).
+    if (seedFailed || completeFailed) {
+      await markOnboardingSetupFailed(userId, { seedFailed, completeFailed });
+    } else {
+      await clearOnboardingSetupFailure(userId);
     }
   };
 
