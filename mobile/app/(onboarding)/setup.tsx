@@ -232,16 +232,14 @@ export default function OnboardingSetupScreen() {
             setSelectedRole('owner');
             setOwnerStep('trade');
           } else {
-            // Brand new owner signup: skip the role chooser and go
-            // straight to the business setup step. Worker/sub joiners
-            // can switch from the business step via the link there.
-            setSelectedRole('owner');
-            setOwnerStep('business');
+            // Brand new signup: show the role chooser first so the user
+            // can pick owner / worker / subcontractor for themselves
+            // instead of being forced down the owner path.
+            setSelectedRole(null);
           }
         } else {
-          // No settings record yet — fresh email signup.
-          setSelectedRole('owner');
-          setOwnerStep('business');
+          // No settings record yet — fresh signup: show the role chooser.
+          setSelectedRole(null);
         }
       } catch (error) {
         console.error('Error checking onboarding status:', error);
