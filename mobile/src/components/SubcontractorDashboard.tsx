@@ -20,6 +20,7 @@ import { api } from '../lib/api';
 import { formatCurrency as formatCurrencyUtil } from '../lib/format';
 import { useTheme, ThemeColors, colorWithOpacity } from '../lib/theme';
 import { AppBottomSheet } from './ui/AppBottomSheet';
+import { OnboardingSetupFailedBanner } from './ui/OnboardingSetupFailedBanner';
 import { spacing, radius, shadows, typography, pageShell, usePageShell } from '../lib/design-tokens';
 import { useScrollToTop } from '../contexts/ScrollContext';
 
@@ -441,6 +442,9 @@ export function SubcontractorDashboard() {
             </Text>
           </View>
         </View>
+
+        {/* Background setup failure - retryable if the onboarding-complete call failed */}
+        <OnboardingSetupFailedBanner />
 
         {/* Availability Toggle */}
         <View style={styles.availabilityCard}>

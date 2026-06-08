@@ -382,6 +382,26 @@ export default function OnboardingSetupScreen() {
     }
   };
 
+  // Marks onboarding complete for joiners (workers/subcontractors). This runs
+  // inline (unlike the owner magic path), but the call previously swallowed all
+  // errors with .catch(() => {}). We now record a failure so the dashboard
+  // banner can offer a non-blocking retry after the joiner lands in the app.
+  const completeOnboardingTracked = async () => {
+    const userId = useAuthStore.getState().user?.id;
+    let completeFailed = false;
+    try {
+      const res = await api.post('/api/onboarding/complete', {});
+      if (res?.error) completeFailed = true;
+    } catch {
+      completeFailed = true;
+    }
+    if (completeFailed) {
+      await markOnboardingSetupFailed(userId, { seedFailed: false, completeFailed: true });
+    } else {
+      await clearOnboardingSetupFailure(userId);
+    }
+  };
+
   const handleOwnerComplete = async () => {
     const saved = await handleSaveBusinessSettings();
     if (!saved) return;
@@ -428,7 +448,7 @@ export default function OnboardingSetupScreen() {
       if (response.error) {
         const errorMsg = typeof response.error === 'string' ? response.error : '';
         if (errorMsg.toLowerCase().includes('already a member')) {
-          await api.post('/api/onboarding/complete', {}).catch(() => {});
+          await completeOnboardingTracked();
           await fetchBusinessSettings();
           setWorkerStep('complete');
           return;
@@ -444,14 +464,14 @@ export default function OnboardingSetupScreen() {
         });
       }
 
-      await api.post('/api/onboarding/complete', {}).catch(() => {});
+      await completeOnboardingTracked();
       await fetchBusinessSettings();
       
       setWorkerStep('complete');
     } catch (error: any) {
       const errorMsg = error?.message || error?.error || '';
       if (typeof errorMsg === 'string' && errorMsg.toLowerCase().includes('already a member')) {
-        await api.post('/api/onboarding/complete', {}).catch(() => {});
+        await completeOnboardingTracked();
         await fetchBusinessSettings();
         setWorkerStep('complete');
         return;
@@ -529,7 +549,7 @@ export default function OnboardingSetupScreen() {
 
   const handleSubPrivacyAcknowledge = async () => {
     try {
-      await api.post('/api/onboarding/complete', {}).catch(() => {});
+      await completeOnboardingTracked();
       await fetchBusinessSettings();
       setSubStep('complete');
     } catch (error) {

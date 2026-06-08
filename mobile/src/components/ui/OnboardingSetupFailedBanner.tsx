@@ -12,28 +12,25 @@ import {
   OnboardingSetupFailure,
 } from '../../lib/onboardingSetupStatus';
 
-// Surfaces a non-blocking, retryable message when the owner magic setup screen's
-// background seed/complete step failed. The owner is already in the app by the
-// time this shows, so it must never block — just offer a one-tap retry.
+// Surfaces a non-blocking, retryable message when a user's background onboarding
+// step failed. For owners this is the magic setup screen's seed/complete step;
+// for joiners (workers/subcontractors) it's the inline onboarding-complete call.
+// The user is already in the app by the time this shows, so it must never
+// block — just offer a one-tap retry.
 export function OnboardingSetupFailedBanner() {
   const { colors } = useTheme();
   const userId = useAuthStore((s) => s.user?.id);
-  const isOwner = useAuthStore((s) => s.isOwner)();
   const fetchBusinessSettings = useAuthStore((s) => s.fetchBusinessSettings);
   const [failure, setFailure] = useState<OnboardingSetupFailure | null>(null);
   const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    if (!isOwner) {
-      setFailure(null);
-      return;
-    }
     getOnboardingSetupFailure(userId)
       .then((f) => { if (mounted) setFailure(f); })
       .catch(() => { if (mounted) setFailure(null); });
     return () => { mounted = false; };
-  }, [userId, isOwner]);
+  }, [userId]);
 
   const onRetry = useCallback(async () => {
     if (!failure || retrying) return;
@@ -75,7 +72,11 @@ export function OnboardingSetupFailedBanner() {
     await clearOnboardingSetupFailure(userId);
   }, [userId]);
 
-  if (!isOwner || !failure) return null;
+  if (!failure) return null;
+
+  const subtitle = failure.seedFailed
+    ? "Some of your starter setup couldn't be saved. Tap retry to finish it."
+    : "We couldn't finish saving your setup. Tap retry to finish it.";
 
   return (
     <View style={[styles.wrap, { backgroundColor: colors.destructive + '12', borderColor: colors.destructive + '33' }]}>
@@ -85,7 +86,7 @@ export function OnboardingSetupFailedBanner() {
       <View style={styles.textWrap}>
         <Text style={[styles.title, { color: colors.foreground }]}>Setup didn't finish</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]} numberOfLines={2}>
-          Some of your starter setup couldn't be saved. Tap retry to finish it.
+          {subtitle}
         </Text>
       </View>
       <TouchableOpacity
