@@ -132,10 +132,12 @@ export function setupPurchaseListeners(
   });
 
   purchaseErrorSubscription = purchaseErrorListener((error) => {
-    console.error('[IAP] Purchase error listener:', error);
-    if (error.code !== 'E_USER_CANCELLED') {
-      onPurchaseError(error);
+    // A user cancelling the purchase sheet is a normal action, not an error.
+    if (error.code === 'E_USER_CANCELLED') {
+      return;
     }
+    console.error('[IAP] Purchase error listener:', error);
+    onPurchaseError(error);
   });
 }
 

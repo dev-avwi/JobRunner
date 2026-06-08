@@ -218,7 +218,6 @@ export const mainMenuItems: NavItem[] = [
     requiresProPlan: true,
     showLockedIfNoAccess: true,
     hideForStaff: true,
-    hideInSimpleMode: true,
     showInMore: true,
     category: "work",
     allowedRoles: ['owner', 'solo_owner', 'manager'],

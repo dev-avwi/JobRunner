@@ -626,7 +626,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       if (roleResponse.data) {
         const data = roleResponse.data as any;
-        const isOwnerRole = data.isOwner === true || data.role === 'owner';
+        const isOwnerRole = data.isOwner === true || data.role === 'owner' ||
+          String(data.roleName || '').toLowerCase().includes('owner');
         const roleName = data.roleName || (isOwnerRole ? 'OWNER' : data.role?.toUpperCase() || 'STAFF');
         const roleId = data.roleId || data.role || (isOwnerRole ? 'owner' : 'staff');
         const permissions = Array.isArray(data.permissions) ? data.permissions : (isOwnerRole ? ['*'] : []);
