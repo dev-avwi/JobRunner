@@ -232,9 +232,13 @@ export function SidebarNav() {
             themedStyles.logoutButton,
             pressed && { opacity: 0.7 }
           ]}
-          onPress={() => {
-            useAuthStore.getState().logout();
-            router.replace('/');
+          onPress={async () => {
+            // Await logout so auth state is cleared BEFORE we navigate.
+            // Navigating to '/' while logout was still running raced the index
+            // redirect, which still saw isAuthenticated=true and bounced back
+            // to the dashboard. Go straight to the login screen instead.
+            await useAuthStore.getState().logout();
+            router.replace('/(auth)/login');
           }}
           data-testid="sidebar-logout"
         >

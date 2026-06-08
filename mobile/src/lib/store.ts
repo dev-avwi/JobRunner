@@ -382,27 +382,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     // Clear role cache BEFORE logout to prevent permission leakage
     clearRoleCache();
-    // Clear cached auth data for offline access
-    await offlineStorage.clearCachedAuthData();
-    // Clear all cached data
-    await offlineStorage.clearCache();
-    await locationTracking.stopJobTracking();
-    await locationTracking.stopTracking();
-    locationTracking.setSubcontractorMode(false);
-    notificationService.resetBackendRegistration();
-    await api.logout();
-    set({ 
-      user: null, 
-      token: null,
-      businessSettings: null,
-      roleInfo: null,
-      teamState: { hasActiveTeam: false, activeTeamCount: 0, members: [], isLoading: false, lastFetched: null },
-      workerPermissions: [],
-      isWorker: false,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null 
-    });
+    // Each cleanup step is best-effort: a failure in one (e.g. offline cache
+    // or location tracking) must NOT prevent the auth state from being cleared.
+    // The `finally` block always resets to a signed-out state so the UI can
+    // navigate to login — otherwise a thrown cleanup error would leave the user
+    // stuck on the dashboard (the original logout glitch).
+    try {
+      // Clear cached auth data for offline access
+      await offlineStorage.clearCachedAuthData();
+      // Clear all cached data
+      await offlineStorage.clearCache();
+      await locationTracking.stopJobTracking();
+      await locationTracking.stopTracking();
+      locationTracking.setSubcontractorMode(false);
+      notificationService.resetBackendRegistration();
+      await api.logout();
+    } catch (err) {
+      if (__DEV__) console.warn('[Auth] logout cleanup error (continuing to clear state):', err);
+    } finally {
+      set({
+        user: null,
+        token: null,
+        businessSettings: null,
+        roleInfo: null,
+        teamState: { hasActiveTeam: false, activeTeamCount: 0, members: [], isLoading: false, lastFetched: null },
+        workerPermissions: [],
+        isWorker: false,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null
+      });
+    }
   },
 
   checkAuth: async () => {
