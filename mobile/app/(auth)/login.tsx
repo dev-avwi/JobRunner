@@ -17,13 +17,12 @@ import { Link, router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useAuthStore } from '../../src/lib/store';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/Card';
+import { Card, CardContent } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import api, { API_URL } from '../../src/lib/api';
 import { spacing } from '../../src/lib/design-tokens';
-import { LinearGradient } from 'expo-linear-gradient';
 
 // Conditionally import Apple Authentication - only available in dev/production builds, not Expo Go
 let AppleAuthentication: any = null;
@@ -325,56 +324,31 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <Image
-        source={require('../../assets/onboarding-tradie.png')}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-      />
-      <LinearGradient
-        colors={['rgba(8,12,20,0.55)', 'rgba(8,12,20,0.8)', 'rgba(8,12,20,0.94)']}
-        locations={[0, 0.5, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={[styles.content, { paddingBottom: bottomInset }]}>
-            <View style={styles.header}>
-              <View style={styles.logoOuterRing}>
-                <View style={styles.logoInnerRing}>
-                  <Image
-                    source={require('../../assets/jobrunner-logo-header.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
-                </View>
-              </View>
-              <Text style={styles.wordmark}>
-                <Text style={styles.wordmarkJob}>Job</Text>
-                <Text style={styles.wordmarkRunner}>Runner</Text>
-              </Text>
-              <Text style={styles.tagline}>Welcome back!</Text>
-              <Text style={styles.taglineSubtext}>Sign in to manage your trade business</Text>
-              <View style={styles.socialProof}>
-                <Ionicons name="star" size={13} color="#F7A23B" />
-                <Text style={styles.socialProofText}>
-                  Trusted by Aussie tradies to quote, invoice and get paid faster
-                </Text>
+        <View style={[styles.content, { paddingBottom: bottomInset }]}>
+          <View style={styles.header}>
+            <View style={styles.logoOuterRing}>
+              <View style={styles.logoInnerRing}>
+                <Image
+                  source={require('../../assets/jobrunner-logo-header.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </View>
             </View>
+            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.subtitle}>Sign in to your account.</Text>
+          </View>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Sign In</CardTitle>
-              <CardDescription>Enter your email and password to continue</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <CardContent style={styles.cardContent}>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
                 <TextInput
@@ -559,25 +533,19 @@ export default function LoginScreen() {
             </Link>
           </View>
 
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#080c14',
-  },
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
   },
   content: {
     flex: 1,
@@ -620,47 +588,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 44,
     height: 44,
   },
-  wordmark: {
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    marginBottom: spacing.sm,
-  },
-  wordmarkJob: {
-    color: '#5AA2F5',
-    fontSize: 30,
-    fontWeight: '800',
-  },
-  wordmarkRunner: {
-    color: '#F7A23B',
-    fontSize: 30,
-    fontWeight: '800',
-  },
-  tagline: {
+  title: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: spacing.xs,
+    color: colors.foreground,
     letterSpacing: -0.3,
   },
-  taglineSubtext: {
+  subtitle: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.78)',
+    color: colors.mutedForeground,
+    marginTop: spacing.xs,
     textAlign: 'center',
   },
-  socialProof: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.sm,
-  },
-  socialProofText: {
-    fontSize: 12.5,
-    color: 'rgba(255,255,255,0.72)',
-    textAlign: 'center',
-    flexShrink: 1,
+  cardContent: {
+    paddingTop: 20,
   },
   inputGroup: {
     marginBottom: 16,
