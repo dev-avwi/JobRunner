@@ -8272,10 +8272,12 @@ Be specific about materials, colors, and features that would be included.`
       //     wizard.
       //
       //   - Brand-new owners (no team membership): create with
-      //     onboardingCompleted=false and a sensible default business name
-      //     (first name + "'s Business", or "My Business"). This is the bug
-      //     fix for new owners landing straight on the dashboard with a
-      //     sidebar that says "Worker Profile".
+      //     onboardingCompleted=false and an EMPTY businessName so the
+      //     onboarding wizard treats them as un-set and routes them to the
+      //     business setup step. Do NOT pre-fill a default business name here:
+      //     older mobile clients treat "has businessName" as "business is set
+      //     up" and auto-complete onboarding (POST /api/onboarding/complete),
+      //     skipping the wizard entirely and dumping the user on the dashboard.
       if (!settings && user) {
         try {
           // Determine if this user is a worker/subcontractor on another
@@ -8297,14 +8299,9 @@ Be specific about materials, colors, and features that would be included.`
             console.warn('[business-settings] team membership lookup failed:', lookupErr?.message || lookupErr);
           }
 
-          const ownerDefaultName = (() => {
-            const fn = (user.firstName || '').trim();
-            if (fn) return `${fn}'s Business`;
-            return 'My Business';
-          })();
           settings = await storage.createBusinessSettings({
             userId: req.userId,
-            businessName: isStaffOnOtherTeam ? WORKER_PROFILE_PLACEHOLDER_NAME : ownerDefaultName,
+            businessName: isStaffOnOtherTeam ? WORKER_PROFILE_PLACEHOLDER_NAME : '',
             onboardingCompleted: isStaffOnOtherTeam,
             onboardingLevel: 0,
           } as any);
@@ -8830,7 +8827,7 @@ Be specific about materials, colors, and features that would be included.`
       } else {
         settings = await storage.createBusinessSettings({
           userId: req.userId,
-          businessName: 'My Business',
+          businessName: '',
           ...updateData,
         });
       }
