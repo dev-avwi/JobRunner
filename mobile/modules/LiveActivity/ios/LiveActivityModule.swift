@@ -126,15 +126,16 @@ public class LiveActivityModule: Module {
                 return
             }
 
-            // Final state is "completed". The lock-screen card sticks around
-            // for 30 minutes so users can see the result of the job they
-            // just wrapped, then the system clears it. The four-hour
-            // ActivityKit ceiling still applies — `.after` is just a hint.
+            // Dismiss immediately so the card clears from BOTH the Dynamic
+            // Island AND the Lock Screen the moment the timer stops/cancels.
+            // Previously this used `.after(now + 30 min)`, which removed the
+            // Dynamic Island instantly but left the "completed" card stuck on
+            // the Lock Screen for half an hour — users read that as "cancel
+            // didn't work".
             let finalState = JobRunnerLiveActivityAttributes.ContentState(status: .completed)
-            let dismissalDate = Date().addingTimeInterval(30 * 60)
             await activity.end(
                 .init(state: finalState, staleDate: nil),
-                dismissalPolicy: .after(dismissalDate)
+                dismissalPolicy: .immediate
             )
             self.currentActivity = nil
             NSLog("[LA-SWIFT] end SUCCESS — activity=%@ dismissed", activity.id)
