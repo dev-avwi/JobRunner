@@ -3203,13 +3203,13 @@ function OwnerDashboardScreen() {
       {/* Worker State Quick Set */}
       {isStaffUser && (
         <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.md }}>
-          <View style={{
-            flexDirection: 'row',
-            gap: spacing.sm,
-            rowGap: spacing.sm,
-            flexWrap: 'wrap',
-            alignItems: 'center',
-          }}>
+          <View style={styles.statusCard}>
+            <Text style={styles.statusCardLabel}>MY STATUS</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: spacing.sm, alignItems: 'center', paddingVertical: 2 }}
+            >
             {[
               { state: 'available', label: 'Available', color: '#22c55e' },
               { state: 'break', label: 'Break', color: '#9ca3af' },
@@ -3267,6 +3267,7 @@ function OwnerDashboardScreen() {
                 </TouchableOpacity>
               );
             })}
+            </ScrollView>
           </View>
         </View>
       )}
@@ -4307,6 +4308,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...typography.label,
     color: colors.mutedForeground,
     marginBottom: spacing.md,
+  },
+  statusCard: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: 12,
+    ...shadows.sm,
+  },
+  statusCardLabel: {
+    ...typography.label,
+    color: colors.mutedForeground,
+    marginBottom: 10,
   },
   sectionHeader: {
     flexDirection: 'row',
