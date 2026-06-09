@@ -3222,30 +3222,45 @@ function OwnerDashboardScreen() {
         <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.md }}>
           <View style={{
             flexDirection: 'row',
-            gap: spacing.xs,
+            gap: spacing.sm,
+            rowGap: spacing.sm,
             flexWrap: 'wrap',
+            alignItems: 'center',
           }}>
             {[
               { state: 'available', label: 'Available', color: '#22c55e' },
               { state: 'break', label: 'Break', color: '#9ca3af' },
-              { state: 'delayed', label: 'Delayed', color: '#eab308' },
+              { state: 'delayed', label: 'Delayed', color: '#f28c28' },
               { state: 'needs_help', label: 'Help', color: '#ef4444' },
             ].map(btn => {
               const isActive = workerState.state === btn.state;
               return (
                 <TouchableOpacity
                   key={btn.state}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: 4,
-                    borderRadius: radius.full,
-                    backgroundColor: isActive ? colorWithOpacity(btn.color, 0.2) : colorWithOpacity(colors.foreground, 0.05),
-                    borderWidth: 1,
-                    borderColor: isActive ? colorWithOpacity(btn.color, 0.4) : 'transparent',
-                  }}
+                  activeOpacity={0.85}
+                  style={[
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      borderRadius: 999,
+                      borderWidth: 1.5,
+                      backgroundColor: isActive ? btn.color : colors.card,
+                      borderColor: isActive ? btn.color : colors.cardBorder,
+                      transform: [{ scale: isActive ? 1.02 : 1 }],
+                    },
+                    isActive
+                      ? {
+                          shadowColor: btn.color,
+                          shadowOffset: { width: 0, height: 3 },
+                          shadowOpacity: 0.38,
+                          shadowRadius: 7,
+                          elevation: 5,
+                        }
+                      : shadows.sm,
+                  ]}
                   onPress={async () => {
                     try {
                       await api.post('/api/worker/state', { state: btn.state });
@@ -3256,13 +3271,13 @@ function OwnerDashboardScreen() {
                   }}
                 >
                   <View style={{
-                    width: 6, height: 6, borderRadius: 3,
-                    backgroundColor: isActive ? btn.color : colorWithOpacity(colors.foreground, 0.3),
+                    width: 8, height: 8, borderRadius: 4,
+                    backgroundColor: isActive ? '#ffffff' : btn.color,
                   }} />
                   <Text style={{
-                    fontSize: 12,
-                    fontWeight: isActive ? '700' : '500',
-                    color: isActive ? btn.color : colors.mutedForeground,
+                    fontSize: 13,
+                    fontWeight: isActive ? '600' : '500',
+                    color: isActive ? '#ffffff' : colors.foreground,
                   }}>
                     {btn.label}
                   </Text>
