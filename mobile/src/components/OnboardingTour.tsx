@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../lib/theme';
@@ -162,7 +163,7 @@ export function OnboardingTour({ forceShow = false, onComplete }: OnboardingTour
       animationType="fade"
       onRequestClose={skip}
     >
-      <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.85)' }]}>
+      <LinearGradient colors={['#1E3A5F', '#0F172A']} style={styles.overlay}>
         <Animated.View 
           style={[
             styles.container, 
@@ -239,7 +240,7 @@ export function OnboardingTour({ forceShow = false, onComplete }: OnboardingTour
             </TouchableOpacity>
           </View>
         </Animated.View>
-      </View>
+      </LinearGradient>
     </Modal>
   );
 }

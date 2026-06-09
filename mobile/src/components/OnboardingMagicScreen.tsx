@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   Image,
-  ImageBackground,
   Animated,
   Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 const TOTAL_DURATION = 6000;
 const MSG_FADE = 300;
@@ -91,12 +91,16 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
   const greeting = firstName ? `Welcome, ${firstName}` : 'Welcome aboard';
 
   return (
-    <ImageBackground
-      source={require('../../assets/onboarding-tradie.jpg')}
-      style={styles.root}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay} />
+    <View style={styles.root}>
+      <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Defs>
+          <RadialGradient id="glow" cx="50%" cy="30%" rx="70%" ry="55%" fx="50%" fy="30%">
+            <Stop offset="0%" stopColor="#2B7DE9" stopOpacity={0.15} />
+            <Stop offset="100%" stopColor="#2B7DE9" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#glow)" />
+      </Svg>
 
       <Animated.View
         style={[
@@ -137,18 +141,14 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
           </Animated.Text>
         </View>
       </Animated.View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#060a10',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: '#0F172A',
   },
   content: {
     flex: 1,
