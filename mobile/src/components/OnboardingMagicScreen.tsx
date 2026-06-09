@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Check } from 'lucide-react-native';
 
 const TOTAL_DURATION = 6000;
 const MSG_FADE = 300;
@@ -17,6 +18,12 @@ const STATUS_MESSAGES = [
   'Setting up your business profile',
   'Preparing your dashboard',
   'Almost ready',
+];
+
+const SETUP_STEPS = [
+  'Your business profile is ready',
+  'Your trade templates are configured',
+  'Your team workspace is live',
 ];
 
 interface OnboardingMagicScreenProps {
@@ -30,6 +37,7 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
   const progress = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
   const msgFade = useRef(new Animated.Value(1)).current;
+  const stepAnims = useRef(SETUP_STEPS.map(() => new Animated.Value(0))).current;
   const [msgIndex, setMsgIndex] = useState(0);
   const doneRef = useRef(false);
 
@@ -47,6 +55,21 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: false,
     }).start();
+
+    // Setup-step rows fade + slide in one by one with a 0.4s stagger.
+    const stepTimers: ReturnType<typeof setTimeout>[] = [];
+    stepAnims.forEach((anim, i) => {
+      stepTimers.push(
+        setTimeout(() => {
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 450,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }).start();
+        }, 600 + i * 400)
+      );
+    });
 
     // Each status message shows for an equal slice of the total duration
     // (2s each across 6s) with a 0.3s cross-fade between them.
@@ -80,7 +103,7 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
     }, TOTAL_DURATION);
     timers.push(finish);
 
-    return () => timers.forEach(clearTimeout);
+    return () => [...timers, ...stepTimers].forEach(clearTimeout);
   }, []);
 
   const widthInterpolate = progress.interpolate({
@@ -88,14 +111,12 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
     outputRange: ['0%', '100%'],
   });
 
-  const greeting = firstName ? `Welcome, ${firstName}` : 'Welcome aboard';
-
   return (
     <View style={styles.root}>
       <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
         <Defs>
-          <RadialGradient id="glow" cx="50%" cy="30%" rx="70%" ry="55%" fx="50%" fy="30%">
-            <Stop offset="0%" stopColor="#2B7DE9" stopOpacity={0.15} />
+          <RadialGradient id="glow" cx="50%" cy="38%" rx="75%" ry="60%" fx="50%" fy="38%">
+            <Stop offset="0%" stopColor="#2B7DE9" stopOpacity={0.08} />
             <Stop offset="100%" stopColor="#2B7DE9" stopOpacity={0} />
           </RadialGradient>
         </Defs>
@@ -107,8 +128,8 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
           styles.content,
           {
             opacity: contentFade,
-            paddingTop: insets.top + 44,
-            paddingBottom: insets.bottom + 52,
+            paddingTop: insets.top + 56,
+            paddingBottom: insets.bottom,
           },
         ]}
       >
@@ -127,18 +148,47 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
         </View>
 
         <View style={styles.midBlock}>
-          <Text style={styles.greeting}>{greeting}</Text>
+          <Text style={styles.welcomeLine}>Welcome,</Text>
+          <Text style={styles.nameLine}>{firstName || 'aboard'}</Text>
           {!!businessName && <Text style={styles.businessName}>{businessName}</Text>}
-          <Text style={styles.subtitle}>We're getting everything ready for you</Text>
+
+          <View style={styles.divider} />
+
+          <View style={styles.stepsBlock}>
+            {SETUP_STEPS.map((label, i) => (
+              <Animated.View
+                key={label}
+                style={[
+                  styles.stepRow,
+                  {
+                    opacity: stepAnims[i],
+                    transform: [
+                      {
+                        translateY: stepAnims[i].interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [10, 0],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <View style={styles.stepIcon}>
+                  <Check size={14} color="#2B7DE9" strokeWidth={3} />
+                </View>
+                <Text style={styles.stepText}>{label}</Text>
+              </Animated.View>
+            ))}
+          </View>
         </View>
 
         <View style={styles.bottomBlock}>
-          <View style={styles.progressTrack}>
-            <Animated.View style={[styles.progressFill, { width: widthInterpolate }]} />
-          </View>
           <Animated.Text style={[styles.statusText, { opacity: msgFade }]}>
             {STATUS_MESSAGES[msgIndex]}
           </Animated.Text>
+          <View style={styles.progressTrack}>
+            <Animated.View style={[styles.progressFill, { width: widthInterpolate }]} />
+          </View>
         </View>
       </Animated.View>
     </View>
@@ -152,11 +202,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 32,
     justifyContent: 'space-between',
   },
   topBlock: {
     alignItems: 'center',
+    paddingHorizontal: 32,
   },
   logoBadge: {
     width: 76,
@@ -192,50 +242,74 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   midBlock: {
-    alignItems: 'center',
+    paddingHorizontal: 32,
   },
-  greeting: {
-    fontSize: 31,
+  welcomeLine: {
+    fontSize: 30,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.85)',
+    letterSpacing: -0.5,
+  },
+  nameLine: {
+    fontSize: 48,
     fontWeight: '800',
     color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    letterSpacing: -1,
+    marginTop: 2,
   },
   businessName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.92)',
-    textAlign: 'center',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '500',
+    color: '#2B7DE9',
+    marginTop: 10,
   },
-  subtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.68)',
-    textAlign: 'center',
-    lineHeight: 22,
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    marginTop: 28,
+    marginBottom: 24,
+  },
+  stepsBlock: {
+    gap: 4,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 44,
+    gap: 14,
+  },
+  stepIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(43,125,233,0.16)',
+  },
+  stepText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.70)',
   },
   bottomBlock: {
-    alignItems: 'center',
-  },
-  progressTrack: {
-    width: '100%',
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: '#2B7DE9',
+    alignItems: 'stretch',
   },
   statusText: {
     fontSize: 14,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.82)',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     letterSpacing: 0.2,
+    marginBottom: 16,
+  },
+  progressTrack: {
+    width: '100%',
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#2B7DE9',
   },
 });

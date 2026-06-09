@@ -3204,7 +3204,24 @@ function OwnerDashboardScreen() {
       {isStaffUser && (
         <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.md }}>
           <View style={styles.statusCard}>
-            <Text style={styles.statusCardLabel}>MY STATUS</Text>
+            {(() => {
+              const current =
+                workerState.state === 'on_job' ? { label: 'On Job', color: '#f97316' } :
+                workerState.state === 'travelling' ? { label: 'Travelling', color: '#3b82f6' } :
+                workerState.state === 'break' ? { label: 'Break', color: '#9ca3af' } :
+                workerState.state === 'delayed' ? { label: 'Delayed', color: '#f28c28' } :
+                workerState.state === 'needs_help' ? { label: 'Help', color: '#ef4444' } :
+                { label: 'Available', color: '#22c55e' };
+              return (
+                <View style={styles.statusCardHeader}>
+                  <Text style={styles.statusCardLabel}>MY STATUS</Text>
+                  <View style={styles.statusCardCurrent}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: current.color }} />
+                    <Text style={[styles.statusCardCurrentText, { color: current.color }]}>{current.label}</Text>
+                  </View>
+                </View>
+              );
+            })()}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -3229,9 +3246,9 @@ function OwnerDashboardScreen() {
                       paddingHorizontal: 16,
                       paddingVertical: 10,
                       borderRadius: 999,
-                      borderWidth: 1.5,
-                      backgroundColor: isActive ? btn.color : colors.card,
-                      borderColor: isActive ? btn.color : colors.cardBorder,
+                      borderWidth: isActive ? 1.5 : 2,
+                      backgroundColor: isActive ? btn.color : '#ffffff',
+                      borderColor: isActive ? btn.color : '#D1D5DB',
                       transform: [{ scale: isActive ? 1.02 : 1 }],
                     },
                     isActive
@@ -4310,17 +4327,32 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.md,
   },
   statusCard: {
-    backgroundColor: colors.card,
+    backgroundColor: '#F0F7FF',
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderColor: 'rgba(43,125,233,0.18)',
     padding: 12,
     ...shadows.sm,
   },
+  statusCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: 10,
+  },
   statusCardLabel: {
     ...typography.label,
-    color: colors.mutedForeground,
-    marginBottom: 10,
+    color: '#2B7DE9',
+  },
+  statusCardCurrent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusCardCurrentText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   sectionHeader: {
     flexDirection: 'row',
