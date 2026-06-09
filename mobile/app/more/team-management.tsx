@@ -1862,26 +1862,22 @@ export default function TeamManagementScreen() {
         ? `${member.user.firstName} ${member.user.lastName || ''}`
         : 'this member';
       
-    Alert.alert(
-      'Remove Team Member',
-      `Are you sure you want to remove ${userName} from the team? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.delete(`/api/team/members/${member.id}`);
-              setTeamMembers(prev => prev.filter(m => m.id !== member.id));
-              showToast({ type: 'success', message: 'Removed', description: 'Team member has been removed' });
-            } catch (error) {
-              showToast({ type: 'error', message: 'Error', description: 'Failed to remove member' });
-            }
-          },
-        },
-      ]
-    );
+    const ok = await confirm({
+      title: 'Remove Team Member',
+      message: `Are you sure you want to remove ${userName} from the team? This action cannot be undone.`,
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        await api.delete(`/api/team/members/${member.id}`);
+        setTeamMembers(prev => prev.filter(m => m.id !== member.id));
+        showToast({ type: 'success', message: 'Removed', description: 'Team member has been removed' });
+      } catch (error) {
+        showToast({ type: 'error', message: 'Error', description: 'Failed to remove member' });
+      }
+    }
   };
 
   // Toggle location sharing for a team member

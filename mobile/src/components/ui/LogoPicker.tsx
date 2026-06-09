@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { PressableRow } from './PressableRow';
+import { useConfirmDialog } from './ConfirmDialog';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../lib/theme';
@@ -185,6 +186,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 export function LogoPicker({ value, onChange, label }: LogoPickerProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const confirm = useConfirmDialog();
   const { token } = useAuthStore();
   const [showModal, setShowModal] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -316,22 +318,12 @@ export function LogoPicker({ value, onChange, label }: LogoPickerProps) {
     }
   };
 
-  const handleRemoveLogo = () => {
-    Alert.alert(
-      'Remove Logo',
-      'Are you sure you want to remove your business logo?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            onChange(null);
-            setShowModal(false);
-          },
-        },
-      ]
-    );
+  const handleRemoveLogo = async () => {
+    const ok = await confirm({ title: 'Remove Logo', message: 'Are you sure you want to remove your business logo?', confirmText: 'Remove', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      onChange(null);
+      setShowModal(false);
+    }
   };
 
   return (

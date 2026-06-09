@@ -7,7 +7,6 @@ import {
   RefreshControl,
   StyleSheet,
   Linking,
-  Alert,
   ActivityIndicator
 } from 'react-native';
 import { PressableRow } from '../../src/components/ui/PressableRow';
@@ -16,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import api from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -388,6 +388,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
 
 export default function IntegrationsScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -540,26 +541,16 @@ export default function IntegrationsScreen() {
   };
 
   const handleDisconnectXero = async () => {
-    Alert.alert(
-      'Disconnect Xero',
-      'Are you sure you want to disconnect your Xero account? Invoice sync will stop working.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Disconnect',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.post('/api/integrations/xero/disconnect');
-              showToast({ type: 'success', message: 'Success', description: 'Xero has been disconnected' });
-              fetchIntegrationStatus();
-            } catch (error: any) {
-              showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to disconnect Xero' });
-            }
-          }
-        }
-      ]
-    );
+    const ok = await confirm({ title: 'Disconnect Xero', message: 'Are you sure you want to disconnect your Xero account? Invoice sync will stop working.', confirmText: 'Disconnect', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      try {
+        await api.post('/api/integrations/xero/disconnect');
+        showToast({ type: 'success', message: 'Success', description: 'Xero has been disconnected' });
+        fetchIntegrationStatus();
+      } catch (error: any) {
+        showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to disconnect Xero' });
+      }
+    }
   };
 
   const handleSyncXeroContacts = async () => {
@@ -643,26 +634,16 @@ export default function IntegrationsScreen() {
   };
 
   const handleDisconnectMyob = async () => {
-    Alert.alert(
-      'Disconnect MYOB',
-      'Are you sure you want to disconnect your MYOB account? Invoice sync will stop working.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Disconnect',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.post('/api/integrations/myob/disconnect');
-              showToast({ type: 'success', message: 'Success', description: 'MYOB has been disconnected' });
-              fetchIntegrationStatus();
-            } catch (error: any) {
-              showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to disconnect MYOB' });
-            }
-          }
-        }
-      ]
-    );
+    const ok = await confirm({ title: 'Disconnect MYOB', message: 'Are you sure you want to disconnect your MYOB account? Invoice sync will stop working.', confirmText: 'Disconnect', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      try {
+        await api.post('/api/integrations/myob/disconnect');
+        showToast({ type: 'success', message: 'Success', description: 'MYOB has been disconnected' });
+        fetchIntegrationStatus();
+      } catch (error: any) {
+        showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to disconnect MYOB' });
+      }
+    }
   };
 
   const handleSyncMyob = async () => {
@@ -720,26 +701,16 @@ export default function IntegrationsScreen() {
   };
 
   const handleDisconnectQuickBooks = async () => {
-    Alert.alert(
-      'Disconnect QuickBooks',
-      'Are you sure you want to disconnect your QuickBooks account? Invoice sync will stop working.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Disconnect',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.post('/api/integrations/quickbooks/disconnect');
-              showToast({ type: 'success', message: 'Success', description: 'QuickBooks has been disconnected' });
-              fetchIntegrationStatus();
-            } catch (error: any) {
-              showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to disconnect QuickBooks' });
-            }
-          }
-        }
-      ]
-    );
+    const ok = await confirm({ title: 'Disconnect QuickBooks', message: 'Are you sure you want to disconnect your QuickBooks account? Invoice sync will stop working.', confirmText: 'Disconnect', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      try {
+        await api.post('/api/integrations/quickbooks/disconnect');
+        showToast({ type: 'success', message: 'Success', description: 'QuickBooks has been disconnected' });
+        fetchIntegrationStatus();
+      } catch (error: any) {
+        showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to disconnect QuickBooks' });
+      }
+    }
   };
 
   const handleSyncQuickBooks = async () => {
@@ -830,26 +801,16 @@ export default function IntegrationsScreen() {
   };
 
   const handleDisconnectGoogleCalendar = async () => {
-    Alert.alert(
-      'Disconnect Google Calendar',
-      'Are you sure you want to disconnect your Google Calendar? Job sync will stop working.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Disconnect',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.post('/api/integrations/google-calendar/disconnect');
-              showToast({ type: 'success', message: 'Success', description: 'Google Calendar has been disconnected' });
-              fetchIntegrationStatus();
-            } catch (error: any) {
-              showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to disconnect Google Calendar' });
-            }
-          }
-        }
-      ]
-    );
+    const ok = await confirm({ title: 'Disconnect Google Calendar', message: 'Are you sure you want to disconnect your Google Calendar? Job sync will stop working.', confirmText: 'Disconnect', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      try {
+        await api.post('/api/integrations/google-calendar/disconnect');
+        showToast({ type: 'success', message: 'Success', description: 'Google Calendar has been disconnected' });
+        fetchIntegrationStatus();
+      } catch (error: any) {
+        showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to disconnect Google Calendar' });
+      }
+    }
   };
 
   const handleSyncAllJobs = async () => {

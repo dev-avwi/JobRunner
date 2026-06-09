@@ -14,6 +14,7 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
 import api from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -195,6 +196,7 @@ function BulletItem({ text, colors, styles }: BulletItemProps) {
 
 export default function DeleteAccountScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -208,18 +210,16 @@ export default function DeleteAccountScreen() {
   const handleDeleteAccount = async () => {
     if (!isConfirmed) return;
     
-    Alert.alert(
-      'Final Confirmation',
-      'This action cannot be undone. Are you absolutely sure you want to permanently delete your account and all data?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete Forever', 
-          style: 'destructive',
-          onPress: performDeletion,
-        },
-      ]
-    );
+    const ok = await confirm({
+      title: 'Final Confirmation',
+      message: 'This action cannot be undone. Are you absolutely sure you want to permanently delete your account and all data?',
+      confirmText: 'Delete Forever',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      await performDeletion();
+    }
   };
   
   const performDeletion = async () => {

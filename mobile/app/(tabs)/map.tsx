@@ -59,6 +59,7 @@ import { api, API_URL } from '../../src/lib/api';
 import { statusColors, spacing, radius, shadows } from '../../src/lib/design-tokens';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 
 // Real-time polling interval for team locations (10 seconds)
 const LOCATION_POLL_INTERVAL = 10000;
@@ -643,6 +644,7 @@ const createStyles = (colors: ThemeColors) => {
 export default function MapScreen() {
   const { colors, isDark } = useTheme();
   const { styles, activityConfig } = useMemo(() => createStyles(colors), [colors]);
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -1430,18 +1432,12 @@ export default function MapScreen() {
     setRouteJobs(prev => prev.filter(j => j.id !== jobId));
   };
 
-  const handleClearRoute = () => {
-    Alert.alert(
-      'Clear Route',
-      'Are you sure you want to clear all jobs from your route?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear', style: 'destructive', onPress: () => {
-          setRouteJobs([]);
-          setShowRoutePanel(false);
-        }},
-      ]
-    );
+  const handleClearRoute = async () => {
+    const ok = await confirm({ title: 'Clear Route', message: 'Are you sure you want to clear all jobs from your route?', confirmText: 'Clear', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      setRouteJobs([]);
+      setShowRoutePanel(false);
+    }
   };
 
   const handleOptimizeRoute = async () => {

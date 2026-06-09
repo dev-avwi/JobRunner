@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme, ThemeColors } from '../lib/theme';
 import { AppBottomSheet } from './ui/AppBottomSheet';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import { api } from '../lib/api';
 import { format, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 import { spacing, radius, shadows, typography, iconSizes, sizes } from '../lib/design-tokens';
@@ -720,6 +721,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 export default function PhotoLibrary() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const confirm = useConfirmDialog();
 
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [stats, setStats] = useState<PhotoStats | null>(null);
@@ -857,24 +859,18 @@ export default function PhotoLibrary() {
     }
   };
 
-  const handleDeletePhoto = (photo: PhotoItem) => {
-    Alert.alert('Delete Photo', 'Are you sure? This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.patch('/api/photos/bulk', { photoIds: [photo.id], action: 'delete' });
-            closeLightbox();
-            fetchPhotos();
-            fetchStats();
-          } catch {
-            Alert.alert('Error', 'Failed to delete photo.');
-          }
-        },
-      },
-    ]);
+  const handleDeletePhoto = async (photo: PhotoItem) => {
+    const ok = await confirm({ title: 'Delete Photo', message: 'Are you sure? This cannot be undone.', confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      try {
+        await api.patch('/api/photos/bulk', { photoIds: [photo.id], action: 'delete' });
+        closeLightbox();
+        fetchPhotos();
+        fetchStats();
+      } catch {
+        Alert.alert('Error', 'Failed to delete photo.');
+      }
+    }
   };
 
   const toggleSelect = (id: string) => {
@@ -906,26 +902,20 @@ export default function PhotoLibrary() {
     setSelectedIds(new Set());
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     const count = selectedIds.size;
-    Alert.alert('Delete Photos', `Delete ${count} photo${count > 1 ? 's' : ''}? This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.patch('/api/photos/bulk', { photoIds: Array.from(selectedIds), action: 'delete' });
-            cancelSelection();
-            fetchPhotos();
-            fetchStats();
-            Alert.alert('Deleted', `${count} photo${count > 1 ? 's' : ''} deleted.`);
-          } catch {
-            Alert.alert('Error', 'Failed to delete photos.');
-          }
-        },
-      },
-    ]);
+    const ok = await confirm({ title: 'Delete Photos', message: `Delete ${count} photo${count > 1 ? 's' : ''}? This cannot be undone.`, confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      try {
+        await api.patch('/api/photos/bulk', { photoIds: Array.from(selectedIds), action: 'delete' });
+        cancelSelection();
+        fetchPhotos();
+        fetchStats();
+        Alert.alert('Deleted', `${count} photo${count > 1 ? 's' : ''} deleted.`);
+      } catch {
+        Alert.alert('Error', 'Failed to delete photos.');
+      }
+    }
   };
 
   const handleBulkSetCategory = async (cat: string) => {

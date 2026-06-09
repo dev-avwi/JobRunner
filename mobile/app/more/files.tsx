@@ -4,6 +4,7 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { api } from '../../src/lib/api';
 import { format } from 'date-fns';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
@@ -724,6 +725,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
 
 export default function FilesScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -940,32 +942,28 @@ export default function FilesScreen() {
     }
   };
 
-  const handleDelete = (doc: ComplianceDocument) => {
-    Alert.alert(
-      'Delete Document',
-      `Are you sure you want to delete "${getDocName(doc)}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await api.delete(`/api/compliance-documents/${doc.id}`);
-              if (response.error) {
-                Alert.alert('Error', response.error);
-                return;
-              }
-              setExpandedId(null);
-              fetchData();
-              Alert.alert('Deleted', 'Document has been deleted.');
-            } catch (err) {
-              Alert.alert('Error', 'Failed to delete document.');
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async (doc: ComplianceDocument) => {
+    const ok = await confirm({
+      title: 'Delete Document',
+      message: `Are you sure you want to delete "${getDocName(doc)}"? This cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        const response = await api.delete(`/api/compliance-documents/${doc.id}`);
+        if (response.error) {
+          Alert.alert('Error', response.error);
+          return;
+        }
+        setExpandedId(null);
+        fetchData();
+        Alert.alert('Deleted', 'Document has been deleted.');
+      } catch (err) {
+        Alert.alert('Error', 'Failed to delete document.');
+      }
+    }
   };
 
   const renderComplianceDocCard = (doc: ComplianceDocument & { computedStatus: string }) => {

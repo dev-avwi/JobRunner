@@ -15,6 +15,7 @@ import {
   Linking,
 } from 'react-native';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -290,6 +291,7 @@ const createStyles = (colors: any) => StyleSheet.create({
 
 export default function TeamChatScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const bottomInset = useBottomInset();
   
@@ -548,20 +550,12 @@ export default function TeamChatScreen() {
                 }
               };
 
-              const confirmDelete = () => {
+              const confirmDelete = async () => {
                 setSelectedMessageId(null);
-                Alert.alert(
-                  'Delete Message',
-                  'Are you sure you want to delete this message?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { 
-                      text: 'Delete', 
-                      style: 'destructive', 
-                      onPress: () => handleDeleteMessage(msg.id) 
-                    },
-                  ]
-                );
+                const ok = await confirm({ title: 'Delete Message', message: 'Are you sure you want to delete this message?', confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+                if (ok) {
+                  handleDeleteMessage(msg.id);
+                }
               };
 
               return (

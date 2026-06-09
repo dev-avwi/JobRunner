@@ -35,6 +35,7 @@ import { getEmailPreference, setEmailPreference, EmailAppPreference } from '../.
 import { format } from 'date-fns';
 import { showToast } from '../../../src/lib/toast';
 import { Button } from '../../../src/components/ui/Button';
+import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 
 interface Signature {
   id: string;
@@ -61,6 +62,7 @@ export default function InvoiceDetailScreen() {
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
+  const confirm = useConfirmDialog();
   
   const STATUS_CONFIG = useMemo(() => ({
     draft: { label: 'Draft', color: colors.warning, bg: colors.warningLight },
@@ -162,33 +164,23 @@ export default function InvoiceDetailScreen() {
   // Computed payment status
   const isPaid = invoice?.status === 'paid';
 
-  const handleDeleteInvoice = () => {
+  const handleDeleteInvoice = async () => {
     if (!invoice) return;
     
-    Alert.alert(
-      'Delete Invoice',
-      'Are you sure you want to delete this invoice? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeleting(true);
-            try {
-              await api.delete(`/api/invoices/${invoice.id}`);
-              showToast({ type: 'success', message: 'Success', description: 'Invoice deleted successfully' });
-              router.back();
-            } catch (error) {
-              console.error('Error deleting invoice:', error);
-              showToast({ type: 'error', message: 'Error', description: 'Failed to delete invoice' });
-            } finally {
-              setIsDeleting(false);
-            }
-          },
-        },
-      ]
-    );
+    const ok = await confirm({ title: 'Delete Invoice', message: 'Are you sure you want to delete this invoice? This cannot be undone.', confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      setIsDeleting(true);
+      try {
+        await api.delete(`/api/invoices/${invoice.id}`);
+        showToast({ type: 'success', message: 'Success', description: 'Invoice deleted successfully' });
+        router.back();
+      } catch (error) {
+        console.error('Error deleting invoice:', error);
+        showToast({ type: 'error', message: 'Error', description: 'Failed to delete invoice' });
+      } finally {
+        setIsDeleting(false);
+      }
+    }
   };
 
   useEffect(() => {
@@ -2516,30 +2508,20 @@ ${businessName}`;
                   
                   <TouchableOpacity 
                     style={styles.recurringStopButton}
-                    onPress={() => {
-                      Alert.alert(
-                        'Stop Recurring',
-                        'Are you sure you want to stop this recurring invoice? No more invoices will be automatically generated.',
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          { 
-                            text: 'Stop', 
-                            style: 'destructive',
-                            onPress: async () => {
-                              try {
-                                await api.patch(`/api/invoices/${invoice.id}`, {
-                                  isRecurring: false,
-                                  nextRecurrenceDate: null,
-                                });
-                                await fetchInvoices();
-                                showToast({ type: 'success', message: 'Success', description: 'Recurring schedule has been stopped.' });
-                              } catch (error) {
-                                showToast({ type: 'error', message: 'Error', description: 'Failed to stop recurring invoice.' });
-                              }
-                            }
-                          }
-                        ]
-                      );
+                    onPress={async () => {
+                      const ok = await confirm({ title: 'Stop Recurring', message: 'Are you sure you want to stop this recurring invoice? No more invoices will be automatically generated.', confirmText: 'Stop', cancelText: 'Cancel', destructive: true });
+                      if (ok) {
+                        try {
+                          await api.patch(`/api/invoices/${invoice.id}`, {
+                            isRecurring: false,
+                            nextRecurrenceDate: null,
+                          });
+                          await fetchInvoices();
+                          showToast({ type: 'success', message: 'Success', description: 'Recurring schedule has been stopped.' });
+                        } catch (error) {
+                          showToast({ type: 'error', message: 'Error', description: 'Failed to stop recurring invoice.' });
+                        }
+                      }
                     }}
                   >
                     <Feather name="x-circle" size={16} color={colors.destructive} />

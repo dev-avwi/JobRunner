@@ -17,6 +17,7 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useInvoicesStore, useClientsStore, useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { api, API_URL } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes } from '../../src/lib/design-tokens';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
@@ -185,6 +186,7 @@ function InvoiceCard({
 
 export default function InvoicesScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const bottomInset = useBottomInset(40);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { invoices, fetchInvoices, isLoading } = useInvoicesStore();
@@ -364,30 +366,26 @@ export default function InvoicesScreen() {
     );
   };
 
-  const handleDeleteInvoice = (invoiceId: string) => {
+  const handleDeleteInvoice = async (invoiceId: string) => {
     const invoice = invoices.find(i => i.id === invoiceId);
     
-    Alert.alert(
-      'Delete Invoice',
-      `Are you sure you want to delete ${invoice?.invoiceNumber || 'this invoice'}? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.delete(`/api/invoices/${invoiceId}`);
-              await refreshData();
-              Alert.alert('Success', 'Invoice deleted successfully');
-            } catch (error) {
-              console.error('Error deleting invoice:', error);
-              Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete invoice');
-            }
-          }
-        }
-      ]
-    );
+    const ok = await confirm({
+      title: 'Delete Invoice',
+      message: `Are you sure you want to delete ${invoice?.invoiceNumber || 'this invoice'}? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        await api.delete(`/api/invoices/${invoiceId}`);
+        await refreshData();
+        Alert.alert('Success', 'Invoice deleted successfully');
+      } catch (error) {
+        console.error('Error deleting invoice:', error);
+        Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete invoice');
+      }
+    }
   };
 
   return (

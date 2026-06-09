@@ -41,6 +41,7 @@ import UsageLimitBanner from '../../src/components/UsageLimitBanner';
 import { SubcontractorDashboard } from '../../src/components/SubcontractorDashboard';
 import { showToast } from '../../src/lib/toast';
 import { Button } from '../../src/components/ui/Button';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import LiveActivity from '../../modules/LiveActivity/src';
 
 interface WeatherData {
@@ -505,6 +506,7 @@ function ActivityFeed({
 function TimeTrackingWidget() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const confirm = useConfirmDialog();
   
   // Use global store for activeTimer - synced with Time Tracking page
   const { 
@@ -787,54 +789,44 @@ function TimeTrackingWidget() {
   const handleCancelTimer = async () => {
     if (!activeTimer) return;
     
-    Alert.alert(
-      'Cancel Timer',
-      'Are you sure you want to cancel this timer? Time will not be saved.',
-      [
-        { text: 'Keep Tracking', style: 'cancel' },
-        { 
-          text: 'Cancel Timer', 
-          style: 'destructive',
-          onPress: async () => {
-            setIsCancelling(true);
-            try {
-              const { isOnline } = useOfflineStore.getState();
+    const ok = await confirm({ title: 'Cancel Timer', message: 'Are you sure you want to cancel this timer? Time will not be saved.', confirmText: 'Cancel Timer', cancelText: 'Keep Tracking', destructive: true });
+    if (ok) {
+      setIsCancelling(true);
+      try {
+        const { isOnline } = useOfflineStore.getState();
 
-              // Local-only timer (never synced) — discard locally so it never reaches the server
-              if (typeof activeTimer.id === 'string' && activeTimer.id.startsWith('local_')) {
-                await offlineStorage.discardLocalTimeEntry(activeTimer.id);
-                useTimeTrackingStore.setState({ activeTimer: null });
-                fetchActiveTimer();
-                LiveActivity.end().catch(() => {});
-                showToast({ type: 'success', message: 'Timer Cancelled', description: 'Time was not recorded' });
-                loadDashboardData();
-                setIsCancelling(false);
-                return;
-              }
-
-              if (!isOnline) {
-                showToast({ type: 'info', message: 'Offline', description: 'Cannot cancel a synced timer while offline. Stop it instead — you can edit or delete the entry once back online.' });
-                setIsCancelling(false);
-                return;
-              }
-
-              const { default: api } = await import('../../src/lib/api');
-              await api.delete(`/api/time-entries/${activeTimer.id}`);
-
-              // Refresh from store to clear activeTimer
-              fetchActiveTimer();
-              LiveActivity.end().catch(() => {});
-              showToast({ type: 'success', message: 'Timer Cancelled', description: 'Time was not recorded' });
-              loadDashboardData();
-            } catch (error: any) {
-              showToast({ type: 'error', message: 'Error', description: 'Failed to cancel timer' });
-            } finally {
-              setIsCancelling(false);
-            }
-          }
+        // Local-only timer (never synced) — discard locally so it never reaches the server
+        if (typeof activeTimer.id === 'string' && activeTimer.id.startsWith('local_')) {
+          await offlineStorage.discardLocalTimeEntry(activeTimer.id);
+          useTimeTrackingStore.setState({ activeTimer: null });
+          fetchActiveTimer();
+          LiveActivity.end().catch(() => {});
+          showToast({ type: 'success', message: 'Timer Cancelled', description: 'Time was not recorded' });
+          loadDashboardData();
+          setIsCancelling(false);
+          return;
         }
-      ]
-    );
+
+        if (!isOnline) {
+          showToast({ type: 'info', message: 'Offline', description: 'Cannot cancel a synced timer while offline. Stop it instead — you can edit or delete the entry once back online.' });
+          setIsCancelling(false);
+          return;
+        }
+
+        const { default: api } = await import('../../src/lib/api');
+        await api.delete(`/api/time-entries/${activeTimer.id}`);
+
+        // Refresh from store to clear activeTimer
+        fetchActiveTimer();
+        LiveActivity.end().catch(() => {});
+        showToast({ type: 'success', message: 'Timer Cancelled', description: 'Time was not recorded' });
+        loadDashboardData();
+      } catch (error: any) {
+        showToast({ type: 'error', message: 'Error', description: 'Failed to cancel timer' });
+      } finally {
+        setIsCancelling(false);
+      }
+    }
   };
 
   const handleStopTimer = async () => {
@@ -2315,6 +2307,7 @@ function OwnerDashboardScreen() {
   const { colors } = useTheme();
   const responsiveShell = usePageShell();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const confirm = useConfirmDialog();
   const { activeTimer } = useTimeTrackingStore();
   const scrollRef = useRef<ScrollView | null>(null);
   const { scrollToTopTrigger } = useScrollToTop();
@@ -2893,57 +2886,47 @@ function OwnerDashboardScreen() {
   };
 
   const handleUnassignJob = async (job: any) => {
-    Alert.alert(
-      'Unassign Job',
-      `Remove "${job.title}" from this team member?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Unassign',
-          style: 'destructive',
-          onPress: async () => {
-            setIsAssigning(true);
-            try {
-              const { isOnline } = useOfflineStore.getState();
-              
-              if (!isOnline) {
-                await offlineStorage.updateJobOffline(job.id, { assignedTo: undefined });
-                showToast({ type: 'success', message: 'Saved Offline', description: 'Unassignment will sync when online' });
-                await Promise.all([
-                  fetchTeamData(),
-                  fetchTodaysJobs(),
-                  fetchJobs(),
-                ]);
-                return;
-              }
-              
-              const { default: api } = await import('../../src/lib/api');
-              await api.post(`/api/jobs/${job.id}/assign`, { assignedTo: null });
-              showToast({ type: 'success', message: 'Success', description: 'Job unassigned' });
-              await Promise.all([
-                fetchTeamData(),
-                fetchTodaysJobs(),
-                fetchJobs(),
-              ]);
-            } catch (error: any) {
-              if (error.message?.includes('Network')) {
-                await offlineStorage.updateJobOffline(job.id, { assignedTo: undefined });
-                showToast({ type: 'success', message: 'Saved Offline', description: 'Changes will sync when connection restored' });
-                await Promise.all([
-                  fetchTeamData(),
-                  fetchTodaysJobs(),
-                  fetchJobs(),
-                ]);
-              } else {
-                showToast({ type: 'error', message: 'Error', description: 'Failed to unassign job' });
-              }
-            } finally {
-              setIsAssigning(false);
-            }
-          },
-        },
-      ]
-    );
+    const ok = await confirm({ title: 'Unassign Job', message: `Remove "${job.title}" from this team member?`, confirmText: 'Unassign', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      setIsAssigning(true);
+      try {
+        const { isOnline } = useOfflineStore.getState();
+        
+        if (!isOnline) {
+          await offlineStorage.updateJobOffline(job.id, { assignedTo: undefined });
+          showToast({ type: 'success', message: 'Saved Offline', description: 'Unassignment will sync when online' });
+          await Promise.all([
+            fetchTeamData(),
+            fetchTodaysJobs(),
+            fetchJobs(),
+          ]);
+          return;
+        }
+        
+        const { default: api } = await import('../../src/lib/api');
+        await api.post(`/api/jobs/${job.id}/assign`, { assignedTo: null });
+        showToast({ type: 'success', message: 'Success', description: 'Job unassigned' });
+        await Promise.all([
+          fetchTeamData(),
+          fetchTodaysJobs(),
+          fetchJobs(),
+        ]);
+      } catch (error: any) {
+        if (error.message?.includes('Network')) {
+          await offlineStorage.updateJobOffline(job.id, { assignedTo: undefined });
+          showToast({ type: 'success', message: 'Saved Offline', description: 'Changes will sync when connection restored' });
+          await Promise.all([
+            fetchTeamData(),
+            fetchTodaysJobs(),
+            fetchJobs(),
+          ]);
+        } else {
+          showToast({ type: 'error', message: 'Error', description: 'Failed to unassign job' });
+        }
+      } finally {
+        setIsAssigning(false);
+      }
+    }
   };
 
   const getJobsForMember = (memberId: string) => {
@@ -3328,34 +3311,24 @@ function OwnerDashboardScreen() {
               </Text>
             </View>
             <TouchableOpacity
-              onPress={() => {
-                Alert.alert(
-                  'Clear Sample Data?',
-                  'This will remove all sample clients, jobs, quotes, and invoices. This can\'t be undone.',
-                  [
-                    { text: 'Keep It', style: 'cancel' },
-                    {
-                      text: 'Clear Data',
-                      style: 'destructive',
-                      onPress: async () => {
-                        setIsClearingDemo(true);
-                        try {
-                          const response = await api.post('/api/onboarding/clear-demo-data');
-                          if (response.error) {
-                            showToast({ type: 'error', message: 'Error', description: response.error });
-                          } else {
-                            await refreshUser();
-                            refreshData();
-                          }
-                        } catch (error: any) {
-                          showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to clear sample data' });
-                        } finally {
-                          setIsClearingDemo(false);
-                        }
-                      }
+              onPress={async () => {
+                const ok = await confirm({ title: 'Clear Sample Data?', message: 'This will remove all sample clients, jobs, quotes, and invoices. This can\'t be undone.', confirmText: 'Clear Data', cancelText: 'Keep It', destructive: true });
+                if (ok) {
+                  setIsClearingDemo(true);
+                  try {
+                    const response = await api.post('/api/onboarding/clear-demo-data');
+                    if (response.error) {
+                      showToast({ type: 'error', message: 'Error', description: response.error });
+                    } else {
+                      await refreshUser();
+                      refreshData();
                     }
-                  ]
-                );
+                  } catch (error: any) {
+                    showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to clear sample data' });
+                  } finally {
+                    setIsClearingDemo(false);
+                  }
+                }
               }}
               disabled={isClearingDemo}
               style={{

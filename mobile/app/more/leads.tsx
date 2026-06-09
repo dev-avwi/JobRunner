@@ -22,6 +22,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { api } from '../../src/lib/api';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { spacing, radius, typography, iconSizes, sizes } from '../../src/lib/design-tokens';
 
 type LeadSource = 'phone' | 'email' | 'website' | 'referral' | 'other';
@@ -106,6 +107,7 @@ const formatRelativeDate = (dateString?: string): string => {
 
 export default function LeadsScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -245,20 +247,16 @@ export default function LeadsScreen() {
     setShowForm(true);
   };
 
-  const handleDelete = (lead: Lead) => {
-    Alert.alert('Delete Lead', `Are you sure you want to delete "${lead.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: async () => {
-          try {
-            await api.delete(`/api/leads/${lead.id}`);
-            fetchLeads();
-          } catch (e) {
-            Alert.alert('Error', 'Failed to delete lead');
-          }
-        }
-      },
-    ]);
+  const handleDelete = async (lead: Lead) => {
+    const ok = await confirm({ title: 'Delete Lead', message: `Are you sure you want to delete "${lead.name}"?`, confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      try {
+        await api.delete(`/api/leads/${lead.id}`);
+        fetchLeads();
+      } catch (e) {
+        Alert.alert('Error', 'Failed to delete lead');
+      }
+    }
   };
 
   const handleStatusChange = async (lead: Lead, newStatus: LeadStatus) => {

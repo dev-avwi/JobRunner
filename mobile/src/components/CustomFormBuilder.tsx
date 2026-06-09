@@ -15,6 +15,7 @@ import { PressableRow } from './ui/PressableRow';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../lib/theme';
 import { AppBottomSheet } from './ui/AppBottomSheet';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import { spacing, radius, shadows, typography } from '../lib/design-tokens';
 import { api } from '../lib/api';
 
@@ -230,6 +231,7 @@ function FormPreview({
 export function CustomFormBuilder({ form, onSave, onCancel }: CustomFormBuilderProps) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const confirm = useConfirmDialog();
 
   const [formName, setFormName] = useState(form?.name || '');
   const [formDescription, setFormDescription] = useState(form?.description || '');
@@ -269,19 +271,11 @@ export function CustomFormBuilder({ form, onSave, onCancel }: CustomFormBuilderP
     setEditingField(null);
   };
 
-  const deleteField = (fieldId: string) => {
-    Alert.alert(
-      'Delete Field',
-      'Are you sure you want to delete this field?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => setFields(fields.filter(f => f.id !== fieldId)),
-        },
-      ]
-    );
+  const deleteField = async (fieldId: string) => {
+    const ok = await confirm({ title: 'Delete Field', message: 'Are you sure you want to delete this field?', confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      setFields(fields.filter(f => f.id !== fieldId));
+    }
   };
 
   const moveField = (index: number, direction: 'up' | 'down') => {

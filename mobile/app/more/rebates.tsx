@@ -17,6 +17,7 @@ import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -641,6 +642,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
 
 export default function RebatesScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -806,33 +808,23 @@ export default function RebatesScreen() {
     }
   };
 
-  const handleDelete = (rebate: Rebate) => {
-    Alert.alert(
-      'Delete Rebate',
-      `Are you sure you want to delete "${rebate.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setActionLoading(rebate.id);
-            try {
-              const res = await api.delete(`/api/rebates/${rebate.id}`);
-              if (res.error) {
-                Alert.alert('Error', res.error);
-              } else {
-                fetchData();
-              }
-            } catch (err) {
-              Alert.alert('Error', 'Failed to delete rebate');
-            } finally {
-              setActionLoading(null);
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async (rebate: Rebate) => {
+    const ok = await confirm({ title: 'Delete Rebate', message: `Are you sure you want to delete "${rebate.name}"?`, confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      setActionLoading(rebate.id);
+      try {
+        const res = await api.delete(`/api/rebates/${rebate.id}`);
+        if (res.error) {
+          Alert.alert('Error', res.error);
+        } else {
+          fetchData();
+        }
+      } catch (err) {
+        Alert.alert('Error', 'Failed to delete rebate');
+      } finally {
+        setActionLoading(null);
+      }
+    }
   };
 
   const handleSubmit = async (rebate: Rebate) => {

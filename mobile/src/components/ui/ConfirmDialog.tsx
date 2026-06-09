@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useRef, useState, ReactNode } from 'react';
-import { Alert, Modal, View, Text, Pressable, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import { Alert, Modal, View, Text, Pressable, StyleSheet, Platform, KeyboardAvoidingView, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../lib/theme';
 import { radius, spacing, typography, shadows } from '../../lib/design-tokens';
@@ -51,6 +51,19 @@ function nativeConfirm(options: ConfirmDialogOptions): Promise<boolean> {
 export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<PendingState | null>(null);
   const { colors, isDark } = useTheme();
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    if (pending) {
+      scaleAnim.setValue(0.9);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 7,
+        tension: 90,
+      }).start();
+    }
+  }, [pending, scaleAnim]);
 
   const confirm = useCallback((options: ConfirmDialogOptions) => {
     // iOS users expect the native system alert (it has the right typography,
@@ -86,6 +99,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
         <Pressable style={styles.backdrop} onPress={() => handleClose(false)}>
+          <Animated.View style={[styles.dialogWrap, { transform: [{ scale: scaleAnim }] }]}>
           <Pressable
             style={[
               styles.dialog,
@@ -103,22 +117,6 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
               </Text>
             ) : null}
             <View style={styles.actions}>
-              {pending?.showCancel !== false ? (
-                <Pressable
-                  onPress={() => handleClose(false)}
-                  style={({ pressed }) => [
-                    styles.btn,
-                    {
-                      backgroundColor: pressed ? colors.accent : colors.secondary,
-                      borderColor: colors.input,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.btnText, { color: colors.foreground }]}>
-                    {pending?.cancelText ?? 'Cancel'}
-                  </Text>
-                </Pressable>
-              ) : null}
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -148,8 +146,25 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
                   {pending?.confirmText ?? 'Confirm'}
                 </Text>
               </Pressable>
+              {pending?.showCancel !== false ? (
+                <Pressable
+                  onPress={() => handleClose(false)}
+                  style={({ pressed }) => [
+                    styles.btn,
+                    {
+                      backgroundColor: pressed ? colors.accent : colors.background,
+                      borderColor: colors.input,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.btnText, { color: colors.foreground }]}>
+                    {pending?.cancelText ?? 'Cancel'}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           </Pressable>
+          </Animated.View>
         </Pressable>
         </KeyboardAvoidingView>
       </Modal>
@@ -179,10 +194,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xl,
   },
-  dialog: {
+  dialogWrap: {
     width: '100%',
     maxWidth: 420,
-    borderRadius: radius.xl,
+    alignSelf: 'center',
+  },
+  dialog: {
+    width: '100%',
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     padding: spacing.xl,
     gap: spacing.md,
@@ -194,14 +213,14 @@ const styles = StyleSheet.create({
     ...typography.body,
   },
   actions: {
-    flexDirection: 'row',
-    gap: spacing.md,
+    flexDirection: 'column',
+    gap: spacing.sm,
     marginTop: spacing.sm,
   },
   btn: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: radius.md,
+    width: '100%',
+    minHeight: 52,
+    borderRadius: radius.xl,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

@@ -17,6 +17,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { spacing, radius, shadows } from '../../src/lib/design-tokens';
 import { 
   useBusinessTemplates, 
@@ -597,6 +598,7 @@ const FAMILY_ICONS: Record<BusinessTemplateFamily, string> = {
 
 export default function BusinessTemplatesScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -767,26 +769,16 @@ export default function BusinessTemplatesScreen() {
     setIsSaving(false);
   };
 
-  const handleDelete = (template: BusinessTemplate) => {
-    Alert.alert(
-      'Delete Template',
-      `Are you sure you want to delete "${template.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteTemplate(template.id);
-              Alert.alert('Success', 'Template deleted');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete template');
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async (template: BusinessTemplate) => {
+    const ok = await confirm({ title: 'Delete Template', message: `Are you sure you want to delete "${template.name}"?`, confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      try {
+        await deleteTemplate(template.id);
+        Alert.alert('Success', 'Template deleted');
+      } catch (error) {
+        Alert.alert('Error', 'Failed to delete template');
+      }
+    }
   };
 
   const handleActivate = async (template: BusinessTemplate) => {

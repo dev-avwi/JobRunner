@@ -16,6 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { useAuthStore } from '../../src/lib/store';
 import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
 import { Slider } from '../../src/components/ui/Slider';
@@ -412,6 +413,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
 
 export default function BrandingScreen() {
   const { colors, brandColor } = useTheme();
+  const confirm = useConfirmDialog();
   const { businessSettings, updateBusinessSettings } = useAuthStore();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -474,23 +476,19 @@ export default function BrandingScreen() {
     await updateBusinessSettings({ brandColor: hex });
   }, [setCustomPrimaryColor, updateBusinessSettings]);
 
-  const handleResetTheme = useCallback(() => {
-    Alert.alert(
-      'Reset Theme',
-      'This will reset all theme settings to defaults. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: () => {
-            resetToDefaults();
-            Alert.alert('Success', 'Theme reset to defaults');
-          },
-        },
-      ]
-    );
-  }, [resetToDefaults]);
+  const handleResetTheme = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Reset Theme',
+      message: 'This will reset all theme settings to defaults. Continue?',
+      confirmText: 'Reset',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      resetToDefaults();
+      Alert.alert('Success', 'Theme reset to defaults');
+    }
+  }, [resetToDefaults, confirm]);
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -590,22 +588,18 @@ export default function BrandingScreen() {
     }
   };
 
-  const handleRemoveLogo = () => {
-    Alert.alert(
-      'Remove Logo',
-      'Are you sure you want to remove your business logo?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            setLogoUrl('');
-            await updateBusinessSettings({ logoUrl: '' });
-          },
-        },
-      ]
-    );
+  const handleRemoveLogo = async () => {
+    const ok = await confirm({
+      title: 'Remove Logo',
+      message: 'Are you sure you want to remove your business logo?',
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      setLogoUrl('');
+      await updateBusinessSettings({ logoUrl: '' });
+    }
   };
 
   const activePreset = PRESET_THEMES.find((p) => p.id === activePresetId);

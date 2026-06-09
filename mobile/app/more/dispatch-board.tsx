@@ -31,6 +31,7 @@ import { useAuthStore } from '../../src/lib/store';
 import { useIsTablet, useContentWidth } from '../../src/lib/device';
 import { format, isToday, parseISO, isBefore, startOfDay, isSameDay } from 'date-fns';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 
 type ViewMode = 'schedule' | 'kanban' | 'map';
 
@@ -111,6 +112,7 @@ function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): nu
 
 export default function DispatchBoardScreen() {
   const { colors, isDark } = useTheme();
+  const confirm = useConfirmDialog();
   const responsiveShell = usePageShell();
   const contentWidth = useContentWidth();
   const isTabletDevice = useIsTablet();
@@ -307,21 +309,21 @@ export default function DispatchBoardScreen() {
   };
 
   const handleUnassign = async (job: JobData) => {
-    Alert.alert('Unassign Job', `Remove assignment from "${job.title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Unassign',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.patch(`/api/jobs/${job.id}`, { assignedTo: null });
-            setJobs(prev => prev.map(j => j.id === job.id ? { ...j, assignedTo: undefined } : j));
-          } catch {
-            Alert.alert('Error', 'Failed to unassign job');
-          }
-        },
-      },
-    ]);
+    const ok = await confirm({
+      title: 'Unassign Job',
+      message: `Remove assignment from "${job.title}"?`,
+      confirmText: 'Unassign',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        await api.patch(`/api/jobs/${job.id}`, { assignedTo: null });
+        setJobs(prev => prev.map(j => j.id === job.id ? { ...j, assignedTo: undefined } : j));
+      } catch {
+        Alert.alert('Error', 'Failed to unassign job');
+      }
+    }
   };
 
   const openAssignModal = (job: JobData) => {

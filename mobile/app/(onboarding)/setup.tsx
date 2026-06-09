@@ -25,6 +25,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OnboardingMagicScreen } from '../../src/components/OnboardingMagicScreen';
 import { OnboardingTour, hasCompletedOnboarding } from '../../src/components/OnboardingTour';
 import { markOnboardingSetupFailed, clearOnboardingSetupFailure } from '../../src/lib/onboardingSetupStatus';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 
 const ONBOARDING_DRAFT_KEY = 'onboarding:owner-draft:v1';
 
@@ -66,6 +67,7 @@ export default function OnboardingSetupScreen() {
   
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const confirm = useConfirmDialog();
   const { user, fetchBusinessSettings } = useAuthStore();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -572,39 +574,29 @@ export default function OnboardingSetupScreen() {
     proceedToNotifications();
   };
 
-  const handleSkipOnboarding = () => {
-    Alert.alert(
-      'Skip setup?',
-      "You can finish your business profile any time from Settings. We'll keep a quick reminder on your dashboard.",
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Skip for now',
-          style: 'destructive',
-          onPress: async () => {
-            setIsLoading(true);
-            try {
-              const res = await api.post('/api/onboarding/complete', {});
-              if (res.error) {
-                Alert.alert("Couldn't skip setup", res.error || 'Please check your connection and try again.');
-                return;
-              }
-              try { await fetchBusinessSettings(); } catch {}
-              const bs = useAuthStore.getState().businessSettings;
-              if (!bs?.onboardingCompleted) {
-                Alert.alert("Couldn't skip setup", 'We saved your progress but could not confirm with the server. Please try again.');
-                return;
-              }
-              router.replace('/(tabs)');
-            } catch (e: any) {
-              Alert.alert("Couldn't skip setup", e?.message || 'Please check your connection and try again.');
-            } finally {
-              setIsLoading(false);
-            }
-          },
-        },
-      ],
-    );
+  const handleSkipOnboarding = async () => {
+    const ok = await confirm({ title: 'Skip setup?', message: "You can finish your business profile any time from Settings. We'll keep a quick reminder on your dashboard.", confirmText: 'Skip for now', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      setIsLoading(true);
+      try {
+        const res = await api.post('/api/onboarding/complete', {});
+        if (res.error) {
+          Alert.alert("Couldn't skip setup", res.error || 'Please check your connection and try again.');
+          return;
+        }
+        try { await fetchBusinessSettings(); } catch {}
+        const bs = useAuthStore.getState().businessSettings;
+        if (!bs?.onboardingCompleted) {
+          Alert.alert("Couldn't skip setup", 'We saved your progress but could not confirm with the server. Please try again.');
+          return;
+        }
+        router.replace('/(tabs)');
+      } catch (e: any) {
+        Alert.alert("Couldn't skip setup", e?.message || 'Please check your connection and try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   const getCurrentStep = () => {

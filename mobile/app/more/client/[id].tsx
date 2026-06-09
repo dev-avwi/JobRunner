@@ -20,6 +20,7 @@ import { useTheme, ThemeColors } from '../../../src/lib/theme';
 import { spacing, radius, shadows, typography, iconSizes, sizes } from '../../../src/lib/design-tokens';
 import api from '../../../src/lib/api';
 import { TeamAvatar } from '../../../src/components/TeamAvatar';
+import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 
 type TabKey = 'overview' | 'jobs' | 'quotes' | 'invoices';
 
@@ -48,6 +49,7 @@ export default function ClientDetailScreen() {
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const confirm = useConfirmDialog();
 
   useEffect(() => {
     loadData();
@@ -77,32 +79,22 @@ export default function ClientDetailScreen() {
     }
   };
 
-  const handleClearSignature = () => {
-    Alert.alert(
-      'Clear Signature',
-      'Are you sure you want to clear the saved signature for this client?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Clear', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await api.delete(`/api/clients/${id}/saved-signature`);
-              if (response.data) {
-                setSavedSignature(null);
-                Alert.alert('Success', 'Signature cleared successfully');
-              } else {
-                Alert.alert('Error', 'Failed to clear signature');
-              }
-            } catch (error) {
-              console.error('Error clearing signature:', error);
-              Alert.alert('Error', 'An error occurred while clearing the signature');
-            }
-          }
+  const handleClearSignature = async () => {
+    const ok = await confirm({ title: 'Clear Signature', message: 'Are you sure you want to clear the saved signature for this client?', confirmText: 'Clear', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      try {
+        const response = await api.delete(`/api/clients/${id}/saved-signature`);
+        if (response.data) {
+          setSavedSignature(null);
+          Alert.alert('Success', 'Signature cleared successfully');
+        } else {
+          Alert.alert('Error', 'Failed to clear signature');
         }
-      ]
-    );
+      } catch (error) {
+        console.error('Error clearing signature:', error);
+        Alert.alert('Error', 'An error occurred while clearing the signature');
+      }
+    }
   };
 
   const clientJobs = jobs.filter(j => j.clientId === id);
@@ -239,7 +231,7 @@ export default function ClientDetailScreen() {
     router.push(`/more/client/new?clientId=${id}`);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const hasAssociatedData = clientJobs.length > 0 || clientQuotes.length > 0 || clientInvoices.length > 0;
     
     if (hasAssociatedData) {
@@ -274,25 +266,15 @@ export default function ClientDetailScreen() {
         ]
       );
     } else {
-      Alert.alert(
-        'Delete Client',
-        'Are you sure you want to delete this client? This cannot be undone.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Delete', 
-            style: 'destructive',
-            onPress: async () => {
-              const success = await deleteClient(id!, false);
-              if (success) {
-                router.back();
-              } else {
-                Alert.alert('Error', 'Failed to delete client');
-              }
-            }
-          }
-        ]
-      );
+      const ok = await confirm({ title: 'Delete Client', message: 'Are you sure you want to delete this client? This cannot be undone.', confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+      if (ok) {
+        const success = await deleteClient(id!, false);
+        if (success) {
+          router.back();
+        } else {
+          Alert.alert('Error', 'Failed to delete client');
+        }
+      }
     }
   };
 

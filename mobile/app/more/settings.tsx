@@ -33,6 +33,7 @@ import { useLocationStore } from '../../src/lib/location-store';
 import AppTour from '../../src/components/AppTour';
 import { Slider } from '../../src/components/ui/Slider';
 import { showToast } from '../../src/lib/toast';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 
 const PLAN_FEATURES = [
   { icon: 'briefcase', text: 'Unlimited jobs, quotes & invoices', pro: true },
@@ -928,23 +929,26 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
 function GpsPrivacyCard() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { gpsOptOut, setGpsOptOut, isEnabled, status } = useLocationStore();
 
-  const handleOptOutChange = useCallback((value: boolean) => {
+  const handleOptOutChange = useCallback(async (value: boolean) => {
     if (value) {
-      Alert.alert(
-        'Disable GPS Tracking',
-        'This will stop all location sharing and geofencing. Your employer won\'t see your location on the team map. You can still track time without GPS.\n\nYou can re-enable this at any time.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Disable GPS', style: 'destructive', onPress: () => setGpsOptOut(true) },
-        ]
-      );
+      const ok = await confirm({
+        title: 'Disable GPS Tracking',
+        message: 'This will stop all location sharing and geofencing. Your employer won\'t see your location on the team map. You can still track time without GPS.\n\nYou can re-enable this at any time.',
+        confirmText: 'Disable GPS',
+        cancelText: 'Cancel',
+        destructive: true,
+      });
+      if (ok) {
+        setGpsOptOut(true);
+      }
     } else {
       setGpsOptOut(false);
     }
-  }, [setGpsOptOut]);
+  }, [setGpsOptOut, confirm]);
 
   const statusText = gpsOptOut 
     ? 'GPS is off — your location is private'
@@ -1010,6 +1014,7 @@ function GpsPrivacyCard() {
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { user, refreshUser, roleInfo } = useAuthStore();
@@ -1536,35 +1541,31 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleDeleteTemplate = (template: DocumentTemplate) => {
-    Alert.alert(
-      'Delete Template',
-      `Are you sure you want to delete "${template.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const authToken = await api.getToken();
-              const response = await fetch(`${API_URL}/api/templates/${template.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${authToken}`,
-                },
-              });
-              if (response.ok) {
-                await loadTemplates();
-                showToast({ type: 'success', message: 'Success', description: 'Template deleted' });
-              }
-            } catch (error) {
-              showToast({ type: 'error', message: 'Error', description: 'Failed to delete template' });
-            }
-          }
+  const handleDeleteTemplate = async (template: DocumentTemplate) => {
+    const ok = await confirm({
+      title: 'Delete Template',
+      message: `Are you sure you want to delete "${template.name}"?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        const authToken = await api.getToken();
+        const response = await fetch(`${API_URL}/api/templates/${template.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        });
+        if (response.ok) {
+          await loadTemplates();
+          showToast({ type: 'success', message: 'Success', description: 'Template deleted' });
         }
-      ]
-    );
+      } catch (error) {
+        showToast({ type: 'error', message: 'Error', description: 'Failed to delete template' });
+      }
+    }
   };
 
   const addLineItem = () => {
@@ -1914,34 +1915,30 @@ export default function SettingsScreen() {
                   </Text>
                   <PressableRow
                     style={[styles.settingsCard, { backgroundColor: colors.muted, borderColor: colors.destructive }]}
-                    onPress={() => {
-                      Alert.alert(
-                        'Clear Sample Data?',
-                        'This will remove all sample clients, jobs, quotes, and invoices. Your real data won\'t be affected.',
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          { 
-                            text: 'Clear Sample Data', 
-                            style: 'destructive',
-                            onPress: async () => {
-                              setIsLoading(true);
-                              try {
-                                const response = await api.post<{ message?: string }>('/api/onboarding/clear-demo-data');
-                                if (response.error) {
-                                  showToast({ type: 'error', message: 'Error', description: response.error });
-                                } else {
-                                  await refreshUser();
-                                  showToast({ type: 'success', message: 'Done', description: response.data?.message || 'Sample data cleared successfully!' });
-                                }
-                              } catch (error: any) {
-                                showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to clear sample data' });
-                              } finally {
-                                setIsLoading(false);
-                              }
-                            }
+                    onPress={async () => {
+                      const ok = await confirm({
+                        title: 'Clear Sample Data?',
+                        message: 'This will remove all sample clients, jobs, quotes, and invoices. Your real data won\'t be affected.',
+                        confirmText: 'Clear Sample Data',
+                        cancelText: 'Cancel',
+                        destructive: true,
+                      });
+                      if (ok) {
+                        setIsLoading(true);
+                        try {
+                          const response = await api.post<{ message?: string }>('/api/onboarding/clear-demo-data');
+                          if (response.error) {
+                            showToast({ type: 'error', message: 'Error', description: response.error });
+                          } else {
+                            await refreshUser();
+                            showToast({ type: 'success', message: 'Done', description: response.data?.message || 'Sample data cleared successfully!' });
                           }
-                        ]
-                      );
+                        } catch (error: any) {
+                          showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to clear sample data' });
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }
                     }}
                     data-testid="button-clear-sample-data"
                   >

@@ -22,6 +22,7 @@ import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes } fro
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
 import { EmailComposeModal } from '../../src/components/EmailComposeModal';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 
 type FilterKey = 'all' | 'draft' | 'sent' | 'accepted' | 'rejected' | 'archived';
 
@@ -200,6 +201,7 @@ function QuoteCard({
 
 export default function QuotesScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const bottomInset = useBottomInset(40);
   const styles = useMemo(() => createStyles(colors), [colors]);
   
@@ -347,30 +349,26 @@ export default function QuotesScreen() {
     );
   };
 
-  const handleDeleteQuote = (quoteId: string) => {
+  const handleDeleteQuote = async (quoteId: string) => {
     const quote = quotes.find(q => q.id === quoteId);
     
-    Alert.alert(
-      'Delete Quote',
-      `Are you sure you want to delete ${quote?.quoteNumber || 'this quote'}? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.delete(`/api/quotes/${quoteId}`);
-              await refreshData();
-              Alert.alert('Success', 'Quote deleted successfully');
-            } catch (error) {
-              console.error('Error deleting quote:', error);
-              Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete quote');
-            }
-          }
-        }
-      ]
-    );
+    const ok = await confirm({
+      title: 'Delete Quote',
+      message: `Are you sure you want to delete ${quote?.quoteNumber || 'this quote'}? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        await api.delete(`/api/quotes/${quoteId}`);
+        await refreshData();
+        Alert.alert('Success', 'Quote deleted successfully');
+      } catch (error) {
+        console.error('Error deleting quote:', error);
+        Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete quote');
+      }
+    }
   };
 
   return (

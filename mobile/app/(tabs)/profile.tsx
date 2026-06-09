@@ -506,8 +506,8 @@ export default function MoreScreen() {
 
   const handleLogout = async () => {
     const ok = await confirm({
-      title: 'Sign Out',
-      message: 'Are you sure you want to sign out?',
+      title: 'Sign out?',
+      message: "You'll need to sign back in to access your account.",
       confirmText: 'Sign Out',
       cancelText: 'Cancel',
       destructive: true,

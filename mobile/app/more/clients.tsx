@@ -19,6 +19,7 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useClientsStore, useInvoicesStore, useJobsStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { spacing, radius, shadows, typography, iconSizes, sizes, pageShell, usePageShell } from '../../src/lib/design-tokens';
 import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable';
 import api from '../../src/lib/api';
@@ -187,6 +188,7 @@ function ClientCard({
 }
 
 export default function ClientsScreen() {
+  const confirm = useConfirmDialog();
   const { clients, fetchClients, isLoading, deleteClient } = useClientsStore();
   const { invoices, fetchInvoices } = useInvoicesStore();
   const { jobs, fetchJobs } = useJobsStore();
@@ -356,26 +358,22 @@ export default function ClientsScreen() {
     router.push(`/more/create-job?clientId=${clientId}`);
   };
 
-  const handleDeleteClient = (client: any) => {
-    Alert.alert(
-      'Delete Client',
-      `Are you sure you want to delete "${client.name}"? This will also delete all associated jobs, quotes, and invoices.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const success = await deleteClient(client.id, true);
-            if (success) {
-              Alert.alert('Success', 'Client deleted successfully');
-            } else {
-              Alert.alert('Error', 'Failed to delete client');
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteClient = async (client: any) => {
+    const ok = await confirm({
+      title: 'Delete Client',
+      message: `Are you sure you want to delete "${client.name}"? This will also delete all associated jobs, quotes, and invoices.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      const success = await deleteClient(client.id, true);
+      if (success) {
+        Alert.alert('Success', 'Client deleted successfully');
+      } else {
+        Alert.alert('Error', 'Failed to delete client');
+      }
+    }
   };
 
   const renderItem = useCallback(({ item }: { item: any }) => (

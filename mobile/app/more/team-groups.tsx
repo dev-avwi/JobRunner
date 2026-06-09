@@ -16,6 +16,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { api } from '../../src/lib/api';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
@@ -483,6 +484,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
 
 export default function TeamGroupsScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -602,31 +604,27 @@ export default function TeamGroupsScreen() {
     }
   };
 
-  const handleDelete = (group: TeamGroup) => {
+  const handleDelete = async (group: TeamGroup) => {
     setActionSheetGroup(null);
-    Alert.alert(
-      'Delete Group',
-      `Are you sure you want to delete "${group.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const res = await api.delete(`/api/team-groups/${group.id}`);
-              if (res.error) {
-                Alert.alert('Error', 'Failed to delete group');
-              } else {
-                fetchGroups();
-              }
-            } catch (err) {
-              Alert.alert('Error', 'Something went wrong');
-            }
-          },
-        },
-      ]
-    );
+    const ok = await confirm({
+      title: 'Delete Group',
+      message: `Are you sure you want to delete "${group.name}"? This cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        const res = await api.delete(`/api/team-groups/${group.id}`);
+        if (res.error) {
+          Alert.alert('Error', 'Failed to delete group');
+        } else {
+          fetchGroups();
+        }
+      } catch (err) {
+        Alert.alert('Error', 'Something went wrong');
+      }
+    }
   };
 
   const handleViewGroup = (group: TeamGroup) => {

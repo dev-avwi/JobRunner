@@ -37,6 +37,7 @@ import UsageLimitBanner from '../../src/components/UsageLimitBanner';
 import { QuickActionSheet, type QuickAction } from '../../src/components/QuickActionSheet';
 import { showToast } from '../../src/lib/toast';
 import { Button } from '../../src/components/ui/Button';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 
 interface AdvancedFilters {
   statuses: string[];
@@ -97,6 +98,7 @@ function JobListRow({
   const contentWidth = useContentWidth();
   const responsiveShell = usePageShell();
   const styles = useMemo(() => createStyles(colors, contentWidth, responsiveShell.paddingHorizontal), [colors, contentWidth, responsiveShell.paddingHorizontal]);
+  const confirm = useConfirmDialog();
   
   const urgency = getJobUrgency(job.scheduledAt, job.status, colors.isDark);
   
@@ -109,19 +111,11 @@ function JobListRow({
     });
   };
 
-  const handleDelete = () => {
-    Alert.alert(
-      'Delete Job',
-      `Are you sure you want to delete "${job.title || 'Untitled Job'}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: () => onDelete(job.id)
-        }
-      ]
-    );
+  const handleDelete = async () => {
+    const ok = await confirm({ title: 'Delete Job', message: `Are you sure you want to delete "${job.title || 'Untitled Job'}"? This action cannot be undone.`, confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      onDelete(job.id);
+    }
   };
 
   const handleMorePress = () => {
@@ -307,6 +301,7 @@ export default function JobsScreen() {
   const isTabletDevice = useIsTablet();
   const responsiveShell = usePageShell();
   const styles = useMemo(() => createStyles(colors, contentWidth, responsiveShell.paddingHorizontal), [colors, contentWidth, responsiveShell.paddingHorizontal]);
+  const confirm = useConfirmDialog();
   const scrollRef = useRef<FlatList | null>(null);
   const { scrollToTopTrigger } = useScrollToTop();
   
@@ -416,18 +411,12 @@ export default function JobsScreen() {
   }, [saveFilterName, advancedFilters]);
 
   const handleDeleteSavedFilter = useCallback(async (id: string, name: string) => {
-    Alert.alert('Delete Filter', `Delete "${name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await api.delete(`/api/saved-filters/${id}`);
-          setSavedFilters(prev => prev.filter(f => f.id !== id));
-        },
-      },
-    ]);
-  }, []);
+    const ok = await confirm({ title: 'Delete Filter', message: `Delete "${name}"?`, confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      await api.delete(`/api/saved-filters/${id}`);
+      setSavedFilters(prev => prev.filter(f => f.id !== id));
+    }
+  }, [confirm]);
 
   const handleLoadSavedFilter = useCallback((sf: SavedFilter) => {
     setAdvancedFilters(sf.filters as AdvancedFilters);
@@ -611,14 +600,12 @@ export default function JobsScreen() {
         icon: 'trash-2',
         label: 'Delete Job',
         destructive: true,
-        onPress: () => Alert.alert(
-          'Delete Job',
-          `Delete "${job.title || 'Untitled Job'}"? This cannot be undone.`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => handleDeleteJob(job.id) },
-          ]
-        ),
+        onPress: async () => {
+          const ok = await confirm({ title: 'Delete Job', message: `Delete "${job.title || 'Untitled Job'}"? This cannot be undone.`, confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+          if (ok) {
+            handleDeleteJob(job.id);
+          }
+        },
       });
     }
     return acts;

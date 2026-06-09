@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, iconSizes, sizes, componentStyles, usePageShell } from '../../src/lib/design-tokens';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 
 type FormType = 'general' | 'safety' | 'compliance' | 'inspection';
 type FieldType = 'text' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'date' | 'photo' | 'signature';
@@ -639,6 +640,7 @@ type ActiveTab = 'forms' | 'templates';
 export default function FormBuilderScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const responsiveShell = usePageShell();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -768,30 +770,26 @@ export default function FormBuilderScreen() {
     }
   };
 
-  const handleDelete = (form: CustomForm) => {
-    Alert.alert(
-      'Delete Form',
-      `Are you sure you want to delete "${form.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const res = await api.delete(`/api/custom-forms/${form.id}`);
-              if (res.error) {
-                Alert.alert('Error', res.error);
-                return;
-              }
-              fetchForms();
-            } catch (err) {
-              Alert.alert('Error', 'Failed to delete form.');
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async (form: CustomForm) => {
+    const ok = await confirm({
+      title: 'Delete Form',
+      message: `Are you sure you want to delete "${form.name}"?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        const res = await api.delete(`/api/custom-forms/${form.id}`);
+        if (res.error) {
+          Alert.alert('Error', res.error);
+          return;
+        }
+        fetchForms();
+      } catch (err) {
+        Alert.alert('Error', 'Failed to delete form.');
+      }
+    }
   };
 
   const addField = (type: FieldType) => {

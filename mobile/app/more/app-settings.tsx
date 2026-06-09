@@ -13,6 +13,7 @@ import { useMapsStore, MapsPreference } from '../../src/lib/maps-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 
 const MAP_COLORS = [
   { name: 'Blue', hex: '#3b82f6' },
@@ -448,6 +449,7 @@ function MapsPreferenceSection() {
 
 export default function AppSettingsScreen() {
   const { colors, themeMode, setThemeMode, isDark, brandColor } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -543,22 +545,18 @@ export default function AppSettingsScreen() {
     }
   };
 
-  const handleClearCache = () => {
-    Alert.alert(
-      'Clear Local Data?',
-      'This removes cached data from your device. Server data stays safe.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Clear', 
-          style: 'destructive',
-          onPress: async () => {
-            await offlineStorage.clearCache();
-            Alert.alert('Done', 'Local cache cleared');
-          }
-        },
-      ]
-    );
+  const handleClearCache = async () => {
+    const ok = await confirm({
+      title: 'Clear Local Data?',
+      message: 'This removes cached data from your device. Server data stays safe.',
+      confirmText: 'Clear',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      await offlineStorage.clearCache();
+      Alert.alert('Done', 'Local cache cleared');
+    }
   };
 
   const handleColorSelect = async (colorHex: string, isAvailable: boolean) => {

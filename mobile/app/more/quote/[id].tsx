@@ -29,6 +29,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../../src/components/BottomNav';
 import { showToast } from '../../../src/lib/toast';
 import { Button } from '../../../src/components/ui/Button';
+import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 
 interface LinkedInvoice {
   id: string;
@@ -69,6 +70,7 @@ export default function QuoteDetailScreen() {
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
+  const confirm = useConfirmDialog();
   
   const STATUS_CONFIG = useMemo(() => ({
     draft: { label: 'Draft', color: colors.warning, bg: colors.warningLight },
@@ -132,33 +134,23 @@ export default function QuoteDetailScreen() {
     loadVersionHistory();
   };
 
-  const handleDeleteQuote = () => {
+  const handleDeleteQuote = async () => {
     if (!quote) return;
     
-    Alert.alert(
-      'Delete Quote',
-      'Are you sure you want to delete this quote? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeleting(true);
-            try {
-              await api.delete(`/api/quotes/${quote.id}`);
-              showToast({ type: 'success', message: 'Success', description: 'Quote deleted successfully' });
-              router.back();
-            } catch (error) {
-              console.error('Error deleting quote:', error);
-              showToast({ type: 'error', message: 'Error', description: 'Failed to delete quote' });
-            } finally {
-              setIsDeleting(false);
-            }
-          },
-        },
-      ]
-    );
+    const ok = await confirm({ title: 'Delete Quote', message: 'Are you sure you want to delete this quote? This cannot be undone.', confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      setIsDeleting(true);
+      try {
+        await api.delete(`/api/quotes/${quote.id}`);
+        showToast({ type: 'success', message: 'Success', description: 'Quote deleted successfully' });
+        router.back();
+      } catch (error) {
+        console.error('Error deleting quote:', error);
+        showToast({ type: 'error', message: 'Error', description: 'Failed to delete quote' });
+      } finally {
+        setIsDeleting(false);
+      }
+    }
   };
 
   useEffect(() => {

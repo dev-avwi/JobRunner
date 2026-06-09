@@ -19,6 +19,7 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -732,6 +733,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
 
 export default function RecurringJobsScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -967,33 +969,23 @@ export default function RecurringJobsScreen() {
     );
   };
 
-  const handleDelete = (job: RecurringJob) => {
-    Alert.alert(
-      'Delete Recurring Job',
-      `Are you sure you want to delete "${job.title}"? This will stop future occurrences. Existing jobs will not be affected.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setActionLoading(job.id);
-            try {
-              const res = await api.post(`/api/recurring/jobs/${job.id}/stop`);
-              if (res.error) {
-                Alert.alert('Error', res.error);
-              } else {
-                fetchRecurringJobs();
-              }
-            } catch (err) {
-              Alert.alert('Error', 'Failed to delete recurring job.');
-            } finally {
-              setActionLoading(null);
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async (job: RecurringJob) => {
+    const ok = await confirm({ title: 'Delete Recurring Job', message: `Are you sure you want to delete "${job.title}"? This will stop future occurrences. Existing jobs will not be affected.`, confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      setActionLoading(job.id);
+      try {
+        const res = await api.post(`/api/recurring/jobs/${job.id}/stop`);
+        if (res.error) {
+          Alert.alert('Error', res.error);
+        } else {
+          fetchRecurringJobs();
+        }
+      } catch (err) {
+        Alert.alert('Error', 'Failed to delete recurring job.');
+      } finally {
+        setActionLoading(null);
+      }
+    }
   };
 
   const isOverdue = (dateStr?: string) => {

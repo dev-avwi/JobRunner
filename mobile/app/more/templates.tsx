@@ -26,6 +26,7 @@ import LiveDocumentPreview from '../../src/components/LiveDocumentPreview';
 import { TemplateId, DOCUMENT_TEMPLATES, TemplateCustomization, DOCUMENT_ACCENT_COLOR } from '../../src/lib/document-templates';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 
 interface StylePreset {
   id: string;
@@ -1051,6 +1052,7 @@ function formatCurrency(amount: number): string {
 
 export default function TemplatesScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -1422,34 +1424,30 @@ export default function TemplatesScreen() {
     }
   };
 
-  const handleDeleteTemplate = (template: DocumentTemplate) => {
-    Alert.alert(
-      'Delete Template',
-      `Are you sure you want to delete "${template.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await fetch(`${API_URL}/api/templates/${template.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                },
-              });
-              if (response.ok) {
-                await refreshData();
-                Alert.alert('Success', 'Template deleted');
-              }
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete template');
-            }
-          }
+  const handleDeleteTemplate = async (template: DocumentTemplate) => {
+    const ok = await confirm({
+      title: 'Delete Template',
+      message: `Are you sure you want to delete "${template.name}"?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        const response = await fetch(`${API_URL}/api/templates/${template.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          await refreshData();
+          Alert.alert('Success', 'Template deleted');
         }
-      ]
-    );
+      } catch (error) {
+        Alert.alert('Error', 'Failed to delete template');
+      }
+    }
   };
 
   const addLineItem = () => {

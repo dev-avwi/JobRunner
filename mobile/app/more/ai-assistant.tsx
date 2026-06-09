@@ -19,6 +19,7 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { useAuthStore } from '../../src/lib/store';
 import api from '../../src/lib/api';
 
@@ -407,6 +408,7 @@ function NotificationCard({
 
 export default function AIAssistantScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const { user } = useAuthStore();
   const bottomInset = useBottomInset(24);
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -588,22 +590,12 @@ export default function AIAssistantScreen() {
     setChatMessage(suggestion);
   };
 
-  const handleClearChat = () => {
-    Alert.alert(
-      'Clear Chat',
-      'Are you sure you want to clear the conversation?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Clear', 
-          style: 'destructive',
-          onPress: () => {
-            setChatHistory([]);
-            setPendingAction(null);
-          }
-        }
-      ]
-    );
+  const handleClearChat = async () => {
+    const ok = await confirm({ title: 'Clear Chat', message: 'Are you sure you want to clear the conversation?', confirmText: 'Clear', cancelText: 'Cancel', destructive: true });
+    if (ok) {
+      setChatHistory([]);
+      setPendingAction(null);
+    }
   };
 
   return (

@@ -17,6 +17,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { BottomSheetScrollView } from '../../src/components/ui/AppBottomSheet';
 import { api } from '../../src/lib/api';
@@ -122,6 +123,7 @@ const defaultMaintenanceForm = {
 
 export default function EquipmentScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -283,32 +285,28 @@ export default function EquipmentScreen() {
     }
   };
 
-  const handleDelete = (item: Equipment) => {
-    Alert.alert(
-      'Delete Equipment',
-      `Are you sure you want to delete "${item.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const res = await api.delete(`/api/equipment/${item.id}`);
-              if (res.error) {
-                Alert.alert('Error', res.error);
-                return;
-              }
-              setShowDetailModal(false);
-              setSelectedItem(null);
-              fetchData();
-            } catch (err) {
-              Alert.alert('Error', 'Failed to delete equipment.');
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async (item: Equipment) => {
+    const ok = await confirm({
+      title: 'Delete Equipment',
+      message: `Are you sure you want to delete "${item.name}"? This cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try {
+        const res = await api.delete(`/api/equipment/${item.id}`);
+        if (res.error) {
+          Alert.alert('Error', res.error);
+          return;
+        }
+        setShowDetailModal(false);
+        setSelectedItem(null);
+        fetchData();
+      } catch (err) {
+        Alert.alert('Error', 'Failed to delete equipment.');
+      }
+    }
   };
 
   const openDetail = async (item: Equipment) => {

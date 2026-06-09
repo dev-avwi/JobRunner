@@ -17,6 +17,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { api } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes } from '../../src/lib/design-tokens';
@@ -609,6 +610,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
 
 export default function ServiceRemindersScreen() {
   const { colors } = useTheme();
+  const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -770,29 +772,29 @@ export default function ServiceRemindersScreen() {
     }
   };
 
-  const handleDelete = (reminder: ServiceReminder) => {
-    Alert.alert('Delete Reminder', `Delete "${reminder.serviceType}" reminder?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          setActionLoading(reminder.id);
-          try {
-            const res = await api.delete(`/api/service-reminders/${reminder.id}`);
-            if (res.error) {
-              Alert.alert('Error', res.error);
-            } else {
-              fetchData();
-            }
-          } catch (err) {
-            Alert.alert('Error', 'Failed to delete reminder');
-          } finally {
-            setActionLoading(null);
-          }
-        },
-      },
-    ]);
+  const handleDelete = async (reminder: ServiceReminder) => {
+    const ok = await confirm({
+      title: 'Delete Reminder',
+      message: `Delete "${reminder.serviceType}" reminder?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      setActionLoading(reminder.id);
+      try {
+        const res = await api.delete(`/api/service-reminders/${reminder.id}`);
+        if (res.error) {
+          Alert.alert('Error', res.error);
+        } else {
+          fetchData();
+        }
+      } catch (err) {
+        Alert.alert('Error', 'Failed to delete reminder');
+      } finally {
+        setActionLoading(null);
+      }
+    }
   };
 
   const openCompleteModal = (reminder: ServiceReminder) => {
