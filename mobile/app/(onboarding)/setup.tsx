@@ -12,6 +12,7 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -109,6 +110,10 @@ export default function OnboardingSetupScreen() {
   const subValidateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [demoDataSeeded, setDemoDataSeeded] = useState(false);
+  // Owner-only choice on the final setup step: whether to preload sample
+  // clients/jobs/quotes so the app isn't empty while they explore. Defaults on,
+  // but is now an explicit, visible toggle (previously it always seeded).
+  const [loadSampleData, setLoadSampleData] = useState(true);
   const [hasHydratedDraft, setHasHydratedDraft] = useState(false);
   const [showMagic, setShowMagic] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -339,22 +344,24 @@ export default function OnboardingSetupScreen() {
     }
   };
 
-  const markOnboardingComplete = async () => {
+  const markOnboardingComplete = async (seedSample: boolean) => {
     const userId = useAuthStore.getState().user?.id;
     let seedFailed = false;
     let completeFailed = false;
 
-    try {
-      const seedRes = await api.post('/api/onboarding/seed-demo-data', {});
-      if (seedRes?.error) {
+    if (seedSample) {
+      try {
+        const seedRes = await api.post('/api/onboarding/seed-demo-data', {});
+        if (seedRes?.error) {
+          seedFailed = true;
+          if (__DEV__) console.log('Demo data seeding failed:', seedRes.error);
+        } else {
+          setDemoDataSeeded(true);
+        }
+      } catch (error) {
         seedFailed = true;
-        if (__DEV__) console.log('Demo data seeding failed:', seedRes.error);
-      } else {
-        setDemoDataSeeded(true);
+        if (__DEV__) console.log('Demo data seeding failed:', error);
       }
-    } catch (error) {
-      seedFailed = true;
-      if (__DEV__) console.log('Demo data seeding failed:', error);
     }
 
     try {
@@ -411,8 +418,9 @@ export default function OnboardingSetupScreen() {
     useAuthStore.getState().setOnboardingFinishing(true);
     // Fire-and-forget: seeding + completion run in the background while the
     // magic screen plays its timed animation. We do NOT await here — the
-    // screen advances on its own timer regardless of network speed.
-    markOnboardingComplete();
+    // screen advances on its own timer regardless of network speed. Sample data
+    // is only seeded if the owner left the toggle on.
+    markOnboardingComplete(loadSampleData);
     setShowMagic(true);
   };
 
@@ -860,6 +868,21 @@ export default function OnboardingSetupScreen() {
             </TouchableOpacity>
           );
         })}
+      </View>
+
+      <View style={styles.sampleToggleRow}>
+        <View style={styles.sampleToggleText}>
+          <Text style={styles.sampleToggleTitle}>Load sample data</Text>
+          <Text style={styles.sampleToggleDesc}>Adds example clients, jobs and quotes so you can explore. Turn off to start empty. You can remove it anytime from your dashboard.</Text>
+        </View>
+        <Switch
+          value={loadSampleData}
+          onValueChange={setLoadSampleData}
+          trackColor={{ false: colors.cardBorder, true: colors.primary }}
+          thumbColor={colors.background}
+          ios_backgroundColor={colors.cardBorder}
+          testID="switch-load-sample-data"
+        />
       </View>
 
       <View style={styles.ctaWrap}>
@@ -1641,6 +1664,32 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.mutedForeground,
   },
 
+  sampleToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorder,
+    marginBottom: 16,
+  },
+  sampleToggleText: {
+    flex: 1,
+    gap: 4,
+  },
+  sampleToggleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.foreground,
+    letterSpacing: -0.2,
+  },
+  sampleToggleDesc: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    lineHeight: 17,
+  },
   ctaWrap: {
     marginTop: 8,
   },
