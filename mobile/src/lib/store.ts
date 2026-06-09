@@ -276,6 +276,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isInitialized: boolean;
   error: string | null;
+  onboardingFinishing: boolean;
   
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -286,6 +287,7 @@ interface AuthState {
   getTeamMembers: () => TeamMember[];
   fetchBusinessSettings: () => Promise<void>;
   setBusinessSettings: (settings: BusinessSettings) => void;
+  setOnboardingFinishing: (value: boolean) => void;
   setUser: (user: User) => void;
   refreshUser: () => Promise<void>;
   clearError: () => void;
@@ -309,9 +311,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isInitialized: false,
   error: null,
+  onboardingFinishing: false,
 
   login: async (email: string, password: string) => {
-    set({ isLoading: true, error: null });
+    // Clear any stale onboarding-finishing suppression from a prior in-memory
+    // session so a fresh login never starts with the global guard suppressed.
+    set({ isLoading: true, error: null, onboardingFinishing: false });
     // Note: Don't clear role cache on login - per-user cache is keyed by userId
     // Each user has their own cache entry, so no cross-user leakage possible
     
@@ -410,7 +415,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isWorker: false,
         isAuthenticated: false,
         isLoading: false,
-        error: null
+        error: null,
+        onboardingFinishing: false,
       });
     }
   },
@@ -685,6 +691,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setBusinessSettings: (settings: BusinessSettings) => {
     set({ businessSettings: settings });
+  },
+
+  setOnboardingFinishing: (value: boolean) => {
+    set({ onboardingFinishing: value });
   },
 
   setUser: (user: User) => {

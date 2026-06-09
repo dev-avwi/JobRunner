@@ -404,6 +404,11 @@ export default function OnboardingSetupScreen() {
     const saved = await handleSaveBusinessSettings();
     if (!saved) return;
     clearOnboardingDraft();
+    // Suppress the global onboarding guard (app/_layout.tsx) so the magic
+    // screen + tour can play their full timed sequence even though completion
+    // flips `onboardingCompleted` true a few seconds in. The flag is cleared
+    // automatically once the user leaves the onboarding stack for the app.
+    useAuthStore.getState().setOnboardingFinishing(true);
     // Fire-and-forget: seeding + completion run in the background while the
     // magic screen plays its timed animation. We do NOT await here — the
     // screen advances on its own timer regardless of network speed.

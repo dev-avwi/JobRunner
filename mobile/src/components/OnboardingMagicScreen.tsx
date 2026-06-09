@@ -4,18 +4,18 @@ import {
   Text,
   StyleSheet,
   Image,
+  ImageBackground,
   Animated,
   Easing,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const TOTAL_DURATION = 7000;
+const TOTAL_DURATION = 6000;
+const MSG_FADE = 300;
 
 const STATUS_MESSAGES = [
   'Setting up your business profile',
   'Preparing your dashboard',
-  'Loading your tools',
   'Almost ready',
 ];
 
@@ -40,6 +40,7 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
       useNativeDriver: true,
     }).start();
 
+    // Progress bar animates across the full duration.
     Animated.timing(progress, {
       toValue: 1,
       duration: TOTAL_DURATION,
@@ -47,6 +48,8 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
       useNativeDriver: false,
     }).start();
 
+    // Each status message shows for an equal slice of the total duration
+    // (2s each across 6s) with a 0.3s cross-fade between them.
     const stepMs = TOTAL_DURATION / STATUS_MESSAGES.length;
     const timers: ReturnType<typeof setTimeout>[] = [];
     for (let i = 1; i < STATUS_MESSAGES.length; i++) {
@@ -54,13 +57,13 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
         setTimeout(() => {
           Animated.timing(msgFade, {
             toValue: 0,
-            duration: 250,
+            duration: MSG_FADE,
             useNativeDriver: true,
           }).start(() => {
             setMsgIndex(i);
             Animated.timing(msgFade, {
               toValue: 1,
-              duration: 250,
+              duration: MSG_FADE,
               useNativeDriver: true,
             }).start();
           });
@@ -68,11 +71,13 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
       );
     }
 
+    // Advance only after the full duration has elapsed — never tied to whether
+    // background seeding finished.
     const finish = setTimeout(() => {
       if (doneRef.current) return;
       doneRef.current = true;
       onDone();
-    }, TOTAL_DURATION + 400);
+    }, TOTAL_DURATION);
     timers.push(finish);
 
     return () => timers.forEach(clearTimeout);
@@ -86,17 +91,12 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
   const greeting = firstName ? `Welcome, ${firstName}` : 'Welcome aboard';
 
   return (
-    <View style={styles.root}>
-      <Image
-        source={require('../../assets/onboarding-tradie.png')}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-      />
-      <LinearGradient
-        colors={['rgba(6,10,16,0.72)', 'rgba(6,10,16,0.40)', 'rgba(6,10,16,0.86)', 'rgba(6,10,16,0.97)']}
-        locations={[0, 0.35, 0.78, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+    <ImageBackground
+      source={require('../../assets/onboarding-tradie.jpg')}
+      style={styles.root}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay} />
 
       <Animated.View
         style={[
@@ -137,7 +137,7 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
           </Animated.Text>
         </View>
       </Animated.View>
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -145,6 +145,10 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#060a10',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   content: {
     flex: 1,

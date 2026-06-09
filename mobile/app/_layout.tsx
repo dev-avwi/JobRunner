@@ -576,7 +576,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const { fetchNotifications } = useNotificationsStore();
-  const { isAuthenticated, isOwner, isStaff, hasActiveTeam, user, logout, businessSettings } = useAuthStore();
+  const { isAuthenticated, isOwner, isStaff, hasActiveTeam, user, logout, businessSettings, onboardingFinishing, setOnboardingFinishing } = useAuthStore();
   const { colors } = useTheme();
   const { isOnline, isInitialized: offlineInitialized } = useOfflineStore();
   const isTabletDevice = useIsTablet();
@@ -624,12 +624,23 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   // `useGlobalSearchParams` because `usePathname()` strips the query string.
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (!isOnboardingScreen) return;
+    if (!isOnboardingScreen) {
+      // The owner has left the wizard for the app — the post-onboarding
+      // finishing sequence is over, so reset the guard-suppression flag.
+      if (onboardingFinishing) setOnboardingFinishing(false);
+      return;
+    }
     if (globalSearchParams?.resume === '1') return;
+    // While the post-onboarding sequence (magic screen → tour → notifications
+    // permission) is intentionally playing, the owner's `onboardingCompleted`
+    // flips true but they must be allowed to finish that timed flow — the
+    // wizard navigates itself when done. Suppressing here stops this guard from
+    // yanking them straight to the dashboard mid-animation.
+    if (onboardingFinishing) return;
     if (businessSettings?.onboardingCompleted) {
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isOnboardingScreen, globalSearchParams?.resume, businessSettings?.onboardingCompleted]);
+  }, [isAuthenticated, isOnboardingScreen, globalSearchParams?.resume, businessSettings?.onboardingCompleted, onboardingFinishing, setOnboardingFinishing]);
 
   // Push the owner's team-wide tracking window into the location tracker so the
   // worker's phone only runs GPS during work hours (with a clocked-in / on-job
