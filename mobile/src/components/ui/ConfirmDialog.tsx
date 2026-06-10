@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { Alert, Modal, View, Text, Pressable, StyleSheet, Platform, KeyboardAvoidingView, Animated } from 'react-native';
+import { Modal, View, Text, Pressable, StyleSheet, Platform, KeyboardAvoidingView, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../lib/theme';
 import { radius, spacing, typography, shadows } from '../../lib/design-tokens';
@@ -23,31 +23,6 @@ interface PendingState extends ConfirmDialogOptions {
   resolve: (value: boolean) => void;
 }
 
-function nativeConfirm(options: ConfirmDialogOptions): Promise<boolean> {
-  return new Promise<boolean>((resolve) => {
-    const buttons: Array<{ text: string; style?: 'default' | 'cancel' | 'destructive'; onPress: () => void }> = [];
-    if (options.showCancel !== false) {
-      buttons.push({
-        text: options.cancelText ?? 'Cancel',
-        style: 'cancel',
-        onPress: () => resolve(false),
-      });
-    }
-    buttons.push({
-      text: options.confirmText ?? 'Confirm',
-      style: options.destructive ? 'destructive' : 'default',
-      onPress: () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        resolve(true);
-      },
-    });
-    Alert.alert(options.title, options.message, buttons, {
-      cancelable: options.showCancel !== false,
-      onDismiss: () => resolve(false),
-    });
-  });
-}
-
 export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<PendingState | null>(null);
   const { colors, isDark } = useTheme();
@@ -66,14 +41,8 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
   }, [pending, scaleAnim]);
 
   const confirm = useCallback((options: ConfirmDialogOptions) => {
-    // iOS users expect the native system alert (it has the right typography,
-    // blur, and destructive-red colour out of the box). Android's native
-    // Alert looks unbranded and out of place next to our themed sheets, so
-    // on Android (and web) we use the in-app modal which respects the
-    // user's theme tokens and provides proper haptics.
-    if (Platform.OS === 'ios') {
-      return nativeConfirm(options);
-    }
+    // Always use the in-app themed modal (never the unbranded native system
+    // alert) so confirmations look consistent across iOS, Android and web.
     return new Promise<boolean>((resolve) => {
       setPending({ ...options, resolve });
     });

@@ -1,16 +1,16 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
   ActivityIndicator,
   Linking,
-  Alert,
   Modal,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';

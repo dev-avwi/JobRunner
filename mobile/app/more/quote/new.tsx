@@ -1,20 +1,20 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   Pressable,
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   Modal,
   KeyboardAvoidingView,
   Platform,
   Animated,
-  Image
+  Image,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../../src/components/ui/PressableRow';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';

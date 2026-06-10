@@ -10,9 +10,9 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Linking,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../lib/theme';

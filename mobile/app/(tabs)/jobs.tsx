@@ -1,15 +1,14 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   FlatList,
   RefreshControl,
   TouchableOpacity,
   TextInput,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Modal,
   Animated,
   TouchableWithoutFeedback,
@@ -18,6 +17,7 @@ import {
   KeyboardAvoidingView,
   Pressable,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';

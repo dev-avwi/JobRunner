@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
@@ -13,11 +13,11 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
-  Alert,
   LayoutAnimation,
   UIManager,
   Platform,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { Stack, router } from 'expo-router';
 import { asHref } from '../../src/lib/nav';

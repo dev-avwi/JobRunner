@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  Alert,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { Link, router } from 'expo-router';
 import api from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';

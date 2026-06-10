@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Dimensions,
   LayoutChangeEvent,
-  Alert,
   Platform,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {

@@ -10,12 +10,12 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   RefreshControl,
   Modal,
   Linking,
   Image,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router, Stack } from 'expo-router';

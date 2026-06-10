@@ -1,19 +1,19 @@
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
   Linking,
   ActivityIndicator,
-  Alert,
   Platform,
   AppState,
   AppStateStatus,
   TextInput,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { AppBottomSheet } from '@/components/ui/AppBottomSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -4321,10 +4321,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 6,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'transparent',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   segmentActive: {
     backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.12,

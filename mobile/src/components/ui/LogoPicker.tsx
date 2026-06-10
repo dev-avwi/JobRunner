@@ -7,8 +7,8 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from './PressableRow';
 import { useConfirmDialog } from './ConfirmDialog';
 import * as ImagePicker from 'expo-image-picker';

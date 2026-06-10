@@ -7,13 +7,13 @@ import {
   RefreshControl,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Platform,
   Modal,
   FlatList,
   TextInput,
   KeyboardAvoidingView,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';

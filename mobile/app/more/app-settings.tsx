@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert, ActivityIndicator, TouchableOpacity, Platform, Image } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Switch, ActivityIndicator, TouchableOpacity, Platform, Image } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeMode } from '../../src/lib/theme';

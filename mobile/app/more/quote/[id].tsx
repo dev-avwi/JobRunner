@@ -1,17 +1,17 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Modal,
   TextInput,
   Linking,
   Image,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, router, useLocalSearchParams } from 'expo-router';

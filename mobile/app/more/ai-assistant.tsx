@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   FlatList,
   TouchableOpacity,
   TextInput,
@@ -10,9 +10,9 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
-  Alert,
-  Animated
+  Animated,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { Stack, router } from 'expo-router';

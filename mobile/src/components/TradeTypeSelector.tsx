@@ -7,8 +7,8 @@ import {
   TextInput,
   ScrollView,
   StyleSheet,
-  Alert
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import { AppBottomSheet } from './ui/AppBottomSheet';
 import { Feather } from '@expo/vector-icons';

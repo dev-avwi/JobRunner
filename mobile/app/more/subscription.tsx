@@ -1,16 +1,16 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   TouchableOpacity,
   Linking,
   ActivityIndicator,
-  Alert,
   RefreshControl,
   Platform,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, router } from 'expo-router';
 import { asHref } from '../../src/lib/nav';

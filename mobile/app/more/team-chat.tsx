@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
@@ -10,10 +10,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Alert,
   Image,
   Linking,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';

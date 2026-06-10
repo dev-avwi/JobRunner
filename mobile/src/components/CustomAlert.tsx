@@ -1,5 +1,5 @@
 import { createContext, useContext, useCallback, ReactNode } from 'react';
-import { Alert as RNAlert, AlertButton, AlertOptions } from 'react-native';
+import { Alert, AlertButton, AlertOptions } from '../lib/alert';
 
 interface CustomAlertContextType {
   showAlert: (title: string, message?: string, buttons?: AlertButton[], options?: AlertOptions) => void;
@@ -15,7 +15,7 @@ export function useCustomAlert() {
 
 export function CustomAlertProvider({ children }: { children: ReactNode }) {
   const showAlert = useCallback((title: string, message?: string, buttons?: AlertButton[], options?: AlertOptions) => {
-    RNAlert.alert(title, message, buttons, options);
+    Alert.alert(title, message, buttons, options);
   }, []);
 
   return (

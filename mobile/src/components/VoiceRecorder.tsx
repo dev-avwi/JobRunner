@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { useTheme } from '../lib/theme';
 import { colors as staticColors } from '../lib/colors';
 import { Ionicons } from '@expo/vector-icons';

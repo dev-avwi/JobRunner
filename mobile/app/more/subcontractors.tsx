@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
-  Alert,
   TextInput,
   ActivityIndicator,
   Modal,
@@ -14,6 +13,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';

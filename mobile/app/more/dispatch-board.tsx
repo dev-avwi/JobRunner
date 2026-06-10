@@ -5,11 +5,11 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   Platform,
   Dimensions,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 let MapView: any;

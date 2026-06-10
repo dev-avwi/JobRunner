@@ -7,11 +7,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   TextInput,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Switch,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';

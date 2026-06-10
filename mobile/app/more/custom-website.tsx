@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   TextInput,
   Switch,
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Modal,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';

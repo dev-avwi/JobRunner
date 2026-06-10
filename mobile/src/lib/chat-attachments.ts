@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+import { Alert } from '@/lib/alert';
 import * as ImagePicker from 'expo-image-picker';
 import { API_URL, api } from './api';
 

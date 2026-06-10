@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
   ActivityIndicator,
   StyleSheet,
-  Alert,
   Switch,
   Modal,
   FlatList,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';

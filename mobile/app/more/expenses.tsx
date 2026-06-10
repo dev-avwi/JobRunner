@@ -9,11 +9,11 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
-  Alert,
   Platform,
   Image,
   KeyboardAvoidingView,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';

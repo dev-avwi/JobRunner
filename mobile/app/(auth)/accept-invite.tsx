@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  Alert,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import api from '../../src/lib/api';

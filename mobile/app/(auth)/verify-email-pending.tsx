@@ -9,8 +9,8 @@ import {
   Platform,
   Animated,
   Easing,
-  Alert,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Mail, RefreshCw, ArrowLeft, CheckCircle, Edit3, ExternalLink, LifeBuoy, AlertCircle } from 'lucide-react-native';
 import api from '../../src/lib/api';

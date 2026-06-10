@@ -7,8 +7,8 @@ import {
   Switch,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';

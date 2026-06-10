@@ -1,11 +1,10 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   Pressable,
-  Alert,
   ActivityIndicator,
   StyleSheet,
   Linking,
@@ -26,6 +25,7 @@ import {
   InteractionManager,
   LayoutAnimation,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import LiveActivity from '../../modules/LiveActivity/src';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -4893,9 +4893,9 @@ export default function JobDetailScreen() {
         'Safety Check Required',
         'Safety documentation is incomplete. Starting the timer will transition this job to "In Progress". Complete safety docs first?',
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Complete Safety Docs', onPress: () => setActiveTab('documents') },
-          { text: 'Start Anyway', onPress: () => proceedWithTimerStart(), style: 'destructive' },
+          { text: 'Complete Safety Docs', style: 'default', onPress: () => setActiveTab('documents') },
+          { text: 'Start Anyway', style: 'secondary', onPress: () => proceedWithTimerStart() },
+          { text: 'Cancel', style: 'plain' },
         ],
       );
       return;
@@ -5011,11 +5011,10 @@ export default function JobDetailScreen() {
         'Safety Check Required',
         `${warningMsg}.\n\nSWMS documents are legally required for high-risk construction work. Complete safety documentation before starting work?`,
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Complete Safety Docs', onPress: () => setActiveTab('documents') },
+          { text: 'Complete Safety Docs', style: 'default', onPress: () => setActiveTab('documents') },
           {
             text: 'Start Anyway',
-            style: 'destructive',
+            style: 'secondary',
             onPress: async () => {
               const success = await updateJobStatus(job.id, action.next as any);
               if (success) {
@@ -5031,6 +5030,7 @@ export default function JobDetailScreen() {
               }
             },
           },
+          { text: 'Cancel', style: 'plain' },
         ],
       );
       return;

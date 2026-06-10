@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, Switch, Alert, TextInput, Linking, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, Switch, TextInput, Linking, Platform } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { useActionSheet } from '../../src/components/ui/ActionSheet';
 import { PressableRow } from '@/components/ui/PressableRow';

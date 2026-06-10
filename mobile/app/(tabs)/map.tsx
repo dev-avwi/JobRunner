@@ -1,18 +1,18 @@
 import { useEffect, useState, useCallback, useMemo, useRef, Component, ErrorInfo, ReactNode } from 'react';
-import { 
-  View, 
-  Text, 
+import {
+  View,
+  Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
   ActivityIndicator,
   Dimensions,
   Modal,
-  Alert,
   Linking,
   ScrollView,
   Animated,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import MapView, { Marker, Callout, PROVIDER_GOOGLE, Region, MapStyleElement, Camera } from 'react-native-maps';
 
 // Error boundary to catch map-related crashes

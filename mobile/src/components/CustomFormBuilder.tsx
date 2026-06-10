@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   Switch,
   ActivityIndicator,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../lib/theme';

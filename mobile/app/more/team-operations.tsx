@@ -5,10 +5,10 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   TextInput,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { router, Stack } from 'expo-router';

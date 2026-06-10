@@ -1,20 +1,20 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
-  Alert,
   Modal,
   TextInput,
   Platform,
   Share,
   FlatList,
   ActivityIndicator,
-  Switch
+  Switch,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import DateTimePicker from '@react-native-community/datetimepicker';

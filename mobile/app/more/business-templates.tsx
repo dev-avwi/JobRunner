@@ -1,18 +1,18 @@
 import { useState, useMemo, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
-  Alert,
   TextInput,
   Modal,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';

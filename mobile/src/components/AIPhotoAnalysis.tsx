@@ -6,11 +6,11 @@ import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
-  Alert,
   Modal,
   Image,
   Dimensions,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';

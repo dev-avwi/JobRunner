@@ -8,13 +8,13 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  Alert,
   Platform,
   KeyboardAvoidingView,
   Image,
   Dimensions,
   FlatList,
 } from 'react-native';
+import { Alert } from '@/lib/alert';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';

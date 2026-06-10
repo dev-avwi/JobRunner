@@ -5,7 +5,8 @@ initSentry();
 installGlobalErrorHandler();
 
 import { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, Alert, InteractionManager, Dimensions, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform } from 'react-native';
+import { View, StyleSheet, InteractionManager, Dimensions, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform } from 'react-native';
+import { Alert } from '@/lib/alert';
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -46,6 +47,7 @@ import Celebration from '../src/components/Celebration';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ActionSheetProvider } from '../src/components/ui/ActionSheet';
 import { ConfirmDialogProvider } from '../src/components/ui/ConfirmDialog';
+import { AlertHost } from '../src/lib/alert';
 import {
   useFonts,
   Inter_400Regular,
@@ -981,6 +983,7 @@ export default function RootLayout() {
                       <ConfirmDialogProvider>
                         <ActionSheetProvider>
                           <RootLayoutContent />
+                          <AlertHost />
                         </ActionSheetProvider>
                       </ConfirmDialogProvider>
                     </CustomAlertProvider>
