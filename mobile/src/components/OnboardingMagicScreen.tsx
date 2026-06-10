@@ -7,12 +7,22 @@ import {
   Animated,
   Easing,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
-import { useTheme, ThemeColors } from '../lib/theme';
 
 const TOTAL_DURATION = 6000;
 const MSG_FADE = 300;
+
+const BLUE = '#2B7DE9';
+const ORANGE = '#F28C28';
+const NAME = '#0F172A';
+const TAGLINE = '#94A3B8';
+const STEP_TEXT = '#334155';
+const DIVIDER = '#E8EDF3';
+const GREEN = '#22C55E';
+const STATUS = '#64748B';
+const TRACK = '#E2E8F0';
 
 const STATUS_MESSAGES = [
   'Setting up your business profile',
@@ -34,8 +44,6 @@ interface OnboardingMagicScreenProps {
 
 export function OnboardingMagicScreen({ firstName, businessName, onDone }: OnboardingMagicScreenProps) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
-  const styles = createStyles(colors, isDark);
 
   const progress = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
@@ -125,31 +133,39 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
 
   return (
     <View style={styles.root}>
+      <LinearGradient
+        colors={['#FFFFFF', '#F4F7FB', '#EAF1FA']}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Soft brand glow behind the logo so the top isn't a flat white void. */}
+      <LinearGradient
+        colors={['rgba(43,125,233,0.10)', 'rgba(43,125,233,0)']}
+        style={[styles.glow, { top: insets.top - 40 }]}
+      />
+
       <Animated.View
         style={[
           styles.content,
           {
             opacity: contentFade,
             transform: [{ translateY: contentRise }],
-            paddingTop: insets.top + 56,
-            paddingBottom: insets.bottom,
+            paddingTop: insets.top + 44,
+            paddingBottom: insets.bottom + 24,
           },
         ]}
       >
         <View style={styles.topBlock}>
-          <View style={styles.logoOuterRing}>
-            <View style={styles.logoInnerRing}>
-              <Image
-                source={require('../../assets/jobrunner-logo-header.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </View>
-          </View>
+          <Image
+            source={require('../../assets/jobrunner-logo-header.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={styles.wordmark}>
             <Text style={styles.wordmarkJob}>Job</Text>
             <Text style={styles.wordmarkRunner}>Runner</Text>
           </Text>
+          <Text style={styles.tagline}>For Australian Tradies</Text>
         </View>
 
         <View style={styles.midBlock}>
@@ -163,7 +179,7 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
             </Text>
           )}
 
-          <View style={styles.stepsCard}>
+          <View style={styles.steps}>
             {SETUP_STEPS.map((label, i) => (
               <Animated.View
                 key={label}
@@ -184,7 +200,7 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
                 ]}
               >
                 <View style={styles.stepIcon}>
-                  <Check size={15} color="#FFFFFF" strokeWidth={3.5} />
+                  <Check size={14} color="#FFFFFF" strokeWidth={3.5} />
                 </View>
                 <Text style={styles.stepText}>{label}</Text>
               </Animated.View>
@@ -205,144 +221,124 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
   );
 }
 
-const createStyles = (colors: ThemeColors, isDark: boolean) =>
-  StyleSheet.create({
-    root: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    content: {
-      flex: 1,
-      justifyContent: 'space-between',
-    },
-    topBlock: {
-      alignItems: 'center',
-      paddingHorizontal: 32,
-    },
-    logoOuterRing: {
-      width: 84,
-      height: 84,
-      borderRadius: 20,
-      borderWidth: 2.5,
-      borderColor: '#2B7DE9',
-      padding: 3,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 18,
-      backgroundColor: '#FFFFFF',
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: isDark ? 0.4 : 0.1,
-      shadowRadius: 16,
-      elevation: 6,
-    },
-    logoInnerRing: {
-      flex: 1,
-      width: '100%',
-      borderRadius: 14,
-      borderWidth: 2,
-      borderColor: '#F28C28',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#FFFFFF',
-    },
-    logo: {
-      width: 44,
-      height: 44,
-    },
-    wordmark: {
-      fontSize: 26,
-      fontWeight: '800',
-      letterSpacing: -0.5,
-    },
-    wordmarkJob: {
-      color: '#2B7DE9',
-      fontSize: 26,
-      fontWeight: '800',
-    },
-    wordmarkRunner: {
-      color: '#F28C28',
-      fontSize: 26,
-      fontWeight: '800',
-    },
-    midBlock: {
-      paddingHorizontal: 32,
-    },
-    welcomeLine: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: colors.mutedForeground,
-      letterSpacing: 2.5,
-      marginBottom: 6,
-    },
-    nameLine: {
-      fontSize: 46,
-      fontWeight: '800',
-      color: colors.foreground,
-      letterSpacing: -1.2,
-    },
-    businessName: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: '#2B7DE9',
-      marginTop: 8,
-    },
-    stepsCard: {
-      marginTop: 32,
-      backgroundColor: colors.card,
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      paddingHorizontal: 18,
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: isDark ? 0.3 : 0.06,
-      shadowRadius: 14,
-      elevation: 3,
-    },
-    stepRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 16,
-      gap: 14,
-    },
-    stepRowBorder: {
-      borderTopWidth: 1,
-      borderTopColor: colors.cardBorder,
-    },
-    stepIcon: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#22C55E',
-    },
-    stepText: {
-      flex: 1,
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.foreground,
-    },
-    bottomBlock: {
-      alignItems: 'stretch',
-    },
-    statusText: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: colors.mutedForeground,
-      textAlign: 'center',
-      letterSpacing: 0.2,
-      marginBottom: 16,
-    },
-    progressTrack: {
-      width: '100%',
-      height: 4,
-      backgroundColor: colors.border,
-      overflow: 'hidden',
-    },
-    progressFill: {
-      height: '100%',
-      backgroundColor: '#2B7DE9',
-    },
-  });
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  glow: {
+    position: 'absolute',
+    alignSelf: 'center',
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+  },
+  content: {
+    flex: 1,
+  },
+  topBlock: {
+    alignItems: 'center',
+  },
+  logo: {
+    width: 76,
+    height: 76,
+    marginBottom: 16,
+  },
+  wordmark: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  wordmarkJob: {
+    color: BLUE,
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  wordmarkRunner: {
+    color: ORANGE,
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  tagline: {
+    marginTop: 10,
+    fontSize: 12,
+    fontWeight: '600',
+    color: TAGLINE,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  midBlock: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  welcomeLine: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: BLUE,
+    letterSpacing: 3.5,
+    marginBottom: 8,
+  },
+  nameLine: {
+    fontSize: 50,
+    fontWeight: '800',
+    color: NAME,
+    letterSpacing: -1.4,
+  },
+  businessName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: BLUE,
+    marginTop: 8,
+  },
+  steps: {
+    marginTop: 32,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    gap: 14,
+  },
+  stepRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: DIVIDER,
+  },
+  stepIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: GREEN,
+  },
+  stepText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: STEP_TEXT,
+  },
+  bottomBlock: {
+    paddingHorizontal: 30,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: STATUS,
+    textAlign: 'center',
+    letterSpacing: 0.2,
+    marginBottom: 14,
+  },
+  progressTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: TRACK,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: BLUE,
+  },
+});
