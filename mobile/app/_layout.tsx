@@ -5,7 +5,7 @@ initSentry();
 installGlobalErrorHandler();
 
 import { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, InteractionManager, Dimensions, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform } from 'react-native';
+import { View, StyleSheet, InteractionManager, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform } from 'react-native';
 import { Alert } from '@/lib/alert';
 
 import { Stack } from 'expo-router';
@@ -34,7 +34,7 @@ import offlineStorage from '../src/lib/offline-storage';
 import { ScrollProvider } from '../src/contexts/ScrollContext';
 import api from '../src/lib/api';
 import { FloatingActionButton } from '../src/components/FloatingActionButton';
-import { isTablet, useShouldUseSidebar, isIPad, useOrientation } from '../src/lib/device';
+import { useIsTablet, useShouldUseSidebar, isIPad, useOrientation } from '../src/lib/device';
 import { MapPreferenceModal } from '../src/components/MapPreferenceModal';
 import { WhatYouMissedPopup } from '../src/components/WhatYouMissedPopup';
 import { WhatsNewSheet } from '../src/components/WhatsNewSheet';
@@ -512,19 +512,6 @@ function ServicesInitializer() {
   }, []);
 
   return null;
-}
-
-function useIsTablet() {
-  const [tablet, setTablet] = useState(() => isTablet());
-  
-  useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      setTablet(isTablet(window));
-    });
-    return () => subscription.remove();
-  }, []);
-  
-  return tablet;
 }
 
 function OwnerSubscriptionLapsedScreen({ businessName, onSignOut }: { businessName?: string; onSignOut: () => void }) {

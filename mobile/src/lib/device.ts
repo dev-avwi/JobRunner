@@ -1,5 +1,4 @@
-import { Platform, Dimensions } from 'react-native';
-import { useState, useEffect } from 'react';
+import { Platform, Dimensions, useWindowDimensions } from 'react-native';
 
 const IPAD_WIDTH_THRESHOLD = 768;
 // Tablet detection threshold (drives sidebar navigation, grid columns, etc.).
@@ -19,9 +18,8 @@ export const WIDE_CONTENT_THRESHOLD = 600;
 export const OPTIMAL_CONTENT_MAX_WIDTH = 720;
 
 // Accepts optional explicit window dimensions. The reactive hooks pass the
-// fresh `window` payload from the Dimensions 'change' event so detection never
-// races a stale global Dimensions.get() snapshot during a fold/unfold transition
-// (Android emits intermediate change events while the posture settles).
+// fresh dimensions from useWindowDimensions() so detection never races a stale
+// global Dimensions.get() snapshot during a fold/unfold transition.
 export function isTablet(windowDims?: { width: number; height: number }): boolean {
   // Check Platform.isPad first (most reliable for iOS)
   const isPad = Platform.OS === 'ios' && Platform.isPad;
@@ -53,18 +51,12 @@ export function isTablet(windowDims?: { width: number; height: number }): boolea
   return effectiveWidth >= TABLET_MIN_DIMENSION;
 }
 
-// Reactive version of isTablet() — subscribes to Dimensions changes so layouts
-// update live when a foldable opens/closes (Z Fold, Pixel Fold, Surface Duo)
-// or when the window is resized in split-screen mode on Android/iPad.
+// Reactive version of isTablet() — useWindowDimensions() re-renders on every
+// dimension change so layouts update live when a foldable opens/closes (Z Fold,
+// Pixel Fold, Surface Duo) or the window is resized in split-screen on Android/iPad.
 export function useIsTablet(): boolean {
-  const [tablet, setTablet] = useState<boolean>(() => isTablet());
-  useEffect(() => {
-    const sub = Dimensions.addEventListener('change', ({ window }) => {
-      setTablet(isTablet(window));
-    });
-    return () => sub.remove();
-  }, []);
-  return tablet;
+  const { width, height } = useWindowDimensions();
+  return isTablet({ width, height });
 }
 
 export function isIPad(): boolean {
@@ -77,17 +69,8 @@ export function getOrientation(): 'portrait' | 'landscape' {
 }
 
 export function useOrientation(): 'portrait' | 'landscape' {
-  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(() => getOrientation());
-  
-  useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      const newOrientation = window.width > window.height ? 'landscape' : 'portrait';
-      setOrientation(newOrientation);
-    });
-    return () => subscription.remove();
-  }, []);
-  
-  return orientation;
+  const { width, height } = useWindowDimensions();
+  return width > height ? 'landscape' : 'portrait';
 }
 
 export function useDeviceType(): 'phone' | 'tablet' {
@@ -98,29 +81,13 @@ export function useDeviceType(): 'phone' | 'tablet' {
 // iPad uses sidebar only in landscape mode
 // Phones always use bottom nav
 export function useShouldUseSidebar(): boolean {
-  const [shouldUseSidebar, setShouldUseSidebar] = useState(() => {
-    const isPad = isIPad();
-    if (isPad) {
-      return getOrientation() === 'landscape';
-    }
-    // Non-iPad tablets always use sidebar
-    return isTablet();
-  });
-  
-  useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      const isPad = isIPad();
-      if (isPad) {
-        const orientation = window.width > window.height ? 'landscape' : 'portrait';
-        setShouldUseSidebar(orientation === 'landscape');
-      } else {
-        setShouldUseSidebar(isTablet(window));
-      }
-    });
-    return () => subscription.remove();
-  }, []);
-  
-  return shouldUseSidebar;
+  const { width, height } = useWindowDimensions();
+  // iPad uses the sidebar only in landscape; non-iPad tablets/unfolded
+  // foldables always use it.
+  if (isIPad()) {
+    return width > height;
+  }
+  return isTablet({ width, height });
 }
 
 export const SIDEBAR_WIDTH = 280;
@@ -137,21 +104,9 @@ export function getContentWidth(hasSidebar: boolean = false): number {
 
 // Hook that returns content width and updates when dimensions/sidebar change
 export function useContentWidth(): number {
+  const { width } = useWindowDimensions();
   const shouldUseSidebar = useShouldUseSidebar();
-  const [contentWidth, setContentWidth] = useState(() => getContentWidth(shouldUseSidebar));
-  
-  useEffect(() => {
-    setContentWidth(getContentWidth(shouldUseSidebar));
-  }, [shouldUseSidebar]);
-  
-  useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', () => {
-      setContentWidth(getContentWidth(shouldUseSidebar));
-    });
-    return () => subscription.remove();
-  }, [shouldUseSidebar]);
-  
-  return contentWidth;
+  return shouldUseSidebar ? width - SIDEBAR_WIDTH : width;
 }
 
 // Hook for responsive layout values across phones, tablets, and foldables.
