@@ -4218,9 +4218,9 @@ function OwnerDashboardScreen() {
                   Send a polished quote to a client in under a minute.
                 </Text>
                 <Button
-                  variant="default"
+                  variant="brand"
                   onPress={() => router.push(asHref('/more/quote/new'))}
-                  icon={<Feather name="plus" size={16} color={colors.primaryForeground} />}
+                  icon={<Feather name="plus" size={16} color="#FFFFFF" />}
                 >
                   New Quote
                 </Button>

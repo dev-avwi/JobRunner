@@ -21566,7 +21566,12 @@ Be specific about materials, colors, and features that would be included.`
 
         // ---- teamMyRole (mirrors /api/team/my-role) ----
         safe('teamMyRole', async () => {
-          const myMembership = await storage.getTeamMembershipByMemberId(userId);
+          let myMembership = await storage.getTeamMembershipByMemberId(userId);
+          // Self-membership (member_id === business_owner_id) never downgrades the
+          // owner to a worker role. Mirror getUserContext() / my-role guard.
+          if (myMembership && myMembership.businessOwnerId === userId) {
+            myMembership = undefined as any;
+          }
           if (!myMembership || myMembership.inviteStatus !== 'accepted') {
             const u = await storage.getUser(userId);
             if (u) {
@@ -29401,7 +29406,16 @@ Respond with JSON in this format:
       const userId = req.userId!;
       
       // Check if this user is a team member of someone else's business
-      const myMembership = await storage.getTeamMembershipByMemberId(userId);
+      let myMembership = await storage.getTeamMembershipByMemberId(userId);
+
+      // A user can never be a team-member employee of their OWN business. A
+      // self-membership (member_id === business_owner_id) created by legacy/
+      // dispatch flows must NOT downgrade the owner to a worker role — otherwise
+      // the app shows them the "Team member" badge + worker-only UI. Mirror the
+      // guard in getUserContext().
+      if (myMembership && myMembership.businessOwnerId === userId) {
+        myMembership = undefined as any;
+      }
       
       if (!myMembership || myMembership.inviteStatus !== 'accepted') {
         // User is not a team member - check if they're a business owner
