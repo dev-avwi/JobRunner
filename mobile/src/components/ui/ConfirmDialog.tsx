@@ -123,11 +123,16 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
                   handleClose(true);
                 }}
                 style={({ pressed }) => {
-                  const bg = pending?.destructive ? colors.destructive : colors.primary;
+                  // Hardcode the confirm colours so the button is ALWAYS visible
+                  // regardless of how the theme tokens resolve. Destructive =
+                  // red fill + white text; primary = brand colour + safe text.
+                  const bg = pending?.destructive
+                    ? (pressed ? '#DC2626' : '#EF4444')
+                    : (pressed ? colors.primary + 'cc' : colors.primary);
                   return [
                     styles.btn,
                     {
-                      backgroundColor: pressed ? bg + 'cc' : bg,
+                      backgroundColor: bg,
                       borderColor: bg,
                     },
                   ];
@@ -138,7 +143,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
                     styles.btnText,
                     {
                       color: pending?.destructive
-                        ? colors.destructiveForeground
+                        ? '#FFFFFF'
                         : colors.primaryForeground,
                     },
                   ]}
