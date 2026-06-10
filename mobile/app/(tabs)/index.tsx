@@ -3204,87 +3204,49 @@ function OwnerDashboardScreen() {
       {isStaffUser && (
         <View style={{ marginTop: spacing.sm, marginBottom: spacing.md }}>
           <View style={styles.statusCard}>
-            {(() => {
-              const current =
-                workerState.state === 'on_job' ? { label: 'On Job', color: '#f97316' } :
-                workerState.state === 'travelling' ? { label: 'Travelling', color: '#3b82f6' } :
-                workerState.state === 'break' ? { label: 'Break', color: '#9ca3af' } :
-                workerState.state === 'delayed' ? { label: 'Delayed', color: '#f28c28' } :
-                workerState.state === 'needs_help' ? { label: 'Help', color: '#ef4444' } :
-                { label: 'Available', color: '#22c55e' };
-              return (
-                <View style={styles.statusCardHeader}>
-                  <Text style={styles.statusCardLabel}>MY STATUS</Text>
-                  <View style={styles.statusCardCurrent}>
-                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: current.color }} />
-                    <Text style={[styles.statusCardCurrentText, { color: current.color }]}>{current.label}</Text>
-                  </View>
-                </View>
-              );
-            })()}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: spacing.sm, alignItems: 'center', paddingVertical: 2 }}
-            >
-            {[
-              { state: 'available', label: 'Available', color: '#22c55e' },
-              { state: 'break', label: 'Break', color: '#9ca3af' },
-              { state: 'delayed', label: 'Delayed', color: '#f28c28' },
-              { state: 'needs_help', label: 'Help', color: '#ef4444' },
-            ].map(btn => {
-              const isActive = workerState.state === btn.state;
-              return (
-                <TouchableOpacity
-                  key={btn.state}
-                  activeOpacity={0.85}
-                  style={[
-                    {
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      paddingHorizontal: 16,
-                      paddingVertical: 10,
-                      borderRadius: 999,
-                      borderWidth: isActive ? 1.5 : 2,
-                      backgroundColor: isActive ? btn.color : '#ffffff',
-                      borderColor: isActive ? btn.color : '#D1D5DB',
-                      transform: [{ scale: isActive ? 1.02 : 1 }],
-                    },
-                    isActive
-                      ? {
-                          shadowColor: btn.color,
-                          shadowOffset: { width: 0, height: 3 },
-                          shadowOpacity: 0.38,
-                          shadowRadius: 7,
-                          elevation: 5,
-                        }
-                      : shadows.sm,
-                  ]}
-                  onPress={async () => {
-                    try {
-                      await api.post('/api/worker/state', { state: btn.state });
-                      setWorkerState({ state: btn.state, note: null });
-                    } catch {
-                      showToast({ type: 'error', message: 'Failed to update status' });
-                    }
-                  }}
-                >
-                  <View style={{
-                    width: 8, height: 8, borderRadius: 4,
-                    backgroundColor: isActive ? '#ffffff' : btn.color,
-                  }} />
-                  <Text style={{
-                    fontSize: 13,
-                    fontWeight: isActive ? '600' : '500',
-                    color: isActive ? '#ffffff' : colors.foreground,
-                  }}>
-                    {btn.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-            </ScrollView>
+            <View style={styles.statusCardHeader}>
+              <Text style={styles.statusCardLabel}>MY STATUS</Text>
+            </View>
+            <View style={styles.segmentedControl}>
+              {[
+                { state: 'available', label: 'Available', color: '#22c55e' },
+                { state: 'break', label: 'Break', color: '#9ca3af' },
+                { state: 'delayed', label: 'Delayed', color: '#f28c28' },
+                { state: 'needs_help', label: 'Help', color: '#ef4444' },
+              ].map((btn) => {
+                const isActive = workerState.state === btn.state;
+                return (
+                  <TouchableOpacity
+                    key={btn.state}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.segment,
+                      isActive && styles.segmentActive,
+                    ]}
+                    onPress={async () => {
+                      try {
+                        await api.post('/api/worker/state', { state: btn.state });
+                        setWorkerState({ state: btn.state, note: null });
+                      } catch {
+                        showToast({ type: 'error', message: 'Failed to update status' });
+                      }
+                    }}
+                  >
+                    <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: btn.color }} />
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontSize: 13,
+                        fontWeight: isActive ? '600' : '400',
+                        color: isActive ? '#111827' : '#6B7280',
+                      }}
+                    >
+                      {btn.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
       )}
@@ -4345,14 +4307,29 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...typography.label,
     color: colors.mutedForeground,
   },
-  statusCardCurrent: {
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 3,
+  },
+  segment: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'transparent',
   },
-  statusCardCurrentText: {
-    fontSize: 12,
-    fontWeight: '700',
+  segmentActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
   },
   sectionHeader: {
     flexDirection: 'row',

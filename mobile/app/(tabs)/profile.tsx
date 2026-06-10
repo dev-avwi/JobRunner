@@ -7,9 +7,9 @@ import {
   StyleSheet,
   Alert,
   Linking,
+  Modal,
 } from 'react-native';
 import { PressableRow } from '../../src/components/ui/PressableRow';
-import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/lib/store';
@@ -413,7 +413,6 @@ function mapRoleToFilterRole(role: UserRoleType): UserRole {
 export default function MoreScreen() {
   const { user, businessSettings, logout } = useAuthStore();
   const { colors } = useTheme();
-  const confirm = useConfirmDialog();
   const responsiveShell = usePageShell();
   const bottomInset = useBottomInset(40);
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -504,17 +503,22 @@ export default function MoreScreen() {
     return visibleCategories.filter(k => k === activeCategory);
   }, [activeCategory, visibleCategories]);
 
-  const handleLogout = async () => {
-    const ok = await confirm({
-      title: 'Sign out?',
-      message: "You'll need to sign back in to access your account.",
-      confirmText: 'Sign Out',
-      cancelText: 'Cancel',
-      destructive: true,
-    });
-    if (ok) {
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleLogout = () => {
+    setShowSignOutModal(true);
+  };
+
+  const confirmSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
       await logout();
+      setShowSignOutModal(false);
       router.replace('/(auth)/login');
+    } catch {
+      setSigningOut(false);
     }
   };
 
@@ -811,6 +815,63 @@ export default function MoreScreen() {
       </View>
 
       <View style={{ height: spacing['4xl'] }} />
+
+      <Modal
+        visible={showSignOutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSignOutModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 24,
+          }}
+        >
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, width: '85%' }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>Sign out?</Text>
+            <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 8 }}>
+              You'll need to sign back in.
+            </Text>
+            <View style={{ marginTop: 24, gap: 10 }}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={confirmSignOut}
+                disabled={signingOut}
+                style={{
+                  backgroundColor: '#EF4444',
+                  borderRadius: 12,
+                  height: 52,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  opacity: signingOut ? 0.7 : 1,
+                }}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Sign Out</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setShowSignOutModal(false)}
+                disabled={signingOut}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: 12,
+                  height: 52,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 1.5,
+                  borderColor: '#E5E7EB',
+                }}
+              >
+                <Text style={{ color: '#374151', fontSize: 16 }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
