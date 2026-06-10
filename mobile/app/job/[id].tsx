@@ -3895,10 +3895,11 @@ export default function JobDetailScreen() {
         }
       );
     } else {
-      showActionSheet({
-        title: 'Job Actions',
-        actions: options.map((label, i) => ({
-          label,
+      Alert.alert(
+        'Job Actions',
+        undefined,
+        options.map((label, i) => ({
+          text: label,
           style: (label === 'Cancel'
             ? 'cancel'
             : label === 'Delete Job'
@@ -3906,7 +3907,7 @@ export default function JobDetailScreen() {
               : 'default') as 'cancel' | 'destructive' | 'default',
           onPress: label === 'Cancel' ? undefined : actions[i],
         })),
-      });
+      );
     }
   };
 
