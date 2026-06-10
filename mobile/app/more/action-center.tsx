@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, Linking, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, Linking, Modal, Platform } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -757,7 +757,7 @@ export default function ActionCenterScreen() {
         onRequestClose={() => setShowBatchModal(false)}
       >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }, Platform.OS === 'android' ? { paddingTop: insets.top + spacing.md } : null]}>
             <PressableRow onPress={() => setShowBatchModal(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Feather name="x" size={22} color={colors.foreground} />
             </PressableRow>
