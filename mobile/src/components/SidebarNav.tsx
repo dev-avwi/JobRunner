@@ -309,7 +309,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingLeft: 28,
+    paddingLeft: 14,
     paddingRight: 14,
   },
   logoContainer: {
@@ -438,7 +438,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingLeft: 28,
+    paddingLeft: 14,
     paddingRight: 14,
     gap: 10,
   },
