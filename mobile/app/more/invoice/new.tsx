@@ -646,7 +646,27 @@ interface LineItem {
 export default function NewInvoiceScreen() {
   const insets = useSafeAreaInsets();
   const confirm = useConfirmDialog();
-  const params = useLocalSearchParams<{ jobId?: string; clientId?: string; editInvoiceId?: string }>();
+  const params = useLocalSearchParams<{ jobId?: string; clientId?: string; editInvoiceId?: string; batchQueue?: string; batchIndex?: string }>();
+  const batchQueue = useMemo(
+    () => (params.batchQueue ? String(params.batchQueue).split(',').filter(Boolean) : []),
+    [params.batchQueue],
+  );
+  const batchIndex = params.batchIndex ? parseInt(String(params.batchIndex), 10) : 0;
+  const isBatchReview = batchQueue.length > 0;
+  const isLastInBatch = isBatchReview && batchIndex + 1 >= batchQueue.length;
+
+  const proceedAfterSave = () => {
+    if (isBatchReview && batchIndex + 1 < batchQueue.length) {
+      const nextIdx = batchIndex + 1;
+      router.replace(
+        `/more/invoice/new?jobId=${batchQueue[nextIdx]}&batchQueue=${batchQueue.join(',')}&batchIndex=${nextIdx}` as any,
+      );
+    } else if (isBatchReview) {
+      router.replace('/more/invoices' as any);
+    } else {
+      router.back();
+    }
+  };
   const { user, businessSettings } = useAuthStore();
   const { clients, fetchClients, isLoading: isLoadingClients } = useClientsStore();
   const { fetchInvoices, getInvoice } = useInvoicesStore();
@@ -729,14 +749,33 @@ export default function NewInvoiceScreen() {
 
   useEffect(() => {
     fetchClients();
-    if (params.jobId) {
-      fetchJobExpenses(params.jobId);
-      fetchJobAndPrefill(params.jobId);
-    }
     if (params.editInvoiceId) {
       loadInvoiceForEditing(params.editInvoiceId);
     }
   }, []);
+
+  // Param-driven prefill: re-runs when the job changes (e.g. advancing through a
+  // batch review). Resets per-invoice state first so nothing leaks between jobs,
+  // regardless of whether the screen remounts on router.replace.
+  useEffect(() => {
+    if (params.editInvoiceId) return;
+    if (!params.jobId) return;
+    setJobId(params.jobId);
+    setForm(prev => ({
+      ...prev,
+      clientId: params.clientId || '',
+      clientName: '',
+      title: '',
+      description: '',
+      notes: '',
+      terms: '',
+    }));
+    setLineItems([]);
+    setJobExpenses([]);
+    setIsRecurring(false);
+    fetchJobExpenses(params.jobId);
+    fetchJobAndPrefill(params.jobId);
+  }, [params.jobId]);
 
   const loadInvoiceForEditing = async (invoiceId: string) => {
     setIsLoading(true);
@@ -1069,7 +1108,7 @@ export default function NewInvoiceScreen() {
           confirmText: 'OK',
           showCancel: false,
         });
-        router.back();
+        proceedAfterSave();
       } catch (error) {
         console.error('Failed to save invoice offline:', error);
         Alert.alert('Error', 'Failed to save invoice offline. Please try again.');
@@ -1094,7 +1133,7 @@ export default function NewInvoiceScreen() {
           confirmText: 'OK',
           showCancel: false,
         });
-        router.back();
+        proceedAfterSave();
       } else {
         Alert.alert('Error', isEditing ? 'Failed to update invoice' : 'Failed to create invoice');
       }
@@ -1109,7 +1148,7 @@ export default function NewInvoiceScreen() {
             confirmText: 'OK',
             showCancel: false,
           });
-          router.back();
+          proceedAfterSave();
         } catch (offlineError) {
           console.error('Failed to save invoice offline:', offlineError);
           Alert.alert('Error', 'Failed to save invoice. Please try again.');
@@ -1251,6 +1290,37 @@ export default function NewInvoiceScreen() {
             </Pressable>
           </View>
         </View>
+
+        {/* Batch Review Banner */}
+        {isBatchReview && (
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            backgroundColor: colors.muted,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: colors.border,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
+              <Feather name="layers" size={16} color={colors.primary} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                Reviewing invoice {batchIndex + 1} of {batchQueue.length}
+              </Text>
+            </View>
+            <Pressable
+              onPress={proceedAfterSave}
+              hitSlop={8}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.mutedForeground }}>
+                Skip
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Preview Mode */}
         {activeTab === 'preview' && (
@@ -1584,7 +1654,7 @@ export default function NewInvoiceScreen() {
                 ) : (
                   <>
                     <Feather name="check" size={18} color={colors.primaryForeground} />
-                    <Text style={{ color: colors.primaryForeground, fontSize: 16, fontWeight: '600' }}>{isEditing ? 'Update Invoice' : 'Create Invoice'}</Text>
+                    <Text style={{ color: colors.primaryForeground, fontSize: 16, fontWeight: '600' }}>{isEditing ? 'Update Invoice' : isBatchReview ? (isLastInBatch ? 'Save & Finish' : 'Save & Next') : 'Create Invoice'}</Text>
                   </>
                 )}
               </PressableRow>

@@ -501,7 +501,30 @@ export default function ActionCenterScreen() {
     setBatchJobs(prev => prev.map(j => ({ ...j, selected: !allSelected })));
   };
 
-  const handleBatchCreate = async () => {
+  const handleBatchCreate = () => {
+    const selectedIds = batchJobs.filter(j => j.selected).map(j => j.id);
+    if (selectedIds.length === 0) {
+      Alert.alert('No Jobs Selected', 'Please select at least one job to create invoices for.');
+      return;
+    }
+    Alert.alert(
+      'Create Invoices',
+      `${selectedIds.length} job${selectedIds.length !== 1 ? 's' : ''} selected. Review each invoice in the builder before saving, or create them all automatically.`,
+      [
+        { text: 'Review Each', style: 'default', onPress: () => startBatchReview(selectedIds) },
+        { text: 'Create Automatically', style: 'secondary', onPress: runBatchAuto },
+        { text: 'Cancel', style: 'plain' },
+      ],
+    );
+  };
+
+  const startBatchReview = (selectedIds: string[]) => {
+    setShowBatchModal(false);
+    const queue = selectedIds.join(',');
+    router.push(`/more/invoice/new?jobId=${selectedIds[0]}&batchQueue=${queue}&batchIndex=0` as any);
+  };
+
+  const runBatchAuto = async () => {
     const selectedIds = batchJobs.filter(j => j.selected).map(j => j.id);
     if (selectedIds.length === 0) {
       Alert.alert('No Jobs Selected', 'Please select at least one job to create invoices for.');
