@@ -71,3 +71,4 @@
 - [Sidebar icon alignment math](sidebar-icon-alignment.md) — mobile SidebarNav profile/menu/logout icons only line up when all left edges resolve to the same x (menu = section 12 + row 14 = 26); set headerRow & logoutButton paddingLeft to 14, not by eye.
 - [Sidebar team gate uses non-existent hasTeam](sidebar-team-gate-hasteam.md) — mobile FilterOptions.isTeam must derive from businessSettings.teamSize!=='solo'; there is NO hasTeam column, so reading it hid Team Operations for everyone.
 - [Foldable layout reactivity](mobile-foldable-usewindowdimensions.md) — responsive nav (sidebar vs tabs) must derive from useWindowDimensions(), not hand-rolled Dimensions.addEventListener hooks, which switched only once per fold/unfold.
+- [Push + in-app notification double-post](push-inapp-double-post.md) — sendPushNotification ALSO creates an in-app notification unless skipInAppNotification:true; pairing it with a manual createNotification double-posts to the owner's bell.

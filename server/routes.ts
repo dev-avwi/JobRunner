@@ -39447,6 +39447,92 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       res.status(500).json({ error: error.message });
     }
   });
+
+  // Worker raises a help request or flags a delay -> alert the business owner
+  app.post("/api/worker/alert", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { kind, jobId, etaMinutes, note } = req.body || {};
+
+      if (kind !== 'help' && kind !== 'delayed') {
+        return res.status(400).json({ error: 'Invalid kind. Must be "help" or "delayed".' });
+      }
+
+      const membership = await storage.getTeamMembershipByMemberId(userId);
+      const ownerId = membership?.businessOwnerId || userId;
+
+      const worker = await storage.getUser(userId);
+      const workerName =
+        [worker?.firstName, worker?.lastName].filter(Boolean).join(' ').trim() ||
+        worker?.email ||
+        'A team member';
+
+      // Resolve the job within the caller's business context. Only a job that
+      // belongs to this business (owner) or is assigned to the worker counts —
+      // otherwise drop it so we never link an alert to an arbitrary ID.
+      let resolvedJobId: string | null = null;
+      let jobTitle = '';
+      const mins = Number(etaMinutes);
+      if (jobId) {
+        try {
+          const job = (await storage.getJob(jobId, ownerId)) || (await storage.getJob(jobId, userId));
+          if (job) {
+            resolvedJobId = job.id;
+            jobTitle = job.title || '';
+            if (kind === 'delayed' && Number.isFinite(mins) && mins > 0) {
+              await storage.updateJob(resolvedJobId, ownerId, {
+                workerEtaMinutes: mins,
+                workerEta: `${mins} min`,
+              } as any);
+            }
+          }
+        } catch (jobErr) {
+          console.warn('[worker/alert] Failed to persist job ETA:', jobErr);
+        }
+      }
+
+      const title = kind === 'help' ? `${workerName} needs help` : `${workerName} is running late`;
+      const message =
+        kind === 'help'
+          ? (note || `${workerName} has requested help${jobTitle ? ` on ${jobTitle}` : ''}.`)
+          : `${workerName} is running ${Number.isFinite(mins) && mins > 0 ? `~${mins} min ` : ''}late${jobTitle ? ` for ${jobTitle}` : ''}.`;
+
+      try {
+        await storage.createNotification({
+          userId: ownerId,
+          type: kind === 'help' ? 'worker_help' : 'worker_delayed',
+          title,
+          message,
+          relatedId: resolvedJobId,
+          relatedType: resolvedJobId ? 'job' : null,
+          priority: kind === 'help' ? 'urgent' : 'important',
+        } as any);
+      } catch (notifErr) {
+        console.warn('[worker/alert] Failed to create in-app notification:', notifErr);
+      }
+
+      try {
+        // skipInAppNotification: we already created the in-app entry above
+        const { sendPushNotification } = await import('./pushNotifications');
+        await sendPushNotification({
+          userId: ownerId,
+          type: 'general',
+          title,
+          body: message,
+          data: { kind, jobId: resolvedJobId, workerId: userId },
+          skipInAppNotification: true,
+        });
+      } catch (pushErr) {
+        console.warn('[worker/alert] Failed to send push notification:', pushErr);
+      }
+
+      res.json({ ok: true });
+    } catch (error: any) {
+      console.error('Error sending worker alert:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ============================================
   // TEAM MEMBER SKILLS ROUTES
   // ============================================

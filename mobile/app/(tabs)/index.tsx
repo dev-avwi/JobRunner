@@ -12,6 +12,7 @@ import {
   AppState,
   AppStateStatus,
   TextInput,
+  Modal,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
@@ -2308,7 +2309,8 @@ function OwnerDashboardScreen() {
   const responsiveShell = usePageShell();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const confirm = useConfirmDialog();
-  const { activeTimer } = useTimeTrackingStore();
+  const insets = useSafeAreaInsets();
+  const { activeTimer, pauseTimer, resumeTimer, startTimer, stopTimer } = useTimeTrackingStore();
   const scrollRef = useRef<ScrollView | null>(null);
   const { scrollToTopTrigger } = useScrollToTop();
   
@@ -2374,6 +2376,114 @@ function OwnerDashboardScreen() {
       if (__DEV__) console.log('Error fetching worker state:', error);
     }
   }, []);
+
+  // Delay / ETA modal state
+  const [showDelayModal, setShowDelayModal] = useState(false);
+  const [statusBusy, setStatusBusy] = useState<string | null>(null);
+
+  const setWorkerStateRemote = useCallback(async (state: string, note: string | null = null) => {
+    try {
+      await api.post('/api/worker/state', { state, note });
+      setWorkerState({ state, note });
+      return true;
+    } catch {
+      showToast({ type: 'error', message: 'Failed to update status' });
+      return false;
+    }
+  }, []);
+
+  // Wire MY STATUS pills into real timer + owner-alert actions
+  const handleStatusPress = useCallback(async (target: string) => {
+    if (statusBusy) return;
+    const onWorkTimer = !!activeTimer && !activeTimer.isBreak;
+    const onBreakTimer = !!activeTimer && !!activeTimer.isBreak;
+
+    if (target === 'available') {
+      setStatusBusy(target);
+      try {
+        // Coming back from a break: resume work if the break is tied to a job,
+        // otherwise stop the standalone break timer. Only flip status if the
+        // timer transition actually succeeded — keep them in sync.
+        let timerOk = true;
+        if (onBreakTimer) {
+          timerOk = activeTimer?.jobId ? await resumeTimer() : await stopTimer();
+        }
+        if (!timerOk) {
+          showToast({ type: 'error', message: 'Could not update timer' });
+          return;
+        }
+        await setWorkerStateRemote('available');
+      } finally {
+        setStatusBusy(null);
+      }
+      return;
+    }
+
+    if (target === 'break') {
+      setStatusBusy(target);
+      try {
+        // Only flip status to break if the timer transition succeeded.
+        let timerOk = true;
+        if (onWorkTimer) {
+          // Pause the active job -> starts a break timer for the same job
+          timerOk = await pauseTimer();
+        } else if (!onBreakTimer) {
+          // No timer running -> start a standalone break timer
+          timerOk = await startTimer('', 'On break', true);
+        }
+        if (!timerOk) {
+          showToast({ type: 'error', message: 'Could not start break' });
+          return;
+        }
+        await setWorkerStateRemote('break');
+      } finally {
+        setStatusBusy(null);
+      }
+      return;
+    }
+
+    if (target === 'delayed') {
+      // Open the ETA picker; persistence + owner alert happens on confirm
+      setShowDelayModal(true);
+      return;
+    }
+
+    if (target === 'needs_help') {
+      setStatusBusy(target);
+      try {
+        await setWorkerStateRemote('needs_help');
+        try {
+          await api.post('/api/worker/alert', {
+            kind: 'help',
+            jobId: activeTimer?.jobId || todaysJobs?.[0]?.id || null,
+          });
+          showToast({ type: 'success', message: 'Help requested', description: 'Your boss has been alerted' });
+        } catch {
+          showToast({ type: 'info', message: 'Status set to Needs Help' });
+        }
+      } finally {
+        setStatusBusy(null);
+      }
+    }
+  }, [statusBusy, activeTimer, pauseTimer, resumeTimer, startTimer, stopTimer, setWorkerStateRemote, todaysJobs]);
+
+  // Confirm a delay with an ETA -> save against the job + alert the owner
+  const handleConfirmDelay = useCallback(async (etaMinutes: number) => {
+    setShowDelayModal(false);
+    setStatusBusy('delayed');
+    try {
+      const jobId = activeTimer?.jobId || todaysJobs?.[0]?.id || null;
+      await setWorkerStateRemote('delayed', `Running ~${etaMinutes} min late`);
+      try {
+        await api.post('/api/worker/alert', { kind: 'delayed', jobId, etaMinutes });
+        showToast({ type: 'success', message: 'Marked delayed', description: `Boss notified · ~${etaMinutes} min` });
+      } catch {
+        showToast({ type: 'info', message: 'Status set to Delayed' });
+      }
+    } finally {
+      setStatusBusy(null);
+    }
+  }, [activeTimer, todaysJobs, setWorkerStateRemote]);
 
   // Activity feed state
   const [activities, setActivities] = useState<any[]>([]);
@@ -3215,24 +3325,23 @@ function OwnerDashboardScreen() {
                 { state: 'needs_help', label: 'Help', color: '#ef4444' },
               ].map((btn) => {
                 const isActive = workerState.state === btn.state;
+                const isBusy = statusBusy === btn.state;
                 return (
                   <TouchableOpacity
                     key={btn.state}
                     activeOpacity={0.7}
+                    disabled={!!statusBusy}
                     style={[
                       styles.segment,
                       isActive && styles.segmentActive,
                     ]}
-                    onPress={async () => {
-                      try {
-                        await api.post('/api/worker/state', { state: btn.state });
-                        setWorkerState({ state: btn.state, note: null });
-                      } catch {
-                        showToast({ type: 'error', message: 'Failed to update status' });
-                      }
-                    }}
+                    onPress={() => handleStatusPress(btn.state)}
                   >
-                    <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: btn.color }} />
+                    {isBusy ? (
+                      <ActivityIndicator size="small" color={btn.color} />
+                    ) : (
+                      <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: btn.color }} />
+                    )}
                     <Text
                       numberOfLines={1}
                       style={{
@@ -3250,6 +3359,66 @@ function OwnerDashboardScreen() {
           </View>
         </View>
       )}
+
+      {/* Delay / ETA picker — sets running-late status, saves ETA, alerts the boss */}
+      <Modal
+        visible={showDelayModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDelayModal(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowDelayModal(false)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{
+            backgroundColor: colors.background,
+            borderTopLeftRadius: radius.xl,
+            borderTopRightRadius: radius.xl,
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.lg,
+            paddingBottom: spacing.xl + insets.bottom,
+          }}>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>
+              Running late?
+            </Text>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.lg }}>
+              Pick how late you'll be. Your boss gets notified and the job ETA updates.
+            </Text>
+            {[15, 30, 60].map((mins) => (
+              <TouchableOpacity
+                key={mins}
+                activeOpacity={0.7}
+                onPress={() => handleConfirmDelay(mins)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: spacing.md,
+                  paddingHorizontal: spacing.md,
+                  borderRadius: radius.lg,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  marginBottom: spacing.sm,
+                }}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+                  {mins < 60 ? `${mins} minutes` : '1 hour'}
+                </Text>
+                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setShowDelayModal(false)}
+              style={{ paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.xs }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.mutedForeground }}>Cancel</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Pending team invites — surfaced as a dashboard banner for one-tap accept */}
       <PendingInvitesBanner />
