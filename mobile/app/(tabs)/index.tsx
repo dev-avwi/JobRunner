@@ -3202,7 +3202,7 @@ function OwnerDashboardScreen() {
 
       {/* Worker State Quick Set */}
       {isStaffUser && (
-        <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.md }}>
+        <View style={{ marginTop: spacing.sm, marginBottom: spacing.md }}>
           <View style={styles.statusCard}>
             {(() => {
               const current =
@@ -4327,11 +4327,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.md,
   },
   statusCard: {
-    backgroundColor: '#F0F7FF',
+    backgroundColor: colors.card,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(43,125,233,0.18)',
-    padding: 12,
+    borderColor: colors.cardBorder,
+    padding: spacing.lg,
     ...shadows.sm,
   },
   statusCardHeader: {
@@ -4343,7 +4343,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   statusCardLabel: {
     ...typography.label,
-    color: '#2B7DE9',
+    color: colors.mutedForeground,
   },
   statusCardCurrent: {
     flexDirection: 'row',

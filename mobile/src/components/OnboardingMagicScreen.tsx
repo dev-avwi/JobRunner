@@ -8,8 +8,8 @@ import {
   Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Check } from 'lucide-react-native';
+import { useTheme, ThemeColors } from '../lib/theme';
 
 const TOTAL_DURATION = 6000;
 const MSG_FADE = 300;
@@ -34,19 +34,31 @@ interface OnboardingMagicScreenProps {
 
 export function OnboardingMagicScreen({ firstName, businessName, onDone }: OnboardingMagicScreenProps) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
+  const styles = createStyles(colors, isDark);
+
   const progress = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
+  const contentRise = useRef(new Animated.Value(16)).current;
   const msgFade = useRef(new Animated.Value(1)).current;
   const stepAnims = useRef(SETUP_STEPS.map(() => new Animated.Value(0))).current;
   const [msgIndex, setMsgIndex] = useState(0);
   const doneRef = useRef(false);
 
   useEffect(() => {
-    Animated.timing(contentFade, {
-      toValue: 1,
-      duration: 700,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(contentFade, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: true,
+      }),
+      Animated.timing(contentRise, {
+        toValue: 0,
+        duration: 700,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
 
     // Progress bar animates across the full duration.
     Animated.timing(progress, {
@@ -113,33 +125,26 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
 
   return (
     <View style={styles.root}>
-      <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Defs>
-          <RadialGradient id="glow" cx="50%" cy="38%" rx="75%" ry="60%" fx="50%" fy="38%">
-            <Stop offset="0%" stopColor="#2B7DE9" stopOpacity={0.08} />
-            <Stop offset="100%" stopColor="#2B7DE9" stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#glow)" />
-      </Svg>
-
       <Animated.View
         style={[
           styles.content,
           {
             opacity: contentFade,
+            transform: [{ translateY: contentRise }],
             paddingTop: insets.top + 56,
             paddingBottom: insets.bottom,
           },
         ]}
       >
         <View style={styles.topBlock}>
-          <View style={styles.logoBadge}>
-            <Image
-              source={require('../../assets/jobrunner-logo-header.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+          <View style={styles.logoOuterRing}>
+            <View style={styles.logoInnerRing}>
+              <Image
+                source={require('../../assets/jobrunner-logo-header.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
           </View>
           <Text style={styles.wordmark}>
             <Text style={styles.wordmarkJob}>Job</Text>
@@ -148,18 +153,23 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
         </View>
 
         <View style={styles.midBlock}>
-          <Text style={styles.welcomeLine}>Welcome,</Text>
-          <Text style={styles.nameLine}>{firstName || 'aboard'}</Text>
-          {!!businessName && <Text style={styles.businessName}>{businessName}</Text>}
+          <Text style={styles.welcomeLine}>WELCOME</Text>
+          <Text style={styles.nameLine} numberOfLines={1} adjustsFontSizeToFit>
+            {firstName || 'aboard'}
+          </Text>
+          {!!businessName && (
+            <Text style={styles.businessName} numberOfLines={1}>
+              {businessName}
+            </Text>
+          )}
 
-          <View style={styles.divider} />
-
-          <View style={styles.stepsBlock}>
+          <View style={styles.stepsCard}>
             {SETUP_STEPS.map((label, i) => (
               <Animated.View
                 key={label}
                 style={[
                   styles.stepRow,
+                  i > 0 && styles.stepRowBorder,
                   {
                     opacity: stepAnims[i],
                     transform: [
@@ -174,7 +184,7 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
                 ]}
               >
                 <View style={styles.stepIcon}>
-                  <Check size={14} color="#2B7DE9" strokeWidth={3} />
+                  <Check size={15} color="#FFFFFF" strokeWidth={3.5} />
                 </View>
                 <Text style={styles.stepText}>{label}</Text>
               </Animated.View>
@@ -195,121 +205,144 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  topBlock: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  logoBadge: {
-    width: 76,
-    height: 76,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  logo: {
-    width: 46,
-    height: 46,
-  },
-  wordmark: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  wordmarkJob: {
-    color: '#5AA2F5',
-    fontSize: 28,
-    fontWeight: '800',
-  },
-  wordmarkRunner: {
-    color: '#F7A23B',
-    fontSize: 28,
-    fontWeight: '800',
-  },
-  midBlock: {
-    paddingHorizontal: 32,
-  },
-  welcomeLine: {
-    fontSize: 30,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.85)',
-    letterSpacing: -0.5,
-  },
-  nameLine: {
-    fontSize: 48,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -1,
-    marginTop: 2,
-  },
-  businessName: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#2B7DE9',
-    marginTop: 10,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    marginTop: 28,
-    marginBottom: 24,
-  },
-  stepsBlock: {
-    gap: 4,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 44,
-    gap: 14,
-  },
-  stepIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(43,125,233,0.16)',
-  },
-  stepText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.70)',
-  },
-  bottomBlock: {
-    alignItems: 'stretch',
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.55)',
-    textAlign: 'center',
-    letterSpacing: 0.2,
-    marginBottom: 16,
-  },
-  progressTrack: {
-    width: '100%',
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2B7DE9',
-  },
-});
+const createStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      flex: 1,
+      justifyContent: 'space-between',
+    },
+    topBlock: {
+      alignItems: 'center',
+      paddingHorizontal: 32,
+    },
+    logoOuterRing: {
+      width: 84,
+      height: 84,
+      borderRadius: 20,
+      borderWidth: 2.5,
+      borderColor: '#2B7DE9',
+      padding: 3,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 18,
+      backgroundColor: '#FFFFFF',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: isDark ? 0.4 : 0.1,
+      shadowRadius: 16,
+      elevation: 6,
+    },
+    logoInnerRing: {
+      flex: 1,
+      width: '100%',
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: '#F28C28',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#FFFFFF',
+    },
+    logo: {
+      width: 44,
+      height: 44,
+    },
+    wordmark: {
+      fontSize: 26,
+      fontWeight: '800',
+      letterSpacing: -0.5,
+    },
+    wordmarkJob: {
+      color: '#2B7DE9',
+      fontSize: 26,
+      fontWeight: '800',
+    },
+    wordmarkRunner: {
+      color: '#F28C28',
+      fontSize: 26,
+      fontWeight: '800',
+    },
+    midBlock: {
+      paddingHorizontal: 32,
+    },
+    welcomeLine: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.mutedForeground,
+      letterSpacing: 2.5,
+      marginBottom: 6,
+    },
+    nameLine: {
+      fontSize: 46,
+      fontWeight: '800',
+      color: colors.foreground,
+      letterSpacing: -1.2,
+    },
+    businessName: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: '#2B7DE9',
+      marginTop: 8,
+    },
+    stepsCard: {
+      marginTop: 32,
+      backgroundColor: colors.card,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      paddingHorizontal: 18,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.3 : 0.06,
+      shadowRadius: 14,
+      elevation: 3,
+    },
+    stepRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 16,
+      gap: 14,
+    },
+    stepRowBorder: {
+      borderTopWidth: 1,
+      borderTopColor: colors.cardBorder,
+    },
+    stepIcon: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#22C55E',
+    },
+    stepText: {
+      flex: 1,
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    bottomBlock: {
+      alignItems: 'stretch',
+    },
+    statusText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      letterSpacing: 0.2,
+      marginBottom: 16,
+    },
+    progressTrack: {
+      width: '100%',
+      height: 4,
+      backgroundColor: colors.border,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: '#2B7DE9',
+    },
+  });
