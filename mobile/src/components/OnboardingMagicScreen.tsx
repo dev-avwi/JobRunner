@@ -9,18 +9,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
+import { useTheme } from '../lib/theme';
 
 const TOTAL_DURATION = 6000;
 const MSG_FADE = 300;
 const STEP_STAGGER = 500;
 
-const BG = '#F8FAFC';
-const BLUE = '#2B7DE9';
-const ORANGE = '#F28C28';
-const NAME = '#0F172A';
-const MUTED = '#94A3B8';
-const DIVIDER = '#E2E8F0';
-const GREEN = '#22C55E';
+// Brand ring colours — kept in sync with the premium login screen's logo badge.
+const RING_BLUE = '#2B7DE9';
+const RING_ORANGE = '#F28C28';
 
 const STATUS_MESSAGES = [
   'Setting up your business profile',
@@ -42,6 +39,7 @@ interface OnboardingMagicScreenProps {
 
 export function OnboardingMagicScreen({ firstName, businessName, onDone }: OnboardingMagicScreenProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   const progress = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
@@ -130,55 +128,64 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
   });
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       <Animated.View
         style={[
           styles.content,
           {
             opacity: contentFade,
             transform: [{ translateY: contentRise }],
-            paddingTop: insets.top + 44,
-            paddingBottom: insets.bottom + 20,
+            paddingTop: insets.top + 56,
+            paddingBottom: insets.bottom + 24,
           },
         ]}
       >
-        {/* Top — raw logo mark + wordmark, centred. */}
+        {/* Top — premium double-ring logo badge + wordmark, centred. */}
         <View style={styles.topBlock}>
-          <Image
-            source={require('../../assets/jobrunner-logo-header.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <View style={styles.logoOuterRing}>
+            <View style={styles.logoInnerRing}>
+              <Image
+                source={require('../../assets/jobrunner-logo-header.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
+          </View>
           <Text style={styles.wordmark}>
             <Text style={styles.wordmarkJob}>Job</Text>
             <Text style={styles.wordmarkRunner}>Runner</Text>
           </Text>
-          <Text style={styles.tagline}>For Australian Tradies</Text>
+          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
+            For Australian Tradies
+          </Text>
         </View>
 
-        <View style={styles.divider} />
-
-        {/* Greeting — left aligned. */}
+        {/* Greeting — centred to match the premium completion step. */}
         <View style={styles.greeting}>
-          <Text style={styles.welcomeLine}>WELCOME</Text>
-          <Text style={styles.nameLine} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={[styles.welcomeLine, { color: colors.mutedForeground }]}>WELCOME</Text>
+          <Text
+            style={[styles.nameLine, { color: colors.foreground }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
             {firstName || 'aboard'}
           </Text>
           {!!businessName && (
-            <Text style={styles.businessName} numberOfLines={1}>
+            <Text style={[styles.businessName, { color: colors.primary }]} numberOfLines={1}>
               {businessName}
             </Text>
           )}
         </View>
 
-        {/* Checklist — borderless rows with thin dividers, staggered in. */}
-        <View style={styles.steps}>
+        {/* Checklist — bordered card with staggered rows, matching the
+            onboarding completion screen's card language. */}
+        <View style={[styles.stepsCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
           {SETUP_STEPS.map((label, i) => (
             <Animated.View
               key={label}
               style={[
                 styles.stepRow,
-                i > 0 && styles.stepRowBorder,
+                i > 0 && [styles.stepRowBorder, { borderTopColor: colors.cardBorder }],
                 {
                   opacity: stepAnims[i],
                   transform: [
@@ -192,10 +199,10 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
                 },
               ]}
             >
-              <View style={styles.stepIcon}>
+              <View style={[styles.stepIcon, { backgroundColor: colors.success }]}>
                 <Check size={14} color="#FFFFFF" strokeWidth={3.5} />
               </View>
-              <Text style={styles.stepText}>{label}</Text>
+              <Text style={[styles.stepText, { color: colors.foreground }]}>{label}</Text>
             </Animated.View>
           ))}
         </View>
@@ -203,11 +210,13 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
         <View style={styles.spacer} />
 
         {/* Bottom — cycling status + full-width progress bar. */}
-        <Animated.Text style={[styles.statusText, { opacity: msgFade }]}>
+        <Animated.Text style={[styles.statusText, { color: colors.mutedForeground, opacity: msgFade }]}>
           {STATUS_MESSAGES[msgIndex]}
         </Animated.Text>
-        <View style={styles.progressTrack}>
-          <Animated.View style={[styles.progressFill, { width: widthInterpolate }]} />
+        <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+          <Animated.View
+            style={[styles.progressFill, { width: widthInterpolate, backgroundColor: colors.primary }]}
+          />
         </View>
       </Animated.View>
     </View>
@@ -217,18 +226,44 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: BG,
   },
   content: {
     flex: 1,
+    paddingHorizontal: 28,
   },
   topBlock: {
     alignItems: 'center',
   },
+  logoOuterRing: {
+    width: 84,
+    height: 84,
+    borderRadius: 20,
+    borderWidth: 2.5,
+    borderColor: RING_BLUE,
+    padding: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  logoInnerRing: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: RING_ORANGE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
   logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 16,
+    width: 44,
+    height: 44,
   },
   wordmark: {
     fontSize: 28,
@@ -236,12 +271,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   wordmarkJob: {
-    color: BLUE,
+    color: RING_BLUE,
     fontSize: 28,
     fontWeight: '800',
   },
   wordmarkRunner: {
-    color: ORANGE,
+    color: RING_ORANGE,
     fontSize: 28,
     fontWeight: '800',
   },
@@ -249,42 +284,36 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 12,
     fontWeight: '600',
-    color: MUTED,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  divider: {
-    marginTop: 32,
-    height: 1,
-    width: '100%',
-    backgroundColor: DIVIDER,
-  },
   greeting: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+    marginTop: 36,
+    alignItems: 'center',
   },
   welcomeLine: {
     fontSize: 11,
     fontWeight: '700',
-    color: MUTED,
     letterSpacing: 3,
     marginBottom: 8,
   },
   nameLine: {
-    fontSize: 48,
+    fontSize: 40,
     fontWeight: '800',
-    color: NAME,
-    letterSpacing: -1.4,
+    letterSpacing: -1.2,
+    textAlign: 'center',
   },
   businessName: {
     fontSize: 17,
-    fontWeight: '500',
-    color: BLUE,
+    fontWeight: '600',
     marginTop: 8,
+    textAlign: 'center',
   },
-  steps: {
-    marginTop: 28,
-    paddingHorizontal: 24,
+  stepsCard: {
+    marginTop: 32,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 18,
   },
   stepRow: {
     flexDirection: 'row',
@@ -294,7 +323,6 @@ const styles = StyleSheet.create({
   },
   stepRowBorder: {
     borderTopWidth: 1,
-    borderTopColor: DIVIDER,
   },
   stepIcon: {
     width: 24,
@@ -302,13 +330,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: GREEN,
   },
   stepText: {
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: NAME,
   },
   spacer: {
     flex: 1,
@@ -316,7 +342,6 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '500',
-    color: MUTED,
     textAlign: 'center',
     letterSpacing: 0.2,
     marginBottom: 14,
@@ -324,11 +349,11 @@ const styles = StyleSheet.create({
   progressTrack: {
     width: '100%',
     height: 3,
-    backgroundColor: DIVIDER,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: BLUE,
+    borderRadius: 2,
   },
 });
