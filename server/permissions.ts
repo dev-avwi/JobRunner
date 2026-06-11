@@ -37,6 +37,82 @@ export const PERMISSIONS = {
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
+// Roles in the DB store their permissions in one of several historical
+// vocabularies. The mobile UI and the newer role presets use GRANULAR verbs
+// (view_/create_/update_/edit_/delete_/send_, plus track_time/collect_payments),
+// while the route middleware (createPermissionMiddleware) checks the COARSE
+// PERMISSIONS vocabulary (read_/write_). A role explicitly granted
+// "create_clients" must therefore satisfy a route that requires "write_clients".
+// This map expands each granular verb into the coarse permission(s) it implies.
+//
+// The expansion is purely ADDITIVE: the original strings are preserved, so
+// (1) roles already stored in the coarse vocabulary keep working unchanged, and
+// (2) the mobile UI — which reads the raw granular strings off /api/team/my-role —
+// is unaffected. We only widen what server-side enforcement accepts.
+const PERMISSION_ALIASES: Record<string, string[]> = {
+  // Jobs
+  view_jobs: [PERMISSIONS.READ_JOBS],
+  view_all_jobs: [PERMISSIONS.READ_JOBS, PERMISSIONS.VIEW_ALL],
+  create_jobs: [PERMISSIONS.WRITE_JOBS],
+  update_jobs: [PERMISSIONS.WRITE_JOBS],
+  edit_jobs: [PERMISSIONS.WRITE_JOBS, PERMISSIONS.WRITE_JOB_NOTES, PERMISSIONS.WRITE_JOB_MEDIA],
+  delete_jobs: [PERMISSIONS.WRITE_JOBS],
+  update_job_status: [PERMISSIONS.WRITE_JOBS],
+  // Clients — granular "view_clients" is documented (shared/schema.ts) as
+  // "view full client details (address, phone, email)", and the granular
+  // vocabulary has no separate sensitive-view permission, so it must also grant
+  // READ_CLIENTS_SENSITIVE or PII gets redacted for these roles.
+  view_clients: [PERMISSIONS.READ_CLIENTS, PERMISSIONS.READ_CLIENTS_SENSITIVE],
+  create_clients: [PERMISSIONS.WRITE_CLIENTS],
+  update_clients: [PERMISSIONS.WRITE_CLIENTS],
+  edit_clients: [PERMISSIONS.WRITE_CLIENTS],
+  delete_clients: [PERMISSIONS.WRITE_CLIENTS],
+  // Quotes
+  view_quotes: [PERMISSIONS.READ_QUOTES],
+  create_quotes: [PERMISSIONS.WRITE_QUOTES],
+  update_quotes: [PERMISSIONS.WRITE_QUOTES],
+  edit_quotes: [PERMISSIONS.WRITE_QUOTES],
+  delete_quotes: [PERMISSIONS.WRITE_QUOTES],
+  send_quotes: [PERMISSIONS.WRITE_QUOTES],
+  // Invoices
+  view_invoices: [PERMISSIONS.READ_INVOICES],
+  create_invoices: [PERMISSIONS.WRITE_INVOICES],
+  update_invoices: [PERMISSIONS.WRITE_INVOICES],
+  edit_invoices: [PERMISSIONS.WRITE_INVOICES],
+  delete_invoices: [PERMISSIONS.WRITE_INVOICES],
+  send_invoices: [PERMISSIONS.WRITE_INVOICES],
+  // Documents (granular role that edits both quotes + invoices)
+  edit_documents: [PERMISSIONS.WRITE_QUOTES, PERMISSIONS.WRITE_INVOICES],
+  // Payments
+  collect_payments: [PERMISSIONS.MANAGE_PAYMENTS],
+  // Reports
+  view_reports: [PERMISSIONS.READ_REPORTS],
+  // Team
+  manage_roles: [PERMISSIONS.MANAGE_TEAM],
+  // Time tracking
+  track_time: [PERMISSIONS.READ_TIME_ENTRIES, PERMISSIONS.WRITE_TIME_ENTRIES],
+  time_tracking: [PERMISSIONS.READ_TIME_ENTRIES, PERMISSIONS.WRITE_TIME_ENTRIES],
+  create_time_entries: [PERMISSIONS.WRITE_TIME_ENTRIES],
+};
+
+/**
+ * Widen a stored permission list so granular verbs also satisfy the coarse
+ * permissions the route middleware enforces. Additive only — never removes the
+ * original strings, and leaves coarse-vocabulary and wildcard ("*") roles
+ * untouched.
+ */
+export function expandPermissions(perms: string[]): string[] {
+  if (!perms || perms.length === 0) return perms;
+  const expanded = new Set<string>(perms);
+  for (const p of perms) {
+    const aliases = PERMISSION_ALIASES[p];
+    if (aliases) {
+      for (const a of aliases) expanded.add(a);
+    }
+  }
+  return Array.from(expanded);
+}
+
 // Placeholder business name auto-created for invited workers/subcontractors who
 // don't own a real business. It is NOT a real own-business: it exists only so
 // they skip the owner onboarding wizard. Anywhere we decide "is this user a
@@ -193,9 +269,9 @@ export async function getUserContext(userId: string): Promise<UserContext> {
     
     let permissions: Permission[];
     if (teamMembership.useCustomPermissions && teamMembership.customPermissions) {
-      permissions = teamMembership.customPermissions as Permission[];
+      permissions = expandPermissions(teamMembership.customPermissions as string[]) as Permission[];
     } else {
-      permissions = (role?.permissions as Permission[]) || [];
+      permissions = expandPermissions((role?.permissions as string[]) || []) as Permission[];
     }
     
     const ownerUser = await storage.getUser(teamMembership.businessOwnerId);
