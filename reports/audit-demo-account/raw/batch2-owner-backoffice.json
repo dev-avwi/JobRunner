@@ -1,0 +1,6 @@
+{
+  "status": "success",
+  "testOutput": "Success! Completed the read-only UI audit across login, dashboard, schedule, dispatch board, documents, templates, reports, time tracking, and team. Logged in successfully with the demo account, confirmed the authenticated dashboard, dismissed the recurring 'What You Missed' overlays on several pages, and verified each target page rendered with expected content (schedule jobs/times, populated dispatch board, documents hub, templates hub, reports metrics/charts, time tracking controls and summary cards, team members/roles).\nMinor issues:\nBrowser console showed a recurring WebSocket handshake error (400) and an ERR_FAILED resource load, but the app UI continued to function and all required pages rendered.\n\n",
+  "subagentId": "505ce80e-e41f-4c81-9dbe-01934dac8dad",
+  "screenshotPaths": []
+}

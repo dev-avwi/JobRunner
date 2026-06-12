@@ -1,0 +1,6 @@
+{
+  "status": "success",
+  "testOutput": "Success! Completed the full audit at 1280px. Logged in with demo@jobrunner.com.au / demo123 and confirmed an authenticated shell. Visited /settings, /integrations, /subscription, /my-account, /chat, /messages, /map, /action-center, /insights, and /autopilot. Settings, subscription, my-account, chat, messages, map, action-center, insights, and autopilot all rendered with real demo data; integrations loaded with real settings/status but remained in a loading state when observed. Several pages showed a transient 'What You Missed' modal, which was dismissed/auto-closed as needed.\nVerification gaps:\nConsole showed a recurring WebSocket handshake 400 and net::ERR_FAILED resource error during the session; these did not block page auditing. Some pages were observed while the 'What You Missed' modal was still visible, so only the page state behind the modal was partially inferred from the accessible snapshot/screenshot.\n\nMinor issues:\nInitial root/login path briefly showed 404/configuration/marketing states before the correct auth flow was reached, but the actual login and authenticated navigation worked afterward. The /messages screenshot lagged behind the confirmed URL change once, but the route itself was correct.\n\n",
+  "subagentId": "2d838d51-b1bc-482a-a8a4-24fbf1e94e3b",
+  "screenshotPaths": []
+}
