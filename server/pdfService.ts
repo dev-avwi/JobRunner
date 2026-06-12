@@ -177,7 +177,7 @@ interface CustomTemplateSettings {
 
 // Get template and accent color from business settings (including custom uploaded templates)
 // This function merges both legacy TemplateCustomization fields AND new AI-analyzed CustomTemplateSettings
-function getTemplateFromBusinessSettings(business: BusinessSettings): { template: DocumentTemplate; accentColor: string } {
+function getTemplateFromBusinessSettings(business: { documentTemplate?: string | null; documentTemplateSettings?: unknown }): { template: DocumentTemplate; accentColor: string } {
   const settings = business.documentTemplateSettings as (TemplateCustomization & CustomTemplateSettings) | null;
   
   // Determine base template ID
@@ -224,7 +224,9 @@ function getTemplateFromBusinessSettings(business: BusinessSettings): { template
 // Document-level template interface (saved when document is created)
 interface DocumentTemplateData {
   documentTemplate?: string | null;
-  documentTemplateSettings?: TemplateCustomization | null;
+  // Stored as Json in the DB (typed `unknown` on select rows); narrowed to
+  // TemplateCustomization at the use site below.
+  documentTemplateSettings?: unknown;
 }
 
 // Get template from document first (saved at creation time), falling back to business settings
@@ -456,7 +458,7 @@ const generateDocumentStyles = (template: DocumentTemplate, accentColor: string)
     : `background: ${brandColor}; color: white;`;
   
   // Rounded corners for Modern template header row
-  const headerRadius = template.headerLayout === 'modern' ? template.borderRadius : '0';
+  const headerRadius = '0';
   
   // Table row styles based on template
   const getTableRowStyles = () => {
@@ -3210,24 +3212,35 @@ export interface PaymentReceiptData {
     amount: number; // in cents
     gstAmount?: number;
     paymentMethod: string;
-    reference?: string;
-    paidAt: Date;
+    reference?: string | null;
+    paidAt: Date | null;
   };
   client?: {
     name: string;
-    email?: string;
-    phone?: string;
-    address?: string;
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+  } | null;
+  // Structural subset (template reads only these, all null-safe); accepts full
+  // BusinessSettings as well as the minimal { businessName } fallback.
+  business: {
+    businessName?: string | null;
+    abn?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    logoUrl?: string | null;
+    licenseNumber?: string | null;
+    brandColor?: string | null;
   };
-  business: BusinessSettings;
   invoice?: {
     number: string;
-    title?: string;
-  };
+    title?: string | null;
+  } | null;
   job?: {
     title: string;
-    address?: string;
-  };
+    address?: string | null;
+  } | null;
 }
 
 
@@ -3244,10 +3257,11 @@ const formatCentsToAUD = (cents: number): string => {
 export const generatePaymentReceiptPDF = (data: PaymentReceiptData): string => {
   const { payment, client, business, invoice, job } = data;
   
-  // Use invoice's template if linked, otherwise fall back to business settings
-  const { template, accentColor } = invoice 
-    ? getTemplateForDocument(invoice, business)
-    : getTemplateFromBusinessSettings(business);
+  // Receipts only carry the invoice number/title (no per-document template
+  // fields), so always render with the business-level template settings.
+  // The receipt's business blob is a structural subset that never holds the
+  // template fields, so it safely resolves to the default template.
+  const { template, accentColor } = getTemplateFromBusinessSettings(business as { documentTemplate?: string | null; documentTemplateSettings?: unknown });
   
   // Amounts are already in dollars (not cents) - no conversion needed
   const amountDollars = payment.amount;
@@ -3580,7 +3594,7 @@ export const generatePaymentReceiptPDF = (data: PaymentReceiptData): string => {
         <div class="info-label">Payment Details</div>
         <div class="info-value">
           <strong>Date:</strong> ${formatDate(payment.paidAt)}<br/>
-          <strong>Time:</strong> ${new Date(payment.paidAt).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}<br/>
+          <strong>Time:</strong> ${payment.paidAt ? new Date(payment.paidAt).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' }) : ''}<br/>
           <strong>Method:</strong> ${getPaymentMethodDisplay(payment.paymentMethod)}
         </div>
       </div>

@@ -17,7 +17,6 @@ export default function HeaderExample() {
           console.log('Theme toggled:', !isDarkMode);
         }}
         isDarkMode={isDarkMode}
-        notificationCount={3}
         onProfileClick={() => console.log('Profile clicked')}
         onSettingsClick={() => console.log('Settings clicked')}
         onLogoutClick={() => console.log('Logout clicked')}
@@ -37,7 +36,6 @@ export default function HeaderExample() {
         onAddClick={() => console.log('Create Job clicked')}
         onThemeToggle={() => setIsDarkMode(!isDarkMode)}
         isDarkMode={isDarkMode}
-        notificationCount={0}
       />
       
       <div className="p-4 bg-muted/30 rounded-lg">

@@ -527,7 +527,7 @@ export class AuthService {
       const user = await storage.createUser({
         email: normalizedEmail,
         username: username,
-        password: null, // No password for Google users
+        password: undefined, // No password for Google users
         firstName: userData.firstName,
         lastName: userData.lastName,
       });
@@ -553,7 +553,7 @@ export class AuthService {
 
       // Send welcome email (async, don't block user creation)
       sendWelcomeEmail({
-        email: updatedUser.email,
+        email: updatedUser.email || '',
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName
       }).catch(err => {
@@ -624,7 +624,7 @@ export class AuthService {
       const user = await storage.createUser({
         email: normalizedEmail,
         username: username,
-        password: null, // No password for Apple users
+        password: undefined, // No password for Apple users
         firstName: userData.firstName,
         lastName: userData.lastName,
       });
@@ -649,7 +649,7 @@ export class AuthService {
 
       // Send welcome email (async, don't block user creation)
       sendWelcomeEmail({
-        email: updatedUser.email,
+        email: updatedUser.email || '',
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName
       }).catch(err => {
@@ -699,7 +699,7 @@ export class AuthService {
       const user = await storage.createUser({
         email: normalizedEmail,
         username: username,
-        password: null,
+        password: undefined,
         firstName: userData.firstName,
         lastName: userData.lastName,
       });
@@ -720,7 +720,7 @@ export class AuthService {
       });
 
       sendWelcomeEmail({
-        email: updatedUser.email,
+        email: updatedUser.email || '',
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName
       }).catch(err => {

@@ -20,6 +20,8 @@ const buttonVariants = cva(
         ghost: "border border-transparent",
         brand:
           "[background-color:hsl(var(--trade))] text-white [border-color:hsl(var(--trade-border))] border",
+        link:
+          "border border-transparent text-primary underline-offset-4 hover:underline",
       },
       // Heights are set as "min" heights, because sometimes Ai will place large amount of content
       // inside buttons. With a min-height they will look appropriate with small amounts of content,

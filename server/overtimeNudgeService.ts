@@ -32,7 +32,8 @@ export async function checkOvertimeTimers(): Promise<{ nudged: number; errors: n
         const now = new Date();
         let elapsedMs = now.getTime() - startTime.getTime();
 
-        const pausedMs = entry.pausedDuration ? parseInt(String(entry.pausedDuration), 10) * 60 * 1000 : 0;
+        // time_entries has no paused-duration column; pause tracking is not persisted here.
+        const pausedMs = 0;
         elapsedMs -= pausedMs;
 
         const elapsedMinutes = elapsedMs / (1000 * 60);
@@ -118,7 +119,7 @@ export async function checkOvertimeTimers(): Promise<{ nudged: number; errors: n
 
 setInterval(() => {
   const now = Date.now();
-  for (const [key, time] of overtimeNudgeSent.entries()) {
+  for (const [key, time] of Array.from(overtimeNudgeSent.entries())) {
     if (now - time > 24 * 60 * 60 * 1000) {
       overtimeNudgeSent.delete(key);
     }

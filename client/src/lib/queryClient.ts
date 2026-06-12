@@ -312,11 +312,11 @@ function buildUrlFromQueryKey(queryKey: readonly unknown[]): string {
   return segments.join("/");
 }
 
-export const getQueryFn: <T>(options: {
+export const getQueryFn = <T,>(options: {
   on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
+}): QueryFunction<T> => {
+  const { on401: unauthorizedBehavior } = options;
+  return async ({ queryKey }) => {
     const url = buildUrlFromQueryKey(queryKey);
     
     // Detect if this is a detail query (2+ element keys where second element is an ID string, not a path)
@@ -377,6 +377,7 @@ export const getQueryFn: <T>(options: {
       throw error;
     }
   };
+};
 
 export const queryClient = new QueryClient({
   defaultOptions: {

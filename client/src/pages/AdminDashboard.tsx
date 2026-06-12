@@ -2929,7 +2929,7 @@ function EmailLogsView() {
 
   const retryMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/admin/email-logs/${id}/retry`, { method: 'POST' });
+      return apiRequest('POST', `/api/admin/email-logs/${id}/retry`);
     },
     onSuccess: () => {
       toast({ title: 'Queued for retry', description: 'The email will retry on the next scheduler tick.' });
@@ -2942,7 +2942,7 @@ function EmailLogsView() {
 
   const retryAllMutation = useMutation({
     mutationFn: async (scope: 'permanent' | 'failed') => {
-      return apiRequest(`/api/admin/email-logs/retry-all?scope=${scope}`, { method: 'POST' });
+      return apiRequest('POST', `/api/admin/email-logs/retry-all?scope=${scope}`);
     },
     onSuccess: (data: any) => {
       toast({

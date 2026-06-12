@@ -53,10 +53,28 @@ interface AIQuoteGeneratorProps {
 
 type Step = 'input' | 'generating' | 'review';
 
+interface SpeechRecognitionResultLike {
+  isFinal: boolean;
+  [index: number]: { transcript: string };
+}
+interface SpeechRecognitionEventLike {
+  results: { length: number; [index: number]: SpeechRecognitionResultLike };
+}
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition?: { new (): SpeechRecognitionLike };
+    webkitSpeechRecognition?: { new (): SpeechRecognitionLike };
   }
 }
 
@@ -83,7 +101,7 @@ export default function AIQuoteGenerator({ open, onOpenChange, jobId, onApplyIte
   const [uploadedPhotos, setUploadedPhotos] = useState<Array<{ file: File; preview: string }>>([]);
   const [photosExpanded, setPhotosExpanded] = useState(false);
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const transcriptRef = useRef("");

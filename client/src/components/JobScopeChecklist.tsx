@@ -199,14 +199,14 @@ export default function JobScopeChecklist({
   const selectAllRequired = () => {
     if (!selectedTemplate) return;
     const required = selectedTemplate.items.filter(item => item.required).map(item => item.id);
-    setSelectedItems(new Set([...selectedItems, ...required]));
+    setSelectedItems(new Set([...Array.from(selectedItems), ...required]));
   };
 
   const addSelectedToQuote = () => {
     if (!selectedTemplate) return;
     
     const itemsToAdd: LineItem[] = [];
-    for (const itemId of selectedItems) {
+    for (const itemId of Array.from(selectedItems)) {
       const item = selectedTemplate.items.find(i => i.id === itemId);
       if (item) {
         itemsToAdd.push({

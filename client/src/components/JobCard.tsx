@@ -89,7 +89,7 @@ export default function JobCard({
   });
   
   // Check if timer is active for THIS job
-  const hasActiveTimer = activeTimer && (activeTimer as any).jobId === id;
+  const hasActiveTimer = !!(activeTimer && (activeTimer as { jobId?: string }).jobId === id);
   
   // Calculate total time logged for this job (completed entries only)
   const totalMinutesLogged = (timeEntries as TimeEntry[])

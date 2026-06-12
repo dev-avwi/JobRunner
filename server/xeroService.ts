@@ -20,15 +20,14 @@ try {
     const _origDiscover = _oidc.Issuer.discover.bind(_oidc.Issuer);
     const _discoveryCache = new Map<string, Promise<any>>();
     _oidc.Issuer.discover = function (url: string): Promise<any> {
-      let p = _discoveryCache.get(url);
-      if (!p) {
-        p = _origDiscover(url).catch((err: any) => {
-          _discoveryCache.delete(url); // don't cache failures
-          throw err;
-        });
-        _discoveryCache.set(url, p);
-      }
-      return p;
+      const cached = _discoveryCache.get(url);
+      if (cached) return cached;
+      const fresh: Promise<any> = _origDiscover(url).catch((err: any) => {
+        _discoveryCache.delete(url); // don't cache failures
+        throw err;
+      });
+      _discoveryCache.set(url, fresh);
+      return fresh;
     };
     console.log("[Xero] OIDC Issuer.discover patched with in-process cache");
   } else {
@@ -355,7 +354,7 @@ export async function refreshTokenIfNeeded(connection: XeroConnection): Promise<
       const xero = createXeroClient();
       const tokens = decryptTokens(connection);
       
-      const oldTokenSet: TokenSet = {
+      const oldTokenSet = {
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
         expires_at: Math.floor(expiresAt.getTime() / 1000),
@@ -1260,7 +1259,7 @@ export async function getChartOfAccounts(userId: string): Promise<Array<{ id: st
     id: acc.accountID || '',
     code: acc.code || '',
     name: acc.name || '',
-    type: acc.type || '',
+    type: acc.type ? String(acc.type) : '',
   }));
 }
 
@@ -1688,7 +1687,7 @@ export async function syncInvoiceStatusFromXero(userId: string): Promise<{
 
       try {
         // Handle VOIDED status
-        if (xeroInvoice.status === 'VOIDED' && localInvoice.status !== 'cancelled') {
+        if (String(xeroInvoice.status) === 'VOIDED' && localInvoice.status !== 'cancelled') {
           await storage.updateInvoice(localInvoice.id, userId, {
             status: 'cancelled',
             xeroSyncedAt: new Date(),
@@ -1865,29 +1864,29 @@ export async function syncInventoryFromXero(userId: string): Promise<{
 
         if (existingByXero) {
           // Update existing item
-          await storage.updateCatalogItem(existingByXero.id, userId, {
+          await storage.updateLineItemCatalogItem(existingByXero.id, {
             name: xeroItem.name,
             description: xeroItem.description || existingByXero.description,
-            price: xeroItem.salesDetails?.unitPrice?.toString() || existingByXero.price,
+            unitPrice: xeroItem.salesDetails?.unitPrice?.toString() || existingByXero.unitPrice,
             xeroSyncedAt: new Date(),
           } as any);
           updated++;
         } else if (existingByNameMatch) {
           // Link existing item to Xero
-          await storage.updateCatalogItem(existingByNameMatch.id, userId, {
+          await storage.updateLineItemCatalogItem(existingByNameMatch.id, {
             xeroItemId: xeroItemId,
             description: xeroItem.description || existingByNameMatch.description,
-            price: xeroItem.salesDetails?.unitPrice?.toString() || existingByNameMatch.price,
+            unitPrice: xeroItem.salesDetails?.unitPrice?.toString() || existingByNameMatch.unitPrice,
             xeroSyncedAt: new Date(),
           } as any);
           updated++;
         } else {
           // Create new catalog item from Xero
-          await storage.createCatalogItem({
+          await storage.createLineItemCatalogItem({
             userId,
             name: xeroItem.name,
             description: xeroItem.description || null,
-            price: xeroItem.salesDetails?.unitPrice?.toString() || '0',
+            unitPrice: xeroItem.salesDetails?.unitPrice?.toString() || '0',
             category: 'materials', // Default category
             xeroItemId: xeroItemId,
             xeroSyncedAt: new Date(),

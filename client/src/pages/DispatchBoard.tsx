@@ -836,7 +836,7 @@ function DispatchMapView({ dispatchJobs }: { dispatchJobs: DispatchJob[] }) {
 function OpsHealthBanner({ opsHealth }: { opsHealth?: OpsHealth }) {
   const [expanded, setExpanded] = useState(false);
 
-  const { data: jobAgingData } = useQuery({
+  const { data: jobAgingData } = useQuery<{ totalAging: number; criticalCount: number; agingJobs: any[] }>({
     queryKey: ['/api/ops/job-aging'],
   });
 
@@ -907,7 +907,7 @@ function OpsHealthBanner({ opsHealth }: { opsHealth?: OpsHealth }) {
           )}
           {agingCount > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" 
-              style={{ backgroundColor: jobAgingData?.criticalCount > 0 ? 'hsl(var(--destructive) / 0.1)' : 'hsl(45 100% 50% / 0.15)', color: jobAgingData?.criticalCount > 0 ? 'hsl(var(--destructive))' : 'hsl(45 80% 35%)' }}>
+              style={{ backgroundColor: (jobAgingData?.criticalCount ?? 0) > 0 ? 'hsl(var(--destructive) / 0.1)' : 'hsl(45 100% 50% / 0.15)', color: (jobAgingData?.criticalCount ?? 0) > 0 ? 'hsl(var(--destructive))' : 'hsl(45 80% 35%)' }}>
               <AlertTriangle className="h-3 w-3" />
               {agingCount} Stale Jobs
             </span>
@@ -2344,7 +2344,7 @@ export default function DispatchBoard() {
                                     e.stopPropagation();
                                     setQuickAssignJob(job);
                                     setQuickAssignMember('');
-                                    setQuickAssignHour(9);
+                                    setQuickAssignTimeSlot('09:00');
                                   }}
                                   data-testid={`quick-assign-btn-${job.id}`}
                                 >

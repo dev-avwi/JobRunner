@@ -81,11 +81,7 @@ export default function CalculatorResult({
 
   const addItemMutation = useMutation({
     mutationFn: async (data: { quoteId: string; item: { description: string; quantity: string; unitPrice: string } }) => {
-      return apiRequest(`/api/quotes/${data.quoteId}/items`, {
-        method: 'POST',
-        body: JSON.stringify(data.item),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('POST', `/api/quotes/${data.quoteId}/items`, data.item);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });

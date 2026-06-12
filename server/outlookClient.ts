@@ -6,6 +6,7 @@
  * Each tradie connects their own Outlook/Microsoft 365 account
  */
 
+import { createHmac, randomBytes } from 'crypto';
 import { storage } from './storage';
 import { getErrorMessage } from "./lib/errors";
 
@@ -15,8 +16,6 @@ const MICROSOFT_TENANT = process.env.MICROSOFT_TENANT || 'common';
 
 const GRAPH_API_BASE = 'https://graph.microsoft.com/v1.0';
 const OAUTH_AUTHORITY = `https://login.microsoftonline.com/${MICROSOFT_TENANT}`;
-
-const { createHmac, randomBytes } = await import('crypto');
 
 // State tokens for CSRF protection - expire after 10 minutes
 const stateTokens = new Map<string, { userId: string; createdAt: number }>();
@@ -34,7 +33,7 @@ function generateSecureState(userId: string): string {
   stateTokens.set(signature, { userId, createdAt: timestamp });
   
   // Cleanup old tokens
-  for (const [key, value] of stateTokens.entries()) {
+  for (const [key, value] of Array.from(stateTokens.entries())) {
     if (Date.now() - value.createdAt > STATE_TOKEN_EXPIRY) {
       stateTokens.delete(key);
     }

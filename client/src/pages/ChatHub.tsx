@@ -103,6 +103,7 @@ interface Job {
   clientId?: string;
   address?: string;
   scheduledAt?: string;
+  createdAt?: string;
   assignedTo?: string;
   sitePhoto?: string;
 }
@@ -190,7 +191,7 @@ type FilterType = 'jobs' | 'team' | 'enquiries';
 
 interface ConversationItem {
   id: string;
-  type: 'team' | 'direct' | 'job' | 'unassigned';
+  type: 'team' | 'direct' | 'job' | 'unassigned' | 'client';
   title: string;
   subtitle?: string;
   avatar?: string | null;
@@ -212,6 +213,7 @@ interface ConversationItem {
   smsConversation?: SmsConversation;
   isOnline?: boolean;
   themeColor?: string;
+  relatedJobs?: Job[];
   data: any;
 }
 
@@ -947,9 +949,9 @@ export default function ChatHub() {
         setSelectedConversation({
           id: `dm-${member.userId}`,
           type: 'direct',
-          title: member.name,
+          title: member.name || '',
           avatar: member.profileImageUrl,
-          avatarFallback: getInitials(member.name),
+          avatarFallback: getInitials(member.name || ''),
           unreadCount: 0,
           themeColor: member.themeColor,
           data: user,
@@ -1889,13 +1891,6 @@ export default function ChatHub() {
               
               return (
                 <div key={item.id}>
-                  {showSectionHeader && filter === 'all' && (
-                    <div className="px-2 py-1.5 mt-1 first:mt-0">
-                      <span className="ios-label text-[10px]">
-                        {item.type === 'team' ? 'Team' : item.type === 'direct' ? 'Direct Messages' : item.type === 'job' ? 'Jobs' : 'New Enquiries'}
-                      </span>
-                    </div>
-                  )}
                   
                   <div
                     className={`flex items-start gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg transition-colors animate-fade-up ${staggerClass} ${
@@ -2671,8 +2666,8 @@ export default function ChatHub() {
                               key={template.id}
                               onClick={() => {
                                 const message = selectedSmsConversation 
-                                  ? applySmsTemplateFields(template.content, selectedSmsConversation)
-                                  : template.content;
+                                  ? applySmsTemplateFields(template.body, selectedSmsConversation)
+                                  : template.body;
                                 setSmsNewMessage(message);
                               }}
                               className="gap-2"

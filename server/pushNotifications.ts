@@ -49,6 +49,8 @@ export type NotificationType =
   | 'installment_received'
   | 'recurring_job_created'
   | 'recurring_invoice_created'
+  | 'subcontractor_invoice'
+  | 'subcontractor_invoice_update'
   | 'team_message'
   | 'chat_message'
   | 'sms_received'

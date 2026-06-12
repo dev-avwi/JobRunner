@@ -94,7 +94,7 @@ export function registerCustomFormsRoutes(app: Express): void {
         jobId: jobId || null,
         submittedBy: userContext.effectiveUserId,
         submittedAt: new Date(),
-        data,
+        submissionData: data,
         status: 'submitted',
       });
 

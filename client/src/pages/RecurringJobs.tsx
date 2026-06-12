@@ -99,11 +99,7 @@ export default function RecurringJobs() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('/api/recurring-contracts', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('POST', '/api/recurring-contracts', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recurring-contracts'] });
@@ -118,11 +114,7 @@ export default function RecurringJobs() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest(`/api/recurring-contracts/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('PUT', `/api/recurring-contracts/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recurring-contracts'] });
@@ -137,7 +129,7 @@ export default function RecurringJobs() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/recurring-contracts/${id}`, { method: 'DELETE' });
+      return apiRequest('DELETE', `/api/recurring-contracts/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recurring-contracts'] });
@@ -150,7 +142,7 @@ export default function RecurringJobs() {
 
   const generateJobMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/recurring-contracts/${id}/generate-job`, { method: 'POST' });
+      return apiRequest('POST', `/api/recurring-contracts/${id}/generate-job`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recurring-contracts'] });

@@ -262,6 +262,10 @@ export interface TimeEntry {
   hourlyRate?: number;
   createdAt?: string;
   updatedAt?: string;
+  pendingSync?: boolean;
+  syncStatus?: 'pending' | 'synced' | 'failed';
+  isBreak?: boolean;
+  breakTime?: number;
 }
 
 export async function saveTimeEntry(entry: TimeEntry): Promise<TimeEntry> {

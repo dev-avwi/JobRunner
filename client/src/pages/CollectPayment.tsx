@@ -67,6 +67,7 @@ interface PaymentRequest {
   clientId?: string | null;
   invoiceId?: string | null;
   jobId?: string | null;
+  notificationsSent?: Array<{ type?: string; phone?: string; email?: string; sentAt: string }> | null;
 }
 
 interface Client {
@@ -80,7 +81,7 @@ interface Invoice {
   id: string;
   number: string;
   title: string;
-  total: string;
+  total: string | number;
   status: string;
   clientId: string;
   jobId?: string | null;
@@ -645,7 +646,7 @@ export default function CollectPayment() {
           action: (
             <ToastAction
               altText="Open SMS App"
-              onClick={() => openSmsApp(phone, paymentLink, currentRequest?.description || '', currentRequest?.amount || 0)}
+              onClick={() => openSmsApp(phone, paymentLink, currentRequest?.description || '', Number(currentRequest?.amount) || 0)}
             >
               <MessageSquare className="h-3 w-3 mr-1" />
               Open SMS App
@@ -672,7 +673,7 @@ export default function CollectPayment() {
           action: (
             <ToastAction
               altText="Open SMS App"
-              onClick={() => openSmsApp(phone, paymentLink, currentRequest?.description || '', currentRequest?.amount || 0)}
+              onClick={() => openSmsApp(phone, paymentLink, currentRequest?.description || '', Number(currentRequest?.amount) || 0)}
             >
               <MessageSquare className="h-3 w-3 mr-1" />
               Open SMS App

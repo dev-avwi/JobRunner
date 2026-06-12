@@ -50,6 +50,7 @@ interface SwmsTemplateDetail {
   id: string;
   title: string;
   description: string;
+  workActivityDescription?: string;
   hazards: HazardRow[];
   ppeRequirements: string[];
 }

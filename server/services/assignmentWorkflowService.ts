@@ -83,7 +83,7 @@ export async function handleOnMyWay(params: OnMyWayParams): Promise<OnMyWayResul
   const business = await storage.getBusinessSettings(effectiveUserId);
   const businessName = business?.businessName || 'Your tradesperson';
   const ownerPhone = business?.phone || '';
-  const ownerName = business?.contactName || businessName;
+  const ownerName = businessName;
 
   const worker = await storage.getUser(assignment.userId);
   const workerName = assignment.workerDisplayNameSnapshot || 

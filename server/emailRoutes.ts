@@ -30,7 +30,7 @@ function setSendCooldown(userId: string, entityType: string, entityId: string) {
   sendCooldowns.set(key, Date.now());
   if (sendCooldowns.size > 1000) {
     const now = Date.now();
-    for (const [k, v] of sendCooldowns) {
+    for (const [k, v] of Array.from(sendCooldowns)) {
       if (now - v > SEND_COOLDOWN_MS * 2) sendCooldowns.delete(k);
     }
   }

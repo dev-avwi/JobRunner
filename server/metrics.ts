@@ -63,7 +63,7 @@ export function getMetricsSnapshot() {
   }> = [];
   let globalSamples: number[] = [];
 
-  for (const [route, s] of stats.entries()) {
+  for (const [route, s] of Array.from(stats.entries())) {
     const sorted = [...s.samples].sort((a, b) => a - b);
     globalSamples = globalSamples.concat(s.samples);
     routes.push({

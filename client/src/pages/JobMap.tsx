@@ -733,10 +733,7 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
   const saveRouteMutation = useMutation({
     mutationFn: async (name: string) => {
       const jobIds = routeJobs.map(j => j.jobId);
-      return apiRequest('/api/saved-routes', {
-        method: 'POST',
-        body: JSON.stringify({ name, jobIds }),
-      });
+      return apiRequest('POST', '/api/saved-routes', { name, jobIds });
     },
     onSuccess: () => {
       setIsSaving(false);
@@ -751,9 +748,7 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
   // Delete route mutation
   const deleteRouteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/saved-routes/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', `/api/saved-routes/${id}`);
     },
     onSuccess: () => {
       refetchSavedRoutes();
@@ -839,8 +834,8 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
         title: job?.title || 'Unknown Job',
         clientName: job?.clientName || 'Unknown Client',
         address: job?.address,
-        latitude: job?.latitude,
-        longitude: job?.longitude,
+        latitude: job?.latitude ?? undefined,
+        longitude: job?.longitude ?? undefined,
       };
     }).filter(j => j.title !== 'Unknown Job'); // Filter out jobs that no longer exist
     
@@ -1079,7 +1074,7 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
   };
   
   // Add a job to the current route
-  const addJobToRoute = (job: JobWithClient) => {
+  const addJobToRoute = (job: JobMapData) => {
     const isAlreadyInRoute = routeJobs.some(r => r.jobId === job.id);
     if (isAlreadyInRoute) return;
     
@@ -1604,7 +1599,7 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
                         size="sm"
                         variant="outline"
                         className="flex-1"
-                        onClick={() => setLocation(`/chat?to=${member.id}&type=direct`)}
+                        onClick={() => navigate(`/chat?to=${member.id}&type=direct`)}
                         data-testid={`button-message-${member.id}`}
                       >
                         <MessageSquare className="h-4 w-4 mr-1" />

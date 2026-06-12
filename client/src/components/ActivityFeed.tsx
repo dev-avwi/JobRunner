@@ -157,7 +157,7 @@ export default function ActivityFeed({
 
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/activity-feed/${id}/read`, { method: 'POST' });
+      return apiRequest('POST', `/api/activity-feed/${id}/read`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/activity-feed'] });
@@ -166,7 +166,7 @@ export default function ActivityFeed({
 
   const markAllReadMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/activity-feed/read-all', { method: 'POST' });
+      return apiRequest('POST', '/api/activity-feed/read-all');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/activity-feed'] });

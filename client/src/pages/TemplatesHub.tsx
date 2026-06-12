@@ -628,7 +628,7 @@ function StylePresetsWithPreview() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Note Style</Label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(['simple', 'bordered', 'filled'] as const).map((style) => (
+                  {(['simple', 'bordered', 'highlighted'] as const).map((style) => (
                     <Button
                       key={style}
                       variant={customization.noteStyle === style ? "default" : "outline"}
@@ -1196,7 +1196,7 @@ function LineItemsCatalogSection() {
       unit: item.unit || "item",
       unitPrice: String(item.unitPrice || "0.00"),
       tradeType: item.tradeType || "general",
-      defaultQty: String(item.defaultQuantity || "1.00"),
+      defaultQty: String(item.defaultQty || "1.00"),
     });
     setDialogOpen(true);
   };
@@ -1584,13 +1584,15 @@ function FormsTab() {
       name: template.name,
       description: template.description || '',
       formType: template.formType,
+      tradeType: template.tradeType || 'general',
       fields: template.fields || [],
       settings: template.settings || {},
       requiresSignature: template.requiresSignature || false,
+      isDefault: false,
       isActive: true,
       userId: '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
       isSystemTemplate: true,
       templateKey: template.templateKey,
     })),

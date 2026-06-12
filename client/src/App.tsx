@@ -133,7 +133,15 @@ const AIReceptionistCalls = lazyWithReload(() => import("@/pages/AIReceptionistC
 const WebsiteAddonPage = lazyWithReload(() => import("@/pages/WebsiteAddon"));
 
 function BusinessPicker({ userId }: { userId: string }) {
-  const { data: businessData } = useQuery({
+  const { data: businessData } = useQuery<{
+    businesses?: Array<{
+      businessOwnerId: string;
+      businessName: string;
+      roleName?: string;
+      pendingJobCount?: number;
+    }>;
+    activeBusinessId?: string;
+  }>({
     queryKey: ['/api/auth/my-businesses'],
     enabled: !!userId,
   });
@@ -1838,7 +1846,7 @@ function App() {
               <Route path="/job-portal/:token" component={JobPortal} />
               <Route path="/p/:token" component={JobPortal} />
               <Route path="/s/:token">{(params) => <SubcontractorWebView token={params.token} />}</Route>
-              <Route path="/m/:token">{(params) => <MagicLinkLanding token={params.token} />}</Route>
+              <Route path="/m/:token">{() => <MagicLinkLanding />}</Route>
               <Route path="/track/:token">{(params) => <TrackArrival token={params.token} />}</Route>
               <Route path="/receipt/:token">{(params) => <PublicReceiptRedirect token={params.token} />}</Route>
               <Route path="/privacy" component={PrivacyPolicy} />

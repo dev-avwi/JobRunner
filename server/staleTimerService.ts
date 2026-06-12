@@ -48,12 +48,12 @@ export async function checkAndAutoStopStaleTimers(): Promise<{ stopped: number; 
 
         const user = await storage.getUser(entry.userId);
         const teamMembership = await storage.getTeamMembershipByMemberId(entry.userId);
-        if (teamMembership && teamMembership.ownerId) {
+        if (teamMembership && teamMembership.businessOwnerId) {
           await storage.createNotification({
-            userId: teamMembership.ownerId,
+            userId: teamMembership.businessOwnerId,
             type: 'general',
             title: 'Team Timer Auto-Stopped',
-            message: `${user?.name || user?.firstName || 'A team member'}'s timer was auto-stopped after exceeding 12 hours (capped at 8 hours).`,
+            message: `${user?.firstName || 'A team member'}'s timer was auto-stopped after exceeding 12 hours (capped at 8 hours).`,
             relatedId: entry.id,
             relatedType: 'time_entry',
           });

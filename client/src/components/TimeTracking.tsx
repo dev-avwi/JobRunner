@@ -783,9 +783,9 @@ export function TimerWidget({
                     {entry.isBreak ? (
                       <Coffee className="h-3 w-3 text-amber-500" />
                     ) : entry.isBillable !== false ? (
-                      <CircleDollarSign className="h-3 w-3 text-green-500" title="Billable" />
+                      <span title="Billable"><CircleDollarSign className="h-3 w-3 text-green-500" /></span>
                     ) : (
-                      <Clock className="h-3 w-3 text-muted-foreground" title="Non-billable" />
+                      <span title="Non-billable"><Clock className="h-3 w-3 text-muted-foreground" /></span>
                     )}
                     <span className={entry.isBreak ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}>
                       {format(new Date(entry.startTime), 'h:mm a')} - {entry.endTime ? format(new Date(entry.endTime), 'h:mm a') : 'Now'}
@@ -835,7 +835,7 @@ export function TimerWidget({
           Clock In Again
         </Button>
         
-        {effectiveActiveTimer && String((effectiveActiveTimer as any).jobId) !== String(jobId) && (
+        {!!effectiveActiveTimer && String((effectiveActiveTimer as any).jobId) !== String(jobId) && (
           <p className="text-xs text-center text-amber-600">
             Timer running on another job
           </p>
@@ -890,7 +890,7 @@ export function TimerWidget({
         Clock In
       </Button>
       
-      {effectiveActiveTimer && String((effectiveActiveTimer as any).jobId) !== String(jobId) && (
+      {!!effectiveActiveTimer && String((effectiveActiveTimer as any).jobId) !== String(jobId) && (
         <p className="text-xs text-center text-amber-600">
           Timer running on another job
         </p>

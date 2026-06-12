@@ -163,6 +163,7 @@ interface TeamMemberData {
   role?: string;
   roleName?: string;
   inviteStatus?: string;
+  inviteSentAt?: string;
   roleId?: string;
   hourlyRate?: string;
   customPermissions?: string[];

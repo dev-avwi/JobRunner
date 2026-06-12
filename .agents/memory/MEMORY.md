@@ -75,3 +75,4 @@
 - [Sidebar team gate uses non-existent hasTeam](sidebar-team-gate-hasteam.md) — mobile FilterOptions.isTeam must derive from businessSettings.teamSize!=='solo'; there is NO hasTeam column, so reading it hid Team Operations for everyone.
 - [Foldable layout reactivity](mobile-foldable-usewindowdimensions.md) — responsive nav (sidebar vs tabs) must derive from useWindowDimensions(), not hand-rolled Dimensions.addEventListener hooks, which switched only once per fold/unfold.
 - [Push + in-app notification double-post](push-inapp-double-post.md) — sendPushNotification ALSO creates an in-app notification unless skipInAppNotification:true; pairing it with a manual createNotification double-posts to the owner's bell.
+- [tsc excess-prop masking](tsc-excess-prop-masking.md) — TS2353 reports only the FIRST excess prop per literal; removing it surfaces the next, so re-run check iteratively. esbuild prod build skips typecheck so server type errors are real bugs.

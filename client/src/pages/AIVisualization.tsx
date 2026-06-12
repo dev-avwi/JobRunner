@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
-import { PageShell } from "@/components/ui/page-shell";
+import { PageShell, PageHeader } from "@/components/ui/page-shell";
 import AIVisualization from "@/components/AIVisualization";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,24 +84,25 @@ export default function AIVisualizationPage() {
   };
 
   return (
-    <PageShell
-      title="AI Visualization"
-      description="Generate before/after concept images for clients"
-      icon={<Wand2 className="h-6 w-6" />}
-      actions={
-        jobIdFromUrl ? (
-          <Button
-            variant="outline"
-            onClick={() => setLocation(`/jobs/${jobIdFromUrl}`)}
-            className="gap-2"
-            data-testid="button-back-to-job"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Job
-          </Button>
-        ) : undefined
-      }
-    >
+    <PageShell>
+      <PageHeader
+        title="AI Visualization"
+        subtitle="Generate before/after concept images for clients"
+        leading={<Wand2 className="h-6 w-6" />}
+        action={
+          jobIdFromUrl ? (
+            <Button
+              variant="outline"
+              onClick={() => setLocation(`/jobs/${jobIdFromUrl}`)}
+              className="gap-2"
+              data-testid="button-back-to-job"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Job
+            </Button>
+          ) : undefined
+        }
+      />
       {job && (
         <Card className="mb-6 bg-muted/50">
           <CardContent className="py-4">

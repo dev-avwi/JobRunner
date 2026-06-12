@@ -1130,36 +1130,23 @@ export async function sendReceiptEmailWithPdf(
         id: receiptRecord.id,
         amount: safeParseAmount(receiptRecord.amount),
         gstAmount: safeParseAmount(receiptRecord.gstAmount),
-        subtotal: safeParseAmount(receiptRecord.subtotal || receiptRecord.amount),
         paymentMethod: receiptRecord.paymentMethod || 'card',
-        paymentReference: receiptRecord.paymentReference,
-        paidAt: receiptRecord.paidAt,
-        receiptNumber: receiptRecord.receiptNumber,
-        description: receiptRecord.description,
+        reference: receiptRecord.paymentReference || undefined,
+        paidAt: receiptRecord.paidAt || new Date(),
       },
       client: client ? {
         name: client.name,
         email: client.email,
         phone: client.phone,
         address: client.address,
-      } : null,
-      business: {
-        businessName: businessWithLogo?.businessName || 'Business',
-        abn: businessWithLogo?.abn,
-        address: businessWithLogo?.address,
-        phone: businessWithLogo?.phone,
-        email: businessWithLogo?.email,
-        logoUrl: businessWithLogo?.logoUrl,
-        brandColor: businessWithLogo?.brandColor || '#2563EB',
-      },
+      } : undefined,
+      business: businessWithLogo,
       invoice: invoice ? {
-        id: invoice.id,
         number: invoice.number,
-      } : null,
+      } : undefined,
       job: job ? {
-        id: job.id,
         title: job.title,
-      } : null,
+      } : undefined,
     });
     
     pdfBuffer = await generatePDFBuffer(pdfHtml);

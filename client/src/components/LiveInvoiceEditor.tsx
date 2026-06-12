@@ -196,7 +196,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
 
   // Auto-fill form when job or quote is loaded from URL parameter
   useEffect(() => {
-    if (autoLoaded || clients.length === 0) return;
+    if (autoLoaded || (clients as any[]).length === 0) return;
     
     const fetchVariationsForAutoLoad = async (jobId: string, baseItems: any[]) => {
       try {

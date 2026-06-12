@@ -300,8 +300,8 @@ async function processSmsAutomations(): Promise<void> {
               .where(and(
                 eq(jobs.userId, rule.userId),
                 or(eq(jobs.status, 'scheduled'), eq(jobs.status, 'confirmed')),
-                gte(jobs.scheduledDate, tomorrowStart),
-                lt(jobs.scheduledDate, tomorrowEnd)
+                gte(jobs.scheduledAt, tomorrowStart),
+                lt(jobs.scheduledAt, tomorrowEnd)
               ));
             
             for (const job of upcomingJobs) {
@@ -355,6 +355,7 @@ async function processQuoteFollowUp(rule: any, quote: any): Promise<void> {
     
     await sendSmsToClient({
       businessOwnerId: rule.userId,
+      senderUserId: rule.userId,
       clientPhone: client.phone,
       clientName: client.name,
       message,
@@ -405,6 +406,7 @@ async function processInvoiceOverdue(rule: any, invoice: any): Promise<void> {
     
     await sendSmsToClient({
       businessOwnerId: rule.userId,
+      senderUserId: rule.userId,
       clientPhone: client.phone,
       clientName: client.name,
       message,
@@ -448,7 +450,7 @@ async function processJobDayBefore(rule: any, job: any): Promise<void> {
       return;
     }
     
-    const scheduledDate = new Date(job.scheduledDate);
+    const scheduledDate = new Date(job.scheduledAt);
     const dateStr = scheduledDate.toLocaleDateString('en-AU', { weekday: 'long', month: 'long', day: 'numeric' });
     const timeStr = job.scheduledTime || 'as scheduled';
     
@@ -456,6 +458,7 @@ async function processJobDayBefore(rule: any, job: any): Promise<void> {
     
     await sendSmsToClient({
       businessOwnerId: rule.userId,
+      senderUserId: rule.userId,
       clientPhone: client.phone,
       clientName: client.name,
       message,
@@ -548,6 +551,7 @@ async function processAutoQuoteFollowUps(): Promise<void> {
               
               await sendSmsToClient({
                 businessOwnerId: settings.userId,
+                senderUserId: settings.userId,
                 clientPhone: client.phone,
                 clientName: client.name,
                 message,
@@ -662,6 +666,7 @@ async function processAutoInvoiceReminders(): Promise<void> {
               
               await sendSmsToClient({
                 businessOwnerId: settings.userId,
+                senderUserId: settings.userId,
                 clientPhone: client.phone,
                 clientName: client.name,
                 message,
@@ -806,7 +811,7 @@ async function processInstallmentReminders(): Promise<void> {
         const alreadyNotified = existingNotifications.some(n => 
           n.type === 'installment_due' && 
           n.relatedId === schedule.invoiceId &&
-          new Date(n.createdAt) >= todayStart &&
+          new Date(n.createdAt ?? 0) >= todayStart &&
           n.message.includes(`Installment ${installment.installmentNumber}`)
         );
         

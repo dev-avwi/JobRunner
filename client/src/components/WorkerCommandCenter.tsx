@@ -525,7 +525,7 @@ export default function WorkerCommandCenter({ memberId, open, onOpenChange }: Wo
                             />
                           </MapContainer>
                         </div>
-                        {data.location?.batteryLevel !== null && (
+                        {data.location && data.location.batteryLevel !== null && (
                           <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur rounded-lg px-3 py-1.5 flex items-center gap-2 text-sm shadow-lg">
                             <Battery className="h-4 w-4" />
                             <span className="font-medium">{data.location.batteryLevel}%</span>

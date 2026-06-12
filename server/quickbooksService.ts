@@ -507,7 +507,7 @@ export async function syncInvoicesToQuickbooks(userId: string): Promise<{ synced
           await storage.updateInvoice(invoice.id, userId, {
             quickbooksInvoiceId: createdInvoice.Id,
             quickbooksSyncedAt: new Date(),
-          } as Partial<typeof invoice>);
+          });
           // Task #91 (review fix): bulk push parity — best-effort PDF attach.
           const _invId = invoice.id;
           buildInvoicePdfBuffer(userId, _invId)
@@ -689,7 +689,7 @@ export async function syncSingleInvoiceToQuickbooks(userId: string, invoiceId: s
       await storage.updateInvoice(invoice.id, userId, {
         quickbooksInvoiceId: createdInvoice.Id,
         quickbooksSyncedAt: new Date(),
-      } as Partial<typeof invoice>);
+      });
       // Task #91: best-effort PDF auto-attach (non-blocking).
       buildInvoicePdfBuffer(userId, invoiceId)
         .then(buf => {
@@ -1076,7 +1076,7 @@ function qboShouldProcess(key: string): boolean {
   if (qboWebhookSeen.size > QBO_WEBHOOK_DEDUPE_MAX) {
     // Drop the oldest ~10% to keep memory bounded.
     const cutoff = now - QBO_WEBHOOK_DEDUPE_TTL_MS;
-    for (const [k, t] of qboWebhookSeen) {
+    for (const [k, t] of Array.from(qboWebhookSeen)) {
       if (t < cutoff) qboWebhookSeen.delete(k);
     }
   }

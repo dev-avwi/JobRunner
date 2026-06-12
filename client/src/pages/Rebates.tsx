@@ -132,11 +132,7 @@ export default function RebatesPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/rebates", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("POST", "/api/rebates", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rebates"] });
@@ -152,11 +148,7 @@ export default function RebatesPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest(`/api/rebates/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("PATCH", `/api/rebates/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rebates"] });
@@ -172,7 +164,7 @@ export default function RebatesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/rebates/${id}`, { method: "DELETE" });
+      return apiRequest("DELETE", `/api/rebates/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rebates"] });
@@ -186,10 +178,7 @@ export default function RebatesPage() {
 
   const submitMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/rebates/${id}/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("POST", `/api/rebates/${id}/submit`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rebates"] });
@@ -203,10 +192,7 @@ export default function RebatesPage() {
 
   const receiveMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/rebates/${id}/receive`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("POST", `/api/rebates/${id}/receive`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rebates"] });
@@ -450,8 +436,8 @@ export default function RebatesPage() {
     <PageShell>
       <PageHeader
         title="Rebates & Credits"
-        description="Track manufacturer rebates, government incentives, and credits"
-        actions={
+        subtitle="Track manufacturer rebates, government incentives, and credits"
+        action={
           <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Rebate
@@ -492,7 +478,7 @@ export default function RebatesPage() {
             </div>
           ) : filteredRebates.length === 0 ? (
             <EmptyState
-              icon={<DollarSign className="h-12 w-12 text-muted-foreground" />}
+              icon={DollarSign}
               title="No rebates found"
               description="Track manufacturer rebates and government incentives by adding your first rebate."
               action={

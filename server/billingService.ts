@@ -1138,7 +1138,7 @@ export async function downgradeTeamToPro(userId: string): Promise<DowngradeToPro
       return { success: false, error: 'Current subscription is not active' };
     }
 
-    const currentTier = currentSubscription.metadata?.tier || businessSettings.subscriptionTier;
+    const currentTier = currentSubscription.metadata?.tier || (await storage.getUser(userId))?.subscriptionTier;
     if (currentTier !== 'team') {
       return { success: false, error: 'Current subscription is not a Team plan' };
     }
@@ -1185,7 +1185,6 @@ export async function downgradeTeamToPro(userId: string): Promise<DowngradeToPro
     });
 
     await storage.updateBusinessSettings(userId, {
-      subscriptionTier: 'pro',
       seatCount: 0,
       subscriptionStatus: updatedSubscription.status,
     });

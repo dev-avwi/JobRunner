@@ -1094,7 +1094,7 @@ export async function checkTeamMemberOwnerAccess(businessOwnerId: string): Promi
     }
 
     const subscriptionStatus = ownerBusinessSettings.subscriptionStatus;
-    const subscriptionTier = ownerBusinessSettings.subscriptionTier;
+    const subscriptionTier = (await storage.getUser(businessOwnerId))?.subscriptionTier;
 
     // Deny access if owner's subscription is canceled
     if (subscriptionStatus === 'canceled') {

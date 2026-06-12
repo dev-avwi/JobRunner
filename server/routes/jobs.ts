@@ -43,6 +43,7 @@ import {
   getIdempotencyRecord,
   setIdempotencyRecord,
   logActivity,
+  type ActivityType,
   formatRelativeTime,
   normalizeAuPhone,
   resolveAssigneeUserId,
@@ -59,7 +60,7 @@ import { sendEmailVerificationEmail, sendLoginCodeEmail, sendJobConfirmationEmai
 import { FreemiumService } from "../freemiumService";
 import { DEMO_USER, VISITOR_USER } from "../demoData";
 import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit } from "../permissions";
-import { logTeamActivity } from "../activityService";
+import { logTeamActivity, type TeamActivityType } from "../activityService";
 import {
   insertBusinessSettingsSchema,
   insertIntegrationSettingsSchema,
@@ -216,7 +217,6 @@ import {
   numberPortRequests,
   insertNumberPortRequestSchema,
   PORT_REQUEST_STATUSES,
-  teamMembers,
 } from "@shared/schema";
 import { db } from "../storage";
 import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
@@ -251,11 +251,24 @@ import { notifyOwnerViaSms, notifyOwnerViaEmail } from "../notificationService";
 import { logSystemEvent } from "../systemEventService";
 
 
+  // Escape user-provided values before embedding them in HTML emails/templates.
+  function escapeHtml(str: string | null | undefined): string {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
 
   export interface JobsRoutesDeps {
     trackingTokens: Map<string, {
       businessName: string;
+      businessLogo?: string | null;
+      businessPhone?: string | null;
+      businessEmail?: string | null;
       tradieName: string;
       jobAddress: string;
       suburb: string;
@@ -354,7 +367,7 @@ import { logSystemEvent } from "../systemEventService";
       if (!job) return res.status(404).json({ error: 'Job not found' });
 
       const businessSettings = await storage.getBusinessSettings(userId);
-      const businessName = businessSettings?.companyName || 'Your contractor';
+      const businessName = businessSettings?.businessName || 'Your contractor';
 
       const token = randomBytes(32).toString('hex');
 
@@ -639,6 +652,7 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       const client = job.clientId ? await storage.getClient(job.clientId, userContext.effectiveUserId) : null;
+      const tradeOwner = await storage.getUser(userContext.effectiveUserId);
       
       // Stream the AI analysis
       const { streamPhotoAnalysis } = await import('../ai');
@@ -647,7 +661,7 @@ import { logSystemEvent } from "../systemEventService";
         title: job.title,
         description: job.description || undefined,
         clientName: client?.name || undefined,
-        trade: businessSettings?.tradeName || undefined
+        trade: tradeOwner?.tradeType || undefined
       };
       
       // Check if non-streaming mode is requested (for React Native)
@@ -1165,11 +1179,13 @@ import { logSystemEvent } from "../systemEventService";
             if (photos && photos.length > 0) {
               const firstPhoto = photos[0];
               if (firstPhoto.objectStorageKey) {
-                const { generateSignedDownloadUrl } = await import('../objectStorage');
-                const signedUrl = await generateSignedDownloadUrl(firstPhoto.objectStorageKey, 3600);
-                photoMap[job.id] = signedUrl;
-                // Cache for 30 minutes
-                sitePhotoCache.set(job.id, { url: signedUrl, expires: now + 30 * 60 * 1000 });
+                const { getSignedPhotoUrl } = await import('../photoService');
+                const { url: signedUrl } = await getSignedPhotoUrl(firstPhoto.objectStorageKey);
+                if (signedUrl) {
+                  photoMap[job.id] = signedUrl;
+                  // Cache for 30 minutes
+                  sitePhotoCache.set(job.id, { url: signedUrl, expires: now + 30 * 60 * 1000 });
+                }
               }
             }
           } catch (urlError) {
@@ -1244,7 +1260,7 @@ import { logSystemEvent } from "../systemEventService";
         userId: effectiveUserId,
         title: sourceJob.title,
         description: sourceJob.description || undefined,
-        clientId: sourceJob.clientId || undefined,
+        clientId: sourceJob.clientId,
         address: sourceJob.address || undefined,
         latitude: sourceJob.latitude || undefined,
         longitude: sourceJob.longitude || undefined,
@@ -1325,7 +1341,8 @@ import { logSystemEvent } from "../systemEventService";
       const userContext = await getUserContext(req.userId);
       
       // Check if user has REQUEST_JOB_ASSIGNMENT permission
-      const hasPermission = userContext.permissions.includes('request_job_assignment') || userContext.isOwner;
+      // (legacy permission string not part of the Permission enum)
+      const hasPermission = (userContext.permissions as string[]).includes('request_job_assignment') || userContext.isOwner;
       if (!hasPermission) {
         return res.status(403).json({ error: "You don't have permission to view available jobs" });
       }
@@ -1339,7 +1356,7 @@ import { logSystemEvent } from "../systemEventService";
           job.status !== 'done' && 
           job.status !== 'invoiced' &&
           job.status !== 'cancelled' &&
-          !job.isArchived
+          !job.archivedAt
         )
         .map(job => ({
           // Return minimal info only - privacy protected
@@ -1348,9 +1365,11 @@ import { logSystemEvent } from "../systemEventService";
           description: job.description ? job.description.substring(0, 100) + (job.description.length > 100 ? '...' : '') : null,
           status: job.status,
           scheduledAt: job.scheduledAt,
-          scheduledEndAt: job.scheduledEndAt,
+          scheduledEndAt: job.scheduledAt
+            ? new Date(new Date(job.scheduledAt).getTime() + (job.estimatedDuration ?? 60) * 60 * 1000)
+            : null,
           estimatedDuration: job.estimatedDuration,
-          priority: job.priority,
+          priority: null,
           // Location info - only suburb/city, not full address
           suburb: job.address ? job.address.split(',').slice(-2, -1)[0]?.trim() : null,
           // NO client name, phone, email, full address for privacy
@@ -1378,7 +1397,8 @@ import { logSystemEvent } from "../systemEventService";
       const userContext = await getUserContext(req.userId);
       
       // Check if user has REQUEST_JOB_ASSIGNMENT permission
-      const hasPermission = userContext.permissions.includes('request_job_assignment');
+      // (legacy permission string not part of the Permission enum)
+      const hasPermission = (userContext.permissions as string[]).includes('request_job_assignment');
       if (!hasPermission) {
         return res.status(403).json({ error: "You don't have permission to request job assignments" });
       }
@@ -1440,7 +1460,8 @@ import { logSystemEvent } from "../systemEventService";
         type: 'job_assignment_request',
         title: 'Job Assignment Request',
         message: `${requester?.firstName || 'A team member'} has requested to be assigned to: ${job.title}`,
-        data: { requestId: request.id, jobId, requesterId: req.userId },
+        relatedId: jobId,
+        relatedType: 'job',
       });
       
       res.json({ 
@@ -1673,7 +1694,7 @@ import { logSystemEvent } from "../systemEventService";
             const linkedInvoice = invoicesMap.get(job.id);
             
             // Get time entries for this job
-            const timeEntries = await storage.getTimeEntries(userId, { jobId: job.id });
+            const timeEntries = await storage.getTimeEntries(userId, job.id);
             const totalMinutes = timeEntries.reduce((acc: number, entry: any) => {
               if (entry.duration) return acc + entry.duration;
               if (entry.endTime && entry.startTime) {
@@ -1776,7 +1797,7 @@ import { logSystemEvent } from "../systemEventService";
         // underlying user id depending on how the job was assigned, so match both.
         const assignIds = [userContext.teamMemberId, req.userId].filter(Boolean);
         const isAssigned = assignIds.includes(job.assignedTo) ||
-                          assignIds.includes(job.assignedTeamMemberId);
+                          assignIds.includes((job as any).assignedTeamMemberId);
         if (!isAssigned) {
           return res.status(403).json({ error: "You can only view your assigned jobs" });
         }
@@ -2031,8 +2052,8 @@ import { logSystemEvent } from "../systemEventService";
       
       // Also check if job has a quoteId - always include the originating quote
       // This handles "job created from quote" case and ensures both associations are captured
-      if (job.quoteId) {
-        const quoteFromJob = quotes.find((q: any) => q.id === job.quoteId);
+      if ((job as any).quoteId) {
+        const quoteFromJob = quotes.find((q: any) => q.id === (job as any).quoteId);
         if (quoteFromJob && !linkedQuotes.some((q: any) => q.id === quoteFromJob.id)) {
           // Insert originating quote at the beginning (it's the primary one)
           linkedQuotes.unshift(quoteFromJob);
@@ -2610,7 +2631,7 @@ import { logSystemEvent } from "../systemEventService";
           byWorker.get(key)!.push(entry);
         }
 
-        for (const [workerId, entries] of byWorker) {
+        for (const [workerId, entries] of Array.from(byWorker)) {
           const sorted = entries.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
           for (let i = 0; i < sorted.length - 1; i++) {
             const current = sorted[i];
@@ -2786,7 +2807,8 @@ import { logSystemEvent } from "../systemEventService";
               priority: 'normal',
               actionUrl: `/jobs/${job.id}`,
               actionLabel: 'View Job',
-              metadata: { jobId: job.id, oldStatus: existingJob.status, newStatus: data.status }
+              relatedId: job.id,
+              relatedType: 'job',
             });
           } catch (e) { console.error('Failed to create job status notification:', e); }
           await logActivity(effectiveUserId, 'job_status_changed', `Job status updated: ${job.title}`, `${existingJob.status} → ${data.status}`, 'job', job.id, { jobTitle: job.title, clientName, oldStatus: existingJob.status, newStatus: data.status });
@@ -2910,7 +2932,7 @@ import { logSystemEvent } from "../systemEventService";
           byWorker.get(key)!.push(entry);
         }
 
-        for (const [workerId, entries] of byWorker) {
+        for (const [workerId, entries] of Array.from(byWorker)) {
           const sorted = entries.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
           for (let i = 0; i < sorted.length - 1; i++) {
             const current = sorted[i];
@@ -3039,7 +3061,8 @@ import { logSystemEvent } from "../systemEventService";
               priority: 'normal',
               actionUrl: `/jobs/${job.id}`,
               actionLabel: 'View Job',
-              metadata: { jobId: job.id, oldStatus: existingJob.status, newStatus: status, changedBy: userName }
+              relatedId: job.id,
+              relatedType: 'job',
             });
           } catch (e) { console.error('Failed to create job status notification:', e); }
         }
@@ -3164,7 +3187,7 @@ import { logSystemEvent } from "../systemEventService";
       // Note: assignedTo can be either memberId (team_members.member_id) or userId (users.id)
       const teamMembers = await storage.getTeamMembers(userContext.effectiveUserId);
       const validAssignee = teamMembers.find(m => 
-        (m.memberId === assignedTo || m.userId === assignedTo) && 
+        m.memberId === assignedTo && 
         m.inviteStatus === 'accepted'
       );
       const isAssigningToOwner = assignedTo === userContext.businessOwnerId || assignedTo === userContext.effectiveUserId;
@@ -3208,7 +3231,7 @@ import { logSystemEvent } from "../systemEventService";
             assigneeUser.email,
             assigneeUser.firstName || null,
             assigner?.firstName || 'Your manager',
-            businessSettings?.businessName || 'JobRunner',
+            (await storage.getBusinessSettings(userContext.effectiveUserId))?.businessName || 'JobRunner',
             job.title,
             (job as any).address || null,
             (job as any).scheduledDate || null,
@@ -3370,7 +3393,7 @@ import { logSystemEvent } from "../systemEventService";
       if (!job) return res.status(404).json({ error: "Job not found" });
 
       const manager = await storage.getUser(req.userId);
-      const managerName = manager?.firstName || manager?.fullName || 'Your manager';
+      const managerName = manager?.firstName || 'Your manager';
 
       let minutesAway: number | null = null;
       const scheduledDate = (job as any).scheduledDate || (job as any).scheduledAt;
@@ -3426,7 +3449,7 @@ import { logSystemEvent } from "../systemEventService";
       }
 
       const worker = await storage.getUser(req.userId);
-      const workerName = worker?.firstName || worker?.fullName || 'Worker';
+      const workerName = worker?.firstName || 'Worker';
 
       const managerId = job.userId;
 
@@ -3507,15 +3530,15 @@ import { logSystemEvent } from "../systemEventService";
             name: businessName
           },
           subject: subject || `Your Job from ${escapeHtml(businessName)}`,
-          text: body || `Hi ${client.firstName || 'there'},\n\nHere are the details for your job: ${job.title}\n\nScheduled: ${job.scheduledDate || 'To be confirmed'}\nAddress: ${job.address || 'To be confirmed'}\n\nIf you have any questions, please don't hesitate to reach out.\n\nCheers,\n${businessName}`,
+          text: body || `Hi ${client.name || 'there'},\n\nHere are the details for your job: ${job.title}\n\nScheduled: ${job.scheduledAt || 'To be confirmed'}\nAddress: ${job.address || 'To be confirmed'}\n\nIf you have any questions, please don't hesitate to reach out.\n\nCheers,\n${businessName}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: ${business.brandColor || '#2563eb'};">${escapeHtml(businessName)}</h2>
-              <p>Hi ${client.firstName || 'there'},</p>
+              <p>Hi ${client.name || 'there'},</p>
               <p>${body?.replace(/\n/g, '<br>') || `Here are the details for your job: <strong>${job.title}</strong>`}</p>
               <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
                 <p style="margin: 0;"><strong>Job:</strong> ${job.title}</p>
-                <p style="margin: 8px 0 0;"><strong>Scheduled:</strong> ${job.scheduledDate || 'To be confirmed'}</p>
+                <p style="margin: 8px 0 0;"><strong>Scheduled:</strong> ${job.scheduledAt || 'To be confirmed'}</p>
                 <p style="margin: 8px 0 0;"><strong>Address:</strong> ${job.address || 'To be confirmed'}</p>
               </div>
               <p>If you have any questions, please don't hesitate to reach out.</p>
@@ -3527,7 +3550,7 @@ import { logSystemEvent } from "../systemEventService";
         // Log activity
         await logActivity(
           userContext.effectiveUserId,
-          'email_sent',
+          'email_sent' as ActivityType,
           `Job details sent - ${job.title}`,
           `Email sent to ${client.email}`,
           'job',
@@ -3816,8 +3839,8 @@ import { logSystemEvent } from "../systemEventService";
         : `ETA approximately ${estimatedMinutes} minutes`;
       const distanceText = distanceKm !== null ? ` (${distanceKm} km away)` : '';
 
-      let baseMessage = customMessage || `Hi ${client.firstName || 'there'}, ${senderLabel} is on the way to your job at ${job.address || 'your location'}. ${etaText.charAt(0).toUpperCase() + etaText.slice(1)}${distanceKm && distanceKm > 0 ? ` (${distanceKm} km away)` : ''}.`;
-      baseMessage = baseMessage.replace(/\n*Track arrival:.*$/gims, '').replace(/\n*Track your job:.*$/gims, '').replace(/\n*\[link will be added\].*$/gims, '').replace(/\n*Track arrival:\s*$/gim, '').trim();
+      let baseMessage = customMessage || `Hi ${client.name || 'there'}, ${senderLabel} is on the way to your job at ${job.address || 'your location'}. ${etaText.charAt(0).toUpperCase() + etaText.slice(1)}${distanceKm && distanceKm > 0 ? ` (${distanceKm} km away)` : ''}.`;
+      baseMessage = baseMessage.replace(/\n*Track arrival:[\s\S]*$/gim, '').replace(/\n*Track your job:[\s\S]*$/gim, '').replace(/\n*\[link will be added\][\s\S]*$/gim, '').replace(/\n*Track arrival:\s*$/gim, '').trim();
       const message = `${baseMessage}\n\nTrack your job: ${trackingUrl}`;
       
       // Send SMS via smsService to properly track in conversations/Chat Hub
@@ -3828,7 +3851,7 @@ import { logSystemEvent } from "../systemEventService";
           businessOwnerId: userContext.effectiveUserId,
           clientId: client.id,
           clientPhone: client.phone,
-          clientName: client.firstName || client.email || undefined,
+          clientName: client.name || client.email || undefined,
           jobId: job.id,
           message: message,
           senderUserId: req.userId,
@@ -3848,12 +3871,12 @@ import { logSystemEvent } from "../systemEventService";
         'job_started',
         `On My Way - ${job.title || 'Job'}`,
         smsResult.success 
-          ? `On My Way SMS sent to ${client.firstName || client.email || 'client'} at ${client.phone} (ETA: ${estimatedMinutes} min via ${etaSource})`
+          ? `On My Way SMS sent to ${client.name || client.email || 'client'} at ${client.phone} (ETA: ${estimatedMinutes} min via ${etaSource})`
           : `On My Way notification failed - SMS not configured`,
         'job',
         job.id,
         { 
-          clientName: client.firstName, 
+          clientName: client.name, 
           clientPhone: client.phone,
           smsSent: smsResult.success,
           estimatedMinutes,
@@ -3911,8 +3934,8 @@ import { logSystemEvent } from "../systemEventService";
       const user = await storage.getUser(req.userId);
       const tradieName = user?.firstName || businessName;
       const client = job.clientId ? await storage.getClient(job.clientId, userContext.effectiveUserId) : null;
-      const clientFirst = client?.firstName || 'there';
-      const allowSharing = business?.allowLocationSharing !== false;
+      const clientFirst = client?.name || 'there';
+      const allowSharing = true;
 
       // Calculate real ETA using GPS coordinates + OSRM routing (same logic as /on-my-way)
       let estimatedMinutes: number | null = null;
@@ -4166,7 +4189,7 @@ import { logSystemEvent } from "../systemEventService";
         jobTitle: job?.title || 'Untitled Job',
         jobAddress: job?.address || '',
         scheduledDate: (job as any)?.scheduledDate || (job as any)?.scheduledAt,
-        businessName: (businessSettingsData as any)?.businessName || owner?.fullName || 'Business',
+        businessName: (businessSettingsData as any)?.businessName || owner?.firstName || 'Business',
         businessLogo: (businessSettingsData as any)?.logoUrl || null,
         acceptedAt: assignment.acceptedAt,
         hasSignature: !!(assignment as any).acceptanceSignatureData,
@@ -4362,8 +4385,8 @@ import { logSystemEvent } from "../systemEventService";
         } catch (e) { console.log('[RunningLate] ETA calc failed:', e); }
       }
 
-      let baseMessage = customMessage || `Hi ${client.firstName || 'there'}, ${tradieName} from ${businessName} here. Running a bit late for your job at ${job.address || 'your location'}. Apologies for the delay - ${etaText}.`;
-      baseMessage = baseMessage.replace(/\n*Track arrival:.*$/gims, '').replace(/\n*\[link will be added\].*$/gims, '').replace(/\n*Track arrival:\s*$/gim, '').trim();
+      let baseMessage = customMessage || `Hi ${client.name || 'there'}, ${tradieName} from ${businessName} here. Running a bit late for your job at ${job.address || 'your location'}. Apologies for the delay - ${etaText}.`;
+      baseMessage = baseMessage.replace(/\n*Track arrival:[\s\S]*$/gim, '').replace(/\n*\[link will be added\][\s\S]*$/gim, '').replace(/\n*Track arrival:\s*$/gim, '').trim();
       const message = baseMessage;
       
       // Send SMS via dedicated/shared number (customer-facing)
@@ -4376,12 +4399,12 @@ import { logSystemEvent } from "../systemEventService";
         'job_started',
         `Running Late - ${job.title || 'Job'}`,
         smsResult.success 
-          ? `Running Late SMS sent to ${client.firstName || client.email || 'client'} at ${client.phone}`
+          ? `Running Late SMS sent to ${client.name || client.email || 'client'} at ${client.phone}`
           : `Running Late notification failed - SMS not configured`,
         'job',
         job.id,
         { 
-          clientName: client.firstName, 
+          clientName: client.name, 
           clientPhone: client.phone,
           smsSent: smsResult.success
         }
@@ -4451,14 +4474,18 @@ import { logSystemEvent } from "../systemEventService";
           const paymentRequest = await storage.createPaymentRequest({
             clientId: client.id,
             amount: amount,
-            type: 'payment_link',
             status: 'pending',
-            notes: notes || `Quick payment for ${job.title}`,
-          }, userContext.effectiveUserId);
+            description: notes || `Quick payment for ${job.title}`,
+            userId: userContext.effectiveUserId,
+            token: randomBytes(24).toString('hex'),
+          });
 
           // Create Stripe payment link if Stripe is available
           if (isStripeInitialized()) {
-            const stripe = getUncachableStripeClient();
+            const stripe = await getUncachableStripeClient();
+            if (!stripe) {
+              return res.status(400).json({ error: "Stripe is not configured for payment links" });
+            }
             const host = req.get('host') || 'localhost';
             const protocol = req.get('x-forwarded-proto') || (host.includes('replit') ? 'https' : 'http');
             
@@ -4486,16 +4513,17 @@ import { logSystemEvent } from "../systemEventService";
               },
             });
 
-            // Update payment request with Stripe link
-            await storage.updatePaymentRequest(paymentRequest.id, {
-              paymentLink: session.url,
-              stripeSessionId: session.id,
-            }, userContext.effectiveUserId);
+            // Persist the Stripe session id on the payment request so the
+            // checkout can be reconciled later (no dedicated paymentLink column;
+            // the link is derived from / returned to the client directly).
+            await storage.updatePaymentRequest(paymentRequest.id, userContext.effectiveUserId, {
+              stripePaymentIntentId: session.id,
+            });
 
             // Send SMS with payment link if client has phone
             if (client.phone) {
               const business = await storage.getBusinessSettings(userContext.effectiveUserId);
-              const message = `Hi ${client.firstName || 'there'}, here's your payment link for ${job.title || 'your recent job'} from ${business?.businessName || 'your tradesperson'}: ${session.url}. Amount: $${parseFloat(amount).toFixed(2)}`;
+              const message = `Hi ${client.name || 'there'}, here's your payment link for ${job.title || 'your recent job'} from ${business?.businessName || 'your tradesperson'}: ${session.url}. Amount: $${parseFloat(amount).toFixed(2)}`;
               const { sendCustomerReply: sendCR } = await import('../services/smsService');
               await sendCR(client.phone, message, userContext.effectiveUserId);
             }
@@ -4552,7 +4580,7 @@ import { logSystemEvent } from "../systemEventService";
       if (quote) {
         invoiceData.quoteId = quote.id;
       }
-      const invoice = await storage.createInvoice(invoiceData, userContext.effectiveUserId);
+      const invoice = await storage.createInvoice({ ...invoiceData, userId: userContext.effectiveUserId });
 
       // Copy line items from quote to invoice, or use provided line items
       if (quoteLineItems.length > 0) {
@@ -4599,15 +4627,16 @@ import { logSystemEvent } from "../systemEventService";
         gstAmount: gstAmount.toFixed(2),
         paymentMethod: paymentMethod,
         paidAt: new Date(),
-        notes: notes || `Quick collect at job site`,
-      }, userContext.effectiveUserId);
+        description: notes || `Quick collect at job site`,
+        userId: userContext.effectiveUserId,
+      });
 
       // Update job status to invoiced if not already
       if (job.status === 'done') {
-        await storage.updateJob(job.id, {
+        await storage.updateJob(job.id, userContext.effectiveUserId, {
           status: 'invoiced',
           invoicedAt: new Date(),
-        }, userContext.effectiveUserId);
+        });
       }
 
       // Log activity
@@ -4615,13 +4644,13 @@ import { logSystemEvent } from "../systemEventService";
         userContext.effectiveUserId,
         'payment_received',
         `Quick Payment Collected - ${job.title || 'Job'}`,
-        `$${parsedAmount.toFixed(2)} collected via ${paymentMethod} for ${client.firstName || client.email || 'client'}`,
+        `$${parsedAmount.toFixed(2)} collected via ${paymentMethod} for ${client.name || client.email || 'client'}`,
         'invoice',
         invoice.id,
         {
           jobId: job.id,
           ...(quote ? { quoteId: quote.id } : {}),
-          clientName: client.firstName || client.email,
+          clientName: client.name || client.email,
           amount: parsedAmount,
           paymentMethod,
           quickCollect: true,
@@ -4760,8 +4789,8 @@ import { logSystemEvent } from "../systemEventService";
                   type: 'job_update',
                   title: 'Worker Arrived',
                   message: `${actorName} has arrived at "${updatedJob!.title}"`,
-                  jobId: updatedJob!.id,
-                  isRead: false,
+                  relatedId: updatedJob!.id,
+                  relatedType: 'job',
                 });
               } else if (workerStatus === 'in_progress') {
                 await notifyJobStarted(storage, effectiveUserId, updatedJob, clientName);
@@ -4883,7 +4912,7 @@ import { logSystemEvent } from "../systemEventService";
             
             let smsBody = '';
             const ownerPhone = businessSettingsData?.phone || '';
-            const ownerName = businessSettingsData?.contactName || businessName;
+            const ownerName = businessName;
             
             if (workerStatus === 'on_my_way') {
               const etaText = workerEta || 'soon';
@@ -5664,7 +5693,7 @@ import { logSystemEvent } from "../systemEventService";
                              category === 'progress' ? 'Progress photo' : 'Photo';
         await logActivity(
           userContext.effectiveUserId,
-          'photo_added',
+          'photo_added' as ActivityType,
           `${categoryLabel} added to job`,
           caption || `${file.originalname}`,
           'job',
@@ -5801,7 +5830,7 @@ import { logSystemEvent } from "../systemEventService";
       try {
         await logActivity(
           effectiveUserId,
-          'photos_copied',
+          'photos_copied' as ActivityType,
           `${copiedPhotos.length} photo(s) copied from another job`,
           `Copied from job ${sourceJobId}`,
           'job',
@@ -5950,7 +5979,7 @@ import { logSystemEvent } from "../systemEventService";
       try {
         await logActivity(
           userContext.effectiveUserId,
-          'voice_note_added',
+          'voice_note_added' as ActivityType,
           'Voice note recorded',
           title || 'New voice note',
           'job',
@@ -6065,12 +6094,12 @@ import { logSystemEvent } from "../systemEventService";
 
       try {
         await logTeamActivity({
-          userId: userContext.effectiveUserId,
-          performedBy: userId,
-          action: 'voice_action_confirmed',
+          businessOwnerId: userContext.effectiveUserId,
+          actorUserId: userId,
+          activityType: 'voice_action_confirmed' as TeamActivityType,
           entityType: 'job',
           entityId: jobId,
-          details: `Confirmed voice action: ${detectedAction.type} - ${detectedAction.description}`,
+          description: `Confirmed voice action: ${detectedAction.type} - ${detectedAction.description}`,
         });
       } catch (e) {
         logger.warn('background', 'Failed to write team activity for confirmed voice action', { userId, error: e, metadata: { jobId } });
@@ -6364,6 +6393,7 @@ import { logSystemEvent } from "../systemEventService";
       await storage.createActivityLog({
         userId: userContext.effectiveUserId,
         type: 'note_added',
+        title: 'Note added',
         entityType: 'job',
         entityId: jobId,
         description: 'Added a note to job',
@@ -6414,6 +6444,7 @@ import { logSystemEvent } from "../systemEventService";
       await storage.createActivityLog({
         userId: userContext.effectiveUserId,
         type: 'note_edited',
+        title: 'Note edited',
         entityType: 'job',
         entityId: jobId,
         description: 'Edited a note on job',
@@ -6456,6 +6487,7 @@ import { logSystemEvent } from "../systemEventService";
       await storage.createActivityLog({
         userId: userContext.effectiveUserId,
         type: 'note_deleted',
+        title: 'Note deleted',
         entityType: 'job',
         entityId: jobId,
         description: 'Removed a note from job',
@@ -7005,10 +7037,10 @@ import { logSystemEvent } from "../systemEventService";
         messageId: message.id,
         jobId: req.params.jobId,
         senderId: userId,
-        senderName: user?.name || user?.firstName || 'Team member',
+        senderName: user?.firstName || 'Team member',
         preview: (req.body.message || '').substring(0, 100),
       });
-      const senderName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Unknown';
+      const senderName = user ? (`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown') : 'Unknown';
       const enrichedMessage = {
         ...message,
         senderName,
@@ -7142,7 +7174,7 @@ import { logSystemEvent } from "../systemEventService";
         if (assignedUser) {
           // Check their team role
           const membership = await storage.getTeamMembershipByMemberId(job.assignedTo);
-          const role = membership?.role || 'Assigned';
+          const role = (membership ? (await storage.getUserRole(membership.roleId))?.name : null) || 'Assigned';
           participants.push({
             id: assignedUser.id,
             name: `${assignedUser.firstName || ''} ${assignedUser.lastName || ''}`.trim() || assignedUser.email || 'Team Member',
@@ -7155,16 +7187,16 @@ import { logSystemEvent } from "../systemEventService";
       // 3. Team admins/supervisors (they have access to all jobs)
       const teamMembers = await storage.getTeamMembers(job.userId);
       for (const member of teamMembers) {
-        if (member.inviteStatus === 'accepted' && 
-            member.isActive && 
-            (member.role === 'admin' || member.role === 'supervisor') &&
+        if (member.inviteStatus !== 'accepted' || !member.isActive || !member.memberId) continue;
+        const memberRoleName = (await storage.getUserRole(member.roleId))?.name || '';
+        if ((memberRoleName === 'admin' || memberRoleName === 'supervisor') &&
             !participants.some(p => p.id === member.memberId)) {
           const memberUser = await storage.getUser(member.memberId);
           if (memberUser) {
             participants.push({
               id: memberUser.id,
               name: `${memberUser.firstName || ''} ${memberUser.lastName || ''}`.trim() || memberUser.email || 'Team Member',
-              role: member.role.charAt(0).toUpperCase() + member.role.slice(1).toLowerCase(),
+              role: memberRoleName.charAt(0).toUpperCase() + memberRoleName.slice(1).toLowerCase(),
               avatar: memberUser.profileImageUrl,
             });
           }
@@ -7375,7 +7407,7 @@ import { logSystemEvent } from "../systemEventService";
           // Format scheduled date/time
           const scheduledDate = job.scheduledAt 
             ? new Date(job.scheduledAt).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
-            : job.scheduledDate || '';
+            : '';
           const scheduledTime = job.scheduledAt
             ? new Date(job.scheduledAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
             : job.scheduledTime || '';

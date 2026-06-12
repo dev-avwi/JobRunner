@@ -83,7 +83,9 @@ export interface JobMaterial {
   quantity: string;
   unit: string;
   unitCost: string;
+  unitPrice?: string;
   totalCost: string;
+  totalPrice?: string;
   supplier?: string;
   trackingNumber?: string;
   trackingCarrier?: string;

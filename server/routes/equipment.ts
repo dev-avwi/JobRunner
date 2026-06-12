@@ -161,7 +161,7 @@ export function registerEquipmentRoutes(app: Express): void {
         .select({ jobId: jobEquipment.jobId })
         .from(jobEquipment)
         .where(eq(jobEquipment.userId, userContext.effectiveUserId));
-      const jobIds = [...new Set(results.map(r => r.jobId))];
+      const jobIds = Array.from(new Set(results.map(r => r.jobId)));
       res.json(jobIds);
     } catch (error) {
       console.error("Error fetching job equipment summary:", error);

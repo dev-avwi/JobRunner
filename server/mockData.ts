@@ -273,8 +273,8 @@ export async function seedMockData(userId: string, tradeType: string = 'plumbing
           title: randomItem(jobTitles),
           description: getJobDescription(tradeType),
           address: jobLocation.address,
-          latitude: jobLocation.latitude,
-          longitude: jobLocation.longitude,
+          latitude: String(jobLocation.latitude),
+          longitude: String(jobLocation.longitude),
           status: status as any,
           scheduledAt: scheduledDate,
           notes: i === 0 ? 'Urgent - customer has been waiting' :

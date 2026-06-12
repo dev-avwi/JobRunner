@@ -174,7 +174,7 @@ async function validateBusinessAccess(userId: string, businessId: string): Promi
 
     // Check if user is a team member of this business
     const teamMember = await storage.getTeamMemberByUserIdAndBusiness(userId, businessId);
-    if (teamMember && teamMember.status === 'accepted') {
+    if (teamMember && teamMember.inviteStatus === 'accepted') {
       return true;
     }
 
@@ -254,6 +254,8 @@ export function broadcastSmsNotification(
     isUnknownCaller?: boolean;
     isJobRequest?: boolean;
     suggestedJobTitle?: string;
+    isQuoteAcceptance?: boolean;
+    quoteId?: string;
   }
 ) {
   const message = {

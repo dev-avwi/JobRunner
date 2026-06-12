@@ -589,6 +589,7 @@ function GeofenceGpsAlerts() {
       detail: a.jobTitle || a.jobAddress || '',
       time: new Date(a.createdAt),
       icon: 'map-pin',
+      duration: undefined as number | undefined,
     })),
     ...gpsLogs
       .filter((l: any) => l.eventType === 'signal_lost')

@@ -369,10 +369,27 @@ export default function TeamScheduler({ onViewJob, onCreateJob }: TeamSchedulerP
     setDragOverCell(null);
   };
 
+  const getJobsForMemberAndDay = useCallback((memberId: string, date: Date): Job[] => {
+    return weekJobs.filter(job => {
+      const jobDate = parseISO(job.scheduledAt!);
+      const matchesDate = isSameDay(jobDate, date);
+      const isOwnerRow = memberId === ownerId;
+      const matchesMember = isOwnerRow 
+        ? (!job.assignedTo || job.assignedTo === ownerId)
+        : job.assignedTo === memberId;
+      return matchesDate && matchesMember;
+    });
+  }, [weekJobs, ownerId]);
+
   const getMemberDisplayName = useCallback((memberId: string): string => {
-    const member = displayMembers.find(m => m.memberId === memberId);
-    return member?.name || 'Team Member';
-  }, [displayMembers]);
+    const member = allMembers.find(m => m.memberId === memberId);
+    if (!member) return 'Team Member';
+    if (member.firstName && member.lastName) {
+      return `${member.firstName} ${member.lastName}`;
+    }
+    if (member.firstName) return member.firstName;
+    return member.email.split('@')[0];
+  }, [allMembers]);
 
   const checkAndSchedule = useCallback((jobId: string, memberId: string, date: Date, hour: number, jobDurationMinutes?: number) => {
     const scheduledDate = new Date(date);
@@ -429,18 +446,6 @@ export default function TeamScheduler({ onViewJob, onCreateJob }: TeamSchedulerP
     setDraggedJob(null);
     setDragOverCell(null);
   };
-
-  const getJobsForMemberAndDay = useCallback((memberId: string, date: Date): Job[] => {
-    return weekJobs.filter(job => {
-      const jobDate = parseISO(job.scheduledAt!);
-      const matchesDate = isSameDay(jobDate, date);
-      const isOwnerRow = memberId === ownerId;
-      const matchesMember = isOwnerRow 
-        ? (!job.assignedTo || job.assignedTo === ownerId)
-        : job.assignedTo === memberId;
-      return matchesDate && matchesMember;
-    });
-  }, [weekJobs, ownerId]);
 
   const getConflictsForMemberAndDay = useCallback((memberId: string, date: Date): { hour: number; count: number }[] => {
     const dayJobs = getJobsForMemberAndDay(memberId, date);
@@ -983,7 +988,7 @@ function WeekGridView({
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="text-xs">Schedule conflict: overlapping jobs at {conflicts.map(c => `${c.hour}:00`).join(', ')}</p>
+                            <p className="text-xs">Schedule conflict: overlapping jobs at {conflicts.map((c: { hour: number; count: number }) => `${c.hour}:00`).join(', ')}</p>
                           </TooltipContent>
                         </Tooltip>
                       )}

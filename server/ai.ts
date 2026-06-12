@@ -2174,7 +2174,7 @@ function haversineDistance(
   return R * c;
 }
 
-interface ScheduleJob {
+interface OptimizeScheduleJob {
   id: string;
   title: string;
   clientName: string;
@@ -2188,7 +2188,7 @@ interface ScheduleJob {
 
 interface OptimizedSchedule {
   optimizedOrder: Array<{
-    job: ScheduleJob;
+    job: OptimizeScheduleJob;
     suggestedTime: string;
     travelDistance?: number;
     reason: string;
@@ -2203,7 +2203,7 @@ interface OptimizedSchedule {
  * Uses nearest-neighbor algorithm with AI enhancement for suggestions
  */
 export async function optimizeSchedule(
-  jobs: ScheduleJob[],
+  jobs: OptimizeScheduleJob[],
   startLocation?: { latitude: number; longitude: number },
   workdayStart: string = '07:00',
   workdayEnd: string = '17:00'
@@ -2315,6 +2315,7 @@ export async function optimizeSchedule(
     optimizedOrder.push({
       job,
       suggestedTime,
+      travelDistance: undefined,
       reason: 'Location not available - scheduled at end'
     });
   }
@@ -2585,7 +2586,7 @@ export async function categorizePhoto(imageBuffer: Buffer, jobContext: string): 
  * Get AI-powered scheduling recommendations for a specific date
  */
 export async function getSchedulingRecommendations(
-  jobs: ScheduleJob[],
+  jobs: OptimizeScheduleJob[],
   businessContext: { trade?: string; businessName?: string }
 ): Promise<string> {
   const jobSummary = jobs.map((j, i) => 

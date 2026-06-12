@@ -79,8 +79,8 @@ export default function JobEditForm({ jobId, onSave, onCancel }: JobEditFormProp
         description: job.description || "",
         address: job.address || "",
         scheduledAt: job.scheduledAt ? new Date(job.scheduledAt).toISOString().slice(0, 16) : "",
-        priority: (job.priority as "low" | "medium" | "high") || "medium",
-        estimatedHours: job.estimatedHours?.toString() || "",
+        priority: ((job as Record<string, unknown>).priority as "low" | "medium" | "high") || "medium",
+        estimatedHours: (job as Record<string, unknown>).estimatedHours?.toString() || "",
         geofenceEnabled: job.geofenceEnabled || false,
         geofenceRadius: job.geofenceRadius || 100,
       });
@@ -95,8 +95,8 @@ export default function JobEditForm({ jobId, onSave, onCancel }: JobEditFormProp
           description: job.description || "",
           address: job.address || "",
           scheduledAt: job.scheduledAt ? new Date(job.scheduledAt).toISOString().slice(0, 16) : "",
-          priority: (job.priority as "low" | "medium" | "high") || "medium",
-          estimatedHours: job.estimatedHours?.toString() || "",
+          priority: ((job as Record<string, unknown>).priority as "low" | "medium" | "high") || "medium",
+          estimatedHours: (job as Record<string, unknown>).estimatedHours?.toString() || "",
           geofenceEnabled: job.geofenceEnabled || false,
           geofenceRadius: job.geofenceRadius || 100,
         });
@@ -106,8 +106,8 @@ export default function JobEditForm({ jobId, onSave, onCancel }: JobEditFormProp
           description: job.description || "",
           address: job.address || "",
           scheduledAt: job.scheduledAt ? new Date(job.scheduledAt).toISOString().slice(0, 16) : "",
-          priority: (job.priority as "low" | "medium" | "high") || "medium",
-          estimatedHours: job.estimatedHours?.toString() || "",
+          priority: ((job as Record<string, unknown>).priority as "low" | "medium" | "high") || "medium",
+          estimatedHours: (job as Record<string, unknown>).estimatedHours?.toString() || "",
           geofenceEnabled: job.geofenceEnabled || false,
           geofenceRadius: job.geofenceRadius || 100,
         };

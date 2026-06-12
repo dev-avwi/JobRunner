@@ -252,7 +252,7 @@ export function useUpdateMilestones() {
       }
       return response.json();
     },
-    onSuccess: (_data: any, variables: { invoiceId: string }) => {
+    onSuccess: (_data: any, variables: { invoiceId: string; milestones?: any[]; retentionPercent?: number }) => {
       safeInvalidateQueries({ queryKey: ["/api/invoices"] });
       safeInvalidateQueries({ queryKey: ["/api/invoices", variables.invoiceId] });
     },

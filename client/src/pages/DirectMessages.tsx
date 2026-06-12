@@ -219,7 +219,7 @@ export default function DirectMessages() {
                           isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
                         }`}
                       >
-                        {formatMessageTime(message.createdAt)}
+                        {message.createdAt ? formatMessageTime(message.createdAt) : ""}
                       </p>
                     </div>
                   </div>
@@ -311,7 +311,7 @@ export default function DirectMessages() {
                           <p className="font-medium truncate">
                             {getUserDisplayName(conversation.otherUser)}
                           </p>
-                          {conversation.lastMessage && (
+                          {conversation.lastMessage?.createdAt && (
                             <span className="text-xs text-muted-foreground flex-shrink-0">
                               {formatMessageTime(conversation.lastMessage.createdAt)}
                             </span>

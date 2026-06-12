@@ -102,11 +102,7 @@ export default function ServiceRemindersPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/service-reminders", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("POST", "/api/service-reminders", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-reminders"] });
@@ -121,11 +117,7 @@ export default function ServiceRemindersPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest(`/api/service-reminders/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("PATCH", `/api/service-reminders/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-reminders"] });
@@ -140,7 +132,7 @@ export default function ServiceRemindersPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/service-reminders/${id}`, { method: "DELETE" });
+      return apiRequest("DELETE", `/api/service-reminders/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-reminders"] });
@@ -153,11 +145,7 @@ export default function ServiceRemindersPage() {
 
   const completeMutation = useMutation({
     mutationFn: async ({ id, scheduleNext }: { id: string; scheduleNext: boolean }) => {
-      return apiRequest(`/api/service-reminders/${id}/complete`, {
-        method: "POST",
-        body: JSON.stringify({ scheduleNext }),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("POST", `/api/service-reminders/${id}/complete`, { scheduleNext });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-reminders"] });
@@ -357,12 +345,16 @@ export default function ServiceRemindersPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Service Reminders" subtitle="Track recurring maintenance and service schedules">
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Reminder
-        </Button>
-      </PageHeader>
+      <PageHeader
+        title="Service Reminders"
+        subtitle="Track recurring maintenance and service schedules"
+        action={
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Reminder
+          </Button>
+        }
+      />
 
       <div className="px-4 pb-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -385,7 +377,7 @@ export default function ServiceRemindersPage() {
               </div>
             ) : sortedReminders.length === 0 ? (
               <EmptyState
-                icon={<Bell className="h-12 w-12 text-muted-foreground" />}
+                icon={Bell}
                 title={activeTab === "completed" ? "No completed reminders" : "No service reminders yet"}
                 description={
                   activeTab === "completed"

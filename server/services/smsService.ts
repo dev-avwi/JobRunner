@@ -125,7 +125,7 @@ export async function sendCustomerReply(
   to: string,
   message: string,
   businessOwnerId: string
-): Promise<{ success: boolean; messageId?: string; error?: string; simulated?: boolean }> {
+): Promise<{ success: boolean; messageId?: string; error?: string; simulated?: boolean; notConfigured?: boolean }> {
   return sendSmsPlatform(to, message, undefined, businessOwnerId);
 }
 
@@ -138,7 +138,7 @@ async function sendSmsPlatform(
   message: string,
   mediaUrls?: string[],
   businessOwnerId?: string
-): Promise<{ success: boolean; messageId?: string; error?: string; simulated?: boolean }> {
+): Promise<{ success: boolean; messageId?: string; error?: string; simulated?: boolean; notConfigured?: boolean }> {
   const formattedTo = formatPhoneNumber(to);
   const validMediaUrls = mediaUrls?.slice(0, 10) || [];
 
@@ -397,7 +397,7 @@ async function checkAndProcessQuoteAcceptance(
     const messages = await storage.getSmsMessages(conversation.id);
     const recentQuoteMessage = messages.find(m => {
       if (m.direction !== 'outbound') return false;
-      const msgAge = Date.now() - new Date(m.createdAt).getTime();
+      const msgAge = Date.now() - new Date(m.createdAt ?? 0).getTime();
       const is72Hours = msgAge < 72 * 60 * 60 * 1000;
       const isQuoteMessage = m.body?.toLowerCase().includes('quote') && 
                              (m.body?.toLowerCase().includes('ready') || m.body?.toLowerCase().includes('reply yes'));
@@ -475,7 +475,7 @@ async function checkAndProcessQuoteAcceptance(
     // Check if quote was sent recently (within 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const sentDate = latestQuote.sentAt ? new Date(latestQuote.sentAt) : new Date(latestQuote.createdAt);
+    const sentDate = latestQuote.sentAt ? new Date(latestQuote.sentAt) : new Date(latestQuote.createdAt ?? 0);
     
     if (sentDate < sevenDaysAgo) {
       console.log('[SMS Quote Accept] Quote was sent more than 7 days ago');
@@ -487,7 +487,7 @@ async function checkAndProcessQuoteAcceptance(
     const clientName = client?.name || 'Client';
     
     // Re-check quote status right before accepting (optimistic concurrency guard)
-    const freshQuote = await storage.getQuoteById(latestQuote.id, conversation.businessOwnerId);
+    const freshQuote = await storage.getQuote(latestQuote.id, conversation.businessOwnerId);
     if (!freshQuote || freshQuote.status !== 'sent') {
       console.log(`[SMS Quote Accept] Quote ${latestQuote.number} status changed since check (now: ${freshQuote?.status})`);
       const businessSettings = await storage.getBusinessSettings(conversation.businessOwnerId);
@@ -788,7 +788,7 @@ export async function handleIncomingSms(
           ? `Please reply with a number to select a business:\n${menuLines.join('\n')}`
           : `Please reply with a number to select a job:\n${menuLines.join('\n')}`;
         await sendCustomerReply(formattedFromPhone, helpText, pending.businessOwnerId);
-        await storage.updateSmsConversationRoutingState(pending.id, pending.routingState, options);
+        await storage.updateSmsConversationRoutingState(pending.id, pending.routingState ?? 'pending_job', options);
       }
 
       targetConversation = pending;
@@ -810,10 +810,10 @@ export async function handleIncomingSms(
         const messages = await storage.getSmsMessages(conv.id);
         const lastOutbound = messages
           .filter(m => m.direction === 'outbound')
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+          .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())[0];
 
         if (lastOutbound) {
-          const outboundTime = new Date(lastOutbound.createdAt);
+          const outboundTime = new Date(lastOutbound.createdAt ?? 0);
           if (outboundTime > bestOutboundTime) {
             bestOutboundTime = outboundTime;
             bestConv = conv;
@@ -921,10 +921,10 @@ export async function handleIncomingSms(
             const messages = await storage.getSmsMessages(existingConv.id);
             const lastOutbound = messages
               .filter(m => m.direction === 'outbound')
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+              .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())[0];
 
             if (lastOutbound) {
-              const outboundTime = new Date(lastOutbound.createdAt);
+              const outboundTime = new Date(lastOutbound.createdAt ?? 0);
               if (outboundTime > twentyFourHoursAgo && outboundTime > recentOutboundTime) {
                 recentOutboundTime = outboundTime;
                 recentConv = existingConv;

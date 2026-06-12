@@ -186,7 +186,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
     const search = templateSearch.toLowerCase();
     return template.name.toLowerCase().includes(search) || 
            template.tradeType?.toLowerCase().includes(search) ||
-           (template.description && template.description.toLowerCase().includes(search));
+           ('description' in template && !!template.description && template.description.toLowerCase().includes(search));
   });
 
   const form = useForm<QuoteFormData>({
@@ -267,7 +267,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
 
   // Auto-fill form when job is loaded from URL parameter
   useEffect(() => {
-    if (preloadedJob && !jobAutoLoaded && clients.length > 0) {
+    if (preloadedJob && !jobAutoLoaded && (clients as any[]).length > 0) {
       setJobAutoLoaded(true);
       const job = preloadedJob as any;
       
@@ -356,7 +356,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
 
   // Auto-fill client when coming from client detail page
   useEffect(() => {
-    if (urlClientId && clients.length > 0 && !form.getValues("clientId")) {
+    if (urlClientId && (clients as any[]).length > 0 && !form.getValues("clientId")) {
       const clientExists = (clients as any[]).some(c => String(c.id) === urlClientId);
       if (clientExists) {
         form.setValue("clientId", urlClientId);

@@ -47,6 +47,8 @@ export function SmsSetupPrompt({
   showWhenConfigured = false,
   onSetupClick 
 }: SmsSetupPromptProps) {
+  const { data: smsStatus } = useSmsStatus();
+  const instructions = smsStatus?.setupInstructions;
   return null;
 
   if (variant === "banner") {
@@ -113,7 +115,7 @@ export function SmsSetupPrompt({
             <div className="space-y-2 mb-4">
               <p className="text-sm font-medium">Quick Setup:</p>
               <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                {instructions.steps.map((step, i) => (
+                {instructions?.steps?.map((step: string, i: number) => (
                   <li key={i}>{step}</li>
                 ))}
               </ol>

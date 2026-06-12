@@ -515,7 +515,7 @@ export default function ClientPortalHub() {
           title: "Request Sent!",
           description: `Your request for ${workerName} has been sent to the business`,
         });
-        setSubmittedRequests(prev => new Set([...prev, `${workerId}-${jobId}`]));
+        setSubmittedRequests(prev => new Set([...Array.from(prev), `${workerId}-${jobId}`]));
         setRequestingWorker(null);
         setRequestMessage('');
       } else {

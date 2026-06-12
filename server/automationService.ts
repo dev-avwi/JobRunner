@@ -421,8 +421,8 @@ async function createNotification(
     type: 'automation',
     title: 'Automation Alert',
     message: formattedMessage,
-    entityType: context.quote ? 'quote' : context.job ? 'job' : 'invoice',
-    entityId: context.quote?.id || context.job?.id || context.invoice?.id,
+    relatedType: context.quote ? 'quote' : context.job ? 'job' : 'invoice',
+    relatedId: context.quote?.id || context.job?.id || context.invoice?.id,
   });
 }
 

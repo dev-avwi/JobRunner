@@ -218,5 +218,4 @@ export function formatPlainTextBody(htmlContent: string): string {
   return text;
 }
 
-// Export types for mobile app compatibility
-export type { EmailProviderStatus, EmailClient, EmailComposeData };
+// Types EmailProviderStatus, EmailClient, EmailComposeData are already exported above.

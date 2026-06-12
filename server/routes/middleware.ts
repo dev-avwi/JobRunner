@@ -375,10 +375,9 @@ export const requireAuth = async (req: any, res: any, next: any) => {
 
   Sentry.setUser({
     id: String(user.id),
-    email: user.email,
-    username: user.fullName,
+    email: user.email || undefined,
+    username: [user.firstName, user.lastName].filter(Boolean).join(' ') || undefined,
   });
-  Sentry.setTag("businessName", user.businessName || "unknown");
 
   // Demo sessions are now fully writable (the demo owner account behaves like
   // a real account for live demos). Read-only enforcement has been removed.

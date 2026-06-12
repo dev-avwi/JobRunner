@@ -393,6 +393,7 @@ export function useOfflineTimeTracking(
     const updatedEntry: OfflineTimeEntry = {
       ...existingEntry,
       id: timerToStop.id,
+      startTime,
       endTime,
       duration,
       pendingSync: true,

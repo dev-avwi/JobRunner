@@ -209,15 +209,18 @@ async function ensureDemoBusinessAndTeam(demoUser: any) {
   // the demo owner above).
   let workerUser = await storage.getUserByEmail(DEMO_WORKER.email);
   const hashedWorkerPassword = await bcrypt.hash(DEMO_WORKER.password, 10);
+  const [workerFirstName, ...workerLastNameParts] = DEMO_WORKER.name.split(' ');
   if (!workerUser) {
     workerUser = await storage.createUser({
       email: DEMO_WORKER.email,
       password: hashedWorkerPassword,
-      name: DEMO_WORKER.name,
-      phone: DEMO_WORKER.phone,
-      role: DEMO_WORKER.role,
-      emailVerified: true,
+      firstName: workerFirstName,
+      lastName: workerLastNameParts.join(' '),
     });
+    await storage.updateUser(workerUser.id, {
+      phone: DEMO_WORKER.phone,
+      emailVerified: true,
+    } as any);
     console.log('✅ Demo worker user created');
   } else {
     await storage.updateUser(workerUser.id, {
@@ -233,10 +236,21 @@ async function ensureDemoBusinessAndTeam(demoUser: any) {
   const existingTeam = await storage.getTeamMembers(demoUser.id);
   const workerTeamMember = existingTeam.find(m => m.memberId === workerUser?.id);
   if (!workerTeamMember && workerUser) {
+    const existingRoles = await storage.getUserRoles();
+    let workerRole = existingRoles.find(r => r.name.toLowerCase() === 'worker' || r.name.toLowerCase() === 'field worker');
+    if (!workerRole) {
+      workerRole = await storage.createUserRole({
+        name: 'Worker',
+        permissions: ['read_jobs', 'update_job_status', 'create_time_entries', 'read_clients'],
+        description: 'Field worker with job access',
+        isActive: true,
+      });
+    }
     await storage.createTeamMember({
-      ownerId: demoUser.id,
+      businessOwnerId: demoUser.id,
       memberId: workerUser.id,
-      role: 'worker',
+      roleId: workerRole.id,
+      email: DEMO_WORKER.email,
       inviteStatus: 'accepted',
       isActive: true,
     });
@@ -473,14 +487,16 @@ export async function createDemoUserAndData() {
     let workerUser = await storage.getUserByEmail(DEMO_WORKER.email);
     if (!workerUser) {
       const hashedWorkerPassword = await bcrypt.hash(DEMO_WORKER.password, 10);
+      const [workerFirstName, ...workerLastNameParts] = DEMO_WORKER.name.split(' ');
       workerUser = await storage.createUser({
         email: DEMO_WORKER.email,
         password: hashedWorkerPassword,
-        name: DEMO_WORKER.name,
-        phone: DEMO_WORKER.phone,
-        role: DEMO_WORKER.role,
-        businessOwnerId: demoUser.id,
+        firstName: workerFirstName,
+        lastName: workerLastNameParts.join(' '),
       });
+      await storage.updateUser(workerUser.id, {
+        phone: DEMO_WORKER.phone,
+      } as any);
       console.log('✅ Demo worker created:', workerUser.email);
     }
 
@@ -1516,9 +1532,9 @@ export async function createDemoUserAndData() {
               tradeType: rateCard.tradeType,
               hourlyRate: rateCard.hourlyRate.toString(),
               calloutFee: rateCard.calloutFee.toString(),
-              materialMarkupPct: rateCard.materialMarkupPct.toString(),
+              materialMarkupPct: '15',
               afterHoursMultiplier: rateCard.afterHoursMultiplier.toString(),
-              gstEnabled: rateCard.gstEnabled,
+              gstEnabled: true,
               userId: demoUser.id,
             });
             rateCardCount++;
@@ -1722,14 +1738,13 @@ export async function createDemoTeamMembers() {
         memberUser = await storage.createUser({
           email: memberInfo.email,
           password: hashedPassword,
-          name: memberInfo.name,
           firstName,
           lastName,
-          phone: memberInfo.phone,
-          role: 'worker',
-          businessOwnerId: demoUser.id,
         });
-        console.log(`✅ Created user: ${memberUser.name}`);
+        await storage.updateUser(memberUser.id, {
+          phone: memberInfo.phone,
+        } as any);
+        console.log(`✅ Created user: ${memberInfo.name}`);
       }
 
       // Check if team member record exists
@@ -1822,13 +1837,12 @@ export async function createDemoSubcontractorsAndInviteCodes() {
         subUser = await storage.createUser({
           email: sub.email,
           password: hashedPassword,
-          name: sub.name,
           firstName,
           lastName,
-          phone: sub.phone,
-          role: 'worker',
-          businessOwnerId: demoUser.id,
         });
+        await storage.updateUser(subUser.id, {
+          phone: sub.phone,
+        } as any);
         console.log(`✅ Created subcontractor user: ${sub.name}`);
       }
 
@@ -3133,10 +3147,9 @@ export async function seedUserDemoData(userId: string, tradeType?: string): Prom
         clientId: createdClients[quote.client].id,
         jobId: createdJobs[quote.job]?.id,
         title: quote.title,
-        items: quote.items,
         status: quote.status as any,
         subtotal: quote.subtotal.toFixed(2),
-        gst: quote.gst.toFixed(2),
+        gstAmount: quote.gst.toFixed(2),
         total: quote.total.toFixed(2),
         validUntil,
       });
@@ -3154,10 +3167,9 @@ export async function seedUserDemoData(userId: string, tradeType?: string): Prom
         clientId: createdClients[invoice.client].id,
         jobId: createdJobs[invoice.job]?.id,
         title: invoice.title,
-        items: invoice.items,
         status: invoice.status as any,
         subtotal: invoice.subtotal.toFixed(2),
-        gst: invoice.gst.toFixed(2),
+        gstAmount: invoice.gst.toFixed(2),
         total: invoice.total.toFixed(2),
         dueDate,
       });
@@ -3570,10 +3582,8 @@ async function seedDemoClientTags(userId: string, clients: any[]) {
       const client = clients[i];
       if (Array.isArray(client.tags) && client.tags.length > 0) continue;
 
-      let config = tagConfigs.find(tc => tc.nameMatch.test(client.name));
-      if (!config) {
-        config = defaultConfigs[i % defaultConfigs.length];
-      }
+      const matched = tagConfigs.find(tc => tc.nameMatch.test(client.name));
+      const config = matched ?? defaultConfigs[i % defaultConfigs.length];
 
       await storage.updateClient(client.id, userId, {
         tags: config.tags,

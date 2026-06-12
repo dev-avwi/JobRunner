@@ -82,7 +82,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
+type JobStatus = 'pending' | 'quoted' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
 
 interface Job {
   id: string;
@@ -98,6 +98,7 @@ interface Job {
   inspectionCompletedAt?: string;
   isXeroImport?: boolean;
   xeroJobId?: string;
+  leadSource?: string | null;
 }
 
 interface AdvancedFilters {
@@ -394,6 +395,7 @@ export default function WorkPage({
 
   const statusLabels: Record<JobStatus, string> = {
     pending: 'Pending',
+    quoted: 'Quoted',
     scheduled: 'Scheduled',
     in_progress: 'In Progress',
     done: 'Completed',
@@ -1554,7 +1556,7 @@ export default function WorkPage({
         title="Delete Job"
         description={`Are you sure you want to delete ${selectedJob?.title || 'this job'}? This action cannot be undone.`}
         confirmLabel="Delete"
-        variant="destructive"
+        confirmVariant="destructive"
         onConfirm={handleConfirmDeleteJob}
         isPending={deleteJobMutation.isPending}
       />
@@ -1575,7 +1577,7 @@ export default function WorkPage({
         title="Decline this request?"
         description={`Are you sure you want to decline "${declineTarget?.title || 'this request'}"? The client will be notified.`}
         confirmLabel="Decline"
-        variant="destructive"
+        confirmVariant="destructive"
         onConfirm={handleConfirmDecline}
         isPending={updateRequestMutation.isPending}
       />

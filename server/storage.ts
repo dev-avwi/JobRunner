@@ -818,7 +818,7 @@ export interface IStorage {
   createPermissionRequest(request: InsertPermissionRequest): Promise<PermissionRequest>;
   updatePermissionRequest(id: string, businessOwnerId: string, data: Partial<InsertPermissionRequest>): Promise<PermissionRequest | undefined>;
   
-  getStaffSchedules(userId: string, jobId?: string): Promise<StaffSchedule[]>;
+  getStaffSchedules(userId: string, filters?: { jobId?: string; startDate?: Date; endDate?: Date; teamMemberId?: string }): Promise<StaffSchedule[]>;
   createStaffSchedule(schedule: InsertStaffSchedule): Promise<StaffSchedule>;
   updateStaffSchedule(id: string, userId: string, schedule: Partial<InsertStaffSchedule>): Promise<StaffSchedule | undefined>;
   deleteStaffSchedule(id: string, userId: string): Promise<boolean>;
@@ -936,7 +936,7 @@ export interface IStorage {
   getSmsAutomationRules(userId: string): Promise<SmsAutomationRule[]>;
   getSmsAutomationRule(id: string, userId: string): Promise<SmsAutomationRule | undefined>;
   createSmsAutomationRule(data: InsertSmsAutomationRule): Promise<SmsAutomationRule>;
-  updateSmsAutomationRule(id: string, userId: string, data: Partial<InsertSmsAutomationRule>): Promise<SmsAutomationRule>;
+  updateSmsAutomationRule(id: string, userId: string, data: Partial<InsertSmsAutomationRule> & Partial<Pick<SmsAutomationRule, 'lastTriggeredAt' | 'triggerCount'>>): Promise<SmsAutomationRule>;
   deleteSmsAutomationRule(id: string, userId: string): Promise<boolean>;
   getSmsAutomationRulesByTrigger(userId: string, triggerType: string): Promise<SmsAutomationRule[]>;
 
@@ -1593,7 +1593,7 @@ export class PostgresStorage implements IStorage {
       code: result[0].code,
       verified: result[0].verified ?? false,
       expiresAt: result[0].expiresAt,
-      createdAt: result[0].createdAt,
+      createdAt: result[0].createdAt ?? new Date(),
     };
   }
 
@@ -1783,7 +1783,7 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .delete(notifications)
       .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Push Tokens (Mobile App)
@@ -2228,7 +2228,7 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .delete(clients)
       .where(and(eq(clients.id, id), eq(clients.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Cascade delete methods for client-associated data
@@ -2358,11 +2358,11 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .delete(jobs)
       .where(and(eq(jobs.id, id), eq(jobs.userId, userId)));
-    if (result.rowCount > 0) {
+    if ((result.rowCount ?? 0) > 0) {
       const { invalidateAggregateDashboard } = await import('./cache');
       invalidateAggregateDashboard(userId);
     }
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getJobsForClient(clientId: string, userId: string): Promise<Job[]> {
@@ -2498,7 +2498,7 @@ export class PostgresStorage implements IStorage {
     if (!job) return false;
     
     const result = await db.delete(checklistItems).where(eq(checklistItems.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Job Check-ins (Location Tracking)
@@ -2589,11 +2589,11 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .delete(quotes)
       .where(and(eq(quotes.id, id), eq(quotes.userId, userId)));
-    if (result.rowCount > 0) {
+    if ((result.rowCount ?? 0) > 0) {
       const { invalidateAggregateDashboard } = await import('./cache');
       invalidateAggregateDashboard(userId);
     }
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getQuoteWithLineItems(id: string, userId: string): Promise<(Quote & { lineItems: QuoteLineItem[] }) | undefined> {
@@ -2752,7 +2752,7 @@ export class PostgresStorage implements IStorage {
       }
     }
     const result = await db.delete(quoteLineItems).where(eq(quoteLineItems.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Quote Versions
@@ -2838,11 +2838,11 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .delete(invoices)
       .where(and(eq(invoices.id, id), eq(invoices.userId, userId)));
-    if (result.rowCount > 0) {
+    if ((result.rowCount ?? 0) > 0) {
       const { invalidateAggregateDashboard } = await import('./cache');
       invalidateAggregateDashboard(userId);
     }
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getInvoiceWithLineItems(id: string, userId: string): Promise<(Invoice & { lineItems: InvoiceLineItem[] }) | undefined> {
@@ -2962,7 +2962,7 @@ export class PostgresStorage implements IStorage {
       }
     }
     const result = await db.delete(invoiceLineItems).where(eq(invoiceLineItems.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Payment Records (progress/partial payments)
@@ -3030,7 +3030,7 @@ export class PostgresStorage implements IStorage {
     const result = await db.delete(paymentRequests).where(
       and(eq(paymentRequests.id, id), eq(paymentRequests.userId, userId))
     );
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Terminal Payments (Tap to Pay)
@@ -3155,7 +3155,7 @@ export class PostgresStorage implements IStorage {
     const result = await db.delete(receipts).where(
       and(eq(receipts.id, id), eq(receipts.userId, userId))
     );
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async generateReceiptNumber(userId: string): Promise<string> {
@@ -3263,7 +3263,7 @@ export class PostgresStorage implements IStorage {
   async getDocumentTemplates(userId: string, type?: string, tradeType?: string): Promise<DocumentTemplate[]> {
     // Get owner ID if user is a team member (so they can access owner's templates)
     const teamMembership = await this.getTeamMembershipByMemberId(userId);
-    const ownerId = teamMembership?.ownerId;
+    const ownerId = teamMembership?.businessOwnerId;
     
     // Include user's own templates, shared templates, and owner's templates (for team members)
     const userConditions = [
@@ -3336,9 +3336,9 @@ export class PostgresStorage implements IStorage {
       return existing.filter(t => t.isDefault);
     }
 
-    // Get user's trade type from business settings
-    const businessSettings = await this.getBusinessSettings(userId);
-    const userTradeType = businessSettings?.tradeType?.toLowerCase() || 'general';
+    // Get user's trade type from their profile
+    const user = await this.getUser(userId);
+    const userTradeType = user?.tradeType?.toLowerCase() || 'general';
 
     // Filter templates: keep general ones + trade-specific for user's trade
     const filteredTemplates = tradieQuoteTemplates.filter(template => {
@@ -3626,7 +3626,7 @@ export class PostgresStorage implements IStorage {
 
   async getTeamTimeEntriesInRange(businessOwnerId: string, start: Date, end: Date): Promise<TimeEntry[]> {
     const members = await this.getTeamMembers(businessOwnerId);
-    const userIds = [businessOwnerId, ...members.map(m => m.userId || m.memberId).filter(Boolean)] as string[];
+    const userIds = [businessOwnerId, ...members.map(m => m.memberId).filter(Boolean)] as string[];
     return await db.select().from(timeEntries)
       .where(and(
         inArray(timeEntries.userId, userIds),
@@ -3665,11 +3665,11 @@ export class PostgresStorage implements IStorage {
   async deleteTimeEntry(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(timeEntries)
       .where(and(eq(timeEntries.id, id), eq(timeEntries.userId, userId)));
-    if (result.rowCount > 0) {
+    if ((result.rowCount ?? 0) > 0) {
       const { invalidateAggregateDashboard } = await import('./cache');
       invalidateAggregateDashboard(userId);
     }
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async stopTimeEntry(id: string, userId: string, locationData?: { clockOutLatitude?: string; clockOutLongitude?: string; clockOutAddress?: string }): Promise<TimeEntry | undefined> {
@@ -3809,7 +3809,7 @@ export class PostgresStorage implements IStorage {
   async deleteExpenseCategory(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(expenseCategories)
       .where(and(eq(expenseCategories.id, id), eq(expenseCategories.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getExpenses(userId: string, filters?: { jobId?: string; categoryId?: string; startDate?: string; endDate?: string; }): Promise<any[]> {
@@ -3885,7 +3885,7 @@ export class PostgresStorage implements IStorage {
   async deleteExpense(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(expenses)
       .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Client Asset Register (customer-owned assets / vessels / equipment)
@@ -3918,7 +3918,7 @@ export class PostgresStorage implements IStorage {
   async deleteClientAsset(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(clientAssets)
       .where(and(eq(clientAssets.id, id), eq(clientAssets.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getClientAssetServices(assetId: string, userId: string): Promise<ClientAssetService[]> {
@@ -3955,7 +3955,7 @@ export class PostgresStorage implements IStorage {
   async deleteInventoryCategory(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(inventoryCategories)
       .where(and(eq(inventoryCategories.id, id), eq(inventoryCategories.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getInventoryItems(userId: string, categoryId?: string): Promise<InventoryItem[]> {
@@ -3992,7 +3992,7 @@ export class PostgresStorage implements IStorage {
   async deleteInventoryItem(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(inventoryItems)
       .where(and(eq(inventoryItems.id, id), eq(inventoryItems.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getInventoryTransactions(userId: string, itemId?: string): Promise<InventoryTransaction[]> {
@@ -4040,7 +4040,7 @@ export class PostgresStorage implements IStorage {
   async deleteSupplier(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(suppliers)
       .where(and(eq(suppliers.id, id), eq(suppliers.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getPurchaseOrders(userId: string): Promise<PurchaseOrder[]> {
@@ -4072,7 +4072,7 @@ export class PostgresStorage implements IStorage {
   async deletePurchaseOrder(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(purchaseOrders)
       .where(and(eq(purchaseOrders.id, id), eq(purchaseOrders.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getPurchaseOrderItems(poId: string): Promise<PurchaseOrderItem[]> {
@@ -4108,7 +4108,7 @@ export class PostgresStorage implements IStorage {
 
   async deleteUserRole(id: string): Promise<boolean> {
     const result = await db.delete(userRoles).where(eq(userRoles.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getTeamMembers(businessOwnerId: string): Promise<TeamMember[]> {
@@ -4191,7 +4191,8 @@ export class PostgresStorage implements IStorage {
   }
 
   async createTeamMember(member: InsertTeamMember): Promise<TeamMember> {
-    const result = await db.insert(teamMembers).values(member).returning();
+    // drizzle-zod array columns (workDays) infer a structural array type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const result = await db.insert(teamMembers).values(member as typeof teamMembers.$inferInsert).returning();
     const { invalidateTeamRoster } = await import('./cache');
     if (member.businessOwnerId) invalidateTeamRoster(member.businessOwnerId);
     return result[0];
@@ -4201,7 +4202,8 @@ export class PostgresStorage implements IStorage {
     const { invalidateTeamRoster } = await import('./cache');
     invalidateTeamRoster(businessOwnerId);
     const result = await db.update(teamMembers)
-      .set({ ...member, updatedAt: new Date() })
+      // drizzle-zod array columns (workDays) infer a structural array type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+      .set({ ...member, updatedAt: new Date() } as Partial<typeof teamMembers.$inferInsert>)
       .where(and(eq(teamMembers.id, id), eq(teamMembers.businessOwnerId, businessOwnerId)))
       .returning();
     return result[0];
@@ -4243,7 +4245,7 @@ export class PostgresStorage implements IStorage {
     invalidateTeamRoster(businessOwnerId);
     const result = await db.delete(teamMembers)
       .where(and(eq(teamMembers.id, id), eq(teamMembers.businessOwnerId, businessOwnerId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async suspendTeamMembersByOwner(ownerId: string): Promise<number> {
@@ -4335,13 +4337,15 @@ export class PostgresStorage implements IStorage {
   }
 
   async createPermissionRequest(request: InsertPermissionRequest): Promise<PermissionRequest> {
-    const result = await db.insert(permissionRequests).values(request).returning();
+    // drizzle-zod json array column (requestedPermissions) infers a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const result = await db.insert(permissionRequests).values(request as typeof permissionRequests.$inferInsert).returning();
     return result[0];
   }
 
   async updatePermissionRequest(id: string, businessOwnerId: string, data: Partial<InsertPermissionRequest>): Promise<PermissionRequest | undefined> {
     const result = await db.update(permissionRequests)
-      .set({ ...data, updatedAt: new Date() })
+      // drizzle-zod json array column (requestedPermissions) infers a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+      .set({ ...data, updatedAt: new Date() } as Partial<typeof permissionRequests.$inferInsert>)
       .where(and(
         eq(permissionRequests.id, id),
         eq(permissionRequests.businessOwnerId, businessOwnerId)
@@ -4391,7 +4395,7 @@ export class PostgresStorage implements IStorage {
   async deleteStaffSchedule(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(staffSchedules)
       .where(and(eq(staffSchedules.id, id), eq(staffSchedules.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // GPS Tracking
@@ -4440,7 +4444,7 @@ export class PostgresStorage implements IStorage {
   async deleteRoute(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(routes)
       .where(and(eq(routes.id, id), eq(routes.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getBusinessSettingsByStripeCustomer(stripeCustomerId: string): Promise<BusinessSettings | undefined> {
@@ -4480,7 +4484,7 @@ export class PostgresStorage implements IStorage {
   async deleteJobPhoto(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(jobPhotos)
       .where(and(eq(jobPhotos.id, id), eq(jobPhotos.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Voice Notes
@@ -4513,7 +4517,7 @@ export class PostgresStorage implements IStorage {
   async deleteVoiceNote(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(voiceNotes)
       .where(and(eq(voiceNotes.id, id), eq(voiceNotes.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Job Documents (uploaded PDFs, external quotes/invoices)
@@ -4538,7 +4542,7 @@ export class PostgresStorage implements IStorage {
   async deleteJobDocument(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(jobDocuments)
       .where(and(eq(jobDocuments.id, id), eq(jobDocuments.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Invoice Reminder Logs
@@ -4757,7 +4761,7 @@ export class PostgresStorage implements IStorage {
 
   async getLatestJobChatMessages(businessOwnerId: string): Promise<{ jobId: string; message: string; userId: string; createdAt: Date | null; isSystemMessage: boolean | null }[]> {
     const ownerJobs = await db.select({ id: jobs.id }).from(jobs)
-      .where(eq(jobs.businessOwnerId, businessOwnerId));
+      .where(eq(jobs.userId, businessOwnerId));
     const jobIds = ownerJobs.map(j => j.id);
     if (jobIds.length === 0) return [];
     
@@ -5241,9 +5245,9 @@ export class PostgresStorage implements IStorage {
       return existing;
     }
 
-    // Get user's trade type from business settings
-    const businessSettings = await this.getBusinessSettings(userId);
-    const userTradeType = businessSettings?.tradeType?.toLowerCase() || 'general';
+    // Get user's trade type from their profile
+    const user = await this.getUser(userId);
+    const userTradeType = user?.tradeType?.toLowerCase() || 'general';
 
     // Filter safety forms: keep general ones + trade-specific for user's trade
     const filteredForms = tradieSafetyForms.filter(formDef => {
@@ -5466,6 +5470,8 @@ export class PostgresStorage implements IStorage {
         suggestedDescription: smsMessages.suggestedDescription,
         jobCreatedFromSms: smsMessages.jobCreatedFromSms,
         readAt: smsMessages.readAt,
+        retryCount: smsMessages.retryCount,
+        nextRetryAt: smsMessages.nextRetryAt,
         createdAt: smsMessages.createdAt,
       })
       .from(smsMessages)
@@ -5562,7 +5568,7 @@ export class PostgresStorage implements IStorage {
     return result;
   }
 
-  async updateSmsAutomationRule(id: string, userId: string, data: Partial<InsertSmsAutomationRule>): Promise<SmsAutomationRule> {
+  async updateSmsAutomationRule(id: string, userId: string, data: Partial<InsertSmsAutomationRule> & Partial<Pick<SmsAutomationRule, 'lastTriggeredAt' | 'triggerCount'>>): Promise<SmsAutomationRule> {
     const [result] = await db.update(smsAutomationRules)
       .set({ ...data, updatedAt: new Date() })
       .where(and(eq(smsAutomationRules.id, id), eq(smsAutomationRules.userId, userId)))
@@ -6771,9 +6777,9 @@ Thank you for your prompt attention to this matter.`,
       },
     ];
 
-    // Get user's trade type from business settings
-    const businessSettings = await this.getBusinessSettings(userId);
-    const userTradeType = businessSettings?.tradeType?.toLowerCase() || 'general';
+    // Get user's trade type from their profile
+    const user = await this.getUser(userId);
+    const userTradeType = user?.tradeType?.toLowerCase() || 'general';
     
     // Filter checklists: keep general ones + trade-specific for user's trade
     const filteredTemplates = defaultTemplates.filter(template => {
@@ -7254,11 +7260,15 @@ Thank you for your prompt attention to this matter.`,
   async getPendingTimesheetApprovals(businessOwnerId: string): Promise<TimesheetApproval[]> {
     // Get team members for this business owner
     const members = await db
-      .select({ userId: teamMembers.userId })
+      .select({ memberId: teamMembers.memberId })
       .from(teamMembers)
       .where(eq(teamMembers.businessOwnerId, businessOwnerId));
     
-    const memberIds = members.map(m => m.userId);
+    // memberId is nullable (pending invites have no user yet) — drop nulls so
+    // the resulting array is string[] for the inArray() filter below.
+    const memberIds = members
+      .map(m => m.memberId)
+      .filter((id): id is string => id !== null);
     
     // Include the business owner themselves plus all their team members
     const allUserIds = [businessOwnerId, ...memberIds];
@@ -8226,7 +8236,7 @@ Thank you for your prompt attention to this matter.`,
     };
     const pin = DEMO_PINNED_PING_USERS[ping.userId];
     if (pin) {
-      ping = { ...ping, latitude: pin.lat, longitude: pin.lng } as InsertLocationPing;
+      ping = { ...ping, latitude: Number(pin.lat), longitude: Number(pin.lng) };
     }
     const [result] = await db.insert(locationPings).values(ping).returning();
     return result;
@@ -8561,12 +8571,14 @@ Thank you for your prompt attention to this matter.`,
   }
 
   async createIncidentReport(report: InsertIncidentReport): Promise<IncidentReport> {
-    const [result] = await db.insert(incidentReports).values(report).returning();
+    // drizzle-zod json array columns infer a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const [result] = await db.insert(incidentReports).values(report as typeof incidentReports.$inferInsert).returning();
     return result;
   }
 
   async updateIncidentReport(id: string, userId: string, updates: Partial<InsertIncidentReport>): Promise<IncidentReport | undefined> {
-    const [result] = await db.update(incidentReports).set({ ...updates, updatedAt: new Date() }).where(and(eq(incidentReports.id, id), eq(incidentReports.userId, userId))).returning();
+    // drizzle-zod json array columns infer a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const [result] = await db.update(incidentReports).set({ ...updates, updatedAt: new Date() } as Partial<typeof incidentReports.$inferInsert>).where(and(eq(incidentReports.id, id), eq(incidentReports.userId, userId))).returning();
     return result;
   }
 
@@ -8590,12 +8602,14 @@ Thank you for your prompt attention to this matter.`,
   }
 
   async createSiteEmergencyInfo(info: InsertSiteEmergencyInfo): Promise<SiteEmergencyInfo> {
-    const [result] = await db.insert(siteEmergencyInfo).values(info).returning();
+    // drizzle-zod json array columns infer a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const [result] = await db.insert(siteEmergencyInfo).values(info as typeof siteEmergencyInfo.$inferInsert).returning();
     return result;
   }
 
   async updateSiteEmergencyInfo(id: string, userId: string, updates: Partial<InsertSiteEmergencyInfo>): Promise<SiteEmergencyInfo | undefined> {
-    const [result] = await db.update(siteEmergencyInfo).set({ ...updates, updatedAt: new Date() }).where(and(eq(siteEmergencyInfo.id, id), eq(siteEmergencyInfo.userId, userId))).returning();
+    // drizzle-zod json array columns infer a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const [result] = await db.update(siteEmergencyInfo).set({ ...updates, updatedAt: new Date() } as Partial<typeof siteEmergencyInfo.$inferInsert>).where(and(eq(siteEmergencyInfo.id, id), eq(siteEmergencyInfo.userId, userId))).returning();
     return result;
   }
 
@@ -8619,12 +8633,14 @@ Thank you for your prompt attention to this matter.`,
   }
 
   async createJsaDocument(doc: InsertJsaDocument): Promise<JsaDocument> {
-    const [result] = await db.insert(jsaDocuments).values(doc).returning();
+    // drizzle-zod json array columns infer a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const [result] = await db.insert(jsaDocuments).values(doc as typeof jsaDocuments.$inferInsert).returning();
     return result;
   }
 
   async updateJsaDocument(id: string, userId: string, updates: Partial<InsertJsaDocument>): Promise<JsaDocument | undefined> {
-    const [result] = await db.update(jsaDocuments).set({ ...updates, updatedAt: new Date() }).where(and(eq(jsaDocuments.id, id), eq(jsaDocuments.userId, userId))).returning();
+    // drizzle-zod json array columns infer a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const [result] = await db.update(jsaDocuments).set({ ...updates, updatedAt: new Date() } as Partial<typeof jsaDocuments.$inferInsert>).where(and(eq(jsaDocuments.id, id), eq(jsaDocuments.userId, userId))).returning();
     return result;
   }
 
@@ -8667,12 +8683,14 @@ Thank you for your prompt attention to this matter.`,
   }
 
   async createSiteHazardousEnvironment(env: InsertSiteHazardousEnvironment): Promise<SiteHazardousEnvironment> {
-    const [result] = await db.insert(siteHazardousEnvironments).values(env).returning();
+    // drizzle-zod json array columns infer a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const [result] = await db.insert(siteHazardousEnvironments).values(env as typeof siteHazardousEnvironments.$inferInsert).returning();
     return result;
   }
 
   async updateSiteHazardousEnvironment(id: string, userId: string, updates: Partial<InsertSiteHazardousEnvironment>): Promise<SiteHazardousEnvironment | undefined> {
-    const [result] = await db.update(siteHazardousEnvironments).set({ ...updates, updatedAt: new Date() }).where(and(eq(siteHazardousEnvironments.id, id), eq(siteHazardousEnvironments.userId, userId))).returning();
+    // drizzle-zod json array columns infer a structural type that isn't assignable to the drizzle-core column type; cast to the native insert type.
+    const [result] = await db.update(siteHazardousEnvironments).set({ ...updates, updatedAt: new Date() } as Partial<typeof siteHazardousEnvironments.$inferInsert>).where(and(eq(siteHazardousEnvironments.id, id), eq(siteHazardousEnvironments.userId, userId))).returning();
     return result;
   }
 

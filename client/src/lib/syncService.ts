@@ -372,7 +372,14 @@ export async function processSyncQueue(): Promise<SyncResult> {
           
           if (offlineId && serverId && String(offlineId).startsWith('offline_')) {
             addIdMapping(offlineId, serverId);
-            await updateRelatedReferences(operation.storeName, offlineId, serverId);
+            if (
+              operation.storeName === 'clients' ||
+              operation.storeName === 'jobs' ||
+              operation.storeName === 'quotes' ||
+              operation.storeName === 'invoices'
+            ) {
+              await updateRelatedReferences(operation.storeName, offlineId, serverId);
+            }
             
             await deleteItem(operation.storeName, offlineId);
             await saveItem(operation.storeName, serverResponse);

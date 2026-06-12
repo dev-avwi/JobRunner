@@ -219,7 +219,7 @@ import {
   numberPortRequests,
   insertNumberPortRequestSchema,
   PORT_REQUEST_STATUSES,
-  teamMembers,
+  quoteLineItems,
 } from "@shared/schema";
 import { db } from "./storage";
 import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
@@ -298,6 +298,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // In-memory tracking tokens for ETA tracking (simple countdown-based)
   const trackingTokens = new Map<string, {
     businessName: string;
+    businessLogo?: string | null;
+    businessPhone?: string | null;
+    businessEmail?: string | null;
     tradieName: string;
     jobAddress: string;
     suburb: string;
@@ -872,12 +875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sql`${digitalSignatures.documentType} = 'quote_acceptance' AND ${digitalSignatures.quoteId} = ${quoteWithItems.id}`
         );
         if (signatures.length > 0) {
-          acceptanceSignature = {
-            id: signatures[0].id,
-            signerName: signatures[0].signerName,
-            signatureData: signatures[0].signatureData,
-            signedAt: signatures[0].signedAt,
-          };
+          acceptanceSignature = signatures[0];
         }
       }
       
@@ -1014,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check attempt count
-      if (verificationRecord.attempts >= 5) {
+      if ((verificationRecord.attempts ?? 0) >= 5) {
         return res.status(429).json({ error: 'Too many attempts. Please request a new code.' });
       }
       
@@ -1056,7 +1054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { clientId } = req.body;
       if (!clientId) return res.status(400).json({ error: 'Client ID is required' });
       
-      const client = await storage.getClient(clientId);
+      const client = await storage.getClient(clientId, userId);
       if (!client || client.userId !== userId) {
         return res.status(404).json({ error: 'Client not found' });
       }
@@ -1143,7 +1141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Fetch business settings for all owners
       const businessInfoMap = new Map<string, any>();
-      for (const ownerId of ownerIds) {
+      for (const ownerId of Array.from(ownerIds)) {
         const settings = await storage.getBusinessSettings(ownerId);
         if (settings) {
           businessInfoMap.set(ownerId, {
@@ -1303,7 +1301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (documentType === 'receipt') {
         const receipt = await storage.getReceiptByViewToken(documentToken);
         if (receipt) {
-          const client = await storage.getClientById(receipt.clientId);
+          const client = receipt.clientId ? await storage.getClientById(receipt.clientId) : null;
           clientPhone = client?.phone || null;
         }
       } else {
@@ -1646,7 +1644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientIds = allClients.map((c: any) => c.id);
       const clientJobs = await storage.getJobsForClientIds(clientIds);
 
-      const uniqueUserIds = [...new Set(clientJobs.map((j: any) => j.userId))];
+      const uniqueUserIds = Array.from(new Set(clientJobs.map((j: any) => j.userId)));
       const teamMembersMap = new Map<string, any[]>();
       const businessSettingsMap = new Map<string, any>();
 
@@ -1783,7 +1781,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               jobId: newJob.id,
               userId: effectiveUserId,
               content: `Client request notes: ${request.clientNotes}`,
-              type: 'note',
             });
           }
         } catch (jobError: any) {
@@ -1868,7 +1865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (tokenRecord.expiresAt && new Date() > tokenRecord.expiresAt) return res.status(410).json({ error: 'This link has expired' });
 
       const businessSettings = await storage.getBusinessSettings(tokenRecord.userId);
-      const businessName = businessSettings?.companyName || businessSettings?.businessName || 'Business';
+      const businessName = businessSettings?.businessName || 'Business';
 
       // SECURITY: For tokens issued under the new magic-link flow (requireCode
       // OR a name-gate that hasn't been completed), this legacy info endpoint
@@ -2003,7 +2000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!verificationRecord) return res.status(400).json({ error: 'Invalid code' });
       if (verificationRecord.verified) return res.status(400).json({ error: 'Code already used' });
       if (new Date() > verificationRecord.expiresAt) return res.status(400).json({ error: 'Code expired' });
-      if (verificationRecord.attempts >= 5) return res.status(429).json({ error: 'Too many attempts' });
+      if ((verificationRecord.attempts ?? 0) >= 5) return res.status(429).json({ error: 'Too many attempts' });
 
       await storage.incrementVerificationAttempts(verificationRecord.id);
       await storage.markVerificationCodeUsed(verificationRecord.id);
@@ -2095,7 +2092,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           completedAt: job.completedAt,
         },
         business: {
-          companyName: businessSettings?.companyName || businessSettings?.businessName || 'Business',
+          companyName: businessSettings?.businessName || 'Business',
           phone: businessSettings?.phone,
           email: businessSettings?.email,
           logoUrl: businessSettings?.logoUrl,
@@ -2379,7 +2376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const businessSettings = await storage.getBusinessSettings(tokenRecord.userId);
-      const businessName = businessSettings?.companyName || businessSettings?.businessName || 'A contractor';
+      const businessName = businessSettings?.businessName || 'A contractor';
       // PII-FREE: only the first character of the contact name is exposed
       // pre-confirmation. The full first name is intentionally NOT returned —
       // a wrong-number recipient should not see "are you Jake?" before they
@@ -2939,7 +2936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ error: 'Receipt not found' });
         }
         
-        const client = await storage.getClientById(receipt.clientId);
+        const client = receipt.clientId ? await storage.getClientById(receipt.clientId) : null;
         const settings = await storage.getBusinessSettingsByUserId(receipt.userId);
         
         return res.json({
@@ -2947,13 +2944,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: receipt.id,
           number: receipt.receiptNumber,
           title: 'Payment Receipt',
-          description: receipt.notes,
+          description: receipt.description,
           status: 'paid',
           subtotal: receipt.subtotal,
           gstAmount: receipt.gstAmount,
-          total: receipt.total,
+          total: receipt.amount,
           createdAt: receipt.createdAt,
-          paidAt: receipt.paymentDate,
+          paidAt: receipt.paidAt,
           lineItems: [],
           client: {
             name: client?.name,
@@ -3237,6 +3234,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rawBody.username = `${emailLocal}_${Math.random().toString(36).substring(2, 8)}`;
       }
       const userData = insertUserSchema.parse(rawBody);
+      if (!userData.email || !userData.username || !userData.password) {
+        return res.status(400).json({ error: 'Email, username and password are required' });
+      }
       const inviteTokenRaw = typeof rawBody.inviteToken === 'string' ? rawBody.inviteToken.trim() : '';
       const cleanUserData = {
         email: userData.email,
@@ -3544,7 +3544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usageResetDate: user.usageResetDate,
         trialStatus: user.trialStatus,
         trialEndsAt: user.trialEndsAt,
-        trialUsedAt: user.trialUsedAt,
+        trialUsedAt: user.trialStartedAt,
         intendedTier: user.intendedTier,
         isPlatformAdmin: user.isPlatformAdmin ?? (user as any).is_platform_admin ?? false,
         hasDemoData: user.hasDemoData ?? false,
@@ -4090,6 +4090,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 id: job1.id,
                 title: job1.title,
                 businessName: job1.businessName,
+                businessOwnerId: job1.businessOwnerId,
                 scheduledAt: job1.scheduledAt,
                 estimatedDuration: job1.estimatedDuration,
               },
@@ -4097,6 +4098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 id: job2.id,
                 title: job2.title,
                 businessName: job2.businessName,
+                businessOwnerId: job2.businessOwnerId,
                 scheduledAt: job2.scheduledAt,
                 estimatedDuration: job2.estimatedDuration,
               },
@@ -4150,7 +4152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!existingBs) {
           await storage.createBusinessSettings({
             userId: visitorUser.id,
-            businessName: demoUser.businessName || DEMO_USER.businessName || 'Demo Trade Co.',
+            businessName: DEMO_USER.businessName || 'Demo Trade Co.',
             onboardingCompleted: true,
           } as any);
         } else if (!existingBs.onboardingCompleted) {
@@ -4174,7 +4176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: VISITOR_USER.email,
           firstName: demoUser.firstName || 'Mike',
           lastName: demoUser.lastName || 'Thompson',
-          businessName: demoUser.businessName || DEMO_USER.businessName,
+          businessName: DEMO_USER.businessName,
           phone: demoUser.phone || DEMO_USER.phone,
           tradeType: demoUser.tradeType,
           subscriptionTier: demoUser.subscriptionTier,
@@ -4307,7 +4309,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (result.success) {
         // Send welcome email now that email is verified (non-blocking)
         try {
-          await sendWelcomeEmail(result.user);
+          if (result.user.email) {
+            await sendWelcomeEmail({ ...result.user, email: result.user.email });
+          }
         } catch (welcomeEmailError) {
           console.error('Failed to send welcome email:', welcomeEmailError);
           // Don't fail verification if welcome email fails
@@ -5538,7 +5542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (IS_BETA) {
         console.log(`[BETA] Triggering AI Receptionist provisioning for user ${userId} without payment`);
 
-        if (!existingConfig) {
+        if (existingConfigs.length === 0) {
           await storage.createAiReceptionistConfig({
             userId,
             enabled: false,
@@ -6151,8 +6155,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const coords = await geocodeAddress(job.address);
             if (coords) {
-              lat = coords.lat;
-              lng = coords.lng;
+              lat = coords.latitude;
+              lng = coords.longitude;
               // Update job with coordinates for future use
               await storage.updateJob(job.id, userContext.effectiveUserId, {
                 latitude: lat.toString(),
@@ -6213,7 +6217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               // Calculate arrival times starting from 9:00 AM or a reasonable start time
               let currentTime = new Date(`${date}T09:00:00`);
-              const optimizedOrder = finalOrder.map((job, idx) => {
+              const optimizedOrder = finalOrder.map((job: typeof validJobs[number], idx: number) => {
                 const arrivalTime = currentTime.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
                 // Add travel time to next job (this is simplified, normally we'd add job duration too)
                 if (route.legs[idx]) {
@@ -6340,7 +6344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter jobs scheduled for the target date (use scheduledAt field - jobs use this, not scheduledDate)
       const scheduledJobs = jobs.filter(job => {
         // Use scheduledAt (timestamp) not scheduledDate
-        const jobScheduledTime = job.scheduledAt || job.scheduledDate;
+        const jobScheduledTime = job.scheduledAt;
         if (!jobScheduledTime) return false;
         const jobDate = new Date(jobScheduledTime);
         const isTargetDate = jobDate.toDateString() === targetDate.toDateString();
@@ -6355,20 +6359,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const scheduleJobs = scheduledJobs.map(job => {
         const client = clients.find(c => c.id === job.clientId);
         // Use job's coordinates first, fallback to client's coordinates
-        const lat = job.latitude ? parseFloat(String(job.latitude)) : 
-                    (client?.latitude ? parseFloat(String(client.latitude)) : undefined);
-        const lng = job.longitude ? parseFloat(String(job.longitude)) : 
-                    (client?.longitude ? parseFloat(String(client.longitude)) : undefined);
+        const lat = job.latitude ? parseFloat(String(job.latitude)) : undefined;
+        const lng = job.longitude ? parseFloat(String(job.longitude)) : undefined;
         
         return {
           id: job.id,
           title: job.title,
           clientName: client?.name || 'Unknown',
-          address: job.address || client?.address,
+          address: job.address || client?.address || undefined,
           latitude: lat,
           longitude: lng,
           estimatedDuration: job.estimatedDuration ? parseFloat(String(job.estimatedDuration)) / 60 : 1.5, // Convert minutes to hours
-          priority: job.priority as 'low' | 'medium' | 'high' | 'urgent' | undefined
         };
       });
       
@@ -6389,7 +6390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aiRecommendations = await getSchedulingRecommendations(
         scheduleJobs,
         { 
-          trade: businessSettings?.industry || undefined,
+          trade: (await storage.getUser(effectiveUserId))?.tradeType || undefined,
           businessName: businessSettings?.businessName || undefined
         }
       );
@@ -7023,6 +7024,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const business = await storage.getBusinessSettings(userContext.effectiveUserId);
+        if (!business) {
+          return res.json({ success: false, message: "Business settings not found" });
+        }
         
         // Fetch business templates for terms and warranty
         const termsTemplateResult = await db.select().from(businessTemplates)
@@ -7132,6 +7136,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const business = await storage.getBusinessSettings(userContext.effectiveUserId);
+        if (!business) {
+          return res.json({ success: false, message: "Business settings not found" });
+        }
 
         let acceptanceToken = quote.acceptanceToken;
         if (!acceptanceToken) {
@@ -7170,7 +7177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const { generateQuotePDF, resolveBusinessLogoForPdf } = await import('./pdfService');
         const businessForPdf = await resolveBusinessLogoForPdf(business);
-        const pdfBuffer = await generateQuotePDF(quote, quote.lineItems || [], client, businessForPdf);
+        const pdfBuffer = await generateQuotePDF({ quote, lineItems: quote.lineItems || [], client, business: businessForPdf });
 
         const result = await sendEmailViaIntegration({
           to: client.email,
@@ -7225,7 +7232,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           gstAmount: String(action.data.amount * 0.1),
           total: String(action.data.amount * 1.1),
           status: 'draft',
-          issuedDate: new Date(),
           dueDate,
         });
 
@@ -7272,7 +7278,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           gstAmount: String(action.data.amount * 0.1),
           total: String(action.data.amount * 1.1),
           status: 'draft',
-          issuedDate: new Date(),
           validUntil,
         });
 
@@ -7329,7 +7334,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           address: action.data.address || '',
           scheduledAt,
           status: 'scheduled',
-          quoteId: action.data.fromQuoteId || null,
         });
 
         return res.json({ 
@@ -7497,7 +7501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get business settings for context
       const businessSettings = await storage.getBusinessSettings(userContext.effectiveUserId);
       const businessName = businessSettings?.businessName || 'My Business';
-      const tradeName = businessSettings?.tradeName || 'Trade';
+      const tradeName = (await storage.getUser(userContext.effectiveUserId))?.tradeType || 'Trade';
       
       // Get all jobs
       const allJobs = await storage.getJobs(userContext.effectiveUserId);
@@ -7567,7 +7571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, 0);
         
         teamAvailability.push({
-          id: member.memberId,
+          id: member.memberId ?? '',
           name: `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.email,
           scheduledMinutes,
           capacity: 480,
@@ -7699,7 +7703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get business settings for trade type
       const businessSettings = await storage.getBusinessSettings(userContext.effectiveUserId);
-      const tradeType = businessSettings?.tradeName || 'Trade';
+      const tradeType = (await storage.getUser(userContext.effectiveUserId))?.tradeType || 'Trade';
       const businessName = businessSettings?.businessName || 'My Business';
       
       // If jobId provided, get job details
@@ -7749,7 +7753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get business settings for trade type
       const businessSettings = await storage.getBusinessSettings(userContext.effectiveUserId);
-      const tradeType = businessSettings?.tradeName || 'Trade';
+      const tradeType = (await storage.getUser(userContext.effectiveUserId))?.tradeType || 'Trade';
       
       const { parseJobFromText } = await import('./ai');
       
@@ -7789,7 +7793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get business settings for context
       const businessSettings = await storage.getBusinessSettings(userContext.effectiveUserId);
-      const tradeName = businessSettings?.tradeName || 'renovation';
+      const tradeName = (await storage.getUser(userContext.effectiveUserId))?.tradeType || 'renovation';
       
       // Build a comprehensive prompt for DALL-E 3
       const roomLabel = roomType.replace('_', ' ');
@@ -7828,15 +7832,14 @@ No text, no watermarks, no people.`;
         style: "natural",
       });
       
-      const generatedImageUrl = imageResponse.data[0]?.url;
+      const generatedImageUrl = imageResponse.data?.[0]?.url;
       
       if (!generatedImageUrl) {
         throw new Error("Failed to generate visualization image");
       }
       
       // Download the generated image and upload to object storage
-      const fetch = (await import('node-fetch')).default;
-      const imageBuffer = await fetch(generatedImageUrl).then(r => r.buffer());
+      const imageBuffer = Buffer.from(await (await fetch(generatedImageUrl)).arrayBuffer());
       
       const objectStorage = new ObjectStorageService();
       const fileName = `visualizations/${userContext.effectiveUserId}/${Date.now()}.png`;
@@ -7987,7 +7990,7 @@ Be specific about materials, colors, and features that would be included.`
       if (linkedInvoices.length > 0) {
         const inv = linkedInvoices[0];
         invoiceData = {
-          number: inv.invoiceNumber || inv.id.slice(0, 8),
+          number: inv.number || inv.id.slice(0, 8),
           date: inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('en-AU') : '-',
           total: inv.total || '0',
           gstAmount: inv.gstAmount || '0',
@@ -8288,7 +8291,7 @@ Be specific about materials, colors, and features that would be included.`
           // (not the stale "Worker Profile" placeholder).
           let isStaffOnOtherTeam = false;
           try {
-            const membership = await storage.getActiveTeamMembership?.(req.userId)
+            const membership = await storage.getTeamMembershipByMemberId(req.userId)
               ?? (await db
                 .select({ id: teamMembers.id })
                 .from(teamMembers)
@@ -8307,7 +8310,7 @@ Be specific about materials, colors, and features that would be included.`
           } as any);
           console.log(
             `[business-settings] auto-healed missing row for user ${user.email} ` +
-            `(role=${user.role}, isStaffOnOtherTeam=${isStaffOnOtherTeam}, ` +
+            `(tradeType=${user.tradeType}, isStaffOnOtherTeam=${isStaffOnOtherTeam}, ` +
             `onboardingCompleted=${isStaffOnOtherTeam})`
           );
         } catch (createErr: any) {
@@ -8320,8 +8323,8 @@ Be specific about materials, colors, and features that would be included.`
       }
 
       if (!settings.onboardingCompleted && user) {
-        const hasTeam = user.teamOwnerId || user.activeTeamId;
-        const hasBusinessSetup = settings.businessName && settings.tradeType;
+        const hasTeam = Boolean(await storage.getTeamMembershipByMemberId(req.userId));
+        const hasBusinessSetup = settings.businessName && user.tradeType;
         if (hasTeam || hasBusinessSetup) {
           settings = await storage.updateBusinessSettings(req.userId, { onboardingCompleted: true });
         }
@@ -8702,7 +8705,7 @@ Be specific about materials, colors, and features that would be included.`
         acceptCardPayments: settings.acceptCardPayments ?? true,
         acceptBankTransfer: settings.acceptBankTransfer ?? true,
         acceptBecsDebit: settings.acceptBecsDebit ?? false,
-        acceptPayto: settings.acceptPayto ?? false,
+        acceptPayto: settings.acceptPayTo ?? false,
         defaultPaymentMethod: settings.defaultPaymentMethod || 'card',
         
         // Card surcharge settings
@@ -8758,7 +8761,7 @@ Be specific about materials, colors, and features that would be included.`
       if (acceptCardPayments !== undefined) updateData.acceptCardPayments = acceptCardPayments;
       if (acceptBankTransfer !== undefined) updateData.acceptBankTransfer = acceptBankTransfer;
       if (acceptBecsDebit !== undefined) updateData.acceptBecsDebit = acceptBecsDebit;
-      if (acceptPayto !== undefined) updateData.acceptPayto = acceptPayto;
+      if (acceptPayto !== undefined) updateData.acceptPayTo = acceptPayto;
       if (defaultPaymentMethod !== undefined) updateData.defaultPaymentMethod = defaultPaymentMethod;
       if (enableCardSurcharge !== undefined) updateData.enableCardSurcharge = enableCardSurcharge;
       if (cardSurchargePercent !== undefined) updateData.cardSurchargePercent = String(cardSurchargePercent);
@@ -9075,14 +9078,14 @@ Be specific about materials, colors, and features that would be included.`
           </body>
           </html>
         `,
-        replyTo: businessSettings?.email || user?.email
+        replyTo: businessSettings?.email || user?.email || undefined
       });
       
       if (result.success) {
         console.log(`✅ Demo email sent to ${toEmail} from ${user?.email}`);
         res.json({ 
           success: true, 
-          message: result.simulated 
+          message: result.notConfigured 
             ? "Demo email logged to console (mock mode)" 
             : `Demo email sent to ${toEmail}`,
           messageId: result.messageId
@@ -9101,6 +9104,7 @@ Be specific about materials, colors, and features that would be included.`
     try {
       const user = await storage.getUser(req.userId);
       const userName = user?.firstName || user?.email?.split('@')[0] || 'Tradie';
+      const getBaseUrl = () => `${req.protocol}://${req.get('host')}`;
       
       const html = `
         <!DOCTYPE html>
@@ -9208,7 +9212,7 @@ Be specific about materials, colors, and features that would be included.`
   app.post("/api/email-preview/send-welcome", requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.userId);
-      if (!user) {
+      if (!user || !user.email) {
         return res.status(404).json({ error: "User not found" });
       }
       
@@ -9404,8 +9408,7 @@ Be specific about materials, colors, and features that would be included.`
       const smsConversations = await storage.getSmsConversationsByBusiness(userId);
       
       // Get team chat messages (for team members, get their business owner's chat)
-      const user = await storage.getUser(userId);
-      const businessOwnerId = user?.businessOwnerId || userId;
+      const businessOwnerId = (await getUserContext(userId)).effectiveUserId;
       const teamChatMessages = await storage.getTeamChatMessages(businessOwnerId);
       
       // Build unified notification list
@@ -9460,19 +9463,19 @@ Be specific about materials, colors, and features that would be included.`
       const unreadTeamChats = teamChatMessages
         .filter(msg => {
           const readBy = (msg.readBy as string[]) || [];
-          return !readBy.includes(userId) && msg.userId !== userId;
+          return !readBy.includes(userId) && msg.senderId !== userId;
         })
         .slice(0, 10); // Limit to most recent 10
       
       for (const msg of unreadTeamChats) {
-        const sender = await storage.getUser(msg.userId);
+        const sender = await storage.getUser(msg.senderId);
         unifiedNotifications.push({
           id: `chat-${msg.id}`,
           type: 'team_chat',
           title: sender ? `${sender.firstName || ''} ${sender.lastName || ''}`.trim() || sender.email : 'Team Member',
-          message: msg.content.length > 100 
-            ? msg.content.substring(0, 100) + '...' 
-            : msg.content,
+          message: msg.message.length > 100 
+            ? msg.message.substring(0, 100) + '...' 
+            : msg.message,
           relatedId: msg.id,
           relatedType: 'team_chat',
           read: false,
@@ -9528,8 +9531,7 @@ Be specific about materials, colors, and features that would be included.`
   app.patch("/api/notifications/chat/:messageId/read", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const user = await storage.getUser(userId);
-      const businessOwnerId = user?.businessOwnerId || userId;
+      const businessOwnerId = (await getUserContext(userId)).effectiveUserId;
       
       // Mark the team chat as read for this user
       await storage.markTeamChatAsRead(businessOwnerId, userId);
@@ -10008,9 +10010,9 @@ Be specific about materials, colors, and features that would be included.`
       // Check calendar integration statuses
       let calendarStatus: any = { googleCalendar: null, outlook: null };
       try {
-        const { isGoogleCalendarConnected, getConnectionInfo } = await import('./googleCalendarClient');
+        const { isGoogleCalendarConnected, getCalendarInfo } = await import('./googleCalendarClient');
         const gcConnected = await isGoogleCalendarConnected(req.userId);
-        const gcInfo = gcConnected ? await getConnectionInfo(req.userId) : null;
+        const gcInfo = gcConnected ? await getCalendarInfo(req.userId) : null;
         calendarStatus.googleCalendar = { connected: gcConnected, email: gcInfo?.email || null, needsReconnect: false };
       } catch { calendarStatus.googleCalendar = { connected: false, email: null, needsReconnect: false }; }
       
@@ -10056,7 +10058,7 @@ Be specific about materials, colors, and features that would be included.`
   // Clean up expired states every 5 minutes
   setInterval(() => {
     const now = Date.now();
-    for (const [state, data] of mobileOAuthStates.entries()) {
+    for (const [state, data] of Array.from(mobileOAuthStates.entries())) {
       if (data.expiresAt < now) {
         mobileOAuthStates.delete(state);
       }
@@ -11126,7 +11128,7 @@ Be specific about materials, colors, and features that would be included.`
             title: `Quote for ${job.title}`,
             description: `Imported from Xero - ${job.description}`,
             subtotal: "4500.00",
-            gst: "450.00",
+            gstAmount: "450.00",
             total: "4950.00",
             status: "accepted",
             validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
@@ -11166,14 +11168,13 @@ Be specific about materials, colors, and features that would be included.`
             userId,
             clientId: job.clientId,
             jobId: job.id,
-            invoiceNumber,
+            number: invoiceNumber,
             title: `Invoice for ${job.title}`,
             description: `Imported from Xero - ${job.description}`,
             subtotal: "850.00",
-            gst: "85.00",
+            gstAmount: "85.00",
             total: "935.00",
             status: "paid",
-            issueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
             dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
             xeroInvoiceId: `xero-inv-${Date.now()}`,
             xeroSyncedAt: new Date(),
@@ -12290,7 +12291,7 @@ Be specific about materials, colors, and features that would be included.`
       
       const user = await storage.getUser(userId);
       const businessSettings = await storage.getBusinessSettings(userId);
-      const tradeType = req.body?.tradeType || businessSettings?.tradeType || user?.tradeType || 'general';
+      const tradeType = req.body?.tradeType || user?.tradeType || 'general';
       
       const result = await seedUserDemoData(userId, tradeType);
       
@@ -13423,7 +13424,7 @@ Be specific about materials, colors, and features that would be included.`
         if (xeroConnected) {
           xeroStatus.connected = true;
           const xeroOrg = await xeroService.getXeroOrganisation(userContext.effectiveUserId);
-          xeroStatus.organisationName = xeroOrg?.name;
+          xeroStatus.organisationName = xeroOrg?.name ?? undefined;
         }
       } catch (e) {
         // Xero not connected
@@ -13440,7 +13441,7 @@ Be specific about materials, colors, and features that would be included.`
         const qbStatus = await quickbooksService.getConnectionStatus(userContext.effectiveUserId);
         quickbooksStatus.connected = qbStatus.connected;
         quickbooksStatus.companyName = qbStatus.companyName;
-        quickbooksStatus.lastSyncAt = qbStatus.lastSyncAt;
+        quickbooksStatus.lastSyncAt = qbStatus.lastSyncAt ? new Date(qbStatus.lastSyncAt).toISOString() : undefined;
       } catch (e) {
         // QuickBooks not connected
       }
@@ -13785,7 +13786,7 @@ Be specific about materials, colors, and features that would be included.`
       const completedJobsList = todayJobs.map(job => ({
         title: job.title,
         client: getClientName(job.clientId),
-        value: Number(job.value || 0),
+        value: 0,
       }));
 
       const paymentsList = todayInvoicesPaid.map(invoice => ({
@@ -13830,7 +13831,7 @@ Be specific about materials, colors, and features that would be included.`
       }
 
       // Build summary data
-      const { DailySummaryData, createDailySummaryEmail } = await import("./emailService");
+      const { createDailySummaryEmail } = await import("./emailService");
       
       const summaryData = {
         date: today.toISOString().split('T')[0],
@@ -13979,7 +13980,7 @@ Be specific about materials, colors, and features that would be included.`
       const completedJobsList = todayJobs.map(job => ({
         title: job.title,
         client: getClientName(job.clientId),
-        value: Number(job.value || 0),
+        value: 0,
       }));
 
       const paymentsList = todayInvoicesPaid.map(invoice => ({
@@ -14105,7 +14106,7 @@ Be specific about materials, colors, and features that would be included.`
       if (!hasViewAll && userContext.teamMemberId) {
         const jobs = await storage.getJobs(userContext.effectiveUserId);
         const assignedJobs = jobs.filter(job => job.assignedTo === userContext.teamMemberId || job.assignedTo === userContext.userId);
-        const assignedClientIds = [...new Set(assignedJobs.map(j => j.clientId).filter(Boolean))];
+        const assignedClientIds = Array.from(new Set(assignedJobs.map(j => j.clientId).filter(Boolean)));
         clients = clients.filter(c => assignedClientIds.includes(c.id));
       }
       
@@ -14427,7 +14428,7 @@ Be specific about materials, colors, and features that would be included.`
       const signatures: any[] = [];
       for (const quote of clientQuotes) {
         const sig = await storage.getDigitalSignatureByQuoteId(quote.id);
-        if (sig) signatures.push({ ...sig, relatedType: 'quote', relatedId: quote.id, quoteNumber: quote.quoteNumber });
+        if (sig) signatures.push({ ...sig, relatedType: 'quote', relatedId: quote.id, quoteNumber: quote.number });
       }
       // Note: Invoice signatures would use a similar method if available
       
@@ -14686,14 +14687,8 @@ Be specific about materials, colors, and features that would be included.`
       const catalogItems = await storage.getLineItemCatalog(userContext.effectiveUserId);
       const usedItemIds: Record<string, number> = {};
       
-      for (const quote of clientQuotes) {
-        const lineItems = (quote.lineItems as any[]) || [];
-        for (const item of lineItems) {
-          if (item.catalogItemId) {
-            usedItemIds[item.catalogItemId] = (usedItemIds[item.catalogItemId] || 0) + 1;
-          }
-        }
-      }
+      // Note: quote line items are not linked to catalog items, so frequency
+      // tracking by catalog id is not available; usedItemIds stays empty.
       
       // Get frequently used items
       const frequentItems = Object.entries(usedItemIds)
@@ -14892,7 +14887,8 @@ Be specific about materials, colors, and features that would be included.`
         message: status === 'approved' 
           ? `You've been assigned to: ${job?.title || 'the job'}` 
           : `Your request for ${job?.title || 'the job'} was declined${responseNote ? `: ${responseNote}` : ''}`,
-        data: { requestId, jobId: request.jobId, status },
+        relatedId: request.jobId,
+        relatedType: 'job',
       });
       
       res.json({ 
@@ -14936,8 +14932,8 @@ Be specific about materials, colors, and features that would be included.`
       // quotes or overdue invoices on their dashboard — only owners/managers do.
       const canSeeFinancials = userContext.isOwner ||
         userContext.permissions.includes('view_all') ||
-        userContext.permissions.includes('manage_invoices') ||
-        userContext.permissions.includes('manage_quotes');
+        userContext.permissions.includes('read_invoices') ||
+        userContext.permissions.includes('read_quotes');
 
       const [acceptedUnscheduled, unreadChat, overdueInvoices] = await Promise.all([
         canSeeFinancials ? safeCount(async () => {
@@ -14953,7 +14949,7 @@ Be specific about materials, colors, and features that would be included.`
           }).length;
         }) : Promise.resolve(0),
         safeCount(async () => {
-          const ctx: { hasAccess?: boolean; businessOwnerId?: string } | null =
+          const ctx: { hasAccess?: boolean; businessOwnerId?: string | null } | null =
             await getTeamChatContext(req.userId).catch(() => null);
           let team = 0, sms = 0, dm = 0;
           if (ctx?.hasAccess && ctx?.businessOwnerId) {
@@ -15633,7 +15629,7 @@ Be specific about materials, colors, and features that would be included.`
 
         const mats = await storage.getJobMaterials(job.id, userId);
         for (const mat of mats) {
-          if (['needed', 'ordered', 'shipped'].includes(mat.status)) {
+          if (['needed', 'ordered', 'shipped'].includes(mat.status ?? '')) {
             materialsNeeded.push({
               id: mat.id,
               name: mat.name,
@@ -16372,7 +16368,7 @@ Be specific about materials, colors, and features that would be included.`
       let clientName = 'the client';
       if (nextJob.clientId) {
         const client = await storage.getClient(nextJob.clientId, userContext.effectiveUserId);
-        if (client) clientName = client.firstName || client.email || 'the client';
+        if (client) clientName = client.name || client.email || 'the client';
       }
 
       res.json({
@@ -16783,7 +16779,7 @@ Be specific about materials, colors, and features that would be included.`
           anyEnRoute = true;
           const ping = await storage.getLatestLocationPing(a.id);
           if (ping) {
-            const ageMs = Date.now() - new Date(ping.recordedAt).getTime();
+            const ageMs = Date.now() - new Date(ping.recordedAt ?? Date.now()).getTime();
             stale = ageMs > 5 * 60 * 1000;
             location = {
               latitude: ping.latitude,
@@ -16849,7 +16845,7 @@ Be specific about materials, colors, and features that would be included.`
         let stale = true;
         
         if (ping) {
-          const ageMs = Date.now() - new Date(ping.recordedAt).getTime();
+          const ageMs = Date.now() - new Date(ping.recordedAt ?? Date.now()).getTime();
           stale = ageMs > 5 * 60 * 1000;
           location = {
             latitude: ping.latitude,
@@ -17025,7 +17021,7 @@ Be specific about materials, colors, and features that would be included.`
               location = {
                 latitude: parseFloat(String(ping.latitude)),
                 longitude: parseFloat(String(ping.longitude)),
-                updatedAt: new Date(ping.recordedAt).getTime(),
+                updatedAt: new Date(ping.recordedAt ?? Date.now()).getTime(),
               };
             }
           }
@@ -17760,7 +17756,7 @@ Be specific about materials, colors, and features that would be included.`
         const calculatedSubtotal = subtotalCents / 100;
         const business = await storage.getBusinessSettings(userContext.effectiveUserId);
         const existingQuote = await storage.getQuote(req.params.id, userContext.effectiveUserId);
-        const gstEnabled = existingQuote?.gstEnabled ?? business?.gstEnabled ?? true;
+        const gstEnabled = business?.gstEnabled ?? true;
         const calculatedGst = gstEnabled ? Math.round(subtotalCents * 0.1) / 100 : 0;
         const calculatedTotal = Math.round((calculatedSubtotal + calculatedGst) * 100) / 100;
         
@@ -18204,25 +18200,21 @@ Be specific about materials, colors, and features that would be included.`
       }
       
       // Get quote acceptance signature if quote was accepted
-      let acceptanceSignature;
+      let acceptanceSignature: typeof digitalSignatures.$inferSelect | undefined;
       if (quoteWithItems.status === 'accepted') {
         const signatures = await db.select().from(digitalSignatures).where(
           sql`${digitalSignatures.documentType} = 'quote_acceptance' AND ${digitalSignatures.quoteId} = ${quoteWithItems.id}`
         );
         if (signatures.length > 0) {
-          acceptanceSignature = {
-            id: signatures[0].id,
-            signerName: signatures[0].signerName,
-            signatureData: signatures[0].signatureData,
-            signedAt: signatures[0].signedAt,
-          };
+          acceptanceSignature = signatures[0];
         } else if ((quoteWithItems as any).acceptanceSignatureData) {
+          // Synthetic inline signature for legacy quotes that stored signature on the quote row
           acceptanceSignature = {
             id: 'inline',
             signerName: (quoteWithItems as any).acceptedBy || 'Client',
             signatureData: (quoteWithItems as any).acceptanceSignatureData,
             signedAt: (quoteWithItems as any).acceptedAt || new Date(),
-          };
+          } as typeof digitalSignatures.$inferSelect;
         }
       }
       
@@ -18257,7 +18249,6 @@ Be specific about materials, colors, and features that would be included.`
         jobSignatures,
         signature: hideSignature ? undefined : acceptanceSignature,
         beforePhotos,
-        afterPhotos,
       });
       
       const pdfBuffer = await generatePDFBuffer(html);
@@ -18356,8 +18347,30 @@ Be specific about materials, colors, and features that would be included.`
         acceptedAt: null,
         acceptedBy: null,
         rejectedAt: null,
-        declinedReason: null,
-        acceptToken: null,
+        acceptanceToken: null,
+        acceptanceIp: null,
+        acceptanceSignatureData: null,
+        declineReason: null,
+        photos: [],
+        templateId: null,
+        familyKey: null,
+        depositRequired: false,
+        depositPercent: null,
+        depositAmount: null,
+        depositPaid: false,
+        depositPaidAt: null,
+        depositPaymentIntentId: null,
+        archivedAt: null,
+        isMultiOption: false,
+        selectedOptionId: null,
+        isXeroImport: false,
+        xeroQuoteId: null,
+        xeroContactId: null,
+        xeroSyncedAt: null,
+        customFields: {},
+        documentTemplate: null,
+        documentTemplateSettings: null,
+        isSample: false,
       };
       
       // Format line items
@@ -18371,7 +18384,7 @@ Be specific about materials, colors, and features that would be included.`
         sortOrder: index + 1,
       }));
       
-      const businessForPdf = await resolveBusinessLogoForPdf(business || {
+      const businessForPdf = await resolveBusinessLogoForPdf(business || ({
         id: 'default',
         userId: req.userId,
         businessName: 'Your Business',
@@ -18381,9 +18394,9 @@ Be specific about materials, colors, and features that would be included.`
         email: '',
         brandColor: '#2563eb',
         gstEnabled: true,
-      });
+      } as typeof businessSettings.$inferSelect));
       const html = generateQuotePDF({
-        quote: mockQuote,
+        quote: mockQuote as typeof quotes.$inferSelect,
         lineItems: formattedLineItems,
         client,
         business: businessForPdf
@@ -18742,7 +18755,7 @@ Be specific about materials, colors, and features that would be included.`
           
           // If no quote line items, create a default line item from job
           if (lineItems.length === 0) {
-            const hourlyRate = business?.hourlyRate ? parseFloat(business.hourlyRate) : 85;
+            const hourlyRate = 85;
             const timeEntries = await storage.getTimeEntries(userContext.effectiveUserId, jobId);
             const totalHours = timeEntries.reduce((sum: number, te: any) => {
               if (te.duration) return sum + parseFloat(te.duration) / 3600;
@@ -18787,7 +18800,6 @@ Be specific about materials, colors, and features that would be included.`
             subtotal: subtotal.toFixed(2),
             gstAmount: gstAmount.toFixed(2),
             total: total.toFixed(2),
-            issueDate: new Date(),
             dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
             allowOnlinePayment: true,
             documentTemplate: business?.documentTemplate || 'professional',
@@ -19076,7 +19088,7 @@ Be specific about materials, colors, and features that would be included.`
       const edits = await storage.getInvoiceEdits(req.params.id);
       const editsWithNames = await Promise.all(edits.map(async (edit) => {
         const editor = await storage.getUser(edit.editedBy);
-        return { ...edit, editedByName: editor?.name || editor?.email || 'Unknown' };
+        return { ...edit, editedByName: editor?.firstName || editor?.email || 'Unknown' };
       }));
       res.json(editsWithNames);
     } catch (error) {
@@ -19656,13 +19668,13 @@ Be specific about materials, colors, and features that would be included.`
       
       const allLineItems = await storage.getInvoiceLineItems(invoiceId);
       const newSubtotal = allLineItems.reduce((sum, item) => sum + parseFloat(item.total || '0'), 0);
-      const gstRate = invoice.taxRate ? parseFloat(invoice.taxRate) / 100 : 0.1;
+      const gstRate = 0.1;
       const gstAmount = Math.round(newSubtotal * gstRate * 100) / 100;
       const newTotal = newSubtotal + gstAmount;
 
       await storage.updateInvoice(invoiceId, userContext.effectiveUserId, {
         subtotal: String(newSubtotal.toFixed(2)),
-        taxAmount: String(gstAmount.toFixed(2)),
+        gstAmount: String(gstAmount.toFixed(2)),
         total: String(newTotal.toFixed(2)),
       });
 
@@ -19708,13 +19720,13 @@ Be specific about materials, colors, and features that would be included.`
       
       const remainingItems = await storage.getInvoiceLineItems(invoiceId);
       const newSubtotal = remainingItems.reduce((sum, item) => sum + parseFloat(item.total || '0'), 0);
-      const gstRate = invoice.taxRate ? parseFloat(invoice.taxRate) / 100 : 0.1;
+      const gstRate = 0.1;
       const gstAmount = Math.round(newSubtotal * gstRate * 100) / 100;
       const newTotal = newSubtotal + gstAmount;
       
       await storage.updateInvoice(invoiceId, userContext.effectiveUserId, {
         subtotal: String(newSubtotal.toFixed(2)),
-        taxAmount: String(gstAmount.toFixed(2)),
+        gstAmount: String(gstAmount.toFixed(2)),
         total: String(newTotal.toFixed(2)),
       });
       
@@ -19847,7 +19859,7 @@ Be specific about materials, colors, and features that would be included.`
         try {
           const jobAssignmentsData = await storage.getJobAssignments(invoiceWithItems.jobId);
           assignments = jobAssignmentsData.map(a => ({
-            workerName: a.workerName || 'Worker',
+            workerName: a.displayName || 'Worker',
             assignmentStatus: a.assignmentStatus || 'assigned',
             travelStartedAt: a.travelStartedAt,
             arrivedAt: a.arrivedAt,
@@ -20075,7 +20087,7 @@ Be specific about materials, colors, and features that would be included.`
       const termsTemplate = termsTemplateResult[0]?.content;
       const warrantyTemplate = warrantyTemplateResult[0]?.content;
       
-      const businessForPdf = await resolveBusinessLogoForPdf(business || {
+      const businessForPdf = await resolveBusinessLogoForPdf(business || ({
         id: 'default',
         userId: req.userId,
         businessName: 'Your Business',
@@ -20085,9 +20097,9 @@ Be specific about materials, colors, and features that would be included.`
         email: '',
         brandColor: '#dc2626',
         gstEnabled: true,
-      });
+      } as typeof businessSettings.$inferSelect));
       const html = generateInvoicePDF({
-        invoice: mockInvoice,
+        invoice: mockInvoice as typeof invoices.$inferSelect,
         lineItems: formattedLineItems,
         client,
         business: businessForPdf,
@@ -20990,7 +21002,7 @@ Be specific about materials, colors, and features that would be included.`
             usageResetDate: user.usageResetDate,
             trialStatus: user.trialStatus,
             trialEndsAt: user.trialEndsAt,
-            trialUsedAt: user.trialUsedAt,
+            trialUsedAt: user.trialStartedAt,
             intendedTier: user.intendedTier,
             isPlatformAdmin: user.isPlatformAdmin ?? (user as any).is_platform_admin ?? false,
             hasDemoData: user.hasDemoData ?? false,
@@ -21021,8 +21033,8 @@ Be specific about materials, colors, and features that would be included.`
           if (!settings) return null;
           const user = await storage.getUser(userId);
           if (!settings.onboardingCompleted && user) {
-            const hasTeam = user.teamOwnerId || user.activeTeamId;
-            const hasBusinessSetup = settings.businessName && settings.tradeType;
+            const hasTeam = user.activeBusinessId;
+            const hasBusinessSetup = settings.businessName && user.tradeType;
             if (hasTeam || hasBusinessSetup) {
               settings = (await storage.updateBusinessSettings(userId, { onboardingCompleted: true })) || settings;
             }
@@ -21199,7 +21211,7 @@ Be specific about materials, colors, and features that would be included.`
                 userId: memberId,
                 businessOwnerId,
                 status: activityStatus,
-                statusMessage: tradieStatus?.statusMessage || presence?.statusMessage || null,
+                statusMessage: presence?.statusMessage || null,
                 currentJobId: tradieStatus?.currentJobId || presence?.currentJobId || null,
                 destinationJobTitle,
                 lastLocationLat: tradieStatus?.currentLatitude || (latestLocation?.latitude ? parseFloat(latestLocation.latitude) : null),
@@ -21742,9 +21754,9 @@ Be specific about materials, colors, and features that would be included.`
           } catch { accountingStatus.myob = { connected: false, name: null, lastSync: null, needsReconnect: false }; }
           const calendarStatus: any = { googleCalendar: null, outlook: null };
           try {
-            const { isGoogleCalendarConnected, getConnectionInfo } = await import('./googleCalendarClient');
+            const { isGoogleCalendarConnected, getCalendarInfo } = await import('./googleCalendarClient');
             const gc = await isGoogleCalendarConnected(userId);
-            const gci = gc ? await getConnectionInfo(userId) : null;
+            const gci = gc ? await getCalendarInfo(userId) : null;
             calendarStatus.googleCalendar = { connected: gc, email: gci?.email || null, needsReconnect: false };
           } catch { calendarStatus.googleCalendar = { connected: false, email: null, needsReconnect: false }; }
           try {
@@ -21807,7 +21819,7 @@ Be specific about materials, colors, and features that would be included.`
 
         // ---- availableJobs (mirrors /api/jobs/available — privacy-stripped) ----
         safe('availableJobs', async () => {
-          const hasReqPerm = userContext.permissions.includes('request_job_assignment') || userContext.isOwner;
+          const hasReqPerm = (userContext.permissions as string[]).includes('request_job_assignment') || userContext.isOwner;
           if (!hasReqPerm) return { error: "You don't have permission to view available jobs" };
           return allJobsArr
             .filter((job: any) =>
@@ -21822,7 +21834,7 @@ Be specific about materials, colors, and features that would be included.`
               description: job.description ? job.description.substring(0, 100) + (job.description.length > 100 ? '...' : '') : null,
               status: job.status,
               scheduledAt: job.scheduledAt, scheduledEndAt: job.scheduledEndAt,
-              estimatedDuration: job.estimatedDuration, priority: job.priority,
+              estimatedDuration: job.estimatedDuration,
               suburb: job.address ? job.address.split(',').slice(-2, -1)[0]?.trim() : null,
               createdAt: job.createdAt,
             }))
@@ -21855,7 +21867,7 @@ Be specific about materials, colors, and features that would be included.`
           const jobsMap: Record<string, string> = {};
           for (const jid of jobIds) {
             if (jid) {
-              const job = await storage.getJob(jid as string);
+              const job = await storage.getJob(jid as string, userId);
               if (job) jobsMap[jid as string] = job.title;
             }
           }
@@ -21880,15 +21892,15 @@ Be specific about materials, colors, and features that would be included.`
           }, { totalHours: 0, billableHours: 0 });
           let activeTimerJobTitle: string | null = null;
           if (activeTimer?.jobId) {
-            const aj = await storage.getJob(activeTimer.jobId);
+            const aj = await storage.getJob(activeTimer.jobId, userId);
             activeTimerJobTitle = aj?.title || null;
           }
           return {
             activeTimer: activeTimer ? {
               id: activeTimer.id, description: activeTimer.description,
               startTime: activeTimer.startTime, jobId: activeTimer.jobId,
-              jobTitle: activeTimerJobTitle, isPaused: activeTimer.isPaused,
-              pausedDuration: activeTimer.pausedDuration,
+              jobTitle: activeTimerJobTitle, isPaused: false,
+              pausedDuration: 0,
               elapsedMinutes: activeTimer.startTime
                 ? Math.floor((Date.now() - new Date(activeTimer.startTime).getTime()) / (1000 * 60))
                 : 0,
@@ -22169,8 +22181,8 @@ Be specific about materials, colors, and features that would be included.`
       let totalRevenueAll = 0;
       
       for (const member of acceptedMembers) {
-        const memberId = member.userId;
-        const memberUser = await storage.getUser(memberId);
+        const memberId = member.memberId;
+        const memberUser = memberId ? await storage.getUser(memberId) : undefined;
         if (!memberUser) continue;
         
         let hoursThisMonth = 0;
@@ -22223,7 +22235,7 @@ Be specific about materials, colors, and features that would be included.`
         workers.push({
           id: memberId,
           name: `${memberUser.firstName || ''} ${memberUser.lastName || ''}`.trim() || memberUser.username || memberUser.email,
-          role: member.role || 'worker',
+          role: (await storage.getUserRole(member.roleId))?.name || 'worker',
           hoursThisMonth: Math.round(hoursThisMonth * 10) / 10,
           hoursThisWeek: Math.round(hoursThisWeek * 10) / 10,
           jobsCompleted,
@@ -22387,7 +22399,7 @@ Be specific about materials, colors, and features that would be included.`
         tomorrowFirstJob = {
           id: firstJob.id,
           title: firstJob.title || 'Untitled Job',
-          address: firstJob.address || firstJob.location || null,
+          address: firstJob.address || null,
           scheduledAt: firstJob.scheduledAt,
           clientName: client?.name || null,
           latitude: firstJob.latitude || null,
@@ -22398,7 +22410,7 @@ Be specific about materials, colors, and features that would be included.`
           tomorrowJobsList.push({
             id: job.id,
             title: job.title || 'Untitled Job',
-            address: job.address || job.location || null,
+            address: job.address || null,
             scheduledAt: job.scheduledAt,
             clientName: jobClient?.name || null,
             latitude: job.latitude || null,
@@ -22966,6 +22978,9 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(404).json({ error: "Payment request not found" });
       }
       
+      const reqClient = request.clientId ? await storage.getClient(request.clientId, userContext.effectiveUserId) : null;
+      const clientName = reqClient?.name || undefined;
+      
       const settings = await storage.getBusinessSettings(userContext.effectiveUserId);
       const businessName = settings?.businessName || 'Your tradie';
       
@@ -22976,7 +22991,7 @@ Be specific about materials, colors, and features that would be included.`
       const amount = `$${parseFloat(request.amount).toFixed(2)}`;
       
       // Build SMS message using consistent pattern
-      const message = `Hi${request.clientName ? ` ${request.clientName.split(' ')[0]}` : ''}, ${businessName} has sent you a payment request for ${amount}${request.description ? ` (${request.description})` : ''}. Pay securely here: ${paymentUrl}`;
+      const message = `Hi${clientName ? ` ${clientName.split(' ')[0]}` : ''}, ${businessName} has sent you a payment request for ${amount}${request.description ? ` (${request.description})` : ''}. Pay securely here: ${paymentUrl}`;
       
       // Import and use SMS service (pass raw phone, service handles formatting)
       const { sendSmsToClient } = await import('./services/smsService');
@@ -22985,7 +23000,7 @@ Be specific about materials, colors, and features that would be included.`
         businessOwnerId: userContext.effectiveUserId,
         clientId: request.clientId || undefined,
         clientPhone: phone, // Let smsService handle formatting
-        clientName: request.clientName || undefined,
+        clientName: clientName || undefined,
         message,
         senderUserId: req.userId,
       });
@@ -23016,7 +23031,7 @@ Be specific about materials, colors, and features that would be included.`
           userContext.effectiveUserId,
           'invoice_sent',
           `Payment link sent via SMS`,
-          `SMS sent to ${request.clientName || 'client'} (${phone}) for ${amount}`,
+          `SMS sent to ${clientName || 'client'} (${phone}) for ${amount}`,
           'invoice',
           request.invoiceId,
           { paymentRequestId: request.id, senderUserId: req.userId }
@@ -23058,7 +23073,7 @@ Be specific about materials, colors, and features that would be included.`
       await sendPaymentRequestEmail({
         to: email,
         businessName,
-        businessEmail: settings?.email, // Use tradie's email for reply-to
+        businessEmail: settings?.email ?? undefined, // Use tradie's email for reply-to
         amount: parseFloat(request.amount),
         description: request.description,
         paymentUrl,
@@ -23088,7 +23103,7 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(404).json({ error: "Payment request not found" });
       }
       
-      const QRCode = (await import('qrcode')).default;
+      const QRCode = ((await import('qrcode')) as any).default; // qrcode ships no type declarations
       // Use production-ready base URL detection
       const paymentUrl = `${getProductionBaseUrl(req)}/pay/${request.token}`;
       
@@ -23128,7 +23143,7 @@ Be specific about materials, colors, and features that would be included.`
       
       // Get or create a location for this user
       const settings = await storage.getBusinessSettings(req.userId);
-      let locationId = settings?.stripeTerminalLocationId;
+      let locationId: string | undefined = (settings as any)?.stripeTerminalLocationId; // column persisted in DB but absent from typed schema
       
       if (!locationId) {
         // Create a location for the user
@@ -23136,9 +23151,9 @@ Be specific about materials, colors, and features that would be included.`
           display_name: settings?.businessName || 'Business Location',
           address: {
             line1: settings?.address || '1 Main St',
-            city: settings?.businessCity || 'Sydney',
-            state: settings?.businessState || 'NSW',
-            postal_code: settings?.businessPostcode || '2000',
+            city: 'Sydney',
+            state: 'NSW',
+            postal_code: '2000',
             country: 'AU',
           },
         });
@@ -23437,7 +23452,7 @@ Be specific about materials, colors, and features that would be included.`
           paidAt: new Date(),
           lockedAt: new Date(),
           lockedReason: 'payment_received',
-          paidAmount: updatedPayment.amount,
+          amountPaid: updatedPayment.amount,
         });
 
         const paymentAmount = parseFloat(String(updatedPayment.amount || '0'));
@@ -23510,7 +23525,7 @@ Be specific about materials, colors, and features that would be included.`
         try {
           // Try to create a connection token to verify Terminal is enabled
           const settings = await storage.getBusinessSettings(req.userId);
-          if (settings?.stripeTerminalLocationId) {
+          if ((settings as any)?.stripeTerminalLocationId) {
             terminalEnabled = true;
           } else {
             // Try creating a test location to check capability
@@ -23689,12 +23704,9 @@ Be specific about materials, colors, and features that would be included.`
           id: receipt.id,
           amount: parseFloat(receipt.amount),
           gstAmount: parseFloat(receipt.gstAmount || '0'),
-          subtotal: parseFloat(receipt.subtotal || receipt.amount),
           paymentMethod: receipt.paymentMethod || 'card',
-          paymentReference: receipt.paymentReference,
+          reference: receipt.paymentReference,
           paidAt: receipt.paidAt,
-          receiptNumber: receipt.receiptNumber,
-          description: receipt.description,
         },
         client: client ? {
           name: client.name,
@@ -23712,11 +23724,9 @@ Be specific about materials, colors, and features that would be included.`
           brandColor: businessWithLogo.brandColor || '#dc2626',
         },
         invoice: invoice ? {
-          id: invoice.id,
           number: invoice.number,
         } : null,
         job: job ? {
-          id: job.id,
           title: job.title,
         } : null,
       });
@@ -23770,12 +23780,9 @@ Be specific about materials, colors, and features that would be included.`
           id: receipt.id,
           amount: parseFloat(receipt.amount),
           gstAmount: parseFloat(receipt.gstAmount || '0'),
-          subtotal: parseFloat(receipt.subtotal || receipt.amount),
           paymentMethod: receipt.paymentMethod || 'card',
-          paymentReference: receipt.paymentReference,
+          reference: receipt.paymentReference,
           paidAt: receipt.paidAt,
-          receiptNumber: receipt.receiptNumber,
-          description: receipt.description,
         },
         client: client ? {
           name: client.name,
@@ -23793,11 +23800,9 @@ Be specific about materials, colors, and features that would be included.`
           brandColor: businessWithLogo.brandColor || '#dc2626',
         },
         invoice: invoice ? {
-          id: invoice.id,
           number: invoice.number,
         } : null,
         job: job ? {
-          id: job.id,
           title: job.title,
         } : null,
       });
@@ -23850,12 +23855,9 @@ Be specific about materials, colors, and features that would be included.`
           id: receipt.id,
           amount: parseFloat(receipt.amount),
           gstAmount: parseFloat(receipt.gstAmount || '0'),
-          subtotal: parseFloat(receipt.subtotal || receipt.amount),
           paymentMethod: receipt.paymentMethod || 'card',
-          paymentReference: receipt.paymentReference,
+          reference: receipt.paymentReference,
           paidAt: receipt.paidAt,
-          receiptNumber: receipt.receiptNumber,
-          description: receipt.description,
         },
         client: client ? {
           name: client.name,
@@ -23939,7 +23941,7 @@ Be specific about materials, colors, and features that would be included.`
         subject: emailSubject,
         html: emailHtml,
         fromName: businessName || 'JobRunner',
-        replyTo: business?.email,
+        replyTo: business?.email ?? undefined,
         attachments: [{
           filename: `${receipt.receiptNumber}.pdf`,
           content: pdfBuffer,
@@ -24269,7 +24271,6 @@ Be specific about materials, colors, and features that would be included.`
         type: 'payment_received',
         title: 'Payment Received',
         message: `Payment of $${parseFloat(request.amount).toFixed(2)} received for: ${request.description}`,
-        data: { paymentRequestId: request.id },
       });
       
       // Broadcast real-time payment notification via WebSocket
@@ -24418,7 +24419,7 @@ Be specific about materials, colors, and features that would be included.`
       // Broadcast template change for cross-device sync
       // Get business owner ID (for team members, use owner's ID; for owners, use their own ID)
       const teamMembership = await storage.getTeamMembershipByMemberId(req.userId);
-      const businessId = teamMembership?.ownerId || req.userId;
+      const businessId = teamMembership?.businessOwnerId || req.userId;
       const { broadcastTemplateChange } = await import('./websocket');
       broadcastTemplateChange(businessId, 'updated', {
         templateId: template.id,
@@ -24448,7 +24449,7 @@ Be specific about materials, colors, and features that would be included.`
       // Broadcast template change for cross-device sync
       // Get business owner ID (for team members, use owner's ID; for owners, use their own ID)
       const teamMembership = await storage.getTeamMembershipByMemberId(req.userId);
-      const businessId = teamMembership?.ownerId || req.userId;
+      const businessId = teamMembership?.businessOwnerId || req.userId;
       const { broadcastTemplateChange } = await import('./websocket');
       broadcastTemplateChange(businessId, 'deleted', {
         templateId: req.params.id,
@@ -24892,7 +24893,7 @@ Be specific about materials, colors, and features that would be included.`
       // Update business settings to use this template
       await storage.updateBusinessSettings(effectiveUserId, {
         documentTemplate: template.name,
-        documentTemplateSettings: template.settings as any,
+        documentTemplateSettings: template.styling as any, // styling json holds the template customization
       });
 
       // Mark this template as default and unmark others
@@ -25011,8 +25012,8 @@ Be specific about materials, colors, and features that would be included.`
       const { jobType, templateId, currentItems } = req.body;
       
       // Get business settings for trade type
-      const businessSettings = await storage.getBusinessSettings(req.userId);
-      const tradeType = businessSettings?.tradeType || 'general';
+      const tradeUser = await storage.getUser(req.userId);
+      const tradeType = tradeUser?.tradeType || 'general';
       
       // Get template if provided
       let template = null;
@@ -25363,9 +25364,9 @@ Respond with JSON in this format:
             tradeType: rateCard.tradeType,
             hourlyRate: rateCard.hourlyRate.toString(),
             calloutFee: rateCard.calloutFee.toString(),
-            materialMarkupPct: rateCard.materialMarkupPct.toString(),
+
             afterHoursMultiplier: rateCard.afterHoursMultiplier.toString(),
-            gstEnabled: rateCard.gstEnabled,
+
             userId: 'shared' // Make rate cards shared across all users
           });
           results.rateCards.push(created);
@@ -25438,8 +25439,8 @@ Respond with JSON in this format:
       }
 
       // Get existing line items
-      const existingLineItems = await storage.getLineItemCatalogItems(userId);
-      const existingItemNames = new Set(existingLineItems.map(i => i.name));
+      const existingLineItems = await storage.getLineItemCatalog(userId);
+      const existingItemNames = new Set(existingLineItems.map((i: typeof existingLineItems[number]) => i.name));
       
       // Create line items that don't exist yet
       const relevantLineItems = tradieLineItems.filter(i => 
@@ -25484,9 +25485,9 @@ Respond with JSON in this format:
             tradeType: rateCard.tradeType,
             hourlyRate: rateCard.hourlyRate.toString(),
             calloutFee: rateCard.calloutFee.toString(),
-            materialMarkupPct: rateCard.materialMarkupPct.toString(),
+
             afterHoursMultiplier: rateCard.afterHoursMultiplier.toString(),
-            gstEnabled: rateCard.gstEnabled,
+
             userId: userId
           });
           results.rateCards++;
@@ -25581,7 +25582,7 @@ Respond with JSON in this format:
         if (!requester) {
           return res.status(403).json({ error: 'Access denied' });
         }
-        const requesterBusiness = requester.businessOwnerId || userId;
+        const requesterBusiness = (await getUserContext(userId)).effectiveUserId;
 
         let allowed = false;
 
@@ -25596,8 +25597,8 @@ Respond with JSON in this format:
               storage.getUser(senderId),
               storage.getUser(recipientId),
             ]);
-            const senderBusiness = sender?.businessOwnerId || senderId;
-            const recipientBusiness = recipient?.businessOwnerId || recipientId;
+            const senderBusiness = (await getUserContext(senderId)).effectiveUserId;
+            const recipientBusiness = (await getUserContext(recipientId)).effectiveUserId;
             allowed = requesterBusiness === senderBusiness && requesterBusiness === recipientBusiness;
           }
         } else if (isTeamChatAttachment) {
@@ -25609,7 +25610,7 @@ Respond with JSON in this format:
             allowed = true;
           } else {
             const owner = await storage.getUser(ownerInPath);
-            const ownerBusiness = owner?.businessOwnerId || ownerInPath;
+            const ownerBusiness = (await getUserContext(ownerInPath)).effectiveUserId;
             allowed = requesterBusiness === ownerBusiness;
           }
         }
@@ -25796,8 +25797,8 @@ Respond with JSON in this format:
         if (entry.userId) {
           const u = await storage.getUser(entry.userId);
           if (u) {
-            workerName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name || u.email;
-            workerAvatar = u.avatar || u.profileImageUrl || null;
+            workerName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || '';
+            workerAvatar = u.profileImageUrl || null;
           }
         }
         const now = new Date().getTime();
@@ -25969,7 +25970,7 @@ Respond with JSON in this format:
         const runningHours = Math.round((Date.now() - new Date(entry.startTime).getTime()) / (1000 * 60 * 60) * 10) / 10;
         return {
           ...entry,
-          userName: user?.name || user?.firstName || 'Unknown',
+          userName: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Unknown',
           jobTitle: job?.title || null,
           runningHours,
         };
@@ -25991,7 +25992,7 @@ Respond with JSON in this format:
       const userId = req.userId!;
       const userContext = await getUserContext(userId);
 
-      if (userContext.role !== 'business_owner' && userContext.role !== 'admin') {
+      if (!userContext.isOwner) {
         return res.status(403).json({ error: 'Only business owners can view disputed entries' });
       }
 
@@ -26453,9 +26454,10 @@ Respond with JSON in this format:
       }
       
       const pausedEntry = await storage.updateTimeEntry(id, userId, {
+        // pause fields persisted via DB columns absent from typed schema (schema drift)
         isPaused: true,
         pausedAt: new Date().toISOString(),
-      });
+      } as any);
       
 
       // Auto-update worker state to break
@@ -26544,10 +26546,11 @@ Respond with JSON in this format:
       const currentPausedDuration = (existingEntry as any).pausedDuration || 0;
       
       const resumedEntry = await storage.updateTimeEntry(id, userId, {
+        // pause fields persisted via DB columns absent from typed schema (schema drift)
         isPaused: false,
         pausedAt: null,
         pausedDuration: currentPausedDuration + pauseDuration,
-      });
+      } as any);
       
 
       // Auto-update worker state to on_job
@@ -26679,7 +26682,7 @@ Respond with JSON in this format:
 
       try {
         const worker = await storage.getUser(userId);
-        const workerName = worker ? `${worker.firstName || ''} ${worker.lastName || ''}`.trim() || worker.email : 'A worker';
+        const workerName = worker ? (`${worker.firstName || ''} ${worker.lastName || ''}`.trim() || worker.email || 'A worker') : 'A worker';
         const entryDate = entry.startTime ? new Date(entry.startTime).toLocaleDateString('en-AU') : 'unknown date';
 
         const userContext = await getUserContext(userId);
@@ -26717,7 +26720,7 @@ Respond with JSON in this format:
       }
 
       const userContext = await getUserContext(userId);
-      if (userContext.role !== 'business_owner' && userContext.role !== 'admin') {
+      if (!userContext.isOwner) {
         return res.status(403).json({ error: 'Only business owners can resolve disputes' });
       }
 
@@ -26860,7 +26863,7 @@ Respond with JSON in this format:
       // Validate that target user belongs to this business
       if (targetUserId && targetUserId !== userContext.effectiveUserId) {
         const targetUser = await storage.getUser(targetUserId as string);
-        if (!targetUser || (targetUser.businessOwnerId !== userContext.effectiveUserId && targetUserId !== userContext.effectiveUserId)) {
+        if (!targetUser || ((await getUserContext(targetUserId as string)).effectiveUserId !== userContext.effectiveUserId && targetUserId !== userContext.effectiveUserId)) {
           return res.status(403).json({ error: 'Cannot export timesheets for users outside your business' });
         }
       }
@@ -27197,7 +27200,7 @@ Respond with JSON in this format:
           c.name,
           c.email,
           c.phone,
-          c.company,
+          '', // clients have no company field in schema
           c.address,
           c.notes,
           formatExportDateAU(c.createdAt),
@@ -27232,7 +27235,7 @@ Respond with JSON in this format:
 
       for (const inv of allInvoices) {
         const subtotal = parseFloat(String(inv.subtotal || '0')).toFixed(2);
-        const gst = parseFloat(String(inv.gst || '0')).toFixed(2);
+        const gst = parseFloat(String(inv.gstAmount || '0')).toFixed(2);
         const total = parseFloat(String(inv.total || '0')).toFixed(2);
 
         rows.push(toCsvRow([
@@ -27277,7 +27280,7 @@ Respond with JSON in this format:
 
       for (const q of allQuotes) {
         const subtotal = parseFloat(String(q.subtotal || '0')).toFixed(2);
-        const gst = parseFloat(String(q.gst || '0')).toFixed(2);
+        const gst = parseFloat(String(q.gstAmount || '0')).toFixed(2);
         const total = parseFloat(String(q.total || '0')).toFixed(2);
 
         rows.push(toCsvRow([
@@ -27324,7 +27327,7 @@ Respond with JSON in this format:
           j.title,
           clientMap.get(j.clientId) || '',
           j.status,
-          j.address || j.location,
+          j.address || '',
           formatExportDateAU(j.scheduledAt),
           formatExportDateAU(j.startedAt),
           formatExportDateAU(j.completedAt),
@@ -27908,7 +27911,7 @@ Respond with JSON in this format:
       const jobsMap: Record<string, string> = {};
       for (const jobId of jobIds) {
         if (jobId) {
-          const job = await storage.getJob(jobId);
+          const job = await storage.getJob(jobId, userId);
           if (job) {
             jobsMap[jobId] = job.title;
           }
@@ -27953,7 +27956,7 @@ Respond with JSON in this format:
       // Get job title for active timer if it exists
       let activeTimerJobTitle = null;
       if (activeTimer?.jobId) {
-        const activeJob = await storage.getJob(activeTimer.jobId);
+        const activeJob = await storage.getJob(activeTimer.jobId, userId);
         activeTimerJobTitle = activeJob?.title || null;
       }
       
@@ -27964,8 +27967,8 @@ Respond with JSON in this format:
           startTime: activeTimer.startTime,
           jobId: activeTimer.jobId,
           jobTitle: activeTimerJobTitle,
-          isPaused: activeTimer.isPaused,
-          pausedDuration: activeTimer.pausedDuration,
+          isPaused: false,
+          pausedDuration: 0,
           elapsedMinutes: activeTimer.startTime ? 
             Math.floor((new Date().getTime() - new Date(activeTimer.startTime).getTime()) / (1000 * 60)) : 0
         } : null,
@@ -28809,7 +28812,7 @@ Respond with JSON in this format:
       }
 
       const existingMembers = await storage.getTeamMembers(inviteCode.businessOwnerId);
-      const alreadyMember = existingMembers.find((m: { memberId?: string; userId?: string }) => m.memberId === userId || m.userId === userId);
+      const alreadyMember = existingMembers.find((m) => m.memberId === userId);
       if (alreadyMember) {
         return res.status(400).json({ error: 'You are already a member of this team' });
       }
@@ -28821,13 +28824,13 @@ Respond with JSON in this format:
 
       let roleId = inviteCode.roleId;
       if (!roleId) {
-        const roles = await storage.getUserRoles(inviteCode.businessOwnerId);
+        const roles = await storage.getUserRoles();
         const matchRole = roles.find((r: { id: string; name: string }) => r.name.toLowerCase() === inviteCode.roleType);
         if (matchRole) {
           roleId = matchRole.id;
         } else {
           const workerRole = roles.find((r: { id: string; name: string }) => r.name.toLowerCase() === 'worker');
-          roleId = workerRole?.id;
+          roleId = workerRole?.id ?? null;
         }
       }
 
@@ -29166,7 +29169,7 @@ Respond with JSON in this format:
         const owner = await storage.getUser(teamMember.businessOwnerId);
         if (owner?.phone) {
           const memberName = user.firstName ? `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}` : (user.email || 'New member');
-          await notifyOwnerViaSms(owner.phone, 'teamMemberJoined', memberName, teamMember.role || 'team member');
+          await notifyOwnerViaSms(owner.phone, 'teamMemberJoined', memberName, (await storage.getUserRole(teamMember.roleId))?.name || 'team member');
         }
       } catch (e) { console.error('Owner SMS failed:', e); }
 
@@ -29229,7 +29232,7 @@ Respond with JSON in this format:
       }
 
       const ownerOk =
-        teamMemberRecord.userId === requestingUserId ||
+        teamMemberRecord.memberId === requestingUserId ||
         (requestingUser.email && teamMemberRecord.email === requestingUser.email);
       if (!ownerOk) {
         return res.status(403).json({ error: 'You can only request permissions for yourself' });
@@ -29253,7 +29256,6 @@ Respond with JSON in this format:
         type: 'permission_request',
         title: 'Permission Request',
         message: `${teamMember.firstName || 'A team member'} has requested additional permissions`,
-        data: { requestId: request.id, teamMemberId },
         priority: 'normal',
       });
       
@@ -29331,7 +29333,6 @@ Respond with JSON in this format:
           message: action === 'approve' 
             ? 'Your permission request has been approved'
             : 'Your permission request has been declined',
-          data: { requestId: request.id },
           priority: 'normal',
         });
       }
@@ -29614,14 +29615,12 @@ Respond with JSON in this format:
       // Jobs assigned to this member
       const assignedJobs = allJobs.filter(job => 
         job.assignedTo === member.memberId || 
-        job.assignedTo === member.id ||
-        job.assignedTeamMemberId === member.id
+        job.assignedTo === member.id
       );
       
       // Unscheduled/unassigned jobs that could be assigned
       const unassignedJobs = allJobs.filter(job => 
         !job.assignedTo && 
-        !job.assignedTeamMemberId &&
         job.status !== 'done' && 
         job.status !== 'invoiced' &&
         job.status !== 'archived'
@@ -29630,11 +29629,10 @@ Respond with JSON in this format:
       // Get time entries for this member (today)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const timeEntries = member.memberId ? await storage.getTimeEntriesByDateRange(
-        effectiveUserId,
+      const timeEntries = member.memberId ? await storage.getTimeEntriesInRange(
+        member.memberId,
         today,
         new Date(),
-        member.memberId
       ) : [];
       
       // Calculate today's hours
@@ -29646,11 +29644,11 @@ Respond with JSON in this format:
       
       // Build location object
       const location = tradieStatusData ? {
-        latitude: tradieStatusData.latitude ? parseFloat(String(tradieStatusData.latitude)) : null,
-        longitude: tradieStatusData.longitude ? parseFloat(String(tradieStatusData.longitude)) : null,
+        latitude: tradieStatusData.currentLatitude ? parseFloat(String(tradieStatusData.currentLatitude)) : null,
+        longitude: tradieStatusData.currentLongitude ? parseFloat(String(tradieStatusData.currentLongitude)) : null,
         lastUpdated: tradieStatusData.updatedAt,
-        status: tradieStatusData.status || 'unknown',
-        currentActivity: tradieStatusData.currentActivity || null,
+        status: tradieStatusData.activityStatus || 'unknown',
+        currentActivity: null,
         batteryLevel: tradieStatusData.batteryLevel || null,
       } : locationData ? {
         latitude: locationData.latitude ? parseFloat(locationData.latitude) : null,
@@ -29677,7 +29675,7 @@ Respond with JSON in this format:
           inviteStatus: member.inviteStatus,
           hourlyRate: member.hourlyRate,
           locationEnabledByOwner: member.locationEnabledByOwner ?? true,
-          locationEnabledByUser: member.locationEnabledByUser ?? true,
+          locationEnabledByUser: member.locationEnabledByOwner ?? true,
         },
         location,
         stats: {
@@ -29692,8 +29690,7 @@ Respond with JSON in this format:
           title: job.title,
           status: job.status,
           address: job.address,
-          scheduledDate: job.scheduledDate,
-          priority: job.priority,
+          scheduledDate: job.scheduledAt,
           clientId: job.clientId,
           isXeroImport: job.isXeroImport || false,
         })),
@@ -29702,14 +29699,13 @@ Respond with JSON in this format:
           title: job.title,
           status: job.status,
           address: job.address,
-          scheduledDate: job.scheduledDate,
-          priority: job.priority,
+          scheduledDate: job.scheduledAt,
           clientId: job.clientId,
           isXeroImport: job.isXeroImport || false,
         })),
         recentActivity: memberActivityLogs.map(log => ({
           id: log.id,
-          action: log.action,
+          action: log.type,
           entityType: log.entityType,
           entityId: log.entityId,
           description: log.description,
@@ -29844,7 +29840,7 @@ Respond with JSON in this format:
       
       res.json({ 
         success: true, 
-        themeColor: updated.themeColor,
+        themeColor: updated?.themeColor,
         message: 'Theme color updated successfully'
       });
     } catch (error) {
@@ -30492,7 +30488,8 @@ Respond with JSON in this format:
       // Generate PDF
       const { generateInvoicePDF, generatePDFBuffer, resolveBusinessLogoForPdf } = await import('./pdfService');
       
-      const businessForPdf = await resolveBusinessLogoForPdf(settings || { businessName: 'JobRunner' });
+      const fallbackBusiness = { businessName: 'JobRunner', logoUrl: null };
+      const businessForPdf = await resolveBusinessLogoForPdf(settings || fallbackBusiness);
       const pdfHtml = generateInvoicePDF({
         invoice: {
           id: invoice.id,
@@ -30554,7 +30551,8 @@ Respond with JSON in this format:
       // Generate PDF
       const { generatePaymentReceiptPDF, generatePDFBuffer, resolveBusinessLogoForPdf } = await import('./pdfService');
       
-      const businessForPdf = await resolveBusinessLogoForPdf(settings || { businessName: 'JobRunner' });
+      const fallbackBusiness = { businessName: 'JobRunner', logoUrl: null };
+      const businessForPdf = await resolveBusinessLogoForPdf(settings || fallbackBusiness);
       
       const pdfHtml = generatePaymentReceiptPDF({
         payment: {
@@ -30562,8 +30560,7 @@ Respond with JSON in this format:
           amount: parseFloat(receipt.amount),
           paymentMethod: receipt.paymentMethod || 'card',
           paidAt: receipt.paidAt,
-          receiptNumber: receipt.receiptNumber,
-          description: receipt.description,
+          reference: receipt.paymentReference,
         },
         client: client || undefined,
         business: businessForPdf,
@@ -31060,7 +31057,8 @@ Respond with JSON in this format:
       // Check team membership to see if user is owner or has admin role
       const teamMember = await storage.getTeamMemberByUserId(userId);
       const isOwner = !teamMember; // If no team member record, user is the owner
-      const isAdmin = teamMember?.role === 'admin' || teamMember?.role === 'owner';
+      const teamMemberRoleName = teamMember ? (await storage.getUserRole(teamMember.roleId))?.name : undefined;
+      const isAdmin = teamMemberRoleName === 'admin' || teamMemberRoleName === 'owner';
       
       if (!isOwner && !isAdmin) {
         return res.status(403).json({ 
@@ -31261,7 +31259,7 @@ Respond with JSON in this format:
       });
 
       // Generate PDF receipt
-      const { generatePaymentReceiptPDF, generatePDFBuffer, PaymentReceiptData } = await import('./pdfService');
+      const { generatePaymentReceiptPDF, generatePDFBuffer } = await import('./pdfService');
       
       const receiptData: any = {
         payment: {
@@ -31674,7 +31672,7 @@ Respond with JSON in this format:
         console.info('[Geofence] Duplicate event suppressed (recent alert exists):', JSON.stringify({
           ...logContext,
           existingAlertId: recentAlerts[0].id,
-          existingAlertAge: `${Math.round((eventTimestamp.getTime() - new Date(recentAlerts[0].createdAt).getTime()) / 1000)}s`
+          existingAlertAge: `${Math.round((eventTimestamp.getTime() - new Date(recentAlerts[0].createdAt ?? 0).getTime()) / 1000)}s`
         }));
         return res.json({
           success: true,
@@ -31734,7 +31732,6 @@ Respond with JSON in this format:
           userId,
           jobId: job.id,
           jobTitle: job.title,
-          dwellSeconds,
         });
       } catch {}
 
@@ -31775,7 +31772,7 @@ Respond with JSON in this format:
       
       if (action === 'exit') {
         const user = await storage.getUser(userId);
-        const userName = user?.name || user?.firstName || 'Team member';
+        const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Team member';
         const jobTitle = job.title || 'Unknown job';
         
         const activeEntry = await storage.getActiveTimeEntry(userId);
@@ -31968,7 +31965,7 @@ Respond with JSON in this format:
         const job = await storage.getJob(alert.jobId, userContext.effectiveUserId);
         return {
           ...alert,
-          userName: user?.name || user?.firstName || 'Unknown',
+          userName: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Unknown',
           jobTitle: job?.title || 'Unknown Job',
           jobAddress: job?.address || alert.address,
         };
@@ -32136,7 +32133,7 @@ Respond with JSON in this format:
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30000);
-        let audioResponse: Response;
+        let audioResponse: globalThis.Response;
         try {
           audioResponse = await fetch(audioUrl, { signal: controller.signal });
         } finally {
@@ -32930,8 +32927,8 @@ Respond with JSON in this format:
             longitude: job.lng!,
             status: job.status,
             scheduledAt: job.scheduledAt,
-            assignedTo: job.assignedToId,
-            clientName: client ? `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.businessName || client.email || 'Unknown Client' : 'No Client',
+            assignedTo: job.assignedTo,
+            clientName: client ? (client.name || client.email || 'Unknown Client') : 'No Client',
             clientPhone: client?.phone || '',
           };
         });
@@ -32967,7 +32964,7 @@ Respond with JSON in this format:
           let activeJob = null;
 
           if (currentJobId) {
-            activeJob = await storage.getJob(currentJobId);
+            activeJob = await storage.getJob(currentJobId, userContext.effectiveUserId);
             currentJobTitle = activeJob?.title || 'On Job';
           }
 
@@ -33115,7 +33112,7 @@ Respond with JSON in this format:
         
         // Check for geofence alerts (arrival/departure from job sites)
         if (currentJobId) {
-          const job = await storage.getJob(currentJobId);
+          const job = await storage.getJob(currentJobId, userContext.effectiveUserId);
           if (job?.latitude && job?.longitude) {
             const jobLat = parseFloat(job.latitude);
             const jobLng = parseFloat(job.longitude);
@@ -33158,11 +33155,11 @@ Respond with JSON in this format:
             if (!alreadySent) {
               const autoSettings = await storage.getAutomationSettings(userContext.effectiveUserId);
               if (autoSettings?.technicianEnRouteEnabled) {
-                const job = await storage.getJob(currentJobId);
+                const job = await storage.getJob(currentJobId, userContext.effectiveUserId);
                 if (job?.clientId) {
-                  const client = await storage.getClient(job.clientId);
+                  const client = await storage.getClient(job.clientId, userContext.effectiveUserId);
                   const techUser = await storage.getUser(userId);
-                  const techName = techUser?.fullName || techUser?.username || 'Your technician';
+                  const techName = [techUser?.firstName, techUser?.lastName].filter(Boolean).join(' ') || techUser?.username || 'Your technician';
                   if (client?.phone) {
                     const { sendSmsToClient } = await import('./services/smsService');
                     const jobAddress = job.address || 'your job site';
@@ -33210,7 +33207,7 @@ Respond with JSON in this format:
       // Enrich with user and job info
       const enrichedAlerts = await Promise.all(alerts.map(async (alert) => {
         const user = await storage.getUser(alert.userId);
-        const job = await storage.getJob(alert.jobId);
+        const job = await storage.getJob(alert.jobId, userContext.effectiveUserId);
         return {
           ...alert,
           userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Unknown',
@@ -33361,8 +33358,8 @@ Respond with JSON in this format:
       if (!sender || !recipient) {
         return res.status(404).json({ error: 'User not found' });
       }
-      const senderBusiness = sender.businessOwnerId || userId;
-      const recipientBusiness = recipient.businessOwnerId || recipientId;
+      const senderBusiness = (await getUserContext(userId)).effectiveUserId;
+      const recipientBusiness = (await getUserContext(recipientId)).effectiveUserId;
       if (senderBusiness !== recipientBusiness) {
         return res.status(403).json({ error: 'Cannot access messages outside your business' });
       }
@@ -33402,14 +33399,13 @@ Respond with JSON in this format:
         return res.status(404).json({ error: 'User not found' });
       }
       
-      const businessOwnerId = sender.businessOwnerId || userId;
-      const recipientBusiness = recipient.businessOwnerId || recipientId;
+      const businessOwnerId = (await getUserContext(userId)).effectiveUserId;
+      const recipientBusiness = (await getUserContext(recipientId)).effectiveUserId;
       if (businessOwnerId !== recipientBusiness) {
         return res.status(403).json({ error: 'Cannot send messages outside your business' });
       }
       
       const message = await storage.createDirectMessage({
-        businessOwnerId,
         senderId: userId,
         recipientId,
         content: content?.trim() || '',
@@ -33422,7 +33418,7 @@ Respond with JSON in this format:
         chatType: 'direct',
         messageId: message.id,
         senderId: userId,
-        senderName: sender?.name || sender?.firstName || 'User',
+        senderName: [sender?.firstName, sender?.lastName].filter(Boolean).join(' ') || 'User',
         recipientId,
         preview: (content || '').substring(0, 100),
       });
@@ -33467,8 +33463,8 @@ Respond with JSON in this format:
       const recipient = await storage.getUser(recipientId);
       if (!sender || !recipient) return res.status(404).json({ error: 'User not found' });
 
-      const businessOwnerId = sender.businessOwnerId || userId;
-      const recipientBusiness = recipient.businessOwnerId || recipientId;
+      const businessOwnerId = (await getUserContext(userId)).effectiveUserId;
+      const recipientBusiness = (await getUserContext(recipientId)).effectiveUserId;
       if (businessOwnerId !== recipientBusiness) {
         return res.status(403).json({ error: 'Cannot send messages outside your business' });
       }
@@ -33497,7 +33493,7 @@ Respond with JSON in this format:
         chatType: 'direct',
         messageId: message.id,
         senderId: userId,
-        senderName: sender?.name || sender?.firstName || 'User',
+        senderName: [sender?.firstName, sender?.lastName].filter(Boolean).join(' ') || 'User',
         recipientId,
         preview: content?.trim() || 'Sent an attachment',
       });
@@ -33626,10 +33622,10 @@ Respond with JSON in this format:
         chatType: 'team',
         messageId: message.id,
         senderId: userId,
-        senderName: user?.name || user?.firstName || 'Team member',
+        senderName: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Team member',
         preview: (req.body.message || '').substring(0, 100),
       });
-      const senderName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Unknown';
+      const senderName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown' : 'Unknown';
       const enrichedMessage = {
         ...message,
         senderName,
@@ -33642,7 +33638,7 @@ Respond with JSON in this format:
         const teamMembers = await storage.getTeamMembers(context.businessOwnerId);
         
         // Notify business owner if they didn't send the message
-        if (context.businessOwnerId !== userId) {
+        if (context.businessOwnerId && context.businessOwnerId !== userId) {
           await notifyTeamMessage(context.businessOwnerId, senderName, messagePreview, 'team');
           await notifyChatMessage(storage, context.businessOwnerId, senderName, messagePreview || 'Sent a message', message.id);
           console.log(`[PushNotification] Sent team chat notification to owner ${context.businessOwnerId}`);
@@ -33650,7 +33646,7 @@ Respond with JSON in this format:
         
         // Notify active team members except sender
         for (const member of teamMembers) {
-          if (member.memberId !== userId && member.inviteStatus === 'accepted' && member.isActive) {
+          if (member.memberId && member.memberId !== userId && member.inviteStatus === 'accepted' && member.isActive) {
             await notifyTeamMessage(member.memberId, senderName, messagePreview, 'team');
             await notifyChatMessage(storage, member.memberId, senderName, messagePreview || 'Sent a message', message.id);
             console.log(`[PushNotification] Sent team chat notification to member ${member.memberId}`);
@@ -33707,7 +33703,7 @@ Respond with JSON in this format:
       const message = await storage.createTeamChatMessage(validatedData);
 
       const user = await storage.getUser(userId);
-      const senderName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Unknown';
+      const senderName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown' : 'Unknown';
 
       const { broadcastChatMessage } = await import('./websocket');
       broadcastChatMessage(context.businessOwnerId, {
@@ -33722,12 +33718,12 @@ Respond with JSON in this format:
       try {
         const messagePreview = msgText?.trim() || 'Sent an attachment';
         const teamMembers = await storage.getTeamMembers(context.businessOwnerId);
-        if (context.businessOwnerId !== userId) {
+        if (context.businessOwnerId && context.businessOwnerId !== userId) {
           await notifyTeamMessage(context.businessOwnerId, senderName, messagePreview, 'team');
           await notifyChatMessage(storage, context.businessOwnerId, senderName, messagePreview, message.id);
         }
         for (const member of teamMembers) {
-          if (member.memberId !== userId && member.inviteStatus === 'accepted' && member.isActive) {
+          if (member.memberId && member.memberId !== userId && member.inviteStatus === 'accepted' && member.isActive) {
             await notifyTeamMessage(member.memberId, senderName, messagePreview, 'team');
             await notifyChatMessage(storage, member.memberId, senderName, messagePreview, message.id);
           }
@@ -34140,7 +34136,7 @@ Respond with JSON in this format:
       let businessOwnerId = userId;
       const membership = await storage.getTeamMembershipByMemberId(userId);
       if (membership) {
-        const memberRole = membership.role;
+        const memberRole = (await storage.getUserRole(membership.roleId))?.name;
         if (memberRole !== 'owner' && memberRole !== 'manager') {
           return res.status(403).json({ error: 'Only business owners and managers can purchase phone numbers.' });
         }
@@ -34200,7 +34196,7 @@ Respond with JSON in this format:
 
         const checkoutResult = await createDedicatedNumberCheckout(
           businessOwnerId,
-          user.email,
+          user.email || '',
           phoneNumber,
           `${baseUrl}/phone-numbers?purchased=true&phone=${encodeURIComponent(phoneNumber)}`,
           `${baseUrl}/phone-numbers?canceled=true`,
@@ -34351,7 +34347,7 @@ Respond with JSON in this format:
       let businessOwnerId = userId;
       const membership = await storage.getTeamMembershipByMemberId(userId);
       if (membership) {
-        const memberRole = membership.role;
+        const memberRole = (await storage.getUserRole(membership.roleId))?.name;
         if (memberRole !== 'owner' && memberRole !== 'manager') {
           return res.status(403).json({ error: 'Only business owners and managers can release phone numbers.' });
         }
@@ -35006,11 +35002,7 @@ Respond with JSON in this format:
         title: jobTitle,
         description: jobDescription,
         status: 'pending',
-        priority: message.intentType === 'quote_request' || message.intentConfidence === 'high' ? 'high' : 'normal',
         notes: `[Created from SMS] Original message from ${conversation.clientName || 'client'}:\n"${message.body}"`,
-        isRecurring: false,
-        recurringFrequency: null,
-        nextRecurringDate: null,
       });
       
       // If message has MMS photos, attach them to the job as photos
@@ -35019,10 +35011,12 @@ Respond with JSON in this format:
         for (const mediaUrl of mediaUrls) {
           try {
             await storage.createJobPhoto({
+              userId: businessOwnerId,
               jobId: job.id,
-              url: mediaUrl,
+              objectStorageKey: mediaUrl,
+              fileName: `sms-photo-${Date.now()}.jpg`,
+              category: 'before',
               caption: 'Photo from client SMS',
-              stage: 'before',
               uploadedBy: null, // Client uploaded
             });
           } catch (photoError) {
@@ -35310,7 +35304,7 @@ Respond with JSON in this format:
         },
         job: {
           title: job.title,
-          scheduledDate: job.scheduledDate,
+          scheduledDate: job.scheduledAt,
           scheduledTime: job.scheduledTime,
           estimatedDuration: job.estimatedDuration,
         },
@@ -35809,7 +35803,7 @@ Respond with JSON in this format:
         const amount = parseFloat(String(inv.total) || '0');
         const amountPaid = parseFloat(String(inv.amountPaid) || '0');
         const outstanding = amount - amountPaid;
-        const daysOverdue = Math.max(0, Math.floor((now.getTime() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24)));
+        const daysOverdue = Math.max(0, Math.floor((now.getTime() - new Date(inv.dueDate ?? 0).getTime()) / (1000 * 60 * 60 * 24)));
         const client = inv.clientId ? clientMap.get(inv.clientId) : undefined;
         const clientName = client?.name || 'Unknown';
 
@@ -36343,8 +36337,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }));
 
       jobProfitability.sort((a, b) => {
-        const dateA = new Date(a.updatedAt || a.completedAt || a.createdAt || 0).getTime();
-        const dateB = new Date(b.updatedAt || b.completedAt || b.createdAt || 0).getTime();
+        const dateA = new Date(a.completedAt || a.createdAt || 0).getTime();
+        const dateB = new Date(b.completedAt || b.createdAt || 0).getTime();
         return dateB - dateA;
       });
 
@@ -36468,7 +36462,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           } else {
             try {
               const user = await storage.getUser(assignee);
-              if (user) workerName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || 'Unknown';
+              if (user) workerName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown';
             } catch (e) {}
           }
           workerMap[assignee] = { workerId: assignee, workerName, jobCount: 0, totalHours: 0, totalLabourCost: 0, revenueGenerated: 0, avgHourlyRate: 0, rateEntries: [] };
@@ -37011,8 +37005,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       
       // Calculate per-member performance
       const memberPerformance = await Promise.all(teamMembers.map(async member => {
-        const memberJobs = filteredJobs.filter(j => j.assignedTo === member.userId);
-        const memberTimeEntries = filteredTimeEntries.filter(t => t.userId === member.userId);
+        const memberJobs = filteredJobs.filter(j => j.assignedTo === member.memberId);
+        const memberTimeEntries = filteredTimeEntries.filter(t => t.userId === member.memberId);
         
         // Calculate total hours worked
         const totalMinutes = memberTimeEntries.reduce((sum, entry) => {
@@ -37024,11 +37018,14 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         
         const hoursWorked = Math.round(totalMinutes / 60 * 10) / 10; // Round to 1 decimal
         
+        const memberUser = member.memberId ? await storage.getUser(member.memberId) : undefined;
+        const memberName = [memberUser?.firstName, memberUser?.lastName].filter(Boolean).join(' ') || memberUser?.email || member.email;
+        const memberRoleName = (await storage.getUserRole(member.roleId))?.name;
         return {
-          id: member.userId,
-          name: member.name || member.email,
+          id: member.memberId,
+          name: memberName,
           email: member.email,
-          role: member.role,
+          role: memberRoleName,
           jobsAssigned: memberJobs.length,
           jobsCompleted: memberJobs.filter(j => j.status === 'done' || j.status === 'invoiced').length,
           jobsInProgress: memberJobs.filter(j => j.status === 'in_progress').length,
@@ -37509,7 +37506,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       // Broadcast form change for cross-device sync
       // Get business owner ID (for team members, use owner's ID; for owners, use their own ID)
       const teamMembership = await storage.getTeamMembershipByMemberId(userId);
-      const businessId = teamMembership?.ownerId || userId;
+      const businessId = teamMembership?.businessOwnerId || userId;
       const { broadcastFormChange } = await import('./websocket');
       broadcastFormChange(businessId, 'created', {
         formId: form.id,
@@ -37541,7 +37538,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       // Broadcast form change for cross-device sync
       // Get business owner ID (for team members, use owner's ID; for owners, use their own ID)
       const teamMembership = await storage.getTeamMembershipByMemberId(userId);
-      const businessId = teamMembership?.ownerId || userId;
+      const businessId = teamMembership?.businessOwnerId || userId;
       const { broadcastFormChange } = await import('./websocket');
       broadcastFormChange(businessId, 'updated', {
         formId: form.id,
@@ -37571,7 +37568,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       // Broadcast form change for cross-device sync
       // Get business owner ID (for team members, use owner's ID; for owners, use their own ID)
       const teamMembership = await storage.getTeamMembershipByMemberId(userId);
-      const businessId = teamMembership?.ownerId || userId;
+      const businessId = teamMembership?.businessOwnerId || userId;
       const { broadcastFormChange } = await import('./websocket');
       broadcastFormChange(businessId, 'deleted', {
         formId: id,
@@ -37670,7 +37667,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       });
 
       if (idempotencyKey) {
-        await setIdempotencyRecord(`formsub:${userId}:${idempotencyKey}`, submission, 60 * 60 * 24);
+        await setIdempotencyRecord(`formsub:${userId}:${idempotencyKey}`, submission);
       }
       res.status(201).json(submission);
     } catch (error: any) {
@@ -38522,12 +38519,11 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         userRows.forEach(u => { memberUsers[u.id] = u; });
       }
 
-      const roles = await db.select({ id: userRoles.id, name: userRoles.name }).from(userRoles).where(eq(userRoles.businessOwnerId, targetUserId));
+      const roles = await db.select({ id: userRoles.id, name: userRoles.name }).from(userRoles);
       const roleMap = new Map(roles.map(r => [r.id, r.name]));
 
       const settings = await db.select({
         seatCount: businessSettings.seatCount,
-        subscriptionTier: businessSettings.subscriptionTier,
       }).from(businessSettings).where(eq(businessSettings.userId, targetUserId)).limit(1);
 
       const ownerUser = await db.select({
@@ -38646,7 +38642,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }
       
       // Delete team memberships first (these reference userId)
-      await db.delete(teamMembers).where(eq(teamMembers.userId, userIdToDelete)).catch(() => {});
+      await db.delete(teamMembers).where(eq(teamMembers.memberId, userIdToDelete)).catch(() => {});
       
       // Delete the user - PostgreSQL CASCADE will handle related data automatically
       // All foreign keys in the schema use onDelete: 'cascade'
@@ -38941,7 +38937,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           userEmail: p.userEmail,
           businessName: settings?.businessName || null,
           businessPhone: settings?.phone || null,
-          tradeType: settings?.industry || null,
+          tradeType: null,
         };
       }));
 
@@ -39086,7 +39082,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           userEmail: p.userEmail,
           businessName: settings?.businessName || null,
           businessPhone: settings?.phone || null,
-          tradeType: settings?.industry || null,
+          tradeType: null,
           autoReplyEnabled: p.config.autoReplyEnabled ?? true,
           allNumbers: allUserConfigs.map(c => ({
             id: c.id,
@@ -39259,7 +39255,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
             userId: memberId,
             businessOwnerId,
             status: activityStatus,
-            statusMessage: tradieStatus?.statusMessage || presence?.statusMessage || null,
+            statusMessage: presence?.statusMessage || null,
             currentJobId: tradieStatus?.currentJobId || presence?.currentJobId || null,
             destinationJobTitle,
             lastLocationLat: tradieStatus?.currentLatitude || (latestLocation?.latitude ? parseFloat(latestLocation.latitude) : null),
@@ -39430,7 +39426,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       if (effectiveUserId !== userId) {
         const userContext = await getUserContext(userId);
-        if (userContext.role !== 'owner' && userContext.role !== 'manager' && userContext.role !== 'admin') {
+        if (!userContext.isOwner && !hasPermission(userContext, PERMISSIONS.MANAGE_TEAM)) {
           return res.status(403).json({ error: 'Only managers or owners can change another worker\'s state' });
         }
         const targetMembership = await storage.getTeamMembershipByMemberId(effectiveUserId);
@@ -39554,7 +39550,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // Helper to verify team member belongs to current user's business
   async function verifyTeamMemberOwnership(userId: string, teamMemberId: string): Promise<boolean> {
     const teamMembership = await storage.getTeamMembershipByMemberId(userId);
-    const businessOwnerId = teamMembership?.ownerId || userId;
+    const businessOwnerId = teamMembership?.businessOwnerId || userId;
     
     const [member] = await db.select().from(teamMembers)
       .where(and(
@@ -40218,7 +40214,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           LIMIT ${limit}
         `);
 
-        for (const r of reminderRows.rows || reminderRows) {
+        // Raw SQL result rows are untyped; cast to any[] to index columns.
+        for (const r of ((reminderRows.rows || reminderRows) as any[])) {
           const channel = r.sentVia || (r.emailSent && r.smsSent ? 'both' : r.emailSent ? 'email' : r.smsSent ? 'sms' : 'email');
           results.push({
             id: r.id,
@@ -40780,13 +40777,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         title: contract.title,
         description: contract.description || jobTemplate.description || '',
         status: 'pending',
-        priority: jobTemplate.priority || 'medium',
-        scheduledDate: contract.nextJobDate,
+        scheduledAt: contract.nextJobDate,
         address: client.address,
-        city: client.city,
-        state: client.state,
-        postcode: client.postcode,
-        country: client.country,
       });
       
       // Create a schedule entry linking the job to the contract
@@ -40983,7 +40975,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         quote = await storage.createQuote({
           userId,
           clientId: client.id,
-          quoteNumber,
+          number: quoteNumber,
+          title: lead.description || `Quote for ${lead.name}`,
           status: 'draft',
           validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         });
@@ -41280,7 +41273,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           return {
             memberId: member.memberId,
             name: user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.username || member.email,
-            role: member.role || 'Team Member',
+            role: (await storage.getUserRole(member.roleId))?.name || 'Team Member',
             billableHours: Math.round(billableMinutes / 60 * 10) / 10,
             availableHours: Math.round(availableMinutes / 60),
             utilizationPercent: availableMinutes > 0 ? Math.round((billableMinutes / availableMinutes) * 100) : 0,
@@ -41328,7 +41321,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         (n.priority === 'urgent' || n.priority === 'important' ||
          // Include money and job events even without explicit priority
          ['payment_received', 'quote_accepted', 'quote_rejected', 'invoice_paid', 'job_completed', 'job_assigned', 'installment_received', 'payment_plan_completed'].includes(n.type))
-      ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      ).sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
        .slice(0, 10); // Max 10 items, newest first
       
       res.json({
@@ -41393,7 +41386,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           address: job.address,
         },
         business: {
-          companyName: businessSettings?.companyName || 'Business',
+          companyName: businessSettings?.businessName || 'Business',
         },
       });
     } catch (error: any) {
@@ -42141,9 +42134,10 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         const { uploadJobPhoto } = await import('./photoService');
         const result = await uploadJobPhoto(userId, targetJobId, buffer, {
           fileName: fileName || 'photo.jpg',
+          fileSize: buffer.length,
           mimeType: mimeType || 'image/jpeg',
           category: category || 'general',
-          caption: caption || null,
+          caption: caption || undefined,
         });
         if (!result.success) return res.status(500).json({ error: result.error });
 
@@ -42569,7 +42563,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }).returning();
 
       if (idemKey) {
-        await setIdempotencyRecord(`swmssign:${req.params.id}:${idemKey}`, sig, 60 * 60 * 24);
+        await setIdempotencyRecord(`swmssign:${req.params.id}:${idemKey}`, sig);
       }
 
       if (doc.status === 'draft') {
@@ -43916,7 +43910,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         { key: 'safetyHarness', label: 'Safety Harness' },
       ];
 
-      const itemRows = items.map(i => `<tr><td style="padding:6px 10px;border-bottom:1px solid #f3f4f6">${i.label}</td><td style="padding:6px 10px;border-bottom:1px solid #f3f4f6;text-align:center"><span style="color:${checklist[i.key] ? '#22c55e' : '#ef4444'};font-weight:600">${checklist[i.key] ? '\u2713 Yes' : '\u2717 No'}</span></td></tr>`).join('');
+      const itemRows = items.map(i => `<tr><td style="padding:6px 10px;border-bottom:1px solid #f3f4f6">${i.label}</td><td style="padding:6px 10px;border-bottom:1px solid #f3f4f6;text-align:center"><span style="color:${(checklist as any)[i.key] ? '#22c55e' : '#ef4444'};font-weight:600">${(checklist as any)[i.key] ? '\u2713 Yes' : '\u2717 No'}</span></td></tr>`).join('');
 
       const html = `<!DOCTYPE html><html><head><style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 30px; color: #1a1a1a; font-size: 13px; }
@@ -44230,7 +44224,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         greeting,
         mode,
         transferNumbers,
-        businessHours,
+        businessHours: businessHours ?? undefined,
         knowledgeBank: knowledgeBank === null ? undefined : knowledgeBank,
         smsNotifications,
         autoReplyEnabled,
@@ -44414,7 +44408,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         try {
           const { updateReceptionistConfigById } = await import('./vapiService');
           await updateReceptionistConfigById(req.params.configId, userId, {
-            voice, greeting, mode, transferNumbers, businessHours,
+            voice, greeting, mode, transferNumbers, businessHours: businessHours ?? undefined,
             knowledgeBank: knowledgeBank === null ? undefined : knowledgeBank,
             smsNotifications, autoReplyEnabled, autoReplyMessage,
             voiceStability, voiceClarity, voiceSpeed, voiceStyleExaggeration, voiceSpeakerBoost,
@@ -45222,7 +45216,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         tradeType,
         greeting: receptionistGreeting,
         knowledgeBank: knowledgeBank,
-        services: settings?.services as string[] || [],
+        services: settings?.bookingPageServices as string[] || [],
       });
 
       const conversationMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
@@ -45340,7 +45334,15 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       });
 
       try {
-        await notifyOwnerViaEmail(businessId, 'New Website Booking', `New booking request from ${parsed.name} (${parsed.phone})${parsed.jobType ? ` - ${parsed.jobType}` : ''}. Check your Leads in JobRunner.`);
+        const ownerUser = await storage.getUser(businessId);
+        if (ownerUser?.email) {
+          const { sendSystemEmail } = await import('./emailService');
+          await sendSystemEmail({
+            to: ownerUser.email,
+            subject: 'New Website Booking',
+            text: `New booking request from ${parsed.name} (${parsed.phone})${parsed.jobType ? ` - ${parsed.jobType}` : ''}. Check your Leads in JobRunner.`,
+          });
+        }
       } catch (notifErr) {
         console.error("Failed to notify owner of booking:", notifErr);
       }
@@ -45769,8 +45771,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
             type: 'job_update',
             title: 'Job Declined',
             message: declineMessage,
-            entityType: 'job',
-            entityId: jobId,
+            relatedType: 'job',
+            relatedId: jobId,
           });
         }
       } catch (notifError) {
@@ -46112,14 +46114,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       // Send push notification
       try {
         const { sendPushNotification } = await import('./pushNotifications');
-        await sendPushNotification(
-          storage,
-          businessOwnerId,
-          'subcontractor_invoice',
-          'New Subcontractor Invoice',
-          `${subName} submitted invoice ${invoiceNumber} for $${totalAmount.toFixed(2)}`,
-          { invoiceId: invoice.id }
-        );
+        await sendPushNotification({
+          userId: businessOwnerId,
+          type: 'subcontractor_invoice',
+          title: 'New Subcontractor Invoice',
+          body: `${subName} submitted invoice ${invoiceNumber} for $${totalAmount.toFixed(2)}`,
+          data: { invoiceId: invoice.id },
+        });
       } catch (e) {
         console.warn('[SubInvoice] Push notification error:', e);
       }
@@ -46153,7 +46154,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
               jobId: ri.jobId,
             })),
             subcontractor: {
-              name: subName,
+              name: subName || 'Subcontractor',
               email: subUser?.email || '',
               abn: subBizSettings?.abn || null,
             },
@@ -46352,14 +46353,15 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       try {
         const { sendPushNotification } = await import('./pushNotifications');
-        await sendPushNotification(
-          storage,
-          invoice.subcontractorUserId,
-          'subcontractor_invoice_update',
-          `${docLabel} ${statusLabel}`,
-          `Your ${docLabel.toLowerCase()} ${invoice.invoiceNumber} has been marked as ${statusLabel.toLowerCase()}`,
-          { invoiceId: invoice.id }
-        );
+        if (invoice.subcontractorUserId) {
+          await sendPushNotification({
+            userId: invoice.subcontractorUserId,
+            type: 'subcontractor_invoice_update',
+            title: `${docLabel} ${statusLabel}`,
+            body: `Your ${docLabel.toLowerCase()} ${invoice.invoiceNumber} has been marked as ${statusLabel.toLowerCase()}`,
+            data: { invoiceId: invoice.id },
+          });
+        }
       } catch (e) {
         console.warn('[SubInvoice] Push notification error:', e);
       }
@@ -46641,14 +46643,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       try {
         const { sendPushNotification } = await import('./pushNotifications');
-        await sendPushNotification(
-          storage,
-          businessOwnerId,
-          'subcontractor_invoice',
-          `New Subcontractor ${docLabel}`,
-          `${subName} sent ${docLabel.toLowerCase()} ${invoiceNumber} for $${totalAmount.toFixed(2)}`,
-          { invoiceId: created.id }
-        );
+        await sendPushNotification({
+          userId: businessOwnerId,
+          type: 'subcontractor_invoice',
+          title: `New Subcontractor ${docLabel}`,
+          body: `${subName} sent ${docLabel.toLowerCase()} ${invoiceNumber} for $${totalAmount.toFixed(2)}`,
+          data: { invoiceId: created.id },
+        });
       } catch (e) {
         console.warn('[SubBilling] Push notification error:', e);
       }
@@ -46735,7 +46736,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       let businessOwnerId = userId;
       const membership = await storage.getTeamMembershipByMemberId(userId);
       if (membership) {
-        const memberRole = membership.role;
+        const memberRole = (await storage.getUserRole(membership.roleId))?.name;
         if (memberRole !== 'owner' && memberRole !== 'manager') {
           return res.status(403).json({ error: 'Only business owners and managers can submit port requests.' });
         }
@@ -46803,7 +46804,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       let businessOwnerId = userId;
       const membership = await storage.getTeamMembershipByMemberId(userId);
       if (membership) {
-        const memberRole = membership.role;
+        const memberRole = (await storage.getUserRole(membership.roleId))?.name;
         if (memberRole !== 'owner' && memberRole !== 'manager') {
           return res.status(403).json({ error: 'Only business owners and managers can view port requests.' });
         }

@@ -466,7 +466,7 @@ export default function JobDetailView({
     };
 
     const summaries: WorkerTimeSummary[] = [];
-    for (const [userId, entries] of byWorker) {
+    for (const [userId, entries] of Array.from(byWorker.entries())) {
       const workEntries = entries.filter(e => !e.isBreak);
       const breakEntries = entries.filter(e => e.isBreak);
       
@@ -2212,7 +2212,6 @@ export default function JobDetailView({
               completedAt: job.completedAt,
               invoicedAt: job.invoicedAt,
             }}
-            jobId={jobId}
             timerRunning={!!activeTimerForThisJob}
             onCreateQuote={() => onCreateQuote?.(jobId)}
             onViewQuote={() => linkedQuote && navigate(`/quotes/${linkedQuote.id}`)}
@@ -2581,7 +2580,7 @@ export default function JobDetailView({
 
 
 
-          {(linkedQuote?.lineItems?.length > 0 || jobVariations.length > 0 || jobMaterials.length > 0) && (
+          {((linkedQuote?.lineItems?.length ?? 0) > 0 || jobVariations.length > 0 || jobMaterials.length > 0) && (
             <Card data-testid="card-job-brief">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -3140,7 +3139,7 @@ export default function JobDetailView({
                             className="w-full text-xs gap-1"
                             disabled={portalSettingsMutation.isPending || portalMessageDraft === portalSettings.clientMessage}
                             onClick={() => {
-                              portalSettingsMutation.mutate({ clientMessage: portalMessageDraft || null });
+                              portalSettingsMutation.mutate({ clientMessage: portalMessageDraft || '' });
                             }}
                           >
                             {portalSettingsMutation.isPending ? (
@@ -3853,7 +3852,7 @@ export default function JobDetailView({
           {/* Linked Jobs - Client history with photo copy */}
           <LinkedJobsCard
             jobId={jobId}
-            clientId={job.clientId}
+            clientId={job.clientId ?? null}
             clientName={client?.name || 'Client'}
           />
 

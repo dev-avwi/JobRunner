@@ -109,7 +109,7 @@ export async function generateLabourSummary(
   let overallStart: Date | null = null;
   let overallEnd: Date | null = null;
   
-  for (const [workerId, entries] of byWorker) {
+  for (const [workerId, entries] of Array.from(byWorker)) {
     const assignment = assignments.find(a => a.userId === workerId);
     const teamMember = await storage.getTeamMemberByOwnerAndMemberId(businessOwnerId, workerId);
     

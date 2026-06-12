@@ -66,7 +66,7 @@ const pendingStates = new Map<string, { platform: string; createdAt: number }>()
 
 setInterval(() => {
   const now = Date.now();
-  for (const [key, val] of pendingStates) {
+  for (const [key, val] of Array.from(pendingStates)) {
     if (now - val.createdAt > 10 * 60 * 1000) pendingStates.delete(key);
   }
 }, 5 * 60 * 1000);

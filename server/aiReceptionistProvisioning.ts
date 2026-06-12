@@ -63,7 +63,7 @@ export async function provisionAiReceptionist(userId: string, phoneNumber?: stri
     const teamMembers = await storage.getTeamMembers(userId);
     const teamInfo = teamMembers
       .filter(m => m.isActive)
-      .map(m => ({ name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email, role: m.role || 'team member' }));
+      .map(m => ({ name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email, role: 'team member' }));
 
     const clients = await storage.getClients(userId);
     const catalogItems = await storage.getLineItemCatalog(userId);
@@ -72,7 +72,7 @@ export async function provisionAiReceptionist(userId: string, phoneNumber?: stri
     const assistant = await createAssistant({
       businessName: settings.businessName,
       businessPhone: settings.phone || undefined,
-      tradeType: settings.industry || undefined,
+      tradeType: (await storage.getUser(userId))?.tradeType || undefined,
       greeting: updatedConfig?.greeting || undefined,
       voice: updatedConfig?.voiceName || 'Jess',
       transferNumbers,

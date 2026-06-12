@@ -11,10 +11,10 @@ export default function ClientCardExample() {
         address="15 Oak Street, Cairns"
         jobsCount={3}
         lastJobDate="2 days ago"
-        onViewClick={() => {}}
-        onCreateJobClick={() => {}}
-        onCallClick={() => {}}
-        onEmailClick={() => {}}
+        onView={() => {}}
+        onCreateJob={() => {}}
+        onCall={() => {}}
+        onEmail={() => {}}
       />
       
       <ClientCard 
@@ -25,10 +25,10 @@ export default function ClientCardExample() {
         address="8 Pine Avenue, Trinity Beach"
         jobsCount={1}
         lastJobDate="1 week ago"
-        onViewClick={() => {}}
-        onCreateJobClick={() => {}}
-        onCallClick={() => {}}
-        onEmailClick={() => {}}
+        onView={() => {}}
+        onCreateJob={() => {}}
+        onCall={() => {}}
+        onEmail={() => {}}
       />
       
       <ClientCard 
@@ -38,10 +38,10 @@ export default function ClientCardExample() {
         address="22 Beach Road, Palm Cove"
         jobsCount={2}
         lastJobDate="3 weeks ago"
-        onViewClick={() => {}}
-        onCreateJobClick={() => {}}
-        onCallClick={() => {}}
-        onEmailClick={() => {}}
+        onView={() => {}}
+        onCreateJob={() => {}}
+        onCall={() => {}}
+        onEmail={() => {}}
       />
     </div>
   );

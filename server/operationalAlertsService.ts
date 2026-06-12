@@ -47,7 +47,7 @@ async function computeOperationalAlerts(userId: string): Promise<OperationalAler
   try {
     const [allJobs, allTeamMembers, allInvoices] = await Promise.all([
       storage.getJobs(userId),
-      db.select().from(teamMembers).where(eq(teamMembers.ownerId, userId)).then(
+      db.select().from(teamMembers).where(eq(teamMembers.businessOwnerId, userId)).then(
         members => members,
         () => [] as any[]
       ).catch(() => []),
@@ -248,7 +248,7 @@ function checkScheduleConflicts(
     userJobMap.get(userId)!.push({ ...job, _assignmentUserId: userId });
   }
 
-  for (const assignedTo of new Set(allJobs.filter(j => j.assignedTo && j.scheduledAt).map(j => j.assignedTo!))) {
+  for (const assignedTo of Array.from(new Set(allJobs.filter(j => j.assignedTo && j.scheduledAt).map(j => j.assignedTo!)))) {
     const userJobs = allJobs.filter(j =>
       j.assignedTo === assignedTo &&
       j.scheduledAt &&
@@ -262,7 +262,7 @@ function checkScheduleConflicts(
     }
   }
 
-  for (const [workerUserId, workerJobs] of userJobMap) {
+  for (const [workerUserId, workerJobs] of Array.from(userJobMap)) {
     if (workerJobs.length < 2) continue;
 
     const sorted = workerJobs

@@ -834,7 +834,7 @@ export async function refreshLatencyEstimate(
     const settings = await storage.getBusinessSettings(userId);
     const cfg: VapiAssistantConfig = {
       businessName: settings?.businessName || '',
-      tradeType: settings?.industry || undefined,
+      tradeType: (await storage.getUser(userId))?.tradeType || undefined,
       greeting: config.greeting || undefined,
       voice: config.voiceName || 'Jess',
       transferNumbers: (config.transferNumbers as TransferNumber[]) || [],
@@ -981,7 +981,7 @@ export async function enableAiReceptionist(userId: string): Promise<{
     const teamMembers = await storage.getTeamMembers(userId);
     const teamInfo = teamMembers
       .filter(m => m.isActive)
-      .map(m => ({ name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email, role: m.role || 'team member' }));
+      .map(m => ({ name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email, role: 'team member' }));
 
     const clients = await storage.getClients(userId);
     const knownClientCount = clients.length;
@@ -999,7 +999,7 @@ export async function enableAiReceptionist(userId: string): Promise<{
     const assistant = await createAssistant({
       businessName: settings.businessName,
       businessPhone: settings.phone || undefined,
-      tradeType: settings.industry || undefined,
+      tradeType: (await storage.getUser(userId))?.tradeType || undefined,
       greeting: config?.greeting || undefined,
       voice: config?.voiceName || 'Jess',
       transferNumbers,
@@ -1193,7 +1193,7 @@ export async function updateReceptionistConfig(userId: string, updates: {
         const teamMembers = await storage.getTeamMembers(userId);
         const teamInfo = teamMembers
           .filter(m => m.isActive)
-          .map(m => ({ name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email, role: m.role || 'team member' }));
+          .map(m => ({ name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email, role: 'team member' }));
 
         const clients = await storage.getClients(userId);
         const knownClientCount = clients.length;
@@ -1218,7 +1218,7 @@ export async function updateReceptionistConfig(userId: string, updates: {
 
         await updateAssistant(config.vapiAssistantId, {
           businessName: settings?.businessName || '',
-          tradeType: settings?.industry || undefined,
+          tradeType: (await storage.getUser(userId))?.tradeType || undefined,
           voice: updates.voice || config.voiceName || 'Jess',
           voiceTuning,
           greeting: updates.greeting || config.greeting || undefined,
@@ -1308,7 +1308,7 @@ export async function updateReceptionistConfigById(configId: string, userId: str
       const teamMembers = await storage.getTeamMembers(userId);
       const teamInfo = teamMembers
         .filter(m => m.isActive)
-        .map(m => ({ name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email, role: m.role || 'team member' }));
+        .map(m => ({ name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email, role: 'team member' }));
 
       const clients = await storage.getClients(userId);
       const knownClientCount = clients.length;
@@ -1329,7 +1329,7 @@ export async function updateReceptionistConfigById(configId: string, userId: str
 
       const systemPrompt = buildSystemPrompt({
         businessName: settings?.businessName || 'the business',
-        tradeType: settings?.industry || undefined,
+        tradeType: (await storage.getUser(userId))?.tradeType || undefined,
         greeting: updates.greeting || config.greeting || undefined,
         voice: updates.voice || config.voiceName || 'Jess',
         transferNumbers: updates.transferNumbers || (config.transferNumbers as any) || [],
@@ -1729,7 +1729,7 @@ async function getAvailableTransferTarget(userId: string, _settings: BusinessSet
   }
 
   if (mode === 'selective') {
-    const isKnownClient = await shouldTransferSelectiveByClient(userId, callerPhone);
+    const isKnownClient = await shouldTransferSelectiveByClient(userId, callerPhone ?? null);
     if (!isKnownClient) return null;
     return findFirstAvailableTarget(userId, transferNumbers);
   }
@@ -1855,16 +1855,16 @@ async function handleLookupClient(args: any, userId: string): Promise<any> {
     if (!match && args.name) {
       const searchName = args.name.toLowerCase();
       match = clients.find(c => {
-        const fullName = `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase().trim();
+        const fullName = (c.name || '').toLowerCase().trim();
         return fullName.includes(searchName) || searchName.includes(fullName);
       });
     }
 
     if (match) {
       return {
-        result: `I found the client: ${match.firstName || ''} ${match.lastName || ''}. They're already in our system. I'll note this as a returning client.`,
+        result: `I found the client: ${match.name || ''}. They're already in our system. I'll note this as a returning client.`,
         clientFound: true,
-        clientName: `${match.firstName || ''} ${match.lastName || ''}`.trim(),
+        clientName: (match.name || '').trim(),
       };
     }
 
@@ -2279,7 +2279,8 @@ async function sendCallNotifications(
         type: 'ai_receptionist_call',
         title: `New AI Receptionist Call`,
         message: `Call from ${callerDisplay} (${durationText}). ${summaryText.slice(0, 200)}`,
-        data: { callId, callerPhone, duration, source: 'ai_receptionist' },
+        relatedId: callId,
+        relatedType: 'ai_receptionist_call',
       };
       await storage.createNotification(notificationPayload);
       console.log(`[Vapi] In-app notification created for user ${userId}`);

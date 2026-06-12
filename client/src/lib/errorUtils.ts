@@ -14,7 +14,7 @@ export function parseTradieFriendlyError(error: any): TradieFriendlyError {
   } else if (error instanceof Error) {
     // Handle format "502: {json}" from apiRequest throwIfResNotOk
     const message = error.message;
-    const jsonMatch = message.match(/^\d+:\s*(\{.+\})$/s);
+    const jsonMatch = message.match(/^\d+:\s*(\{[\s\S]+\})$/);
     if (jsonMatch) {
       try {
         const parsed = JSON.parse(jsonMatch[1]);
@@ -35,7 +35,7 @@ export function parseTradieFriendlyError(error: any): TradieFriendlyError {
     }
   } else if (typeof error === 'string') {
     // Handle string errors with "502: {json}" format
-    const jsonMatch = error.match(/^\d+:\s*(\{.+\})$/s);
+    const jsonMatch = error.match(/^\d+:\s*(\{[\s\S]+\})$/);
     if (jsonMatch) {
       try {
         const parsed = JSON.parse(jsonMatch[1]);

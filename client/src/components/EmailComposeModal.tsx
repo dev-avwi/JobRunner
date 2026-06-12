@@ -42,6 +42,7 @@ interface EmailComposeModalProps {
   total: string;
   businessName?: string;
   publicUrl?: string;
+  onSend?: (customSubject: string, customMessage: string) => Promise<void> | void;
 }
 
 interface AIEmailSuggestion {

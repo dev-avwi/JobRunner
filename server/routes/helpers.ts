@@ -163,13 +163,13 @@ setInterval(async () => {
     await db.delete(rateLimits).where(lte(rateLimits.expiresAt, new Date()));
   } catch (error) {}
   const now = Date.now();
-  for (const [key, entry] of fallbackChatMap) {
+  for (const [key, entry] of Array.from(fallbackChatMap)) {
     if (now >= entry.resetAt) fallbackChatMap.delete(key);
   }
-  for (const [key, entry] of fallbackPortalMap) {
+  for (const [key, entry] of Array.from(fallbackPortalMap)) {
     if (now >= entry.resetAt) fallbackPortalMap.delete(key);
   }
-  for (const [key, entry] of idempotencyMemCache) {
+  for (const [key, entry] of Array.from(idempotencyMemCache)) {
     if (now >= entry.expiresAt) idempotencyMemCache.delete(key);
   }
   try {
@@ -354,7 +354,7 @@ export async function gatherAIContext(userId: string, storageInstance: any, user
     storageInstance.getQuotes(effectiveUserId),
     storageInstance.getClients(effectiveUserId),
     getEmailIntegration(effectiveUserId),
-    getGmailConnectionStatus(),
+    getGmailConnectionStatus(effectiveUserId),
     storageInstance.getUser(userId),
     userContext?.teamMemberId ? storageInstance.getTeamMember(userContext.teamMemberId) : null
   ]);
