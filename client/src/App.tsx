@@ -1088,10 +1088,21 @@ function AppLayout() {
         headers['Authorization'] = `Bearer ${token}`;
       }
       const res = await fetch('/api/auth/me', { credentials: 'include', headers });
-      if (!res.ok) throw new Error('Not authenticated');
+      // Fail fast on genuine auth failures (401/403) so logout/expired tokens are
+      // immediate, and on rate limits (429) so we respect the server's backoff
+      // instead of hammering it. Other failures (network drop / 5xx) are retried.
+      if (res.status === 401 || res.status === 403 || res.status === 429) {
+        const noRetryErr = new Error('Not authenticated') as Error & { noRetry?: boolean };
+        noRetryErr.noRetry = true;
+        throw noRetryErr;
+      }
+      if (!res.ok) throw new Error(`Auth check failed: ${res.status}`);
       return res.json();
     },
-    retry: false,
+    // Retry transient network/5xx blips so an authenticated user isn't bounced to
+    // the public landing page on a momentary hiccup, but never retry the
+    // fast-fail cases (401/403/429) flagged above.
+    retry: (failureCount, err) => !(err as Error & { noRetry?: boolean })?.noRetry && failureCount < 2,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -1369,7 +1380,8 @@ function AppLayout() {
   }, [businessSettings, startTour, queryClient]);
 
   useEffect(() => {
-    if (!isLoading && userCheck && !error && (location === '/auth' || location.startsWith('/auth'))) {
+    const authEntryRoutes = ['/auth', '/login', '/register', '/forgot-password'];
+    if (!isLoading && userCheck && !error && authEntryRoutes.some(r => location === r || location.startsWith(r))) {
       setLocation('/');
     }
   }, [isLoading, userCheck, error, location, setLocation]);
@@ -1513,7 +1525,8 @@ function AppLayout() {
     // Remember the deep link a logged-out user tried to reach so we can send
     // them back there after they sign in.
     try {
-      if (location && location !== '/' && !location.startsWith('/auth')) {
+      const authEntryRoutes = ['/auth', '/login', '/register', '/forgot-password'];
+      if (location && location !== '/' && !authEntryRoutes.some(r => location.startsWith(r))) {
         sessionStorage.setItem('postLoginRedirect', location);
       }
     } catch {}

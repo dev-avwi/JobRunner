@@ -300,7 +300,8 @@ export default function AuthFlow({ onLoginSuccess, onNeedOnboarding }: AuthFlowP
         let postLoginDest = '/';
         try {
           const saved = sessionStorage.getItem('postLoginRedirect');
-          if (saved && saved.startsWith('/') && !saved.startsWith('/auth')) {
+          const authEntryRoutes = ['/auth', '/login', '/register', '/forgot-password'];
+          if (saved && saved.startsWith('/') && !authEntryRoutes.some(r => saved.startsWith(r))) {
             postLoginDest = saved;
           }
           sessionStorage.removeItem('postLoginRedirect');

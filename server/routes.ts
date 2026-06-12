@@ -14100,9 +14100,17 @@ Be specific about materials, colors, and features that would be included.`
       const userContext = await getUserContext(req.userId);
       let clients = await storage.getClients(userContext.effectiveUserId);
       
-      // Staff tradies (team members without VIEW_ALL permission) see limited client data
-      // Only clients associated with their assigned jobs
-      const hasViewAll = userContext.permissions.includes('view_all') || userContext.isOwner;
+      // Field tradies (team members who can only READ clients) see limited client
+      // data: only clients tied to jobs assigned to them. Office/admin roles that
+      // are granted the full "view clients" capability (which expands to
+      // read_clients_sensitive) — e.g. Office Manager, Administrator — see the
+      // whole client book, same as the owner. Wildcard ("*") roles also pass.
+      const perms = userContext.permissions as string[];
+      const hasViewAll =
+        userContext.isOwner ||
+        perms.includes('view_all') ||
+        perms.includes('*') ||
+        perms.includes('read_clients_sensitive');
       if (!hasViewAll && userContext.teamMemberId) {
         const jobs = await storage.getJobs(userContext.effectiveUserId);
         const assignedJobs = jobs.filter(job => job.assignedTo === userContext.teamMemberId || job.assignedTo === userContext.userId);
