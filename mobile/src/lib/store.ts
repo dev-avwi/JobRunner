@@ -578,6 +578,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isLoading: false,
     });
 
+    // Authoritative owner correction. /api/auth/me is the source of truth for
+    // ownership (server computes isOwner from real team memberships). If the
+    // server says this account owns its business, immediately overwrite any
+    // stale cached worker role so the dashboard never shows a wrong
+    // "Team member" badge for an owner — even before fetchRoleInfo runs or if
+    // its /api/team/my-role call later blips. Never force the worker case here.
+    if ((response.data as any)?.isOwner === true) {
+      set({
+        roleInfo: {
+          roleId: 'owner',
+          roleName: 'OWNER',
+          permissions: ['*'],
+          hasCustomPermissions: false,
+          isOwner: true,
+        },
+      });
+    }
+
     const settingsResponse = await api.get<BusinessSettings>('/api/business-settings');
     if (settingsResponse.data) {
       set({ businessSettings: settingsResponse.data });
@@ -717,6 +735,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         workerPermissions: workerPerms,
         isWorker: isWorkerUser,
       });
+
+      // Self-heal a stale cached role: refreshUser runs on app focus /
+      // pull-to-refresh even when checkAuth's init guard short-circuits, so an
+      // owner stuck showing a stale "Team member" badge corrects itself here as
+      // soon as connectivity returns — no reinstall or re-login needed.
+      if ((response.data as any)?.isOwner === true && !get().roleInfo?.isOwner) {
+        set({
+          roleInfo: {
+            roleId: 'owner',
+            roleName: 'OWNER',
+            permissions: ['*'],
+            hasCustomPermissions: false,
+            isOwner: true,
+          },
+        });
+      }
       
       const state = get();
       await offlineStorage.cacheAuthData(state.user, state.businessSettings, state.roleInfo);
