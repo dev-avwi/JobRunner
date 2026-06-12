@@ -32,7 +32,12 @@ interface TeamMemberInfo {
 export { WORKER_PERMISSIONS };
 
 async function fetchTeamRole(): Promise<TeamMemberInfo | null> {
-  const res = await fetch("/api/team/my-role", { credentials: "include" });
+  // Must include the Bearer token — app is Bearer-only; credentials:"include" alone
+  // doesn't attach the token and silently 401s, leaving permissions empty.
+  const token = localStorage.getItem('jobrunner_session_token');
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch("/api/team/my-role", { headers });
   if (res.status === 404) {
     return null;
   }
