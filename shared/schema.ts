@@ -459,6 +459,12 @@ export const businessSettings = pgTable("business_settings", {
   brandColor: text("brand_color").default('#2563EB'),
   // Team/Business Size Settings
   teamSize: text("team_size").default('solo'), // 'solo', 'small' (2-5), 'medium' (6-20), 'large' (20+)
+  // 'business' (default) or 'subcontractor'. A standalone subcontractor is a
+  // person who signed up choosing "I'm a subcontractor" without joining any
+  // business. They still own their own solo account, but are labelled and shown
+  // the subcontractor experience. Only used when the account has NO accepted
+  // team membership (an actual team membership role always takes precedence).
+  accountType: text("account_type").default('business'),
   numberOfEmployees: integer("number_of_employees").default(1),
   // Australian Compliance Fields
   licenseNumber: text("license_number"),

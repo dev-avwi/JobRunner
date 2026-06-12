@@ -29445,9 +29445,16 @@ Respond with JSON in this format:
         // User is not a team member - check if they're a business owner
         const user = await storage.getUser(userId);
         if (user) {
-          // Return owner role for business owners
+          // Standalone subcontractor: signed up choosing "subcontractor" but
+          // isn't linked to any business yet. Keep isOwner:true so they retain
+          // full access to their OWN solo data (jobs/quotes/invoices they
+          // create), but label them "Subcontractor" so the app shows the
+          // subcontractor badge + dashboard instead of the owner one.
+          const settings = await storage.getBusinessSettings(userId);
+          const isStandaloneSub = settings?.accountType === 'subcontractor';
           return res.json({
             role: 'owner',
+            ...(isStandaloneSub ? { roleName: 'Subcontractor', isSubcontractor: true } : {}),
             permissions: {
               canViewDashboard: true,
               canManageJobs: true,

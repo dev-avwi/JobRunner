@@ -518,6 +518,10 @@ export default function OnboardingSetupScreen() {
         phone: subPhone || null,
         abn: subAbn || null,
         teamSize: 'solo',
+        // Persist the standalone-subcontractor choice so /api/team/my-role can
+        // label this account "Subcontractor" even when no business invite is
+        // redeemed. A real team membership (if they later join one) overrides it.
+        accountType: 'subcontractor',
       };
 
       if (existingSettings?.id) {
