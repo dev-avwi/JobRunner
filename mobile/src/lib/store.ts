@@ -666,7 +666,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
         const rnLower = roleName.toLowerCase();
         locationTracking.setSubcontractorMode(rnLower.includes('subcontractor') || rnLower.includes('sub_contractor'));
-      } else {
+      } else if (!get().roleInfo) {
+        // No response AND no prior role known → cold-start unknown, assume owner.
+        // If a role is already known, keep it (don't clobber a real
+        // subcontractor/worker with an owner default on an empty response).
         set({
           roleInfo: {
             roleId: 'owner',
@@ -678,17 +681,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       }
     } catch (error) {
-      console.warn('[Auth] Failed to fetch role info, defaulting to owner:', error);
-      locationTracking.setSubcontractorMode(false);
-      set({
-        roleInfo: {
-          roleId: 'owner',
-          roleName: 'OWNER',
-          permissions: ['*'],
-          hasCustomPermissions: false,
-          isOwner: true,
-        }
-      });
+      // Transient role-fetch failure (e.g. on focus/pull-to-refresh): preserve
+      // the existing role rather than escalating to owner. Only fall back to the
+      // owner default when no role has ever been resolved on this device — never
+      // overwrite an already-known subcontractor/worker role on a blip.
+      if (!get().roleInfo) {
+        console.warn('[Auth] Failed to fetch role info with no prior role, defaulting to owner:', error);
+        locationTracking.setSubcontractorMode(false);
+        set({
+          roleInfo: {
+            roleId: 'owner',
+            roleName: 'OWNER',
+            permissions: ['*'],
+            hasCustomPermissions: false,
+            isOwner: true,
+          }
+        });
+      } else {
+        console.warn('[Auth] Failed to refresh role info, keeping existing role:', error);
+      }
     }
   },
 
@@ -736,21 +747,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isWorker: isWorkerUser,
       });
 
-      // Self-heal a stale cached role: refreshUser runs on app focus /
-      // pull-to-refresh even when checkAuth's init guard short-circuits, so an
-      // owner stuck showing a stale "Team member" badge corrects itself here as
-      // soon as connectivity returns — no reinstall or re-login needed.
-      if ((response.data as any)?.isOwner === true && !get().roleInfo?.isOwner) {
-        set({
-          roleInfo: {
-            roleId: 'owner',
-            roleName: 'OWNER',
-            permissions: ['*'],
-            hasCustomPermissions: false,
-            isOwner: true,
-          },
-        });
-      }
+      // Self-heal a stale cached role. refreshUser runs on app focus /
+      // pull-to-refresh even when checkAuth's init guard short-circuits, so any
+      // account stuck showing a stale badge (an owner shown as "Team member", a
+      // subcontractor shown as "Team member", etc.) recovers here: re-fetch the
+      // authoritative role from the server so the real roleName (OWNER /
+      // Subcontractor / Worker) is restored without a reinstall or re-login.
+      await get().fetchRoleInfo();
       
       const state = get();
       await offlineStorage.cacheAuthData(state.user, state.businessSettings, state.roleInfo);
