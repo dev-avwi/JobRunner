@@ -401,6 +401,7 @@ export interface FilterOptions {
   userRole?: UserRole;
   isSimpleMode?: boolean;
   hasProSubscription?: boolean;
+  extraAllowedUrls?: string[];  // Nav URLs unlocked by granted worker permissions
 }
 
 export function filterNavItems(items: NavItem[], options: FilterOptions): NavItem[] {
@@ -408,15 +409,19 @@ export function filterNavItems(items: NavItem[], options: FilterOptions): NavIte
   const isStaffTradie = options.isTradie && !isOwnerOrManager;
   
   return items.filter(item => {
+    // Worker permission override: an explicitly granted permission unlocks the
+    // matching nav item even when role/hideForStaff would normally hide it.
+    const grantedByPermission = options.extraAllowedUrls?.includes(item.url) ?? false;
+
     // Use allowedRoles if specified (new permission system)
-    if (item.allowedRoles && options.userRole) {
+    if (item.allowedRoles && options.userRole && !grantedByPermission) {
       if (!item.allowedRoles.includes(options.userRole)) {
         return false;
       }
     }
     
     // Hide from staff tradies
-    if (item.hideForStaff && isStaffTradie) {
+    if (item.hideForStaff && isStaffTradie && !grantedByPermission) {
       return false;
     }
 

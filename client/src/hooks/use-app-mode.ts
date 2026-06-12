@@ -168,7 +168,15 @@ export function useAppMode() {
   );
   
   const canAccessRoute = (path: string): boolean => {
-    return canAccessPath(userRole, path);
+    if (canAccessPath(userRole, path)) return true;
+    // Honor per-member custom worker permissions for permission-gated pages.
+    // Role gating is the default; an explicitly granted worker permission ADDS access.
+    const p = path.replace(/\/$/, "") || "/";
+    if (hasPermission(WORKER_PERMISSIONS.VIEW_CLIENTS) && (p === "/clients" || p.startsWith("/clients/"))) return true;
+    if (hasPermission(WORKER_PERMISSIONS.VIEW_QUOTES) && (p === "/quotes" || p.startsWith("/quotes/") || p.startsWith("/quote-editor/") || p === "/documents")) return true;
+    if (hasPermission(WORKER_PERMISSIONS.VIEW_INVOICES) && (p === "/invoices" || p.startsWith("/invoices/") || p.startsWith("/invoice-editor/") || p === "/documents" || p === "/payment-hub")) return true;
+    if (hasPermission(WORKER_PERMISSIONS.COLLECT_PAYMENTS) && p === "/collect-payment") return true;
+    return false;
   };
 
   const canAccessChat = appMode === "team";
@@ -202,6 +210,13 @@ export function useAppMode() {
   const canGpsCheckin = hasPermission(WORKER_PERMISSIONS.GPS_CHECKIN);
   const canTeamChat = hasPermission(WORKER_PERMISSIONS.TEAM_CHAT);
   const canClientSms = hasPermission(WORKER_PERMISSIONS.CLIENT_SMS);
+
+  // Nav URLs unlocked by explicitly granted worker permissions (additive to role gating).
+  const permissionNavUrls: string[] = [];
+  if (canViewClients) permissionNavUrls.push("/clients");
+  if (canViewQuotes || canViewInvoices) permissionNavUrls.push("/documents");
+  if (canViewInvoices) permissionNavUrls.push("/payment-hub");
+  if (canCollectPayments) permissionNavUrls.push("/collect-payment");
 
   return {
     mode: appMode,
@@ -256,5 +271,6 @@ export function useAppMode() {
     userRole,
     actionPermissions,
     canAccessRoute,
+    permissionNavUrls,
   };
 }

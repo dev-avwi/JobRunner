@@ -24,11 +24,11 @@ interface MoreItem {
 
 export default function More() {
   const { data: businessSettings } = useBusinessSettings();
-  const { isTeam, isTradie, isOwner, isManager, userRole } = useAppMode();
+  const { isTeam, isTradie, isOwner, isManager, userRole, permissionNavUrls } = useAppMode();
   
   const { isSimpleMode } = useSimpleMode();
   const { canUseAIFeatures } = useFeatureAccess();
-  const morePageItems = getMorePageItems({ isTeam, isTradie, isOwner, isManager, userRole, isSimpleMode, hasProSubscription: canUseAIFeatures });
+  const morePageItems = getMorePageItems({ isTeam, isTradie, isOwner, isManager, userRole, isSimpleMode, hasProSubscription: canUseAIFeatures, extraAllowedUrls: permissionNavUrls });
   
   const allItems: MoreItem[] = morePageItems.map((item: NavItem) => ({
     title: item.title,

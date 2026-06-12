@@ -44,7 +44,7 @@ interface AppSidebarProps {
 export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
   const [location, setLocation] = useLocation();
   const { data: businessSettings } = useBusinessSettings();
-  const { isTeam, isTradie, isOwner, isManager, userRole } = useAppMode();
+  const { isTeam, isTradie, isOwner, isManager, userRole, permissionNavUrls } = useAppMode();
   const { isSimpleMode } = useSimpleMode();
   const { canUseAIFeatures } = useFeatureAccess();
 
@@ -61,7 +61,7 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
     staleTime: 30_000,
   });
 
-  const filterOptions = { isTeam, isTradie, isOwner, isManager, userRole, isSimpleMode, hasProSubscription: canUseAIFeatures };
+  const filterOptions = { isTeam, isTradie, isOwner, isManager, userRole, isSimpleMode, hasProSubscription: canUseAIFeatures, extraAllowedUrls: permissionNavUrls };
   const visibleMenuItems = getSidebarMenuItems(filterOptions);
   const visibleSettingsItems = getSidebarSettingsItems(filterOptions);
 

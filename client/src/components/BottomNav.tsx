@@ -27,7 +27,7 @@ export const BOTTOM_NAV_HEIGHT = 80;
 
 export default function BottomNav({ onNavigate }: BottomNavProps) {
   const [location] = useLocation();
-  const { isTeam, isTradie, isOwner, isManager, userRole } = useAppMode();
+  const { isTeam, isTradie, isOwner, isManager, userRole, permissionNavUrls } = useAppMode();
   const { isSimpleMode } = useSimpleMode();
   const { canUseAIFeatures } = useFeatureAccess();
   const { openMobile, isMobile } = useSidebar();
@@ -40,7 +40,7 @@ export default function BottomNav({ onNavigate }: BottomNavProps) {
     refetchOnWindowFocus: false,
   });
 
-  const navItems = getBottomNavItems({ isTeam, isTradie, isOwner, isManager, userRole, isSimpleMode, hasProSubscription: canUseAIFeatures });
+  const navItems = getBottomNavItems({ isTeam, isTradie, isOwner, isManager, userRole, isSimpleMode, hasProSubscription: canUseAIFeatures, extraAllowedUrls: permissionNavUrls });
   const morePagesPattern = getMorePagesPattern();
   
   const totalUnread = unreadCounts?.total || 0;

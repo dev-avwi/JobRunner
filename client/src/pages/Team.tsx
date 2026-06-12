@@ -412,10 +412,10 @@ export default function TeamPage() {
             );
           })}
           <div className="ml-auto flex items-center gap-1 pb-1.5">
-            <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" data-testid="button-roles-permissions">
+            <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLocation("/team-operations")} data-testid="button-roles-permissions">
               Roles & permissions
             </Button>
-            <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" data-testid="button-activity-log">
+            <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLocation("/team-operations")} data-testid="button-activity-log">
               Activity log
             </Button>
           </div>
@@ -953,6 +953,7 @@ function MembersTable({
   const rows = showLockedSample ? sample : members;
 
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null);
   const resendMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -1024,6 +1025,7 @@ function MembersTable({
           <div
             key={m.id}
             data-testid={`row-member-${m.id}`}
+            onClick={() => { if (!showLockedSample) setLocation("/team-operations"); }}
             className="grid grid-cols-[1.6fr_1fr_1fr_1fr_120px_44px] px-4 py-3 items-center text-[13px] border-b last:border-0 hover-elevate group cursor-pointer"
           >
             <div className="flex items-center gap-3 min-w-0">
