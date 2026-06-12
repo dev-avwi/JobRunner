@@ -291,6 +291,10 @@ class ApiClient {
     return this.request<T>('PATCH', endpoint, body);
   }
 
+  async put<T = unknown>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
+    return this.request<T>('PUT', endpoint, body);
+  }
+
   async delete<T = unknown>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>('DELETE', endpoint);
   }
@@ -544,7 +548,7 @@ class ApiClient {
     xeroInvoiceId: string;
     xeroInvoiceNumber: string;
   }>> {
-    return this.post('/api/integrations/xero/push-invoice', { invoiceId });
+    return this.post(`/api/integrations/xero/push-invoice/${invoiceId}`);
   }
 
   // Task #93: push a quote to Xero via the real Xero Quotes API.

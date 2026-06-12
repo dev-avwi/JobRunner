@@ -128,7 +128,7 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
     set({ notifications: optimistic, unreadCount: 0 });
     get().updateBadgeCount();
     try {
-      await api.patch('/api/notifications/read-all');
+      await api.post('/api/notifications/mark-all-read');
     } catch (error: any) {
       if (__DEV__) console.error('Failed to mark all notifications as read:', error);
       // Concurrency-safe rollback: only restore previous state if our optimistic

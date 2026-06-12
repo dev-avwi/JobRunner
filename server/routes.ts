@@ -23601,6 +23601,21 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  // Delete a receipt
+  app.delete("/api/receipts/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_INVOICES), async (req: any, res) => {
+    try {
+      const effectiveUserId = req.effectiveUserId || req.userId;
+      const deleted = await storage.deleteReceipt(req.params.id, effectiveUserId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Receipt not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting receipt:", error);
+      res.status(500).json({ error: "Failed to delete receipt" });
+    }
+  });
+
   // Get receipts for a specific job
 
   // Get receipt for a specific invoice

@@ -217,7 +217,7 @@ export default function LeadsScreen() {
         estimatedValue: parsedValue !== null && !isNaN(parsedValue) ? parsedValue.toFixed(2) : null,
       };
       if (editingLead) {
-        await api.patch(`/api/leads/${editingLead.id}`, payload);
+        await api.put(`/api/leads/${editingLead.id}`, payload);
       } else {
         await api.post('/api/leads', payload);
       }
@@ -261,7 +261,7 @@ export default function LeadsScreen() {
 
   const handleStatusChange = async (lead: Lead, newStatus: LeadStatus) => {
     try {
-      await api.patch(`/api/leads/${lead.id}`, { status: newStatus });
+      await api.put(`/api/leads/${lead.id}`, { status: newStatus });
       fetchLeads();
     } catch (e) {
       Alert.alert('Error', 'Failed to update status');

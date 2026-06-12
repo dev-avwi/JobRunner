@@ -471,7 +471,7 @@ export default function OnboardingSetupScreen() {
       }
 
       if (workerName.trim() || workerLastName.trim()) {
-        await api.patch('/api/user/profile', {
+        await api.patch('/api/profile/me', {
           firstName: workerName.trim(),
           lastName: workerLastName.trim(),
         });
@@ -503,10 +503,9 @@ export default function OnboardingSetupScreen() {
 
     setIsLoading(true);
     try {
-      await api.patch('/api/user/profile', {
+      await api.patch('/api/profile/me', {
         firstName: subName.trim(),
         lastName: subLastName.trim(),
-        tradeType: subTradeType || undefined,
       });
 
       const existingSettings = useAuthStore.getState().businessSettings;
