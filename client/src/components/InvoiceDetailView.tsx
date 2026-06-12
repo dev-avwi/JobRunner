@@ -158,13 +158,31 @@ export default function InvoiceDetailView({
     enabled: !!invoice?.quoteId && businessSettings?.includeSignatureOnInvoices === true
   });
 
-  const { data: termsTemplate } = useQuery<BusinessTemplate>({
+  const { data: termsTemplate } = useQuery<BusinessTemplate | null>({
     queryKey: ["/api/business-templates/active/terms_conditions"],
+    queryFn: async () => {
+      const response = await fetch("/api/business-templates/active/terms_conditions", {
+        credentials: 'include',
+        headers: getAuthHeaders()
+      });
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error('Failed to fetch terms template');
+      return response.json();
+    },
     enabled: !!invoice,
   });
 
-  const { data: warrantyTemplate } = useQuery<BusinessTemplate>({
+  const { data: warrantyTemplate } = useQuery<BusinessTemplate | null>({
     queryKey: ["/api/business-templates/active/warranty"],
+    queryFn: async () => {
+      const response = await fetch("/api/business-templates/active/warranty", {
+        credentials: 'include',
+        headers: getAuthHeaders()
+      });
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error('Failed to fetch warranty template');
+      return response.json();
+    },
     enabled: !!invoice,
   });
 

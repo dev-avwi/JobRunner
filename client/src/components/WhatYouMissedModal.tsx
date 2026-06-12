@@ -46,9 +46,29 @@ interface MissedNotificationsResponse {
 const AUTO_DISMISS_DELAY = 10000;
 const COUNTDOWN_INTERVAL = 100;
 
+const SHOWN_IDS_STORAGE_KEY = 'whatYouMissed:shownIds';
+
+function loadShownIds(): Set<string> {
+  try {
+    const raw = sessionStorage.getItem(SHOWN_IDS_STORAGE_KEY);
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    // ignore storage/parse errors
+  }
+  return new Set();
+}
+
+function persistShownIds(ids: Set<string>) {
+  try {
+    sessionStorage.setItem(SHOWN_IDS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+  } catch {
+    // ignore storage errors (e.g. private mode)
+  }
+}
+
 export default function WhatYouMissedModal() {
   const [open, setOpen] = useState(false);
-  const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(new Set());
+  const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(() => loadShownIds());
   const [countdown, setCountdown] = useState(AUTO_DISMISS_DELAY);
   const [, setLocation] = useLocation();
 
@@ -56,7 +76,8 @@ export default function WhatYouMissedModal() {
     queryKey: ['/api/notifications/missed'],
   });
 
-  // Show modal when there are new notifications that haven't been shown yet
+  // Show modal once per session per notification set. Shown ids are persisted to
+  // sessionStorage so navigating between routes (or reloading) doesn't re-trigger it.
   useEffect(() => {
     if (data && data.count > 0) {
       const currentIds = data.notifications.map(n => n.id);
@@ -67,7 +88,10 @@ export default function WhatYouMissedModal() {
         if (hasNewNotifications) {
           setOpen(true);
           setCountdown(AUTO_DISMISS_DELAY);
-          return new Set(currentIds);
+          const next = new Set(prevShownIds);
+          currentIds.forEach(id => next.add(id));
+          persistShownIds(next);
+          return next;
         }
         return prevShownIds;
       });

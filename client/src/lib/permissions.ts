@@ -155,6 +155,9 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   
   // Integrations - owner only
   { path: '/integrations', label: 'Integrations', allowedRoles: ['owner', 'solo_owner'], showInNav: true },
+
+  // Website Addon - owner only (upsell page handles its own locked/unlocked states)
+  { path: '/website', label: 'Website', allowedRoles: ['owner', 'solo_owner'], showInNav: false },
   
   // Settings - owner/solo full, manager limited, staff profile/notifications/appearance only
   { path: '/settings', label: 'Settings', allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie'], showInNav: true },
