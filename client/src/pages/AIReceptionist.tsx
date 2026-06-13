@@ -92,6 +92,7 @@ interface ReceptionistConfig {
   approvedAt: string | null;
   knowledgeBank: KnowledgeBankContent | null;
   smsNotifications?: boolean;
+  recordingEnabled?: boolean;
   lastLatencyMs?: number | null;
   latencyStatus?: 'optimal' | 'amber' | 'warn' | null;
   lastLatencyCheckedAt?: string | null;
@@ -412,6 +413,7 @@ export default function AIReceptionist() {
     transferNumbers: TransferNumber[];
     businessHours: BusinessHours;
     smsNotifications: boolean;
+    recordingEnabled: boolean;
   } | null>(null);
 
   const initForm = () => {
@@ -427,6 +429,7 @@ export default function AIReceptionist() {
         days: [1, 2, 3, 4, 5],
       },
       smsNotifications: config?.smsNotifications || false,
+      recordingEnabled: config?.recordingEnabled || false,
     });
     setEditMode(true);
   };
@@ -438,6 +441,7 @@ export default function AIReceptionist() {
     transferNumbers: TransferNumber[];
     businessHours?: BusinessHours;
     smsNotifications?: boolean;
+    recordingEnabled?: boolean;
   }
 
   const hasExistingConfig = !!config;
@@ -532,6 +536,7 @@ export default function AIReceptionist() {
       transferNumbers: formData.transferNumbers,
       businessHours: formData.mode === "after_hours" ? formData.businessHours : undefined,
       smsNotifications: formData.smsNotifications,
+      recordingEnabled: formData.recordingEnabled,
     });
   };
 
@@ -1188,6 +1193,27 @@ export default function AIReceptionist() {
                         checked={formData.smsNotifications}
                         onCheckedChange={(checked) => setFormData({ ...formData, smsNotifications: checked })}
                         data-testid="switch-sms-notifications"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <Mic className="h-5 w-5" style={{ color: "hsl(var(--trade))" }} />
+                        <div>
+                          <Label className="text-sm font-medium">Record Calls</Label>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Off by default. When on, callers are told the call may be recorded before it starts. Only turn this on if you have the caller's consent to record.
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={formData.recordingEnabled}
+                        onCheckedChange={(checked) => setFormData({ ...formData, recordingEnabled: checked })}
+                        data-testid="switch-recording"
                       />
                     </div>
                   </CardContent>

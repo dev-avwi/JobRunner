@@ -124,6 +124,7 @@ interface VapiAssistantConfig {
   transferNumbers?: Array<{ name: string; phone: string; priority: number }>;
   businessHours?: BusinessHoursConfig;
   webhookUrl: string;
+  recordingEnabled?: boolean;
   services?: string[];
   teamInfo?: Array<{ name: string; role: string }>;
   knownClientCount?: number;
@@ -579,6 +580,20 @@ function buildToolDefinitions(config: VapiAssistantConfig): any[] {
   return tools;
 }
 
+// Spoken disclosure prepended to the assistant's first message when call
+// recording is enabled, so callers are notified before any recording happens.
+const RECORDING_NOTICE = "Just so you know, this call may be recorded.";
+
+// Appends the recording disclosure to a greeting only when recording is on and
+// the greeting doesn't already mention it. When recording is off, returns the
+// greeting unchanged (which also strips any previously-added notice, since we
+// only ever store the clean greeting).
+function applyRecordingNotice(message: string, recordingEnabled?: boolean): string {
+  if (!recordingEnabled) return message;
+  if (/record/i.test(message)) return message;
+  return `${message} ${RECORDING_NOTICE}`;
+}
+
 export async function createAssistant(config: VapiAssistantConfig): Promise<VapiResponse> {
   const voiceConfig = AUSTRALIAN_VOICES[config.voice || 'Jess'] || AUSTRALIAN_VOICES['Jess'];
 
@@ -609,13 +624,13 @@ export async function createAssistant(config: VapiAssistantConfig): Promise<Vapi
       } : {}),
     },
     transcriber: buildTranscriberConfig(config),
-    firstMessage: config.greeting || `G'day, thanks for calling ${config.businessName}. How can I help you today?`,
+    firstMessage: applyRecordingNotice(config.greeting || `G'day, thanks for calling ${config.businessName}. How can I help you today?`, config.recordingEnabled),
     endCallMessage: config.endCallMessage || 'Thanks for calling! Someone from the team will be in touch soon. Have a great day!',
     serverUrl: config.webhookUrl,
     silenceTimeoutSeconds: config.silenceTimeoutSeconds ?? 30,
     maxDurationSeconds: config.maxCallDurationSeconds ?? 600,
     backgroundSound: config.backgroundSound || 'off',
-    recordingEnabled: true,
+    recordingEnabled: config.recordingEnabled ?? false,
     // --- Balanced turn-taking (snappy but won't cut callers off mid-spelling) ---
     responseDelaySeconds: 0,
     llmRequestDelaySeconds: 0,
@@ -696,7 +711,13 @@ export async function updateAssistant(assistantId: string, config: Partial<VapiA
   }
 
   if (config.greeting) {
-    updates.firstMessage = config.greeting;
+    updates.firstMessage = applyRecordingNotice(config.greeting, config.recordingEnabled);
+  } else if (config.recordingEnabled !== undefined) {
+    updates.firstMessage = applyRecordingNotice(`G'day, thanks for calling ${config.businessName || 'us'}. How can I help you today?`, config.recordingEnabled);
+  }
+
+  if (config.recordingEnabled !== undefined) {
+    updates.recordingEnabled = config.recordingEnabled;
   }
 
   if (config.businessName || config.greeting || config.transferNumbers || config.businessHours || config.tradeType || config.services || config.teamInfo || config.knownClientCount || config.knowledgeBank || config.aiModel || config.aiMaxTokens !== undefined || config.aiTemperature !== undefined || config.customInstructions !== undefined) {
@@ -1009,6 +1030,7 @@ export async function enableAiReceptionist(userId: string): Promise<{
       teamInfo,
       knownClientCount,
       knowledgeBank: knowledgeBank || undefined,
+      recordingEnabled: config?.recordingEnabled ?? false,
       aiModel: config?.aiModel || 'gpt-4o-mini',
       aiMaxTokens: config?.aiMaxTokens ?? 250,
       aiTemperature: config?.aiTemperature ?? 0.5,
@@ -1125,6 +1147,7 @@ export async function updateReceptionistConfig(userId: string, updates: {
   businessHours?: BusinessHoursConfig;
   knowledgeBank?: KnowledgeBankContent;
   smsNotifications?: boolean;
+  recordingEnabled?: boolean;
   voiceStability?: number;
   voiceClarity?: number;
   voiceSpeed?: number;
@@ -1157,6 +1180,7 @@ export async function updateReceptionistConfig(userId: string, updates: {
     if (updates.businessHours) configUpdates.businessHours = updates.businessHours;
     if (updates.knowledgeBank !== undefined) configUpdates.knowledgeBank = updates.knowledgeBank;
     if (updates.smsNotifications !== undefined) configUpdates.smsNotifications = updates.smsNotifications;
+    if (updates.recordingEnabled !== undefined) configUpdates.recordingEnabled = updates.recordingEnabled;
     if (updates.voiceStability !== undefined) configUpdates.voiceStability = updates.voiceStability;
     if (updates.voiceClarity !== undefined) configUpdates.voiceClarity = updates.voiceClarity;
     if (updates.voiceSpeed !== undefined) configUpdates.voiceSpeed = updates.voiceSpeed;
@@ -1183,7 +1207,7 @@ export async function updateReceptionistConfig(userId: string, updates: {
       updates.voiceStyleExaggeration !== undefined || updates.voiceSpeakerBoost !== undefined ||
       updates.voicemailDetectionEnabled !== undefined || updates.voicemailMessage !== undefined ||
       updates.silenceTimeoutSeconds !== undefined || updates.maxCallDurationSeconds !== undefined ||
-      updates.endCallMessage !== undefined || updates.backgroundSound !== undefined;
+      updates.endCallMessage !== undefined || updates.backgroundSound !== undefined || updates.recordingEnabled !== undefined;
 
     if (config.vapiAssistantId && needsVapiSync) {
       try {
@@ -1239,6 +1263,7 @@ export async function updateReceptionistConfig(userId: string, updates: {
           aiMaxTokens: updates.aiMaxTokens ?? config.aiMaxTokens ?? 250,
           aiTemperature: updates.aiTemperature ?? config.aiTemperature ?? 0.5,
           customInstructions: updates.customInstructions ?? config.customInstructions ?? undefined,
+          recordingEnabled: updates.recordingEnabled ?? config.recordingEnabled ?? false,
         });
       } catch (e: any) {
         const msg = e instanceof Error ? e.message : 'Unknown error';
@@ -1265,6 +1290,7 @@ export async function updateReceptionistConfigById(configId: string, userId: str
   businessHours?: BusinessHoursConfig;
   knowledgeBank?: KnowledgeBankContent;
   smsNotifications?: boolean;
+  recordingEnabled?: boolean;
   voiceStability?: number;
   voiceClarity?: number;
   voiceSpeed?: number;
@@ -1299,7 +1325,7 @@ export async function updateReceptionistConfigById(configId: string, userId: str
       updates.voiceStyleExaggeration !== undefined || updates.voiceSpeakerBoost !== undefined ||
       updates.voicemailDetectionEnabled !== undefined || updates.voicemailMessage !== undefined ||
       updates.silenceTimeoutSeconds !== undefined || updates.maxCallDurationSeconds !== undefined ||
-      updates.endCallMessage !== undefined || updates.backgroundSound !== undefined;
+      updates.endCallMessage !== undefined || updates.backgroundSound !== undefined || updates.recordingEnabled !== undefined;
 
     if (needsVapiSync) {
       const settings = await storage.getBusinessSettings(userId);
@@ -1363,8 +1389,13 @@ export async function updateReceptionistConfigById(configId: string, userId: str
         };
       }
 
-      if (updates.greeting) {
-        vapiUpdates.firstMessage = updates.greeting;
+      const resolvedRecording = updates.recordingEnabled ?? config.recordingEnabled ?? false;
+      if (updates.greeting !== undefined || updates.recordingEnabled !== undefined) {
+        const baseGreeting = (updates.greeting ?? config.greeting) || `G'day, thanks for calling ${settings?.businessName || 'us'}. How can I help you today?`;
+        vapiUpdates.firstMessage = applyRecordingNotice(baseGreeting, resolvedRecording);
+      }
+      if (updates.recordingEnabled !== undefined) {
+        vapiUpdates.recordingEnabled = updates.recordingEnabled;
       }
 
       if (updates.voicemailDetectionEnabled !== undefined) {

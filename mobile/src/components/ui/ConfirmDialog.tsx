@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { Modal, View, Text, Pressable, StyleSheet, Platform, KeyboardAvoidingView, Animated, Alert } from 'react-native';
+import { Modal, View, Text, Pressable, StyleSheet, Platform, KeyboardAvoidingView, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../lib/theme';
 import { radius, spacing, typography, shadows } from '../../lib/design-tokens';
@@ -41,30 +41,10 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
   }, [pending, scaleAnim]);
 
   const confirm = useCallback((options: ConfirmDialogOptions) => {
-    // iOS: use the native system alert (it looks polished / Liquid Glass).
-    // Android & web: the native Android alert looks poor, so use the in-app
-    // themed modal instead.
-    if (Platform.OS === 'ios') {
-      return new Promise<boolean>((resolve) => {
-        const buttons: any[] = [];
-        if (options.showCancel !== false) {
-          buttons.push({
-            text: options.cancelText ?? 'Cancel',
-            style: 'cancel',
-            onPress: () => resolve(false),
-          });
-        }
-        buttons.push({
-          text: options.confirmText ?? 'Confirm',
-          style: options.destructive ? 'destructive' : 'default',
-          onPress: () => resolve(true),
-        });
-        Alert.alert(options.title, options.message, buttons, {
-          cancelable: options.showCancel !== false,
-          onDismiss: () => resolve(false),
-        });
-      });
-    }
+    // Use the in-app themed modal on every platform. The native iOS alert
+    // rendered the destructive button with the app tint (near-white in some
+    // themes), making "Sign Out" invisible. The branded modal hardcodes a
+    // visible red destructive fill, so it stays readable on all themes.
     return new Promise<boolean>((resolve) => {
       setPending({ ...options, resolve });
     });

@@ -373,13 +373,14 @@ export default function TermsOfService() {
               <section>
                 <h2 className="text-xl font-semibold mb-3">24. AI-Generated Content Disclaimer</h2>
                 <p className="text-muted-foreground leading-relaxed mb-3">
-                  JobRunner uses artificial intelligence (including GPT-4o-mini and GPT-4o) to provide suggestions, generate quote descriptions, analyse photos, and assist with business operations.
+                  JobRunner uses artificial intelligence (including GPT-4o-mini and GPT-4o) to provide suggestions, generate quote descriptions and job summaries, analyse and categorise photos, scan receipts, detect potential safety hazards, and assist with business operations.
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li>AI-generated content is provided as a suggestion only and should not be relied upon as professional, legal, financial, or trade advice</li>
-                  <li>Users are solely responsible for reviewing, verifying, and approving all AI-generated content before use</li>
+                  <li>AI-generated content (including quotes, hazard detection, receipt scanning, and job summaries) is provided as a suggestion only and may contain errors, omissions, or inaccuracies. It should not be relied upon as professional, legal, financial, trade, or safety advice</li>
+                  <li>Users are solely responsible for reviewing, verifying, and approving all AI-generated content before relying on or acting upon it</li>
                   <li>JobRunner does not guarantee the accuracy, completeness, or appropriateness of AI-generated content</li>
                   <li>AI features may use anonymised and aggregated data to improve service quality, but individual business data is not shared with third parties for AI training purposes</li>
+                  <li>JobRunner accepts no liability for any loss, cost, or damage arising from decisions made in reliance on AI-generated content</li>
                 </ul>
               </section>
 
@@ -393,7 +394,7 @@ export default function TermsOfService() {
                   <li>The AI Receptionist is designed for information collection and initial customer enquiry handling only. It does not confirm jobs, provide quotes, or make commitments on behalf of your business</li>
                   <li>All job details, quotes, and scheduling communicated by the AI Receptionist must be confirmed by you, the business owner, before any work is undertaken</li>
                   <li>The AI Receptionist may misinterpret customer messages or provide incomplete responses. You are responsible for reviewing all AI-handled conversations and following up with customers as needed</li>
-                  <li>You agree that the AI Receptionist must play an automated greeting informing callers that they are interacting with an AI system and that the call is being recorded and transcribed for quality and business purposes, in compliance with Australian telecommunications laws including the Telecommunications (Interception and Access) Act 1979 (Cth)</li>
+                  <li>The AI Receptionist records and transcribes incoming calls. It plays an automated greeting at the start of each call informing callers that they are interacting with an AI system and that the call is being recorded and transcribed for quality and business purposes. As the subscriber, you are responsible for ensuring your callers are informed of, and where required consent to, the recording of calls, in compliance with the Telecommunications (Interception and Access) Act 1979 (Cth) and applicable Australian state and territory surveillance devices legislation</li>
                   <li>SMS messages sent and received through the AI Receptionist are stored in accordance with our Privacy Policy and may be retained for quality assurance and dispute resolution purposes</li>
                   <li>JobRunner is not liable for any miscommunication, missed enquiries, lost business, or customer disputes arising from the AI Receptionist's responses</li>
                   <li>You are responsible for ensuring that any information the AI Receptionist provides to your customers is accurate and up-to-date by maintaining current business details in your settings</li>
@@ -401,17 +402,19 @@ export default function TermsOfService() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold mb-3">24B. SMS Communications</h2>
+                <h2 className="text-xl font-semibold mb-3">24B. SMS & Email Communications</h2>
                 <p className="text-muted-foreground leading-relaxed mb-3">
-                  JobRunner sends SMS messages on your behalf for various purposes including quote notifications, 
-                  invoice reminders, job updates, and subscription billing notifications. By using the Service:
+                  JobRunner sends automated SMS and email communications on your behalf for various purposes including 
+                  booking and quote notifications, invoice and payment reminders, job updates, review requests, 
+                  customer follow-ups, and subscription billing notifications. By using the Service:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li>You confirm that you have obtained appropriate consent from your customers before sending them SMS communications through the platform</li>
-                  <li>Platform billing and subscription-related SMS messages will be sent from the "JobRunner" sender name. These are service messages and not marketing communications</li>
+                  <li>You confirm that you have obtained appropriate consent from your customers before sending them commercial electronic messages through the platform, as required by the Spam Act 2003 (Cth)</li>
+                  <li>All marketing and commercial messages sent through the platform include a functional unsubscribe or opt-out mechanism, and you must honour any opt-out requests promptly</li>
+                  <li>Platform billing and subscription-related messages will be sent from the "JobRunner" sender name. These are service messages and not marketing communications</li>
                   <li>Standard SMS rates from your carrier may apply to messages received from JobRunner</li>
-                  <li>You agree to comply with the Spam Act 2003 (Cth) and the Do Not Call Register Act 2006 (Cth) when using SMS features to contact your customers</li>
-                  <li>JobRunner reserves the right to suspend SMS functionality if we detect misuse, including sending unsolicited commercial messages</li>
+                  <li>You agree to comply with the Spam Act 2003 (Cth) and the Do Not Call Register Act 2006 (Cth) when using SMS and email features to contact your customers</li>
+                  <li>JobRunner reserves the right to suspend SMS or email functionality if we detect misuse, including sending unsolicited commercial messages</li>
                 </ul>
               </section>
 
@@ -438,6 +441,20 @@ export default function TermsOfService() {
                   <li>Financial reports, profitability figures, payroll calculations, and aged receivables data are generated from the information you provide and should be verified by a qualified accountant or bookkeeper before being relied upon for business decisions or tax reporting</li>
                   <li>You should seek independent professional advice from qualified practitioners (accountants, lawyers, licensed trade advisors) for matters relating to your business, tax obligations, workplace health and safety, and regulatory compliance</li>
                   <li>JobRunner is not liable for any loss, penalty, fine, or damage arising from decisions made based on information displayed in the platform</li>
+                </ul>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold mb-3">26A. Safety & WHS Tools Disclaimer</h2>
+                <p className="text-muted-foreground leading-relaxed mb-3">
+                  JobRunner provides work health and safety (WHS) tools, including Safe Work Method Statement (SWMS) templates, risk matrices, worker sign-off, and AI-assisted hazard detection. These features are provided as tools only.
+                </p>
+                <ul className="list-disc pl-6 text-muted-foreground space-y-2">
+                  <li>You remain solely responsible for compliance with all applicable Work Health and Safety legislation, regulations, codes of practice, and standards in your state or territory</li>
+                  <li>JobRunner does not provide WHS advice and makes no warranty that any document generated using these tools meets any specific legal, regulatory, or industry standard, or is suitable for your particular work, site, or circumstances</li>
+                  <li>You are responsible for reviewing, completing, and verifying all safety documents before relying on them, and for ensuring hazards are properly identified and controlled on site</li>
+                  <li>AI-assisted hazard detection may miss hazards or identify them incorrectly and must not be relied upon as a substitute for a competent person's safety assessment</li>
+                  <li>JobRunner is not liable for any injury, loss, penalty, or damage arising from your use of, or reliance on, the safety and WHS tools</li>
                 </ul>
               </section>
 

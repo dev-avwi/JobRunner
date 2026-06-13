@@ -491,10 +491,49 @@ export default function TermsOfServiceScreen() {
             <BulletItem text="The AI Receptionist is designed for information collection and initial customer enquiry handling only. It does not confirm jobs, provide quotes, or make commitments on behalf of your business" colors={colors} styles={styles} />
             <BulletItem text="All job details, quotes, and scheduling communicated by the AI Receptionist must be confirmed by you, the business owner, before any work is undertaken" colors={colors} styles={styles} />
             <BulletItem text="The AI Receptionist may misinterpret customer messages or provide incomplete responses. You are responsible for reviewing all AI-handled conversations and following up with customers as needed" colors={colors} styles={styles} />
-            <BulletItem text="You agree that the AI Receptionist must play an automated greeting informing callers that they are interacting with an AI system and that the call is being recorded and transcribed for quality and business purposes, in compliance with Australian telecommunications laws including the Telecommunications (Interception and Access) Act 1979 (Cth)" colors={colors} styles={styles} />
+            <BulletItem text="The AI Receptionist records and transcribes incoming calls and plays an automated greeting informing callers that they are interacting with an AI system and that the call is being recorded. As the subscriber, you are responsible for ensuring your callers are informed of, and where required consent to, the recording of calls, in compliance with the Telecommunications (Interception and Access) Act 1979 (Cth) and applicable Australian state and territory surveillance devices legislation" colors={colors} styles={styles} />
             <BulletItem text="SMS messages sent and received through the AI Receptionist are stored in accordance with our Privacy Policy and may be retained for quality assurance and dispute resolution purposes" colors={colors} styles={styles} />
             <BulletItem text="JobRunner is not liable for any miscommunication, missed enquiries, lost business, or customer disputes arising from the AI Receptionist's responses" colors={colors} styles={styles} />
             <BulletItem text="You are responsible for ensuring that any information the AI Receptionist provides to your customers is accurate and up-to-date by maintaining current business details in your settings" colors={colors} styles={styles} />
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>15A. AI-Generated Content</Text>
+          <Text style={styles.paragraph}>
+            JobRunner uses artificial intelligence to generate quote descriptions and job summaries, analyse and categorise photos, scan receipts, and detect potential safety hazards. By using these features, you acknowledge and agree that:
+          </Text>
+          <View style={styles.bulletList}>
+            <BulletItem text="AI-generated content is provided as a suggestion only and may contain errors, omissions, or inaccuracies" colors={colors} styles={styles} />
+            <BulletItem text="You are solely responsible for reviewing, verifying, and approving all AI-generated content before relying on or acting upon it" colors={colors} styles={styles} />
+            <BulletItem text="AI-generated content should not be relied upon as professional, legal, financial, trade, or safety advice" colors={colors} styles={styles} />
+            <BulletItem text="JobRunner accepts no liability for any loss, cost, or damage arising from decisions made in reliance on AI-generated content" colors={colors} styles={styles} />
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>15B. Commercial Electronic Messages</Text>
+          <Text style={styles.paragraph}>
+            JobRunner sends automated SMS and email communications on your behalf, including booking confirmations, payment reminders, review requests, and customer follow-ups. By using these features:
+          </Text>
+          <View style={styles.bulletList}>
+            <BulletItem text="You are responsible for ensuring you have the necessary consent from your customers to receive commercial electronic messages before they are sent through the platform, as required by the Spam Act 2003 (Cth)" colors={colors} styles={styles} />
+            <BulletItem text="All marketing and commercial messages sent through the platform include a functional unsubscribe or opt-out mechanism, and you must honour any opt-out requests promptly" colors={colors} styles={styles} />
+            <BulletItem text="You agree to comply with the Spam Act 2003 (Cth) and the Do Not Call Register Act 2006 (Cth) when contacting your customers" colors={colors} styles={styles} />
+            <BulletItem text="JobRunner reserves the right to suspend messaging functionality if we detect misuse, including sending unsolicited commercial messages" colors={colors} styles={styles} />
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>15C. Safety & WHS Tools Disclaimer</Text>
+          <Text style={styles.paragraph}>
+            JobRunner provides work health and safety (WHS) tools, including Safe Work Method Statement (SWMS) templates, risk matrices, worker sign-off, and AI-assisted hazard detection. These features are provided as tools only.
+          </Text>
+          <View style={styles.bulletList}>
+            <BulletItem text="You remain solely responsible for compliance with all applicable Work Health and Safety legislation, regulations, and codes of practice in your state or territory" colors={colors} styles={styles} />
+            <BulletItem text="JobRunner makes no warranty that any document generated using these tools meets any specific legal, regulatory, or industry standard, or is suitable for your particular work, site, or circumstances" colors={colors} styles={styles} />
+            <BulletItem text="You are responsible for reviewing, completing, and verifying all safety documents before relying on them, and for ensuring hazards are properly identified and controlled on site" colors={colors} styles={styles} />
+            <BulletItem text="JobRunner is not liable for any injury, loss, penalty, or damage arising from your use of, or reliance on, the safety and WHS tools" colors={colors} styles={styles} />
           </View>
         </View>
 
@@ -515,7 +554,7 @@ export default function TermsOfServiceScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>16. General Provisions</Text>
+          <Text style={styles.sectionTitle}>17. General Provisions</Text>
           
           <Text style={styles.subSectionTitle}>Governing Law</Text>
           <Text style={styles.paragraph}>
@@ -544,7 +583,7 @@ export default function TermsOfServiceScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>17. Contact Information</Text>
+          <Text style={styles.sectionTitle}>18. Contact Information</Text>
           <Text style={styles.paragraph}>
             If you have any questions about these Terms of Service, please contact us:
           </Text>

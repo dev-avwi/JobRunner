@@ -47,6 +47,9 @@ export default function PrivacyPolicy() {
                   <li><strong>GPS & Location Data:</strong> When enabled, we collect GPS coordinates, accuracy metrics, speed, heading, altitude, and reverse-geocoded addresses during work hours for time tracking, geofencing, and job site verification purposes</li>
                   <li><strong>Time Tracking Data:</strong> Clock in/out times, break durations, pause events, hourly rates, and a full audit trail of any manual edits made to time entries including who made the change and when</li>
                   <li><strong>Device Information:</strong> Battery level, charging status, device type, and operating system version to support offline sync and location tracking features</li>
+                  <li><strong>Photos & Images:</strong> Job site photos (including before and after images), site inspection photos, receipt scans, and signed documents you capture or upload for job documentation</li>
+                  <li><strong>Audio Recordings:</strong> Voice notes you record for transcription, and AI Receptionist call recordings (when the feature is enabled)</li>
+                  <li><strong>Photo Metadata:</strong> GPS location and timestamp information embedded in photos for job site and worker-presence verification</li>
                 </ul>
               </section>
 
@@ -237,6 +240,13 @@ export default function PrivacyPolicy() {
                   <li>Analytics data is aggregated and does not identify you personally</li>
                   <li>You can opt out of analytics tracking through your browser settings or by using a browser extension that blocks Google Analytics</li>
                 </ul>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold mb-3">9C. AI Receptionist Call Recording</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  When the AI Receptionist feature is enabled, incoming voice calls are answered by an AI system (powered by Vapi.ai) and are recorded and transcribed for quality assurance and business purposes. An automated greeting informs callers at the start of each call that they are interacting with an AI system and that the call is being recorded. As the business owner (subscriber), you are responsible for ensuring your callers are informed of, and where required consent to, the recording of calls, in compliance with the Telecommunications (Interception and Access) Act 1979 (Cth) and applicable Australian state and territory surveillance devices legislation. Call recordings and transcripts are stored securely and retained in accordance with this Privacy Policy.
+                </p>
               </section>
 
               <section>

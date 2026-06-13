@@ -178,12 +178,14 @@ export default function PrivacyPolicyScreen() {
             <BulletItem text="Travel routes for mileage tracking (if enabled)" colors={colors} styles={styles} />
           </View>
 
-          <Text style={styles.subSectionTitle}>Photos and Documents</Text>
+          <Text style={styles.subSectionTitle}>Photos, Documents & Audio</Text>
           <View style={styles.bulletList}>
             <BulletItem text="Before and after job photos" colors={colors} styles={styles} />
             <BulletItem text="Site inspection images and documentation" colors={colors} styles={styles} />
             <BulletItem text="Signed quotes, contracts, and completion certificates" colors={colors} styles={styles} />
-            <BulletItem text="Uploaded receipts and expense documentation" colors={colors} styles={styles} />
+            <BulletItem text="Uploaded receipts and scanned receipt images" colors={colors} styles={styles} />
+            <BulletItem text="Voice notes and audio recordings you capture for transcription" colors={colors} styles={styles} />
+            <BulletItem text="GPS location and timestamp metadata embedded in photos for job site verification" colors={colors} styles={styles} />
           </View>
 
           <Text style={styles.subSectionTitle}>Financial Information</Text>
@@ -420,7 +422,7 @@ export default function PrivacyPolicyScreen() {
           </View>
           <Text style={styles.subSectionTitle}>AI Receptionist Voice Calls</Text>
           <Text style={[styles.paragraph, styles.lastParagraph]}>
-            When the AI Receptionist feature is enabled, incoming voice calls are answered by an AI system powered by Vapi.ai. Calls are recorded and transcribed for quality assurance and business purposes. The AI greeting informs callers that the call is being handled by an AI system and may be recorded, in compliance with Australian telecommunications laws including the Telecommunications (Interception and Access) Act 1979 (Cth).
+            When the AI Receptionist feature is enabled, incoming voice calls are answered by an AI system powered by Vapi.ai. Calls are recorded and transcribed for quality assurance and business purposes. An automated greeting informs callers at the start of each call that they are interacting with an AI system and that the call is being recorded. As the business owner (subscriber), you are responsible for ensuring your callers are informed of, and where required consent to, the recording of calls, in compliance with the Telecommunications (Interception and Access) Act 1979 (Cth) and applicable Australian state and territory surveillance devices legislation.
           </Text>
         </View>
 
