@@ -78,7 +78,7 @@ export default function SubbieBillBuilder() {
     setLoadingBusinesses(true);
     try {
       const res = await api.get<{ businesses: BusinessOption[] }>('/api/auth/my-businesses');
-      const all = res.data?.businesses || [];
+      const all = Array.isArray(res.data?.businesses) ? res.data.businesses : [];
       const subOnly = all.filter(b => (b.roleName || '').toLowerCase().includes('subcontractor'));
       const list = subOnly.length > 0 ? subOnly : all;
       setBusinesses(list);
@@ -96,7 +96,7 @@ export default function SubbieBillBuilder() {
     setLoadingJobs(true);
     try {
       const res = await api.get<CompletedJob[]>(`/api/subcontractor/completed-jobs?businessOwnerId=${ownerId}`);
-      setCompletedJobs(res.data || []);
+      setCompletedJobs(Array.isArray(res.data) ? res.data : []);
     } catch {
       setCompletedJobs([]);
     } finally {
