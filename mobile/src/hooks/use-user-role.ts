@@ -79,24 +79,39 @@ const isCacheStale = (cache: CachedRoleData | undefined): boolean => {
   return Date.now() - cache.timestamp > CACHE_TTL_MS;
 };
 
-// Helper to get permissions from team member info (respects custom permissions)
-const getTeamMemberPermissions = (info: TeamMemberInfo): string[] => {
+// Helper to get permissions from team member info (respects custom permissions).
+// Defensive: the server's standalone-owner / subcontractor branch of
+// /api/team/my-role returns `permissions` as an OBJECT (not an array), so always
+// normalize to string[] to avoid `.includes is not a function` crashes downstream.
+const getTeamMemberPermissions = (info: any): string[] => {
   // Use custom permissions if enabled
-  if (info.useCustomPermissions && info.customPermissions) {
+  if (info.useCustomPermissions && Array.isArray(info.customPermissions)) {
     return info.customPermissions;
   }
-  // Otherwise use standard role permissions
-  return info.permissions || [];
+  // Standard role permissions when provided as an array
+  if (Array.isArray(info.permissions)) {
+    return info.permissions;
+  }
+  // Owners (incl. standalone subcontractors) get full access via wildcard
+  if (info.isOwner || info.role === 'owner' || info.role === 'solo_owner') {
+    return ['*'];
+  }
+  return [];
 };
 
-const getRoleFromTeamInfo = (info: TeamMemberInfo): UserRoleType => {
-  const roleName = info.roleName.toLowerCase();
+const getRoleFromTeamInfo = (info: any): UserRoleType => {
+  const roleName = (info.roleName || '').toLowerCase();
   if (roleName.includes('owner')) return 'owner';
   if (roleName.includes('manager') || roleName.includes('admin') || roleName.includes('supervisor')) {
     return 'manager';
   }
   if (roleName.includes('subcontractor') || roleName.includes('sub_contractor')) {
     return 'subcontractor';
+  }
+  // No usable roleName: fall back to the server-provided role / isOwner flags
+  // (the standalone-owner branch omits roleName entirely).
+  if (info.role === 'owner' || info.role === 'solo_owner' || info.isOwner) {
+    return 'owner';
   }
   return 'staff';
 };
@@ -303,8 +318,8 @@ export function useUserRole() {
   const getPermissions = useCallback((): string[] => {
     if (!userId) return [];
     
-    // If we have cache, use it
-    if (cache) return cache.permissions;
+    // If we have cache, use it (guard against non-array permissions)
+    if (cache) return Array.isArray(cache.permissions) ? cache.permissions : [];
     
     // If likely owner during loading, grant all
     if (isBusinessOwner(businessSettings, userId)) {
@@ -325,9 +340,11 @@ export function useUserRole() {
     // If cached, use cache
     if (cache) {
       if (cache.role === 'owner' || cache.role === 'solo_owner') return true;
+      // Guard against non-array permissions (legacy owner/subcontractor object shape)
+      const perms = Array.isArray(cache.permissions) ? cache.permissions : [];
       // Handle wildcard "*" permission (Administrator and other full-access roles)
-      if (cache.permissions.includes('*')) return true;
-      return cache.permissions.includes(key);
+      if (perms.includes('*')) return true;
+      return perms.includes(key);
     }
     
     // During loading, check if likely owner
