@@ -39,6 +39,16 @@ a redundant second bar on Android. Custom in-content row = one bar, no gap.
 native Stack header will double-stack on Android. Prefer hiding the native one
 on Android and putting Back/actions in content.
 
+**Generalization (all platforms):** the global `<Header/>` is ALWAYS on, so ANY
+`more/` screen that sets `Stack.Screen options={{ headerShown: true }}`
+double-stacks on iOS too — shows a big blank top gap, looks "broken/too wide".
+The `more/_layout.tsx` default is `headerShown: false`; screens that override it
+to `true` are the bug. Fix = `headerShown: false` + an in-content header row
+(TouchableOpacity/PressableRow back button with `chevron-left`, centered title,
+`headerRight` spacer width 36), copying `create-job.tsx`. No extra top safe-area
+inset needed — the global header already owns it. Offenders fixed: the
+subcontractor invoicing flow (`subbie-bill.tsx`, `subbie-earnings.tsx`).
+
 ## Grid cards collapsing to 1 column
 KPI/grid cards sized from `useContentWidth()` math collapse to a single column
 because the page container is capped at `OPTIMAL_CONTENT_WIDTH` (usePageShell)

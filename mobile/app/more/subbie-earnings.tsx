@@ -111,7 +111,14 @@ export default function SubbieEarnings() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Quotes & Invoices', headerShown: true }} />
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+          <Feather name="chevron-left" size={24} color={colors.foreground} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Quotes & Invoices</Text>
+        <View style={styles.headerRight} />
+      </View>
 
       <View style={styles.segment}>
         {(['all', 'quote', 'invoice'] as FilterTab[]).map(t => (
@@ -190,6 +197,26 @@ export default function SubbieEarnings() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    backButton: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      backgroundColor: colors.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.foreground },
+    headerRight: { width: 36 },
     segment: {
       flexDirection: 'row',
       backgroundColor: colors.muted,

@@ -233,14 +233,21 @@ export default function SubbieBillBuilder() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Bill a Business', headerShown: true }} />
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+          <Feather name="chevron-left" size={24} color={colors.foreground} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Bill a Business</Text>
+        <View style={styles.headerRight} />
+      </View>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: insets.bottom + 120 }}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: insets.bottom + 120 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Doc type toggle */}
@@ -453,6 +460,26 @@ export default function SubbieBillBuilder() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    backButton: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      backgroundColor: colors.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.foreground },
+    headerRight: { width: 36 },
     label: {
       fontSize: 13,
       fontWeight: '600',
