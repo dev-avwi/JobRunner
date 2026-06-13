@@ -129,18 +129,18 @@ struct JobRunnerLiveActivity: Widget {
                     .frame(width: 22, height: 22)
                     .padding(.leading, 2)
             } compactTrailing: {
-                // Hug the timer's natural width with .fixedSize() instead of
-                // reserving a fixed 56pt frame — the reserved frame left dead
-                // space to the right of short values like "1:00", which made
-                // the compact island stretch wider than its content. fixedSize
-                // lets the pill size snugly to the digits and still grow
-                // naturally when the timer rolls over into longer values.
+                // Hug the timer's natural width with .fixedSize() and zero
+                // outer padding so the pill collapses as tight as iOS allows.
+                // The system still reserves some trailing width for `style:
+                // .timer` to grow into (so the pill doesn't jump when the
+                // timer crosses digit boundaries) — that's intentional iOS
+                // behaviour and not something we can override without
+                // giving up the live-counting formatter.
                 Text(context.attributes.startedAt, style: .timer)
                     .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
                     .foregroundStyle(Color.onBreak)
                     .lineLimit(1)
                     .fixedSize()
-                    .padding(.trailing, 2)
             } minimal: {
                 // Minimal slot is ~36pt — no logo fits legibly. Show just
                 // the live timer in brand amber so the user reads the
