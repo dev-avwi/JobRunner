@@ -3251,6 +3251,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await AuthService.register(cleanUserData);
       
       if (result.success) {
+        // Record Terms of Service + Privacy Policy acceptance as an append-only
+        // audit trail (who / when / which version / platform / IP) so consent
+        // can be proven in a dispute. Non-blocking — never fail signup over it.
+        try {
+          const xff = req.headers['x-forwarded-for'];
+          const ipAddress = (typeof xff === 'string' ? xff.split(',')[0].trim() : undefined) || req.ip || undefined;
+          await storage.createTermsAcceptance({
+            userId: result.user.id,
+            termsVersion: 'v1.0 April 2026',
+            platform: req.body?.platform === 'mobile' ? 'mobile' : 'web',
+            ipAddress,
+          });
+        } catch (consentError) {
+          console.error('Failed to record terms acceptance:', consentError);
+        }
+
         // Beta cohort assignment removed — production mode active.
         // Founding member status is granted manually via Admin Dashboard.
 

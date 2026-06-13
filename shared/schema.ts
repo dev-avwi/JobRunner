@@ -396,6 +396,24 @@ export const loginCodes = pgTable("login_codes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Records each user's acceptance of the Terms of Service + Privacy Policy at
+// signup. Kept as an append-only audit trail (one row per acceptance) so a
+// dispute can be proven: who agreed, when, to which version, on which platform.
+export const termsAcceptances = pgTable("terms_acceptance", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  termsVersion: varchar("terms_version").notNull(),
+  platform: varchar("platform").notNull(), // 'web' | 'mobile'
+  ipAddress: varchar("ip_address"),
+  acceptedAt: timestamp("accepted_at").defaultNow().notNull(),
+});
+export const insertTermsAcceptanceSchema = createInsertSchema(termsAcceptances).omit({
+  id: true,
+  acceptedAt: true,
+});
+export type InsertTermsAcceptance = z.infer<typeof insertTermsAcceptanceSchema>;
+export type TermsAcceptance = typeof termsAcceptances.$inferSelect;
+
 export type LoginCode = typeof loginCodes.$inferSelect;
 export type InsertLoginCode = typeof loginCodes.$inferInsert;
 

@@ -354,7 +354,8 @@ export default function AuthFlow({ onLoginSuccess, onNeedOnboarding }: AuthFlowP
       
       const response = await apiRequest('POST', '/api/auth/register', {
         ...registerData,
-        username
+        username,
+        platform: 'web'
       });
       const result = await response.json();
 

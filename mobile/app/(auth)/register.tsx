@@ -44,6 +44,7 @@ export default function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const { colors } = useTheme();
@@ -110,6 +111,7 @@ export default function RegisterScreen() {
       lastName: lastName.trim(),
       email: email.trim(),
       password,
+      platform: 'mobile',
     });
 
     setIsLoading(false);
@@ -482,10 +484,35 @@ export default function RegisterScreen() {
               </View>
 
               <TouchableOpacity
-                style={styles.primaryButton}
+                style={styles.termsRow}
+                onPress={() => setAgreedToTerms((v) => !v)}
+                activeOpacity={0.7}
+                testID="checkbox-terms"
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: agreedToTerms }}
+              >
+                <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                  {agreedToTerms ? (
+                    <Ionicons name="checkmark" size={16} color={colors.primaryForeground} />
+                  ) : null}
+                </View>
+                <Text style={styles.termsRowText}>
+                  I agree to the{' '}
+                  <Text style={styles.termsLink} onPress={() => router.push('/more/terms-of-service' as any)}>
+                    Terms of Service
+                  </Text>{' '}and{' '}
+                  <Text style={styles.termsLink} onPress={() => router.push('/more/privacy-policy' as any)}>
+                    Privacy Policy
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.primaryButton, (!agreedToTerms || isLoading) && styles.primaryButtonDisabled]}
                 onPress={handleRegister}
-                disabled={isLoading}
+                disabled={isLoading || !agreedToTerms}
                 activeOpacity={0.8}
+                testID="button-create-account"
               >
                 {isLoading ? (
                   <ActivityIndicator color={colors.primaryForeground} />
@@ -495,16 +522,6 @@ export default function RegisterScreen() {
               </TouchableOpacity>
             </CardContent>
           </Card>
-
-          <Text style={styles.termsNotice}>
-            By creating an account, you agree to our{' '}
-            <Text style={styles.termsLink} onPress={() => router.push('/more/terms-of-service' as any)}>
-              Terms of Service
-            </Text>{' '}and{' '}
-            <Text style={styles.termsLink} onPress={() => router.push('/more/privacy-policy' as any)}>
-              Privacy Policy
-            </Text>
-          </Text>
 
           <View style={styles.spacer} />
 
@@ -778,6 +795,33 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
   },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 16,
+    paddingHorizontal: 2,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  termsRowText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.mutedForeground,
+    lineHeight: 19,
+  },
   primaryButton: {
     backgroundColor: colors.primary,
     paddingVertical: 14,
@@ -786,6 +830,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+  },
+  primaryButtonDisabled: {
+    opacity: 0.5,
   },
   primaryButtonText: {
     color: colors.primaryForeground,

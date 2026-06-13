@@ -35,6 +35,9 @@ import {
   type InsertIntegrationSettings,
   type LoginCode,
   type InsertLoginCode,
+  termsAcceptances,
+  type InsertTermsAcceptance,
+  type TermsAcceptance,
   type ChecklistItem,
   type InsertChecklistItem,
   type PaymentRequest,
@@ -442,6 +445,7 @@ export interface IStorage {
   linkXeroAccount(userId: string, xeroId: string): Promise<void>;
 
   // Login Codes (Passwordless Email Auth)
+  createTermsAcceptance(data: InsertTermsAcceptance): Promise<TermsAcceptance>;
   createLoginCode(email: string, code: string): Promise<void>;
   getLoginCode(email: string, code: string): Promise<{ id: string; email: string; verified: boolean; expiresAt: Date } | undefined>;
   getLatestLoginCodeForEmail(email: string): Promise<{ id: string; email: string; code: string; verified: boolean; expiresAt: Date; createdAt: Date } | undefined>;
@@ -1309,6 +1313,24 @@ pool.on('connect', (client) => {
 export { pool };
 export const db = drizzle(pool);
 
+// Ensure the terms_acceptance audit table exists. We intentionally do NOT use
+// drizzle-kit push on this database (it proposes destructive drops), so new
+// tables are created idempotently with raw SQL at startup. Fire-and-forget.
+pool
+  .query(`
+    CREATE TABLE IF NOT EXISTS terms_acceptance (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL,
+      terms_version varchar NOT NULL,
+      platform varchar NOT NULL,
+      ip_address varchar,
+      accepted_at timestamp NOT NULL DEFAULT now()
+    )
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure terms_acceptance table:', err.message);
+  });
+
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -1539,6 +1561,11 @@ export class PostgresStorage implements IStorage {
   }
 
   // Login Codes (Passwordless Email Auth)
+  async createTermsAcceptance(data: InsertTermsAcceptance): Promise<TermsAcceptance> {
+    const result = await db.insert(termsAcceptances).values(data).returning();
+    return result[0];
+  }
+
   async createLoginCode(email: string, code: string): Promise<void> {
     // Invalidate any existing codes for this email
     await db
