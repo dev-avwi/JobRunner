@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   CalendarDays, Calendar, Briefcase, ChevronRight, GripVertical, Plus,
   Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Car, Route as RouteIcon,
-  FileSignature, MessageSquare, AlertCircle, ArrowUpDown, Check,
+  FileSignature, MessageSquare, ArrowUpDown, Check,
 } from "lucide-react";
 
 interface TodayScheduleCardProps {
@@ -186,7 +186,7 @@ export default function TodayScheduleCard({
   // Pick highest-priority CTA when empty
   const smartCta = useMemo(() => {
     if (!emptyCounts) return null;
-    const { acceptedUnscheduledQuotes, unreadChat, overdueInvoices } = emptyCounts;
+    const { acceptedUnscheduledQuotes, unreadChat } = emptyCounts;
     if (acceptedUnscheduledQuotes > 0) {
       return {
         icon: FileSignature,
@@ -207,16 +207,8 @@ export default function TodayScheduleCard({
         tone: "trade" as const,
       };
     }
-    if (overdueInvoices > 0) {
-      return {
-        icon: AlertCircle,
-        title: `${overdueInvoices} overdue ${overdueInvoices === 1 ? "invoice" : "invoices"}`,
-        description: "Send a friendly chase before it gets older.",
-        actionLabel: "Chase Payment",
-        onClick: () => onNavigate?.("/invoices?filter=overdue"),
-        tone: "warning" as const,
-      };
-    }
+    // Overdue invoices are intentionally NOT surfaced here — the Action Centre
+    // already owns that prompt, and Today's Schedule should stay about the day's work.
     return null;
   }, [emptyCounts, onCreateJob, onNavigate]);
 
@@ -292,7 +284,7 @@ export default function TodayScheduleCard({
             <div className="text-center py-5" data-testid="today-smart-empty">
               <smartCta.icon
                 className="h-8 w-8 mx-auto mb-2"
-                style={{ color: smartCta.tone === "warning" ? "hsl(35, 95%, 50%)" : "hsl(var(--trade))" }}
+                style={{ color: "hsl(var(--trade))" }}
               />
               <p className="text-sm font-medium">{smartCta.title}</p>
               <p className="text-xs text-muted-foreground mt-1 mb-3">{smartCta.description}</p>

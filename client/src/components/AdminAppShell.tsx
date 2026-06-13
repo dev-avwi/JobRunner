@@ -5,6 +5,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarFooter,
   SidebarMenu,
@@ -25,6 +26,11 @@ import {
   HeartPulse,
   MessageSquare,
   DollarSign,
+  Kanban,
+  Bot,
+  PhoneIncoming,
+  PhoneForwarded,
+  Mail,
 } from "lucide-react";
 import appIconUrl from "@assets/jobrunner-logo-cropped.png";
 
@@ -34,41 +40,38 @@ interface AdminAppShellProps {
   onNavigate?: (path: string) => void;
 }
 
-const adminNavItems = [
+const adminNavGroups = [
   {
-    title: "Overview",
-    url: "/admin",
-    icon: LayoutDashboard,
+    label: "Overview",
+    items: [
+      { title: "Overview", url: "/admin", icon: LayoutDashboard },
+      { title: "Revenue", url: "/admin/revenue", icon: DollarSign },
+    ],
   },
   {
-    title: "Revenue",
-    url: "/admin/revenue",
-    icon: DollarSign,
+    label: "Users & Work",
+    items: [
+      { title: "Users", url: "/admin/users", icon: Users },
+      { title: "Kanban", url: "/admin/kanban", icon: Kanban },
+      { title: "Activity", url: "/admin/activity", icon: Activity },
+    ],
   },
   {
-    title: "Communications",
-    url: "/admin/comms",
-    icon: MessageSquare,
+    label: "Comms & AI",
+    items: [
+      { title: "Communications", url: "/admin/comms", icon: MessageSquare },
+      { title: "AI Queue", url: "/admin/ai-queue", icon: Bot },
+      { title: "Calls", url: "/admin/call-monitor", icon: PhoneIncoming },
+      { title: "Porting", url: "/admin/porting", icon: PhoneForwarded },
+      { title: "Email Logs", url: "/admin/email-logs", icon: Mail },
+    ],
   },
   {
-    title: "Users",
-    url: "/admin/users",
-    icon: Users,
-  },
-  {
-    title: "Activity",
-    url: "/admin/activity",
-    icon: Activity,
-  },
-  {
-    title: "System Health",
-    url: "/admin/health",
-    icon: HeartPulse,
-  },
-  {
-    title: "Settings",
-    url: "/admin/settings",
-    icon: Settings,
+    label: "System",
+    items: [
+      { title: "System Health", url: "/admin/health", icon: HeartPulse },
+      { title: "Settings", url: "/admin/settings", icon: Settings },
+    ],
   },
 ];
 
@@ -118,31 +121,34 @@ function AdminSidebar({
       </SidebarHeader>
 
       <SidebarContent className="p-2">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminNavItems.map((item) => {
-                const isActive =
-                  location === item.url ||
-                  (item.url === "/admin" && location === "/admin/");
-                const Icon = item.icon;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      data-testid={`admin-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
-                      onClick={() => onNavigate?.(item.url)}
-                      className={isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {adminNavGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const isActive =
+                    location === item.url ||
+                    (item.url === "/admin" && location === "/admin/");
+                  const Icon = item.icon;
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        data-testid={`admin-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                        onClick={() => onNavigate?.(item.url)}
+                        className={isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-sidebar-border">

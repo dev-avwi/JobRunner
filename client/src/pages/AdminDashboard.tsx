@@ -19,7 +19,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Users, 
   UserCheck, 
@@ -683,6 +682,10 @@ function UsersView({
     });
   }, [usersData?.users, searchQuery, tierFilter, statusFilter]);
 
+  // Hide columns that would otherwise be a wall of "–" for the current rows.
+  const hasAnyBusiness = useMemo(() => filteredUsers.some((u) => !!u.businessName), [filteredUsers]);
+  const hasAnyTrade = useMemo(() => filteredUsers.some((u) => !!u.tradeType), [filteredUsers]);
+
   return (
     <div className="space-y-4">
       <Card className="p-4" data-testid="card-users-filters">
@@ -760,14 +763,14 @@ function UsersView({
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="pl-6">Name</TableHead>
-                  <TableHead className="min-w-[120px]">Actions</TableHead>
                   <TableHead className="hidden sm:table-cell">Email</TableHead>
-                  <TableHead className="hidden lg:table-cell">Business</TableHead>
-                  <TableHead className="hidden xl:table-cell">Trade</TableHead>
-                  <TableHead className="hidden md:table-cell">Signup</TableHead>
+                  {hasAnyBusiness && <TableHead className="hidden lg:table-cell">Business</TableHead>}
+                  {hasAnyTrade && <TableHead className="hidden xl:table-cell">Trade</TableHead>}
+                  <TableHead className="hidden md:table-cell whitespace-nowrap">Signup</TableHead>
                   <TableHead>Tier</TableHead>
-                  <TableHead className="hidden lg:table-cell">Last Active</TableHead>
-                  <TableHead className="hidden lg:table-cell pr-6">Status</TableHead>
+                  <TableHead className="hidden lg:table-cell whitespace-nowrap">Last Active</TableHead>
+                  <TableHead className="hidden lg:table-cell">Status</TableHead>
+                  <TableHead className="min-w-[120px] pr-6 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -783,82 +786,26 @@ function UsersView({
                       <TableCell className="pl-6 font-medium">
                         <span className="truncate block max-w-[120px]">{user.name}</span>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditModal(user)}
-                            title="Manage account"
-                            data-testid={`button-edit-${user.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleImpersonate(user.id)}
-                            title="Login as this user"
-                            data-testid={`button-impersonate-${user.id}`}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              data-testid={`button-delete-user-${user.id}`}
-                            >
-                              {deletingUserId === user.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete User Account</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete <strong>{user.email}</strong>? 
-                                This will permanently remove their account and all associated data including jobs, invoices, quotes, and clients.
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => {
-                                  setDeletingUserId(user.id);
-                                  deleteUserMutation.mutate(user.id);
-                                }}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete Account
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                        </div>
-                      </TableCell>
                       <TableCell className="hidden sm:table-cell text-muted-foreground">
                         <span className="truncate block max-w-[180px]">{user.email || '-'}</span>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-muted-foreground">
-                        <span className="truncate block max-w-[140px]">{user.businessName || '-'}</span>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-cell">
-                        {user.tradeType ? (
-                          <Badge variant="outline" className="capitalize text-xs">
-                            {user.tradeType}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
+                      {hasAnyBusiness && (
+                        <TableCell className="hidden lg:table-cell text-muted-foreground">
+                          <span className="truncate block max-w-[140px]">{user.businessName || '-'}</span>
+                        </TableCell>
+                      )}
+                      {hasAnyTrade && (
+                        <TableCell className="hidden xl:table-cell">
+                          {user.tradeType ? (
+                            <Badge variant="outline" className="capitalize text-xs">
+                              {user.tradeType}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="hidden md:table-cell text-muted-foreground text-sm whitespace-nowrap">
                         {formatDate(user.createdAt)}
                       </TableCell>
                       <TableCell>
@@ -873,10 +820,10 @@ function UsersView({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
+                      <TableCell className="hidden lg:table-cell text-muted-foreground text-sm whitespace-nowrap">
                         {formatRelativeDate(user.updatedAt)}
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell pr-6">
+                      <TableCell className="hidden lg:table-cell">
                         <div className="flex flex-wrap gap-1">
                           {user.hasCompletedOnboarding ? (
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/30 text-xs">
@@ -911,6 +858,67 @@ function UsersView({
                               )}
                             </>
                           )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="pr-6">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditModal(user)}
+                            title="Manage account"
+                            data-testid={`button-edit-${user.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleImpersonate(user.id)}
+                            title="Login as this user"
+                            data-testid={`button-impersonate-${user.id}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <div className="w-px h-5 bg-border mx-1" />
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                data-testid={`button-delete-user-${user.id}`}
+                              >
+                                {deletingUserId === user.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete User Account</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete <strong>{user.email}</strong>? 
+                                  This will permanently remove their account and all associated data including jobs, invoices, quotes, and clients.
+                                  This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => {
+                                    setDeletingUserId(user.id);
+                                    deleteUserMutation.mutate(user.id);
+                                  }}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete Account
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -3579,10 +3587,6 @@ export default function AdminDashboard() {
 
   const currentRoute = adminRoutes.find(r => location === r.path) || adminRoutes[0];
 
-  const handleTabChange = (path: string) => {
-    setLocation(path);
-  };
-
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" data-testid="loading-state">
@@ -3663,30 +3667,6 @@ export default function AdminDashboard() {
           subtitle="Platform analytics and user management"
           leading={<Shield className="h-5 w-5 text-primary" />}
         />
-
-        <Tabs 
-          value={currentRoute.path} 
-          onValueChange={handleTabChange} 
-          className="mb-6"
-          data-testid="admin-tabs"
-        >
-          <TabsList className="w-full sm:w-auto justify-start h-auto p-1 gap-1 overflow-x-auto flex-nowrap">
-            {adminRoutes.map((route) => {
-              const Icon = route.icon;
-              return (
-                <TabsTrigger 
-                  key={route.path} 
-                  value={route.path}
-                  className="flex items-center gap-2 px-3 py-2 shrink-0"
-                  data-testid={`tab-${route.label.toLowerCase()}`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{route.label}</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-        </Tabs>
 
         {renderView()}
     </PageShell>

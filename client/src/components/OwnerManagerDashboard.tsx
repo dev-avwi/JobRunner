@@ -387,7 +387,7 @@ export default function OwnerManagerDashboard({
           >
             <CardContent className="py-2.5 px-3">
               <div className="flex items-center gap-1.5">
-                <CalendarDays className="h-4 w-4 flex-shrink-0 text-primary" />
+                <CalendarDays className="h-4 w-4 flex-shrink-0" style={{ color: 'hsl(var(--trade))' }} />
                 <p className="text-lg font-bold">{kpis?.jobsToday || 0}</p>
               </div>
               <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate">Jobs Today</p>
@@ -400,10 +400,8 @@ export default function OwnerManagerDashboard({
           >
             <CardContent className="py-2.5 px-3">
               <div className="flex items-center gap-1.5">
-                <DollarSign className={`h-4 w-4 flex-shrink-0 ${(kpis?.jobsToInvoice ?? 0) > 0 ? 'text-amber-500' : 'text-muted-foreground'}`} />
-                <p className={`text-lg font-bold ${(kpis?.jobsToInvoice ?? 0) > 0 ? 'text-amber-500' : ''}`}>
-                  {kpis?.jobsToInvoice ?? 0}
-                </p>
+                <DollarSign className="h-4 w-4 flex-shrink-0" style={{ color: 'hsl(var(--trade))' }} />
+                <p className="text-lg font-bold">{kpis?.jobsToInvoice ?? 0}</p>
               </div>
               <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate">To Invoice</p>
             </CardContent>
