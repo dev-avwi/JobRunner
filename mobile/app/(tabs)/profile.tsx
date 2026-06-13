@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Linking,
-  Modal,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -503,19 +503,22 @@ export default function MoreScreen() {
     return visibleCategories.filter(k => k === activeCategory);
   }, [activeCategory, visibleCategories]);
 
-  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const confirm = useConfirmDialog();
   const [signingOut, setSigningOut] = useState(false);
 
-  const handleLogout = () => {
-    setShowSignOutModal(true);
-  };
-
-  const confirmSignOut = async () => {
+  const handleLogout = async () => {
     if (signingOut) return;
+    const ok = await confirm({
+      title: 'Sign out?',
+      message: "You'll need to sign back in.",
+      confirmText: 'Sign Out',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
     setSigningOut(true);
     try {
       await logout();
-      setShowSignOutModal(false);
       router.replace('/(auth)/login');
     } catch {
       setSigningOut(false);
@@ -815,63 +818,6 @@ export default function MoreScreen() {
       </View>
 
       <View style={{ height: spacing['4xl'] }} />
-
-      <Modal
-        visible={showSignOutModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSignOutModal(false)}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 24,
-          }}
-        >
-          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, width: '85%' }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>Sign out?</Text>
-            <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 8 }}>
-              You'll need to sign back in.
-            </Text>
-            <View style={{ marginTop: 24, gap: 10 }}>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={confirmSignOut}
-                disabled={signingOut}
-                style={{
-                  backgroundColor: '#EF4444',
-                  borderRadius: 12,
-                  height: 52,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  opacity: signingOut ? 0.7 : 1,
-                }}
-              >
-                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Sign Out</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => setShowSignOutModal(false)}
-                disabled={signingOut}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 12,
-                  height: 52,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderWidth: 1.5,
-                  borderColor: '#E5E7EB',
-                }}
-              >
-                <Text style={{ color: '#374151', fontSize: 16 }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }
