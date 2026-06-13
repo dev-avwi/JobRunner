@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -21,6 +21,8 @@ import { formatCurrency } from '../../src/lib/format';
 import { showToast } from '../../src/lib/toast';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import api, { API_URL } from '../../src/lib/api';
+import { useAuthStore } from '../../src/lib/store';
+import LiveDocumentPreview from '../../src/components/LiveDocumentPreview';
 
 type DocType = 'invoice' | 'quote';
 
@@ -58,12 +60,18 @@ export default function SubbieBillBuilder() {
   const insets = useSafeAreaInsets();
   const confirm = useConfirmDialog();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const params = useLocalSearchParams<{ docType?: string }>();
+  const { user, businessSettings } = useAuthStore();
+
+  const paramDocType: DocType | null =
+    params.docType === 'quote' ? 'quote' : params.docType === 'invoice' ? 'invoice' : null;
 
   const [businesses, setBusinesses] = useState<BusinessOption[]>([]);
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
   const [businessOwnerId, setBusinessOwnerId] = useState<string | null>(null);
 
-  const [docType, setDocType] = useState<DocType>('invoice');
+  const [docType, setDocType] = useState<DocType | null>(paramDocType);
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [gstEnabled, setGstEnabled] = useState(true);
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
@@ -152,7 +160,36 @@ export default function SubbieBillBuilder() {
   const gst = gstEnabled ? Math.round(subtotal * 0.1 * 100) / 100 : 0;
   const total = Math.round((subtotal + gst) * 100) / 100;
 
-  const docNoun = docType === 'invoice' ? 'Invoice' : 'Quote';
+  const docNoun = docType === 'quote' ? 'Quote' : 'Invoice';
+
+  const selectedBusiness = businesses.find(b => b.businessOwnerId === businessOwnerId) || null;
+  const previewBusiness = {
+    businessName: businessSettings?.businessName || user?.businessName || 'Your Business',
+    abn: (businessSettings as any)?.abn,
+    email: businessSettings?.email || user?.email,
+    phone: (businessSettings as any)?.phone,
+    address: (businessSettings as any)?.address,
+    logoUrl: (businessSettings as any)?.logoUrl,
+    brandColor: (businessSettings as any)?.brandColor,
+  };
+  const previewClient = selectedBusiness
+    ? { name: selectedBusiness.businessName || 'Business' }
+    : null;
+  const previewLineItems = lineItems.map(li => ({
+    description: li.description,
+    quantity: parseFloat(li.quantity) || 0,
+    unitPrice: parseFloat(li.unitPrice) || 0,
+  }));
+
+  const cameFromParam = paramDocType !== null;
+  const handleBack = () => {
+    if (docType && !cameFromParam) {
+      setDocType(null);
+      setActiveTab('edit');
+    } else {
+      router.back();
+    }
+  };
 
   const downloadAndShare = useCallback(async (id: string, label: string) => {
     try {
@@ -235,37 +272,80 @@ export default function SubbieBillBuilder() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
           <Feather name="chevron-left" size={24} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Bill a Business</Text>
+        <Text style={styles.headerTitle}>{docType ? `New ${docNoun}` : 'Bill a Business'}</Text>
         <View style={styles.headerRight} />
       </View>
+
+      {docType === null ? (
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
+          <Text style={styles.chooserHeading}>What do you want to create?</Text>
+          <TouchableOpacity style={styles.chooserCard} onPress={() => setDocType('invoice')} activeOpacity={0.85}>
+            <View style={styles.chooserIcon}>
+              <Feather name="file-text" size={22} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.chooserTitle}>Invoice</Text>
+              <Text style={styles.chooserSub}>Bill a business for completed work</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.chooserCard} onPress={() => setDocType('quote')} activeOpacity={0.85}>
+            <View style={styles.chooserIcon}>
+              <Feather name="file" size={22} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.chooserTitle}>Quote</Text>
+              <Text style={styles.chooserSub}>Send a price estimate before the work</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        </ScrollView>
+      ) : (
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === 'edit' && styles.tabItemActive]}
+            onPress={() => setActiveTab('edit')}
+            activeOpacity={0.8}
+          >
+            <Feather name="edit-2" size={16} color={activeTab === 'edit' ? colors.primaryForeground : colors.foreground} />
+            <Text style={[styles.tabText, activeTab === 'edit' && styles.tabTextActive]}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === 'preview' && styles.tabItemActive]}
+            onPress={() => setActiveTab('preview')}
+            activeOpacity={0.8}
+          >
+            <Feather name="eye" size={16} color={activeTab === 'preview' ? colors.primaryForeground : colors.foreground} />
+            <Text style={[styles.tabText, activeTab === 'preview' && styles.tabTextActive]}>Preview</Text>
+          </TouchableOpacity>
+        </View>
+
+        {activeTab === 'preview' ? (
+          <LiveDocumentPreview
+            type={docType}
+            title={title}
+            lineItems={previewLineItems}
+            notes={notes}
+            business={previewBusiness}
+            client={previewClient}
+            gstEnabled={gstEnabled}
+            templateId={(businessSettings as any)?.documentTemplate || 'minimal'}
+            templateCustomization={(businessSettings as any)?.documentTemplateSettings}
+            bottomPadding={insets.bottom + 120}
+          />
+        ) : (
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: insets.bottom + 120 }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Doc type toggle */}
-          <View style={styles.segment}>
-            {(['invoice', 'quote'] as DocType[]).map(t => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.segmentItem, docType === t && styles.segmentItemActive]}
-                onPress={() => setDocType(t)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.segmentText, docType === t && styles.segmentTextActive]}>
-                  {t === 'invoice' ? 'Invoice' : 'Quote'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
           {/* Business picker */}
           <Text style={styles.label}>Business</Text>
           {loadingBusinesses ? (
@@ -435,6 +515,7 @@ export default function SubbieBillBuilder() {
             </>
           )}
         </ScrollView>
+        )}
 
         {businessOwnerId && (
           <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
@@ -453,6 +534,7 @@ export default function SubbieBillBuilder() {
           </View>
         )}
       </KeyboardAvoidingView>
+      )}
     </View>
   );
 }
@@ -499,6 +581,49 @@ function createStyles(colors: ThemeColors) {
     segmentItemActive: { backgroundColor: colors.card },
     segmentText: { fontSize: 14, fontWeight: '600', color: colors.mutedForeground },
     segmentTextActive: { color: colors.foreground },
+    tabBar: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      backgroundColor: colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    tabItem: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 10,
+      borderRadius: radius.md,
+      backgroundColor: colors.muted,
+    },
+    tabItemActive: { backgroundColor: colors.primary },
+    tabText: { fontSize: 15, fontWeight: '600', color: colors.foreground },
+    tabTextActive: { color: colors.primaryForeground },
+    chooserHeading: { fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs },
+    chooserCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    chooserIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      backgroundColor: colors.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    chooserTitle: { fontSize: 16, fontWeight: '600', color: colors.foreground },
+    chooserSub: { fontSize: 13, color: colors.mutedForeground, marginTop: 2 },
     pickRow: {
       flexDirection: 'row',
       alignItems: 'center',
