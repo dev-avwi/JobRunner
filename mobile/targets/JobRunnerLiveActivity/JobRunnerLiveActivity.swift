@@ -129,18 +129,20 @@ struct JobRunnerLiveActivity: Widget {
                     .frame(width: 22, height: 22)
                     .padding(.leading, 2)
             } compactTrailing: {
-                // Hug the timer's natural width with .fixedSize() and zero
-                // outer padding so the pill collapses as tight as iOS allows.
-                // The system still reserves some trailing width for `style:
-                // .timer` to grow into (so the pill doesn't jump when the
-                // timer crosses digit boundaries) — that's intentional iOS
-                // behaviour and not something we can override without
-                // giving up the live-counting formatter.
+                // Cap the trailing slot to ~MM:SS width so iOS doesn't
+                // reserve the full HH:MM:SS envelope that `style: .timer`
+                // asks for by default. Past 99:59 the digits scale down
+                // to stay inside the frame instead of the pill widening —
+                // acceptable trade-off for a job timer (a single shift
+                // rarely exceeds ~10h, and at that point the user is on
+                // the lock-screen card anyway, not the compact pill).
                 Text(context.attributes.startedAt, style: .timer)
                     .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
                     .foregroundStyle(Color.onBreak)
                     .lineLimit(1)
-                    .fixedSize()
+                    .minimumScaleFactor(0.7)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 44, alignment: .trailing)
             } minimal: {
                 // Minimal slot is ~36pt — no logo fits legibly. Show just
                 // the live timer in brand amber so the user reads the
