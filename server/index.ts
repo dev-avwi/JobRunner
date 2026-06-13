@@ -545,6 +545,15 @@ if (process.env.DATABASE_URL) {
     const originalResJson = res.json;
     res.json = function (bodyJson, ...args) {
       capturedJsonResponse = bodyJson;
+      // If the response was already sent — e.g. the 30s timeout middleware
+      // above fired a 504 before a slow handler (PDF generation under load)
+      // finished, then that handler's success send or catch-block error
+      // response runs late — calling res.json again throws "Cannot set
+      // headers after they are sent to the client" and surfaces as an
+      // unhandled rejection. Quietly no-op instead of crashing the request.
+      if (res.headersSent) {
+        return res;
+      }
       return originalResJson.apply(res, [bodyJson, ...args]);
     };
 
