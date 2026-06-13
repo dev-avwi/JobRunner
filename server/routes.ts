@@ -3611,27 +3611,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const businesses: any[] = [];
 
-      // Skip the "Worker Profile" placeholder: it is not a real own-business, so
-      // a plain worker (one membership + placeholder) gets exactly one entry and
-      // the switcher auto-hides. Subcontractors with multiple real memberships
-      // still get multiple entries and keep the switcher.
+      // Skip the "Worker Profile" placeholder when naming the personal entry: it
+      // is not a real own-business name, so the personal card falls back to the
+      // generic "Personal profile" label instead.
       const hasRealOwnBusiness =
         !!ownSettings?.businessName &&
         ownSettings.businessName !== WORKER_PROFILE_PLACEHOLDER_NAME;
 
-      // Build the joined-business list first so we can tell whether this user is
-      // a subcontractor anywhere (used to always surface a Personal profile).
       const memberships = await storage.getAllTeamMembershipsByMemberId(effectiveUserId);
 
-      let isSubcontractorAnywhere = false;
       const teamBusinessesRaw = await Promise.all(memberships.map(async (m) => {
         const ownerSettings = await storage.getBusinessSettings(m.businessOwnerId);
         const ownerUser = await storage.getUser(m.businessOwnerId);
         const role = m.roleId ? await storage.getUserRole(m.roleId) : null;
         const roleName = role?.name || 'Worker';
-        if (roleName.toLowerCase().includes('subcontractor')) {
-          isSubcontractorAnywhere = true;
-        }
 
         let pendingJobCount = 0;
         try {
@@ -3665,39 +3658,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return true;
       });
 
-      // Personal profile entry. A subcontractor is fundamentally their own
-      // sole-trader business, so they always get a Personal profile they own —
-      // even before they fill in their own business details. Plain workers keep
-      // the old behaviour (no synthetic personal entry; switcher auto-hides).
-      if (hasRealOwnBusiness) {
-        let ownJobCount = 0;
-        try {
-          const ownJobs = await storage.getJobs(effectiveUserId);
-          ownJobCount = ownJobs.filter((j) =>
-            j.status === 'pending' || j.status === 'scheduled'
-          ).length;
-        } catch (err) {}
+      // Personal profile entry — always present and listed first, so every user
+      // can switch back to their own workspace and always sees which workspace is
+      // active. Uses their real business name when set, otherwise falls back to
+      // the generic "Personal profile" label rendered by the client.
+      let ownJobCount = 0;
+      try {
+        const ownJobs = await storage.getJobs(effectiveUserId);
+        ownJobCount = ownJobs.filter((j) =>
+          j.status === 'pending' || j.status === 'scheduled'
+        ).length;
+      } catch (err) {}
 
-        businesses.push({
-          businessOwnerId: effectiveUserId,
-          businessName: ownSettings.businessName,
-          roleName: 'Owner',
-          teamMemberId: null,
-          logoUrl: ownSettings.logoUrl || null,
-          pendingJobCount: ownJobCount,
-          isOwnBusiness: true,
-        });
-      } else if (isSubcontractorAnywhere) {
-        businesses.push({
-          businessOwnerId: effectiveUserId,
-          businessName: null,
-          roleName: 'Owner',
-          teamMemberId: null,
-          logoUrl: ownSettings?.logoUrl || null,
-          pendingJobCount: 0,
-          isOwnBusiness: true,
-        });
-      }
+      businesses.push({
+        businessOwnerId: effectiveUserId,
+        businessName: hasRealOwnBusiness ? ownSettings!.businessName : null,
+        roleName: 'Owner',
+        teamMemberId: null,
+        logoUrl: ownSettings?.logoUrl || null,
+        pendingJobCount: ownJobCount,
+        isOwnBusiness: true,
+      });
 
       businesses.push(...teamBusinesses);
       
