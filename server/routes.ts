@@ -3614,7 +3614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/my-businesses", async (req: any, res) => {
+  app.get("/api/auth/my-businesses", requireAuth, async (req: any, res) => {
     const effectiveUserId = req.userId || req.session?.userId;
     
     if (!effectiveUserId) {
@@ -3708,7 +3708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/switch-business", async (req: any, res) => {
+  app.post("/api/auth/switch-business", requireAuth, async (req: any, res) => {
     const effectiveUserId = req.userId || req.session?.userId;
     
     if (!effectiveUserId) {
@@ -3740,7 +3740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/pending-invites", async (req: any, res) => {
+  app.get("/api/auth/pending-invites", requireAuth, async (req: any, res) => {
     const effectiveUserId = req.userId || req.session?.userId;
     
     if (!effectiveUserId) {
@@ -3782,7 +3782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/accept-invite", async (req: any, res) => {
+  app.post("/api/auth/accept-invite", requireAuth, async (req: any, res) => {
     const effectiveUserId = req.userId || req.session?.userId;
     
     if (!effectiveUserId) {
@@ -3847,7 +3847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Dismiss the pending-invite banner for a single team_member id. The banner
   // re-appears for new invites; this only snoozes the currently surfaced one.
-  app.post("/api/auth/dismiss-invite-banner", async (req: any, res) => {
+  app.post("/api/auth/dismiss-invite-banner", requireAuth, async (req: any, res) => {
     const effectiveUserId = req.userId || req.session?.userId;
     if (!effectiveUserId) return res.status(401).json({ error: "Not authenticated" });
     const bodySchema = z.object({ teamMemberId: z.string().min(1) });
@@ -4012,7 +4012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/job-conflicts", async (req: any, res) => {
+  app.get("/api/auth/job-conflicts", requireAuth, async (req: any, res) => {
     const effectiveUserId = req.userId || req.session?.userId;
     
     if (!effectiveUserId) {
