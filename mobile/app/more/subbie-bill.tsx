@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   StyleSheet,
   ActivityIndicator,
@@ -20,6 +19,9 @@ import { spacing, radius } from '../../src/lib/design-tokens';
 import { formatCurrency } from '../../src/lib/format';
 import { showToast } from '../../src/lib/toast';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import { PressableRow } from '../../src/components/ui/PressableRow';
+import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
+import { DatePicker } from '../../src/components/ui/DatePicker';
 import api, { API_URL } from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 import LiveDocumentPreview from '../../src/components/LiveDocumentPreview';
@@ -52,8 +54,23 @@ interface LineItem {
   jobId: string | null;
 }
 
+interface CatalogItem {
+  id?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  unitPrice?: number;
+}
+
 let keyCounter = 0;
 const nextKey = () => `li-${Date.now()}-${keyCounter++}`;
+
+function formatLocalDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 export default function SubbieBillBuilder() {
   const { colors } = useTheme();
@@ -66,15 +83,20 @@ export default function SubbieBillBuilder() {
   const paramDocType: DocType | null =
     params.docType === 'quote' ? 'quote' : params.docType === 'invoice' ? 'invoice' : null;
 
-  const [businesses, setBusinesses] = useState<BusinessOption[]>([]);
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
-  const [businessOwnerId, setBusinessOwnerId] = useState<string | null>(null);
+  const [recipient, setRecipient] = useState<BusinessOption | null>(null);
+  const businessOwnerId = recipient?.businessOwnerId ?? null;
 
   const [docType, setDocType] = useState<DocType | null>(paramDocType);
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [gstEnabled, setGstEnabled] = useState(true);
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
+  const [docDate, setDocDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d;
+  });
 
   const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
@@ -82,23 +104,39 @@ export default function SubbieBillBuilder() {
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Line item editor modal
+  const [editorVisible, setEditorVisible] = useState(false);
+  const [editorKey, setEditorKey] = useState<string | null>(null);
+  const [editorDesc, setEditorDesc] = useState('');
+  const [editorQty, setEditorQty] = useState('1');
+  const [editorPrice, setEditorPrice] = useState('0.00');
+
+  // Catalog modal
+  const [catalogVisible, setCatalogVisible] = useState(false);
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(false);
+
   const loadBusinesses = useCallback(async () => {
     setLoadingBusinesses(true);
     try {
-      const res = await api.get<{ businesses: BusinessOption[] }>('/api/auth/my-businesses');
+      const res = await api.get<{ activeBusinessId?: string | null; businesses: BusinessOption[] }>(
+        '/api/auth/my-businesses'
+      );
       const all = Array.isArray(res.data?.businesses) ? res.data.businesses : [];
-      const subOnly = all.filter(b => (b.roleName || '').toLowerCase().includes('subcontractor'));
-      const list = subOnly.length > 0 ? subOnly : all;
-      setBusinesses(list);
-      if (list.length === 1) {
-        setBusinessOwnerId(list[0].businessOwnerId);
-      }
+      const activeId = res.data?.activeBusinessId ?? null;
+      // The recipient is the business this subcontractor is currently switched into.
+      // Prefer the active workspace; fall back to the first joined (non-own) business.
+      const joined = all.filter(b => b.businessOwnerId !== user?.id);
+      const active = all.find(b => b.businessOwnerId === activeId);
+      const pick =
+        active && active.businessOwnerId !== user?.id ? active : joined[0] ?? null;
+      setRecipient(pick);
     } catch {
-      showToast({ type: 'error', message: 'Could not load businesses' });
+      showToast({ type: 'error', message: 'Could not load business' });
     } finally {
       setLoadingBusinesses(false);
     }
-  }, []);
+  }, [user?.id]);
 
   const loadCompletedJobs = useCallback(async (ownerId: string) => {
     setLoadingJobs(true);
@@ -116,7 +154,6 @@ export default function SubbieBillBuilder() {
 
   useEffect(() => {
     if (businessOwnerId) {
-      setLineItems([]);
       loadCompletedJobs(businessOwnerId);
     } else {
       setCompletedJobs([]);
@@ -141,16 +178,67 @@ export default function SubbieBillBuilder() {
     ]);
   }, []);
 
-  const addBlank = useCallback(() => {
-    setLineItems(prev => [...prev, { key: nextKey(), description: '', quantity: '1', unitPrice: '0.00', jobId: null }]);
-  }, []);
-
-  const updateItem = useCallback((key: string, field: 'description' | 'quantity' | 'unitPrice', value: string) => {
-    setLineItems(prev => prev.map(li => (li.key === key ? { ...li, [field]: value } : li)));
-  }, []);
-
   const removeItem = useCallback((key: string) => {
     setLineItems(prev => prev.filter(li => li.key !== key));
+  }, []);
+
+  const openNewItem = useCallback(() => {
+    setEditorKey(null);
+    setEditorDesc('');
+    setEditorQty('1');
+    setEditorPrice('0.00');
+    setEditorVisible(true);
+  }, []);
+
+  const openEditItem = useCallback((li: LineItem) => {
+    setEditorKey(li.key);
+    setEditorDesc(li.description);
+    setEditorQty(li.quantity);
+    setEditorPrice(li.unitPrice);
+    setEditorVisible(true);
+  }, []);
+
+  const saveEditorItem = useCallback(() => {
+    const desc = editorDesc.trim();
+    if (!desc) {
+      showToast({ type: 'error', message: 'Add a description' });
+      return;
+    }
+    const qty = editorQty.trim() || '1';
+    const price = editorPrice.trim() || '0';
+    if (editorKey) {
+      setLineItems(prev => prev.map(li => (li.key === editorKey ? { ...li, description: desc, quantity: qty, unitPrice: price } : li)));
+    } else {
+      setLineItems(prev => [...prev, { key: nextKey(), description: desc, quantity: qty, unitPrice: price, jobId: null }]);
+    }
+    setEditorVisible(false);
+  }, [editorKey, editorDesc, editorQty, editorPrice]);
+
+  const openCatalog = useCallback(async () => {
+    setCatalogVisible(true);
+    setLoadingCatalog(true);
+    try {
+      const res = await api.get<CatalogItem[]>('/api/catalog');
+      setCatalogItems(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setCatalogItems([]);
+    } finally {
+      setLoadingCatalog(false);
+    }
+  }, []);
+
+  const addCatalogItem = useCallback((item: CatalogItem) => {
+    setLineItems(prev => [
+      ...prev,
+      {
+        key: nextKey(),
+        description: item.name || item.description || '',
+        quantity: '1',
+        unitPrice: String(item.price ?? item.unitPrice ?? 0),
+        jobId: null,
+      },
+    ]);
+    setCatalogVisible(false);
   }, []);
 
   const subtotal = useMemo(
@@ -162,7 +250,6 @@ export default function SubbieBillBuilder() {
 
   const docNoun = docType === 'quote' ? 'Quote' : 'Invoice';
 
-  const selectedBusiness = businesses.find(b => b.businessOwnerId === businessOwnerId) || null;
   const previewBusiness = {
     businessName: businessSettings?.businessName || user?.businessName || 'Your Business',
     abn: (businessSettings as any)?.abn,
@@ -172,9 +259,7 @@ export default function SubbieBillBuilder() {
     logoUrl: (businessSettings as any)?.logoUrl,
     brandColor: (businessSettings as any)?.brandColor,
   };
-  const previewClient = selectedBusiness
-    ? { name: selectedBusiness.businessName || 'Business' }
-    : null;
+  const previewClient = recipient ? { name: recipient.businessName || 'Business' } : null;
   const previewLineItems = lineItems.map(li => ({
     description: li.description,
     quantity: parseFloat(li.quantity) || 0,
@@ -214,7 +299,7 @@ export default function SubbieBillBuilder() {
 
   const submit = useCallback(async () => {
     if (!businessOwnerId) {
-      showToast({ type: 'error', message: 'Pick a business first' });
+      showToast({ type: 'error', message: 'No business to bill' });
       return;
     }
     const cleaned = lineItems.filter(li => li.description.trim().length > 0);
@@ -237,6 +322,8 @@ export default function SubbieBillBuilder() {
         title: title.trim() || undefined,
         notes: notes.trim() || undefined,
         gstEnabled,
+        validUntil: docType === 'quote' ? formatLocalDate(docDate) : undefined,
+        dueDate: docType === 'invoice' ? formatLocalDate(docDate) : undefined,
         items: cleaned.map(li => ({
           description: li.description.trim(),
           quantity: parseFloat(li.quantity) || 0,
@@ -266,23 +353,26 @@ export default function SubbieBillBuilder() {
     } finally {
       setSubmitting(false);
     }
-  }, [businessOwnerId, lineItems, docType, title, notes, gstEnabled, total, docNoun, confirm, downloadAndShare]);
+  }, [businessOwnerId, lineItems, docType, title, notes, gstEnabled, docDate, total, docNoun, confirm, downloadAndShare]);
 
-  return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
-          <Feather name="chevron-left" size={24} color={colors.foreground} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{docType ? `New ${docNoun}` : 'Bill a Business'}</Text>
-        <View style={styles.headerRight} />
-      </View>
+  const editorTotal = (parseFloat(editorQty) || 0) * (parseFloat(editorPrice) || 0);
+  const suggestedJobs = completedJobs.filter(j => !addedJobIds.has(j.jobId));
 
-      {docType === null ? (
+  // ---- Chooser screen ----
+  if (docType === null) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.header}>
+          <PressableRow style={styles.backButton} onPress={handleBack}>
+            <Feather name="chevron-left" size={24} color={colors.foreground} />
+          </PressableRow>
+          <Text style={styles.headerTitle}>Bill a Business</Text>
+          <View style={styles.headerRight} />
+        </View>
         <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
           <Text style={styles.chooserHeading}>What do you want to create?</Text>
-          <TouchableOpacity style={styles.chooserCard} onPress={() => setDocType('invoice')} activeOpacity={0.85}>
+          <PressableRow style={styles.chooserCard} onPress={() => setDocType('invoice')}>
             <View style={styles.chooserIcon}>
               <Feather name="file-text" size={22} color={colors.primary} />
             </View>
@@ -291,8 +381,8 @@ export default function SubbieBillBuilder() {
               <Text style={styles.chooserSub}>Bill a business for completed work</Text>
             </View>
             <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.chooserCard} onPress={() => setDocType('quote')} activeOpacity={0.85}>
+          </PressableRow>
+          <PressableRow style={styles.chooserCard} onPress={() => setDocType('quote')}>
             <View style={styles.chooserIcon}>
               <Feather name="file" size={22} color={colors.primary} />
             </View>
@@ -301,240 +391,402 @@ export default function SubbieBillBuilder() {
               <Text style={styles.chooserSub}>Send a price estimate before the work</Text>
             </View>
             <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
-          </TouchableOpacity>
+          </PressableRow>
         </ScrollView>
-      ) : (
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Sticky header with total + tabs */}
+      <View style={styles.stickyHeader}>
+        <View style={styles.headerRow}>
+          <PressableRow style={styles.backButton} onPress={handleBack}>
+            <Feather name="chevron-left" size={24} color={colors.foreground} />
+          </PressableRow>
+          <Text style={styles.headerTitle}>New {docNoun}</Text>
+          <View style={styles.totalBadge}>
+            <Text style={styles.totalBadgeText}>{formatCurrency(total)}</Text>
+          </View>
+        </View>
+
         <View style={styles.tabBar}>
-          <TouchableOpacity
+          <PressableRow
             style={[styles.tabItem, activeTab === 'edit' && styles.tabItemActive]}
             onPress={() => setActiveTab('edit')}
-            activeOpacity={0.8}
           >
             <Feather name="edit-2" size={16} color={activeTab === 'edit' ? colors.primaryForeground : colors.foreground} />
             <Text style={[styles.tabText, activeTab === 'edit' && styles.tabTextActive]}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableRow>
+          <PressableRow
             style={[styles.tabItem, activeTab === 'preview' && styles.tabItemActive]}
             onPress={() => setActiveTab('preview')}
-            activeOpacity={0.8}
           >
             <Feather name="eye" size={16} color={activeTab === 'preview' ? colors.primaryForeground : colors.foreground} />
             <Text style={[styles.tabText, activeTab === 'preview' && styles.tabTextActive]}>Preview</Text>
-          </TouchableOpacity>
+          </PressableRow>
         </View>
+      </View>
 
-        {activeTab === 'preview' ? (
-          <LiveDocumentPreview
-            type={docType}
-            title={title}
-            lineItems={previewLineItems}
-            notes={notes}
-            business={previewBusiness}
-            client={previewClient}
-            gstEnabled={gstEnabled}
-            templateId={(businessSettings as any)?.documentTemplate || 'minimal'}
-            templateCustomization={(businessSettings as any)?.documentTemplateSettings}
-            bottomPadding={insets.bottom + 120}
-          />
-        ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: insets.bottom + 120 }}
-          keyboardShouldPersistTaps="handled"
+      {activeTab === 'preview' ? (
+        <LiveDocumentPreview
+          type={docType}
+          title={title}
+          date={formatLocalDate(new Date())}
+          validUntil={docType === 'quote' ? formatLocalDate(docDate) : undefined}
+          dueDate={docType === 'invoice' ? formatLocalDate(docDate) : undefined}
+          lineItems={previewLineItems}
+          notes={notes}
+          business={previewBusiness}
+          client={previewClient}
+          gstEnabled={gstEnabled}
+          templateId={(businessSettings as any)?.documentTemplate || 'minimal'}
+          templateCustomization={(businessSettings as any)?.documentTemplateSettings}
+          bottomPadding={insets.bottom + 120}
+        />
+      ) : (
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          {/* Business picker */}
-          <Text style={styles.label}>Business</Text>
           {loadingBusinesses ? (
-            <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
-          ) : businesses.length === 0 ? (
-            <Text style={styles.empty}>You have not joined any business yet.</Text>
-          ) : (
-            <View style={{ gap: spacing.xs }}>
-              {businesses.map(b => (
-                <TouchableOpacity
-                  key={b.businessOwnerId}
-                  style={[styles.pickRow, businessOwnerId === b.businessOwnerId && styles.pickRowActive]}
-                  onPress={() => setBusinessOwnerId(b.businessOwnerId)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.pickRowText}>{b.businessName}</Text>
-                  {businessOwnerId === b.businessOwnerId && (
-                    <Feather name="check" size={18} color={colors.primary} />
-                  )}
-                </TouchableOpacity>
-              ))}
+            <View style={styles.loadingWrap}>
+              <ActivityIndicator size="large" color={colors.primary} />
             </View>
-          )}
-
-          {businessOwnerId && (
-            <>
-              {/* Completed jobs */}
-              <Text style={styles.label}>Completed jobs</Text>
-              {loadingJobs ? (
-                <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
-              ) : completedJobs.length === 0 ? (
-                <Text style={styles.empty}>No completed jobs to bill for this business.</Text>
-              ) : (
-                <View style={{ gap: spacing.xs }}>
-                  {completedJobs.map(job => {
-                    const added = addedJobIds.has(job.jobId);
-                    const blockedBilled = docType === 'invoice' && job.alreadyBilled;
-                    const disabled = added || blockedBilled;
-                    return (
-                      <TouchableOpacity
-                        key={job.jobId}
-                        style={[styles.jobRow, blockedBilled && { opacity: 0.5 }]}
-                        onPress={() => !disabled && addJob(job)}
-                        activeOpacity={disabled ? 1 : 0.8}
-                        disabled={disabled}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.jobTitle}>{job.jobTitle}</Text>
-                          <Text style={styles.jobMeta}>
-                            {formatCurrency(job.suggestedAmount)}
-                            {job.alreadyBilled ? '  ·  already invoiced' : ''}
-                          </Text>
-                        </View>
-                        <Feather
-                          name={added ? 'check-circle' : blockedBilled ? 'slash' : 'plus-circle'}
-                          size={20}
-                          color={added ? colors.success : blockedBilled ? colors.mutedForeground : colors.primary}
-                        />
-                      </TouchableOpacity>
-                    );
-                  })}
+          ) : !recipient ? (
+            <View style={styles.loadingWrap}>
+              <Feather name="briefcase" size={32} color={colors.mutedForeground} />
+              <Text style={styles.emptyTitle}>No business to bill</Text>
+              <Text style={styles.empty}>
+                You're not currently working under a business. Switch into a business workspace to bill it.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: insets.bottom + 120, gap: spacing.md }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Billing To (locked) */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Feather name="briefcase" size={16} color={colors.primary} />
+                  <Text style={styles.cardHeaderText}>Billing To</Text>
                 </View>
-              )}
-
-              {/* Title */}
-              <Text style={styles.label}>Title (optional)</Text>
-              <TextInput
-                style={styles.input}
-                value={title}
-                onChangeText={setTitle}
-                placeholder={docType === 'quote' ? 'e.g. Bathroom reno quote' : 'e.g. October works'}
-                placeholderTextColor={colors.mutedForeground}
-              />
-
-              {/* Line items */}
-              <View style={styles.lineHeader}>
-                <Text style={styles.label}>Line items</Text>
-                <TouchableOpacity onPress={addBlank} activeOpacity={0.8} style={styles.addBtn}>
-                  <Feather name="plus" size={16} color={colors.primary} />
-                  <Text style={styles.addBtnText}>Add</Text>
-                </TouchableOpacity>
+                <View style={styles.recipientRow}>
+                  <View style={styles.recipientAvatar}>
+                    <Text style={styles.recipientAvatarText}>
+                      {(recipient.businessName || 'B').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.recipientName}>{recipient.businessName || 'Business'}</Text>
+                    <Text style={styles.recipientSub}>The business you're working under</Text>
+                  </View>
+                  <Feather name="lock" size={16} color={colors.mutedForeground} />
+                </View>
               </View>
-              {lineItems.length === 0 ? (
-                <Text style={styles.empty}>Tap a completed job above or add a line manually.</Text>
-              ) : (
-                lineItems.map(li => (
-                  <View key={li.key} style={styles.itemCard}>
-                    <View style={styles.itemTopRow}>
-                      <TextInput
-                        style={[styles.input, { flex: 1, marginBottom: 0 }]}
-                        value={li.description}
-                        onChangeText={v => updateItem(li.key, 'description', v)}
-                        placeholder="Description"
-                        placeholderTextColor={colors.mutedForeground}
-                      />
-                      <TouchableOpacity onPress={() => removeItem(li.key)} style={styles.removeBtn} activeOpacity={0.7}>
-                        <Feather name="trash-2" size={18} color={colors.destructive} />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.itemBottomRow}>
-                      <View style={styles.qtyBox}>
-                        <Text style={styles.miniLabel}>Qty</Text>
-                        <TextInput
-                          style={styles.miniInput}
-                          value={li.quantity}
-                          onChangeText={v => updateItem(li.key, 'quantity', v)}
-                          keyboardType="decimal-pad"
-                          placeholderTextColor={colors.mutedForeground}
-                        />
-                      </View>
-                      <View style={styles.qtyBox}>
-                        <Text style={styles.miniLabel}>Unit price</Text>
-                        <TextInput
-                          style={styles.miniInput}
-                          value={li.unitPrice}
-                          onChangeText={v => updateItem(li.key, 'unitPrice', v)}
-                          keyboardType="decimal-pad"
-                          placeholderTextColor={colors.mutedForeground}
-                        />
-                      </View>
-                      <View style={styles.lineTotalBox}>
-                        <Text style={styles.miniLabel}>Amount</Text>
-                        <Text style={styles.lineTotal}>
-                          {formatCurrency((parseFloat(li.quantity) || 0) * (parseFloat(li.unitPrice) || 0))}
-                        </Text>
-                      </View>
+
+              {/* Details */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Feather name="file-text" size={16} color={colors.primary} />
+                  <Text style={styles.cardHeaderText}>{docNoun} Details</Text>
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Title (optional)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={title}
+                    onChangeText={setTitle}
+                    placeholder={docType === 'quote' ? 'e.g. Bathroom reno quote' : 'e.g. October works'}
+                    placeholderTextColor={colors.mutedForeground}
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <DatePicker
+                    label={docType === 'quote' ? 'Valid Until' : 'Due Date'}
+                    value={docDate}
+                    onChange={setDocDate}
+                    minimumDate={new Date()}
+                  />
+                </View>
+              </View>
+
+              {/* Line Items */}
+              <View style={styles.card}>
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.cardHeader}>
+                    <Feather name="package" size={16} color={colors.primary} />
+                    <Text style={styles.cardHeaderText}>Line Items</Text>
+                  </View>
+                  <View style={styles.itemCountBadge}>
+                    <Text style={styles.itemCountText}>
+                      {lineItems.length} {lineItems.length === 1 ? 'item' : 'items'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Suggested from completed jobs */}
+                {loadingJobs ? (
+                  <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.sm }} />
+                ) : suggestedJobs.length > 0 ? (
+                  <View style={styles.suggestBox}>
+                    <Text style={styles.suggestLabel}>Tap to add from completed jobs</Text>
+                    <View style={{ gap: spacing.xs }}>
+                      {suggestedJobs.map(job => {
+                        const blockedBilled = docType === 'invoice' && job.alreadyBilled;
+                        return (
+                          <PressableRow
+                            key={job.jobId}
+                            style={[styles.suggestRow, blockedBilled && { opacity: 0.5 }]}
+                            onPress={() => !blockedBilled && addJob(job)}
+                            disabled={blockedBilled}
+                          >
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.suggestJobTitle} numberOfLines={1}>{job.jobTitle}</Text>
+                              <Text style={styles.suggestJobMeta}>
+                                {formatCurrency(job.suggestedAmount)}
+                                {job.alreadyBilled ? '  ·  already invoiced' : ''}
+                              </Text>
+                            </View>
+                            <Feather
+                              name={blockedBilled ? 'slash' : 'plus-circle'}
+                              size={20}
+                              color={blockedBilled ? colors.mutedForeground : colors.primary}
+                            />
+                          </PressableRow>
+                        );
+                      })}
                     </View>
                   </View>
-                ))
-              )}
+                ) : null}
 
-              {/* GST toggle */}
-              <TouchableOpacity style={styles.gstRow} onPress={() => setGstEnabled(v => !v)} activeOpacity={0.8}>
-                <View>
-                  <Text style={styles.jobTitle}>Add GST (10%)</Text>
-                  <Text style={styles.jobMeta}>Australian GST on this {docNoun.toLowerCase()}</Text>
-                </View>
-                <Feather name={gstEnabled ? 'check-square' : 'square'} size={22} color={gstEnabled ? colors.primary : colors.mutedForeground} />
-              </TouchableOpacity>
+                {lineItems.map(li => {
+                  const itemTotal = (parseFloat(li.quantity) || 0) * (parseFloat(li.unitPrice) || 0);
+                  return (
+                    <View key={li.key} style={styles.lineItemRow}>
+                      <View style={styles.lineItemInfo}>
+                        <Text style={styles.lineItemDescription} numberOfLines={1}>{li.description}</Text>
+                        <Text style={styles.lineItemMeta}>
+                          {li.quantity} × {formatCurrency(parseFloat(li.unitPrice) || 0)}
+                        </Text>
+                      </View>
+                      <Text style={styles.lineItemTotal}>{formatCurrency(itemTotal)}</Text>
+                      <View style={styles.lineItemActions}>
+                        <PressableRow style={styles.iconButton} onPress={() => openEditItem(li)}>
+                          <Feather name="edit-2" size={14} color={colors.mutedForeground} />
+                        </PressableRow>
+                        <PressableRow style={styles.iconButton} onPress={() => removeItem(li.key)}>
+                          <Feather name="trash-2" size={14} color={colors.destructive} />
+                        </PressableRow>
+                      </View>
+                    </View>
+                  );
+                })}
 
-              {/* Notes */}
-              <Text style={styles.label}>Notes (optional)</Text>
-              <TextInput
-                style={[styles.input, { height: 88, textAlignVertical: 'top' }]}
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Anything the business should know"
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-              />
-
-              {/* Totals */}
-              <View style={styles.totalsCard}>
-                <View style={styles.totalLine}>
-                  <Text style={styles.totalLabel}>Subtotal</Text>
-                  <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
-                </View>
-                <View style={styles.totalLine}>
-                  <Text style={styles.totalLabel}>GST</Text>
-                  <Text style={styles.totalValue}>{formatCurrency(gst)}</Text>
-                </View>
-                <View style={[styles.totalLine, styles.grandLine]}>
-                  <Text style={styles.grandLabel}>Total (AUD)</Text>
-                  <Text style={styles.grandValue}>{formatCurrency(total)}</Text>
+                <View style={styles.addButtonsRow}>
+                  <PressableRow style={styles.addItemButton} onPress={openNewItem}>
+                    <Feather name="plus" size={16} color={colors.foreground} />
+                    <Text style={styles.addItemText}>Add Item</Text>
+                  </PressableRow>
+                  <PressableRow style={styles.catalogButton} onPress={openCatalog}>
+                    <Feather name="book-open" size={16} color={colors.foreground} />
+                  </PressableRow>
                 </View>
               </View>
-            </>
-          )}
-        </ScrollView>
-        )}
 
-        {businessOwnerId && (
-          <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
-            <TouchableOpacity
-              style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
-              onPress={submit}
-              disabled={submitting}
-              activeOpacity={0.85}
-            >
-              {submitting ? (
-                <ActivityIndicator color={colors.primaryForeground} />
-              ) : (
-                <Text style={styles.submitText}>Send {docNoun}</Text>
+              {/* Totals */}
+              {lineItems.length > 0 && (
+                <View style={styles.totalsCard}>
+                  {gstEnabled ? (
+                    <>
+                      <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Subtotal</Text>
+                        <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
+                      </View>
+                      <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>GST (10%)</Text>
+                        <Text style={styles.totalValue}>{formatCurrency(gst)}</Text>
+                      </View>
+                      <View style={[styles.totalRow, styles.grandTotalRow]}>
+                        <Text style={styles.grandTotalLabel}>Total (inc. GST)</Text>
+                        <Text style={styles.grandTotalValue}>{formatCurrency(total)}</Text>
+                      </View>
+                    </>
+                  ) : (
+                    <View style={styles.totalRow}>
+                      <Text style={styles.grandTotalLabel}>Total</Text>
+                      <Text style={styles.grandTotalValue}>{formatCurrency(total)}</Text>
+                    </View>
+                  )}
+                </View>
               )}
-            </TouchableOpacity>
-          </View>
-        )}
-      </KeyboardAvoidingView>
+
+              {/* GST */}
+              <View style={styles.card}>
+                <View style={styles.toggleHeader}>
+                  <View style={styles.cardHeader}>
+                    <Feather name="percent" size={16} color={colors.primary} />
+                    <Text style={styles.cardHeaderText}>Add GST (10%)</Text>
+                  </View>
+                  <PressableRow
+                    style={[styles.toggleSwitch, gstEnabled && styles.toggleSwitchOn]}
+                    onPress={() => setGstEnabled(v => !v)}
+                  >
+                    <View style={[styles.toggleKnob, gstEnabled && styles.toggleKnobOn]} />
+                  </PressableRow>
+                </View>
+              </View>
+
+              {/* Notes */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Feather name="message-square" size={16} color={colors.primary} />
+                  <Text style={styles.cardHeaderText}>Notes</Text>
+                </View>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Anything the business should know..."
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+            </ScrollView>
+          )}
+
+          {recipient && (
+            <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+              <PressableRow
+                style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+                onPress={submit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator color={colors.primaryForeground} />
+                ) : (
+                  <>
+                    <Feather name="check" size={18} color={colors.primaryForeground} />
+                    <Text style={styles.submitText}>Send {docNoun}</Text>
+                  </>
+                )}
+              </PressableRow>
+            </View>
+          )}
+        </KeyboardAvoidingView>
       )}
+
+      {/* Line item editor */}
+      <AppBottomSheet
+        visible={editorVisible}
+        onDismiss={() => setEditorVisible(false)}
+        snapPoints={['60%']}
+        scrollable={false}
+        contentPadding={0}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{editorKey ? 'Edit Item' : 'Add Item'}</Text>
+            <PressableRow onPress={() => setEditorVisible(false)}>
+              <Feather name="x" size={24} color={colors.foreground} />
+            </PressableRow>
+          </View>
+          <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                style={styles.input}
+                value={editorDesc}
+                onChangeText={setEditorDesc}
+                placeholder="e.g. Labour - 4 hours"
+                placeholderTextColor={colors.mutedForeground}
+                autoFocus
+              />
+            </View>
+            <View style={styles.editorRow}>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.inputLabel}>Quantity</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editorQty}
+                  onChangeText={setEditorQty}
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.inputLabel}>Unit Price</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editorPrice}
+                  onChangeText={setEditorPrice}
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+              </View>
+            </View>
+            <View style={styles.editorTotalRow}>
+              <Text style={styles.totalLabel}>Amount</Text>
+              <Text style={styles.grandTotalValue}>{formatCurrency(editorTotal)}</Text>
+            </View>
+            <PressableRow style={styles.modalSaveBtn} onPress={saveEditorItem}>
+              <Feather name="check" size={18} color={colors.primaryForeground} />
+              <Text style={styles.submitText}>{editorKey ? 'Save Item' : 'Add Item'}</Text>
+            </PressableRow>
+          </ScrollView>
+        </View>
+      </AppBottomSheet>
+
+      {/* Catalog */}
+      <AppBottomSheet
+        visible={catalogVisible}
+        onDismiss={() => setCatalogVisible(false)}
+        snapPoints={['80%']}
+        scrollable={false}
+        contentPadding={0}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Catalog</Text>
+            <PressableRow onPress={() => setCatalogVisible(false)}>
+              <Feather name="x" size={24} color={colors.foreground} />
+            </PressableRow>
+          </View>
+          {loadingCatalog ? (
+            <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.xl }} />
+          ) : catalogItems.length === 0 ? (
+            <Text style={[styles.empty, { padding: spacing.lg }]}>No catalog items yet.</Text>
+          ) : (
+            <ScrollView style={styles.modalContent}>
+              {catalogItems.map((item, idx) => (
+                <PressableRow
+                  key={item.id || String(idx)}
+                  style={styles.catalogRow}
+                  onPress={() => addCatalogItem(item)}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.lineItemDescription} numberOfLines={1}>
+                      {item.name || item.description}
+                    </Text>
+                    <Text style={styles.lineItemMeta}>
+                      {formatCurrency(item.price ?? item.unitPrice ?? 0)}
+                    </Text>
+                  </View>
+                  <Feather name="plus-circle" size={20} color={colors.primary} />
+                </PressableRow>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      </AppBottomSheet>
     </View>
   );
 }
@@ -542,6 +794,10 @@ export default function SubbieBillBuilder() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
+    loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.sm },
+    emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.foreground, marginTop: spacing.sm },
+    empty: { fontSize: 13, color: colors.mutedForeground, textAlign: 'center', lineHeight: 19 },
+
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -552,6 +808,16 @@ function createStyles(colors: ThemeColors) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
+    stickyHeader: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.sm,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      gap: spacing.sm,
+    },
+    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     backButton: {
       width: 36,
       height: 36,
@@ -562,173 +828,264 @@ function createStyles(colors: ThemeColors) {
     },
     headerTitle: { fontSize: 18, fontWeight: '600', color: colors.foreground },
     headerRight: { width: 36 },
-    label: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: colors.mutedForeground,
-      marginTop: spacing.lg,
-      marginBottom: spacing.xs,
-    },
-    empty: { fontSize: 13, color: colors.mutedForeground, paddingVertical: spacing.sm },
-    segment: {
-      flexDirection: 'row',
-      backgroundColor: colors.muted,
+    totalBadge: {
+      backgroundColor: colors.primaryLight,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
       borderRadius: radius.md,
-      padding: 4,
-      gap: 4,
+      minWidth: 80,
+      alignItems: 'center',
     },
-    segmentItem: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: 'center' },
-    segmentItemActive: { backgroundColor: colors.card },
-    segmentText: { fontSize: 14, fontWeight: '600', color: colors.mutedForeground },
-    segmentTextActive: { color: colors.foreground },
+    totalBadgeText: { fontSize: 15, fontWeight: '700', color: colors.primary },
+
     tabBar: {
       flexDirection: 'row',
-      gap: spacing.sm,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
-      backgroundColor: colors.background,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      backgroundColor: colors.muted,
+      borderRadius: 10,
+      padding: 4,
     },
     tabItem: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
       paddingVertical: 10,
-      borderRadius: radius.md,
-      backgroundColor: colors.muted,
+      borderRadius: 8,
+      gap: 8,
     },
     tabItemActive: { backgroundColor: colors.primary },
     tabText: { fontSize: 15, fontWeight: '600', color: colors.foreground },
     tabTextActive: { color: colors.primaryForeground },
-    chooserHeading: { fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs },
+
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    cardHeaderText: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+
+    recipientRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    recipientAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    recipientAvatarText: { fontSize: 16, fontWeight: '700', color: colors.primary },
+    recipientName: { fontSize: 15, fontWeight: '600', color: colors.foreground },
+    recipientSub: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+
+    inputGroup: { gap: 6 },
+    inputLabel: { fontSize: 13, fontWeight: '600', color: colors.mutedForeground },
+    input: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: Platform.OS === 'ios' ? 12 : 10,
+      fontSize: 15,
+      color: colors.foreground,
+    },
+    textArea: { height: 88, paddingTop: 10 },
+
+    itemCountBadge: {
+      backgroundColor: colors.muted,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 3,
+      borderRadius: radius.sm,
+    },
+    itemCountText: { fontSize: 12, fontWeight: '600', color: colors.mutedForeground },
+
+    suggestBox: {
+      backgroundColor: colors.background,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.sm,
+      gap: spacing.xs,
+    },
+    suggestLabel: { fontSize: 12, fontWeight: '600', color: colors.mutedForeground, marginBottom: 2 },
+    suggestRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: 8,
+      paddingHorizontal: spacing.sm,
+      backgroundColor: colors.card,
+      borderRadius: radius.sm,
+    },
+    suggestJobTitle: { fontSize: 14, fontWeight: '500', color: colors.foreground },
+    suggestJobMeta: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+
+    lineItemRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    lineItemInfo: { flex: 1 },
+    lineItemDescription: { fontSize: 14, fontWeight: '500', color: colors.foreground },
+    lineItemMeta: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+    lineItemTotal: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+    lineItemActions: { flexDirection: 'row', gap: 4 },
+    iconButton: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+      backgroundColor: colors.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    addButtonsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+    addItemButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      paddingVertical: 12,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.muted,
+    },
+    addItemText: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+    catalogButton: {
+      width: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.muted,
+    },
+
+    totalsCard: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    totalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    totalLabel: { fontSize: 14, color: colors.mutedForeground },
+    totalValue: { fontSize: 14, fontWeight: '500', color: colors.foreground },
+    grandTotalRow: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing.xs, paddingTop: spacing.sm },
+    grandTotalLabel: { fontSize: 15, fontWeight: '700', color: colors.foreground },
+    grandTotalValue: { fontSize: 17, fontWeight: '700', color: colors.primary },
+
+    toggleHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    toggleSwitch: {
+      width: 48,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.muted,
+      padding: 3,
+      justifyContent: 'center',
+    },
+    toggleSwitchOn: { backgroundColor: colors.primary },
+    toggleKnob: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.card,
+    },
+    toggleKnobOn: { alignSelf: 'flex-end' },
+
+    footer: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    submitBtn: {
+      backgroundColor: colors.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      paddingVertical: 14,
+      borderRadius: radius.md,
+    },
+    submitText: { fontSize: 16, fontWeight: '600', color: colors.primaryForeground },
+
+    // Chooser
+    chooserHeading: { fontSize: 15, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs },
     chooserCard: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
-      padding: spacing.md,
-      borderRadius: radius.md,
       backgroundColor: colors.card,
+      borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: colors.border,
+      padding: spacing.lg,
     },
     chooserIcon: {
       width: 44,
       height: 44,
       borderRadius: radius.md,
-      backgroundColor: colors.muted,
+      backgroundColor: colors.primaryLight,
       alignItems: 'center',
       justifyContent: 'center',
     },
     chooserTitle: { fontSize: 16, fontWeight: '600', color: colors.foreground },
     chooserSub: { fontSize: 13, color: colors.mutedForeground, marginTop: 2 },
-    pickRow: {
+
+    // Modals
+    modalContainer: { flex: 1 },
+    modalHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
-    pickRowActive: { borderColor: colors.primary },
-    pickRowText: { fontSize: 15, fontWeight: '500', color: colors.foreground },
-    jobRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-      gap: spacing.sm,
-    },
-    jobTitle: { fontSize: 15, fontWeight: '500', color: colors.foreground },
-    jobMeta: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
-    input: {
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      fontSize: 15,
-      color: colors.foreground,
-      marginBottom: spacing.xs,
-    },
-    lineHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.lg, marginBottom: spacing.xs },
-    addBtnText: { fontSize: 14, fontWeight: '600', color: colors.primary },
-    itemCard: {
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
-      padding: spacing.sm,
-      marginBottom: spacing.sm,
-    },
-    itemTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    removeBtn: { padding: spacing.xs },
-    itemBottomRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-    qtyBox: { flex: 1 },
-    lineTotalBox: { flex: 1, alignItems: 'flex-end' },
-    miniLabel: { fontSize: 11, color: colors.mutedForeground, marginBottom: 2 },
-    miniInput: {
-      backgroundColor: colors.background,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.sm,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs,
-      fontSize: 14,
-      color: colors.foreground,
-    },
-    lineTotal: { fontSize: 14, fontWeight: '600', color: colors.foreground, paddingVertical: spacing.xs },
-    gstRow: {
+    modalTitle: { fontSize: 17, fontWeight: '600', color: colors.foreground },
+    modalContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+    editorRow: { flexDirection: 'row', gap: spacing.md },
+    editorTotalRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
-      marginTop: spacing.lg,
-    },
-    totalsCard: {
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
-      padding: spacing.md,
-      marginTop: spacing.lg,
-    },
-    totalLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },
-    totalLabel: { fontSize: 14, color: colors.mutedForeground },
-    totalValue: { fontSize: 14, fontWeight: '500', color: colors.foreground },
-    grandLine: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing.xs, paddingTop: spacing.sm },
-    grandLabel: { fontSize: 16, fontWeight: '700', color: colors.foreground },
-    grandValue: { fontSize: 18, fontWeight: '700', color: colors.foreground },
-    footer: {
-      paddingHorizontal: spacing.md,
-      paddingTop: spacing.sm,
+      marginTop: spacing.xs,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      backgroundColor: colors.card,
     },
-    submitBtn: {
+    modalSaveBtn: {
       backgroundColor: colors.primary,
-      borderRadius: radius.md,
-      paddingVertical: spacing.md,
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: spacing.xs,
+      paddingVertical: 14,
+      borderRadius: radius.md,
+      marginTop: spacing.sm,
+      marginBottom: spacing.xl,
     },
-    submitText: { fontSize: 16, fontWeight: '700', color: colors.primaryForeground },
+    catalogRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
   });
 }
