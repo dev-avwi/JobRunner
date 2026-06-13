@@ -5185,6 +5185,7 @@ export const aiReceptionistConfig = pgTable("ai_receptionist_config", {
   approvedAt: timestamp("approved_at"),
   knowledgeBank: json("knowledge_bank"),
   smsNotifications: boolean("sms_notifications").notNull().default(false),
+  recordingEnabled: boolean("recording_enabled").notNull().default(false),
   voiceStability: real("voice_stability").default(0.5),
   voiceClarity: real("voice_clarity").default(0.75),
   voiceSpeed: real("voice_speed").default(1.0),

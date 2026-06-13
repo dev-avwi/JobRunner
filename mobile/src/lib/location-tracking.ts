@@ -851,7 +851,11 @@ class LocationTrackingService {
 // Define the background task for location updates
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
-    if (__DEV__) console.error('[Location Task] Error:', error);
+    // iOS reports kCLErrorDomain Code 0 (kCLErrorLocationUnknown) as a
+    // transient, self-recovering error — the OS just couldn't get a fix this
+    // tick. Don't surface it as a console.error (which trips the red dev
+    // overlay); log it quietly so real errors are still visible.
+    if (__DEV__) console.warn('[Location Task] Transient location error (ignored):', error);
     return;
   }
   

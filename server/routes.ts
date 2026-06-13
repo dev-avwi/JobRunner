@@ -44069,6 +44069,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           provisioningError: null,
           knowledgeBank: null,
           smsNotifications: false,
+          recordingEnabled: false,
           autoReplyEnabled: true,
           autoReplyMessage: "Thanks for calling {{business_name}}. We got your message and will get back to you shortly. — Sent via JobRunner",
         });
@@ -44088,6 +44089,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         approvedAt: config.approvedAt || null,
         knowledgeBank: config.knowledgeBank || null,
         smsNotifications: config.smsNotifications || false,
+        recordingEnabled: config.recordingEnabled || false,
         autoReplyEnabled: config.autoReplyEnabled ?? true,
         autoReplyMessage: config.autoReplyMessage || "Thanks for calling {{business_name}}. We got your message and will get back to you shortly. — Sent via JobRunner",
         voiceStability: config.voiceStability ?? 0.5,
@@ -44208,6 +44210,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     businessHours: businessHoursSchema.nullable().optional(),
     knowledgeBank: knowledgeBankSchema.nullable().optional(),
     smsNotifications: z.boolean().optional(),
+    recordingEnabled: z.boolean().optional(),
     voiceStability: z.number().min(0).max(1).optional(),
     voiceClarity: z.number().min(0).max(1).optional(),
     voiceSpeed: z.number().min(0.25).max(4).optional(),
@@ -44253,7 +44256,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       if (!parsed.success) {
         return res.status(400).json({ error: "Invalid config", details: parsed.error.flatten().fieldErrors });
       }
-      const { voice, greeting, mode, transferNumbers, businessHours } = parsed.data;
+      const { voice, greeting, mode, transferNumbers, businessHours, recordingEnabled } = parsed.data;
       const config = await storage.createAiReceptionistConfig({
         userId,
         voiceName: voice || 'Jess',
@@ -44261,6 +44264,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         mode: mode || 'off',
         transferNumbers: transferNumbers || [],
         businessHours: businessHours || null,
+        recordingEnabled: recordingEnabled ?? false,
         enabled: false,
       });
 
@@ -44283,6 +44287,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         businessHours: config.businessHours || null,
         dedicatedPhoneNumber: config.dedicatedPhoneNumber || null,
         vapiAssistantId: config.vapiAssistantId || null,
+        recordingEnabled: config.recordingEnabled ?? false,
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -44298,7 +44303,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       if (!parsed.success) {
         return res.status(400).json({ error: "Invalid config", details: parsed.error.flatten().fieldErrors });
       }
-      const { voice, greeting, mode, transferNumbers, businessHours, knowledgeBank, smsNotifications,
+      const { voice, greeting, mode, transferNumbers, businessHours, knowledgeBank, smsNotifications, recordingEnabled,
         voiceStability, voiceClarity, voiceSpeed, voiceStyleExaggeration, voiceSpeakerBoost,
         voicemailDetectionEnabled, voicemailMessage, silenceTimeoutSeconds, maxCallDurationSeconds,
         endCallMessage, backgroundSound, aiModel, aiMaxTokens, aiTemperature, customInstructions,
@@ -44313,6 +44318,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         businessHours: businessHours ?? undefined,
         knowledgeBank: knowledgeBank === null ? undefined : knowledgeBank,
         smsNotifications,
+        recordingEnabled,
         autoReplyEnabled,
         autoReplyMessage,
         voiceStability,
@@ -44348,6 +44354,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         vapiAssistantId: config?.vapiAssistantId || null,
         knowledgeBank: config?.knowledgeBank || null,
         smsNotifications: config?.smsNotifications || false,
+        recordingEnabled: config?.recordingEnabled || false,
         autoReplyEnabled: config?.autoReplyEnabled ?? true,
         autoReplyMessage: config?.autoReplyMessage || "Thanks for calling {{business_name}}. We got your message and will get back to you shortly. — Sent via JobRunner",
         voiceStability: config?.voiceStability ?? 0.5,
@@ -44392,6 +44399,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       await updateAssistant(assistantId, {
         webhookUrl,
         greeting: config?.greeting ?? undefined,
+        recordingEnabled: config?.recordingEnabled ?? false,
         voiceName: config?.voiceName ?? undefined,
         knowledgeBank: (config?.knowledgeBank as any) ?? undefined,
         voiceStability: config?.voiceStability ?? undefined,
@@ -44456,7 +44464,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       if (!parsed.success) {
         return res.status(400).json({ error: "Invalid config", details: parsed.error.flatten().fieldErrors });
       }
-      const { voice, greeting, mode, transferNumbers, businessHours, knowledgeBank, smsNotifications,
+      const { voice, greeting, mode, transferNumbers, businessHours, knowledgeBank, smsNotifications, recordingEnabled,
         voiceStability, voiceClarity, voiceSpeed, voiceStyleExaggeration, voiceSpeakerBoost,
         voicemailDetectionEnabled, voicemailMessage, silenceTimeoutSeconds, maxCallDurationSeconds,
         endCallMessage, backgroundSound, aiModel, aiMaxTokens, aiTemperature, customInstructions,
@@ -44470,6 +44478,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       if (businessHours !== undefined) updateData.businessHours = businessHours;
       if (knowledgeBank !== undefined && knowledgeBank !== null) updateData.knowledgeBank = knowledgeBank;
       if (smsNotifications !== undefined) updateData.smsNotifications = smsNotifications;
+      if (recordingEnabled !== undefined) updateData.recordingEnabled = recordingEnabled;
       if (autoReplyEnabled !== undefined) updateData.autoReplyEnabled = autoReplyEnabled;
       if (autoReplyMessage !== undefined) updateData.autoReplyMessage = autoReplyMessage;
       if (voiceStability !== undefined) updateData.voiceStability = voiceStability;
@@ -44496,7 +44505,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           await updateReceptionistConfigById(req.params.configId, userId, {
             voice, greeting, mode, transferNumbers, businessHours: businessHours ?? undefined,
             knowledgeBank: knowledgeBank === null ? undefined : knowledgeBank,
-            smsNotifications, autoReplyEnabled, autoReplyMessage,
+            smsNotifications, recordingEnabled, autoReplyEnabled, autoReplyMessage,
             voiceStability, voiceClarity, voiceSpeed, voiceStyleExaggeration, voiceSpeakerBoost,
             voicemailDetectionEnabled, voicemailMessage, silenceTimeoutSeconds, maxCallDurationSeconds,
             endCallMessage, backgroundSound, aiModel, aiMaxTokens, aiTemperature, customInstructions,
