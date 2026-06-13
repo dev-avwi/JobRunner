@@ -23,6 +23,14 @@ so it never overlaps existing AppBottomSheet/ActionSheet sheets.
 `if (await confirm({title, message, confirmText, cancelText, destructive:true})) { ... }`.
 Do NOT write a fresh Alert.alert or a new dialog component.
 
+**Regression caveat (don't force the branded modal on iOS):** this once got
+"fixed" by routing every platform through the branded Modal because the iOS
+native destructive button looked near-white/invisible. The real cause was a
+missing button `style` — iOS draws a `style:'destructive'` button red
+regardless of app tint. So always pass `style:'destructive'` (and
+`style:'cancel'`) on the native iOS path; do NOT collapse iOS back onto the
+branded modal.
+
 **Footgun:** the `write` tool silently overwrites an existing file — before
 creating a "new" ui component, grep for the name first. There was already a
 ConfirmDialog.tsx; recover an accidental overwrite with

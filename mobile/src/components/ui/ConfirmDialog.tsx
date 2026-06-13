@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { Modal, View, Text, Pressable, StyleSheet, Platform, KeyboardAvoidingView, Animated } from 'react-native';
+import { Modal, View, Text, Pressable, StyleSheet, Platform, KeyboardAvoidingView, Animated, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../lib/theme';
 import { radius, spacing, typography, shadows } from '../../lib/design-tokens';
@@ -41,10 +41,33 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
   }, [pending, scaleAnim]);
 
   const confirm = useCallback((options: ConfirmDialogOptions) => {
-    // Use the in-app themed modal on every platform. The native iOS alert
-    // rendered the destructive button with the app tint (near-white in some
-    // themes), making "Sign Out" invisible. The branded modal hardcodes a
-    // visible red destructive fill, so it stays readable on all themes.
+    // iOS uses the native system Alert — it's the platform-correct look.
+    // (The old reason for forcing the branded modal everywhere was that the
+    // iOS destructive button rendered with the app tint and went near-white;
+    // passing style:'destructive' makes iOS draw it red regardless of tint,
+    // so the native alert is safe again.) Android/web keep the branded modal.
+    if (Platform.OS === 'ios') {
+      return new Promise<boolean>((resolve) => {
+        const buttons: any[] = [
+          {
+            text: options.confirmText ?? 'Confirm',
+            style: options.destructive ? 'destructive' : 'default',
+            onPress: () => resolve(true),
+          },
+        ];
+        if (options.showCancel !== false) {
+          buttons.push({
+            text: options.cancelText ?? 'Cancel',
+            style: 'cancel',
+            onPress: () => resolve(false),
+          });
+        }
+        Alert.alert(options.title, options.message, buttons, {
+          cancelable: options.showCancel !== false,
+          onDismiss: () => resolve(false),
+        });
+      });
+    }
     return new Promise<boolean>((resolve) => {
       setPending({ ...options, resolve });
     });
