@@ -283,6 +283,46 @@ import { logSystemEvent } from "../systemEventService";
     chatUpload: multer.Multer;
   }
 
+  // Per-worker double-booking guard. Returns the first scheduled job that
+  // overlaps the requested time window for the SAME assigned worker, or null
+  // when the slot is free. Two different workers booked at the same time is
+  // allowed — only the same worker overlapping themselves is a conflict.
+  // Cancelled/done/invoiced jobs never count as a conflict.
+  async function findWorkerBookingConflict(params: {
+    effectiveUserId: string;
+    assignedTo: string;
+    scheduledAt: Date;
+    estimatedDuration?: number | null;
+    excludeJobId?: string;
+  }): Promise<any | null> {
+    const { effectiveUserId, assignedTo, scheduledAt, estimatedDuration, excludeJobId } = params;
+    const start = new Date(scheduledAt).getTime();
+    if (Number.isNaN(start)) return null;
+    const durationMin = estimatedDuration && estimatedDuration > 0 ? estimatedDuration : 60;
+    const end = start + durationMin * 60 * 1000;
+
+    const skipStatuses = new Set(['cancelled', 'done', 'invoiced']);
+    const allJobs = await storage.getJobs(effectiveUserId);
+
+    for (const other of allJobs) {
+      if (excludeJobId && other.id === excludeJobId) continue;
+      if (other.assignedTo !== assignedTo) continue;
+      if (skipStatuses.has(other.status)) continue;
+      if (!other.scheduledAt) continue;
+
+      const otherStart = new Date(other.scheduledAt).getTime();
+      if (Number.isNaN(otherStart)) continue;
+      const otherDuration = other.estimatedDuration && other.estimatedDuration > 0 ? other.estimatedDuration : 60;
+      const otherEnd = otherStart + otherDuration * 60 * 1000;
+
+      // Overlap when one window starts before the other ends, both ways.
+      if (start < otherEnd && otherStart < end) {
+        return other;
+      }
+    }
+    return null;
+  }
+
   // Shared WHS gate: returns a blocking {status, body} when a job is being
   // started (transition to in_progress) and a configured safety/compliance
   // requirement is not met. Returns null when the start is allowed. Applied to
@@ -2343,6 +2383,26 @@ import { logSystemEvent } from "../systemEventService";
         }
       }
       
+      // Per-worker double-booking guard: block when this worker already has an
+      // overlapping scheduled job. Different workers at the same time is fine.
+      if (data.assignedTo && data.scheduledAt) {
+        const conflict = await findWorkerBookingConflict({
+          effectiveUserId,
+          assignedTo: data.assignedTo,
+          scheduledAt: new Date(data.scheduledAt as any),
+          estimatedDuration: data.estimatedDuration ?? null,
+        });
+        if (conflict) {
+          return res.status(409).json({
+            error: "This worker is already booked for an overlapping time. Pick a different time or worker.",
+            code: "BOOKING_CONFLICT",
+            conflictingJobId: conflict.id,
+            conflictingJobTitle: conflict.title,
+            conflictingScheduledAt: conflict.scheduledAt,
+          });
+        }
+      }
+
       // Auto-geocode address if provided but lat/lng missing
       let jobData = { ...data, userId: effectiveUserId };
       if (data.address && (!data.latitude || !data.longitude)) {
@@ -2662,6 +2722,33 @@ import { logSystemEvent } from "../systemEventService";
           });
         }
       }
+
+      // Per-worker double-booking guard on reschedule/reassign. Only runs when
+      // the worker or the time is actually changing; uses the merged final
+      // worker + time and excludes this same job from the comparison.
+      if (data.assignedTo !== undefined || data.scheduledAt !== undefined) {
+        const finalAssignedTo = data.assignedTo !== undefined ? data.assignedTo : existingJob?.assignedTo;
+        const finalScheduledAt = data.scheduledAt !== undefined ? data.scheduledAt : existingJob?.scheduledAt;
+        const finalDuration = data.estimatedDuration !== undefined ? data.estimatedDuration : existingJob?.estimatedDuration;
+        if (finalAssignedTo && finalScheduledAt) {
+          const conflict = await findWorkerBookingConflict({
+            effectiveUserId,
+            assignedTo: finalAssignedTo,
+            scheduledAt: new Date(finalScheduledAt as any),
+            estimatedDuration: finalDuration ?? null,
+            excludeJobId: req.params.id,
+          });
+          if (conflict) {
+            return res.status(409).json({
+              error: "This worker is already booked for an overlapping time. Pick a different time or worker.",
+              code: "BOOKING_CONFLICT",
+              conflictingJobId: conflict.id,
+              conflictingJobTitle: conflict.title,
+              conflictingScheduledAt: conflict.scheduledAt,
+            });
+          }
+        }
+      }
       
       if (data.notes !== undefined) {
         delete data.notes;
@@ -2813,6 +2900,41 @@ import { logSystemEvent } from "../systemEventService";
           } catch (e) { console.error('Failed to create job status notification:', e); }
           await logActivity(effectiveUserId, 'job_status_changed', `Job status updated: ${job.title}`, `${existingJob.status} → ${data.status}`, 'job', job.id, { jobTitle: job.title, clientName, oldStatus: existingJob.status, newStatus: data.status });
         }
+      }
+
+      // Notify assigned worker(s) when a job is cancelled, so nobody turns up to
+      // a job that's been called off. Push + SMS, fire-and-forget.
+      if (data.status === 'cancelled' && existingJob && existingJob.status !== 'cancelled') {
+        (async () => {
+          try {
+            const recipientIds = new Set<string>();
+            const primary = job.assignedTo ? await resolveAssigneeUserId(job.assignedTo, effectiveUserId) : null;
+            if (primary) recipientIds.add(primary);
+            const assignments = await storage.getJobAssignments(job.id);
+            for (const a of assignments) {
+              if (a.isActive !== false && a.userId) recipientIds.add(a.userId);
+            }
+            // Don't notify the person who performed the cancellation
+            recipientIds.delete(req.userId);
+
+            for (const uid of Array.from(recipientIds)) {
+              try {
+                await notifyJobUpdate(uid, job.title, job.id, 'This job has been cancelled');
+              } catch (e) { console.error('[Job Cancel] push notify failed:', e); }
+              try {
+                const worker = await storage.getUser(uid);
+                if (worker?.phone) {
+                  await sendSMS({
+                    to: worker.phone,
+                    message: `JobRunner: "${job.title}" has been cancelled. You no longer need to attend.`,
+                  });
+                }
+              } catch (e) { console.error('[Job Cancel] SMS notify failed:', e); }
+            }
+          } catch (e) {
+            console.error('[Job Cancel] Failed to notify workers of cancellation:', e);
+          }
+        })();
       }
       
       // Auto-sync to Google Calendar if user is connected and job has schedule changes

@@ -926,6 +926,7 @@ export interface IStorage {
   getSmsJobRequests(businessOwnerId: string): Promise<SmsMessage[]>;
   createSmsMessage(message: InsertSmsMessage): Promise<SmsMessage>;
   updateSmsMessage(id: string, updates: Partial<InsertSmsMessage>): Promise<SmsMessage>;
+  getSmsMessageByTwilioSid(twilioSid: string): Promise<SmsMessage | undefined>;
   markSmsMessagesAsRead(conversationId: string): Promise<void>;
 
   // SMS Templates
@@ -5522,6 +5523,13 @@ export class PostgresStorage implements IStorage {
       .where(eq(smsMessages.id, id))
       .returning();
     return result;
+  }
+
+  async getSmsMessageByTwilioSid(twilioSid: string): Promise<SmsMessage | undefined> {
+    const result = await db.select().from(smsMessages)
+      .where(eq(smsMessages.twilioSid, twilioSid))
+      .limit(1);
+    return result[0];
   }
 
   async markSmsMessagesAsRead(conversationId: string): Promise<void> {

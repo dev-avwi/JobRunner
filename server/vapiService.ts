@@ -1798,6 +1798,122 @@ async function handleTransferCall(args: { reason: string; caller_phone?: string 
   }
 }
 
+// Parse a caller's free-form preferred date/time into a concrete Date.
+// Conservative by design: returns null unless we can build a valid date, so
+// the AI only enforces slot conflicts when it's confident about the time and
+// otherwise behaves exactly as before.
+function parsePreferredDateTime(preferredDate?: string | null, preferredTime?: string | null): Date | null {
+  if (!preferredDate || typeof preferredDate !== 'string') return null;
+  const dateStr = preferredDate.trim();
+  if (!dateStr) return null;
+
+  const base = new Date(dateStr);
+  if (isNaN(base.getTime())) return null;
+
+  // If the date string already carried a time (ISO "T", or "HH:MM") and the
+  // caller didn't give a separate time, trust the parsed time.
+  const dateStrHasTime = /T\d{2}:|\d{1,2}:\d{2}/.test(dateStr);
+
+  let hours = 9;
+  let minutes = 0;
+  let hadTime = false;
+  if (preferredTime && typeof preferredTime === 'string') {
+    const t = preferredTime.trim().toLowerCase();
+    const wordMap: Record<string, number> = { morning: 9, midday: 12, noon: 12, afternoon: 13, evening: 17, night: 18 };
+    if (wordMap[t] !== undefined) {
+      hours = wordMap[t];
+      hadTime = true;
+    } else {
+      const m = t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+      if (m) {
+        let h = parseInt(m[1], 10);
+        const mins = m[2] ? parseInt(m[2], 10) : 0;
+        const mer = m[3];
+        if (mer === 'pm' && h < 12) h += 12;
+        if (mer === 'am' && h === 12) h = 0;
+        if (h >= 0 && h <= 23 && mins >= 0 && mins <= 59) {
+          hours = h;
+          minutes = mins;
+          hadTime = true;
+        }
+      }
+    }
+  }
+
+  if (dateStrHasTime && !hadTime) return base;
+
+  // The caller named a time but we couldn't make sense of it (and the date
+  // string carried none either). Don't silently assume 9am — bail out so the
+  // booking falls back to the safe "tentative" path instead of checking the
+  // wrong slot.
+  const timeRequested = typeof preferredTime === 'string' && preferredTime.trim().length > 0;
+  if (timeRequested && !hadTime && !dateStrHasTime) return null;
+
+  base.setHours(hours, minutes, 0, 0);
+  return base;
+}
+
+// Work out whether a requested time slot can be serviced. Capacity is the
+// number of active team members; a slot is "free" while fewer jobs overlap it
+// than there are people to do them. When fully booked, scans forward (business
+// hours, hourly) for the next open slot to offer the caller.
+async function checkSlotAvailability(userId: string, slot: Date, durationMin: number): Promise<{
+  capacity: number;
+  overlapping: number;
+  isFree: boolean;
+  nextAvailable: Date | null;
+}> {
+  const teamMembers = await storage.getTeamMembers(userId);
+  const capacity = Math.max(1, teamMembers.filter(m => m.isActive).length);
+
+  const jobs = await storage.getJobs(userId);
+  const activeStatuses = new Set(['scheduled', 'in_progress', 'pending', 'booked']);
+  const booked = jobs
+    .filter(j => j.scheduledAt && activeStatuses.has(j.status))
+    .map(j => {
+      const start = new Date(j.scheduledAt as any).getTime();
+      const dur = j.estimatedDuration && j.estimatedDuration > 0 ? j.estimatedDuration : 60;
+      return { start, end: start + dur * 60000 };
+    })
+    .filter(b => !isNaN(b.start));
+
+  const countOverlap = (startMs: number): number => {
+    const endMs = startMs + durationMin * 60000;
+    return booked.filter(b => startMs < b.end && b.start < endMs).length;
+  };
+
+  const overlapping = countOverlap(slot.getTime());
+  const isFree = overlapping < capacity;
+
+  let nextAvailable: Date | null = null;
+  if (!isFree) {
+    const candidate = new Date(slot);
+    candidate.setMinutes(0, 0, 0);
+    for (let step = 0; step < 200 && !nextAvailable; step++) {
+      candidate.setHours(candidate.getHours() + 1);
+      const h = candidate.getHours();
+      if (h < 8 || h >= 17) continue; // only offer reasonable working hours
+      if (countOverlap(candidate.getTime()) < capacity) {
+        nextAvailable = new Date(candidate);
+      }
+    }
+  }
+
+  return { capacity, overlapping, isFree, nextAvailable };
+}
+
+function formatSlotForSpeech(d: Date, tz: string): string {
+  const opts: Intl.DateTimeFormatOptions = {
+    weekday: 'long', day: 'numeric', month: 'long',
+    hour: 'numeric', minute: '2-digit', hour12: true,
+  };
+  try {
+    return d.toLocaleString('en-AU', { ...opts, timeZone: tz });
+  } catch {
+    return d.toLocaleString('en-AU', opts);
+  }
+}
+
 async function handleCheckAvailability(args: any, userId: string): Promise<any> {
   try {
     const settings = await storage.getBusinessSettings(userId);
@@ -1822,6 +1938,24 @@ async function handleCheckAvailability(args: any, userId: string): Promise<any> 
 
     if (status.reason === 'closed_day') {
       return { result: `The business doesn't operate today. I'll take your details and someone will get back to you on the next business day.` };
+    }
+
+    // If the caller named a specific date/time we can parse, answer about that
+    // exact slot rather than just general business hours. Runs only after the
+    // today-closure checks above so we never report a slot as open while the
+    // business is closed.
+    const requestedSlot = parsePreferredDateTime(args?.preferred_date, args?.preferred_time);
+    if (requestedSlot) {
+      const tz = settings.timezone || 'Australia/Sydney';
+      const avail = await checkSlotAvailability(userId, requestedSlot, 60);
+      const slotLabel = formatSlotForSpeech(requestedSlot, tz);
+      if (avail.isFree) {
+        return { result: `Yes, ${slotLabel} looks open. Would you like me to book that in for you?` };
+      }
+      if (avail.nextAvailable) {
+        return { result: `Unfortunately ${slotLabel} is fully booked. The next available opening is ${formatSlotForSpeech(avail.nextAvailable, tz)}. Would that suit you?` };
+      }
+      return { result: `Unfortunately ${slotLabel} is fully booked. I can take your details and have the team find the next available time for you.` };
     }
 
     const hoursStr = status.todayHours || 'standard business hours';
@@ -1880,6 +2014,28 @@ async function handleLookupClient(args: any, userId: string): Promise<any> {
 
 async function handleCreateBooking(args: any, userId: string, callId: string): Promise<any> {
   try {
+    // Conservatively work out whether the caller's requested time is actually
+    // open. We only enforce this when the date/time is confidently parseable;
+    // otherwise we fall back to the original "tentative booking" wording.
+    const requestedSlot = parsePreferredDateTime(args.preferred_date, args.preferred_time);
+    let slotConflict: { nextAvailable: Date | null } | null = null;
+    let slotConfirmedFree = false;
+    let speechTz = 'Australia/Sydney';
+    if (requestedSlot) {
+      try {
+        const settings = await storage.getBusinessSettings(userId);
+        speechTz = settings?.timezone || 'Australia/Sydney';
+        const avail = await checkSlotAvailability(userId, requestedSlot, 60);
+        if (!avail.isFree) {
+          slotConflict = { nextAvailable: avail.nextAvailable };
+        } else {
+          slotConfirmedFree = true;
+        }
+      } catch (e) {
+        console.error('[Vapi] Slot availability check failed (continuing as tentative):', e);
+      }
+    }
+
     const lead = await storage.createLead({
       userId,
       name: args.caller_name || 'Unknown Caller',
@@ -1908,8 +2064,33 @@ async function handleCreateBooking(args: any, userId: string, callId: string): P
     });
 
     console.log(`[Vapi] Booking lead created: ${lead.id} for call ${callId}`);
+
+    const ref = lead.id.slice(0, 8);
+    const workLabel = args.job_type || 'the requested work';
+
+    // Requested time is fully booked — be honest, offer the next opening, but
+    // still keep the caller's details so we never lose the lead.
+    if (slotConflict) {
+      if (slotConflict.nextAvailable) {
+        return {
+          result: `That time is already fully booked, but the next available opening is ${formatSlotForSpeech(slotConflict.nextAvailable, speechTz)}. I've taken your details for ${workLabel} (reference ${ref}), and the team can confirm that time or find another that suits you.`,
+        };
+      }
+      return {
+        result: `That time looks fully booked. I've taken your details for ${workLabel} (reference ${ref}) and the team will call you to find a time that works.`,
+      };
+    }
+
+    // Requested time is genuinely open — confirm it confidently.
+    if (slotConfirmedFree && requestedSlot) {
+      return {
+        result: `Great news — ${formatSlotForSpeech(requestedSlot, speechTz)} is available, so I've booked you in for ${workLabel}. Reference: ${ref}. The team will confirm the final details with you.`,
+      };
+    }
+
+    // Couldn't confidently parse the time — keep the original tentative wording.
     return {
-      result: `I've created a tentative booking for ${args.job_type || 'the requested work'}${args.preferred_date ? ` on ${args.preferred_date}` : ''}. Reference: ${lead.id.slice(0, 8)}. Someone from the team will confirm the details with you.`,
+      result: `I've created a tentative booking for ${workLabel}${args.preferred_date ? ` on ${args.preferred_date}` : ''}. Reference: ${ref}. Someone from the team will confirm the details with you.`,
     };
   } catch (error: unknown) {
     console.error('[Vapi] Create booking failed:', error);

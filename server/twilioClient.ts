@@ -12,6 +12,7 @@
 
 import twilio from 'twilio';
 import { getErrorMessage } from "./lib/errors";
+import { getProductionBaseUrl } from "./urlHelper";
 
 let twilioClient: ReturnType<typeof twilio> | null = null;
 let twilioPhoneNumber: string | null = null;
@@ -299,6 +300,15 @@ export async function sendSMS(options: SendSMSOptions): Promise<SMSResult> {
     if (isMMS) {
       messageOptions.mediaUrl = validMediaUrls;
     }
+
+    // Ask Twilio to POST delivery status updates back so we can detect
+    // undelivered/failed messages and alert the sender.
+    try {
+      const baseUrl = getProductionBaseUrl();
+      if (baseUrl && baseUrl.startsWith('https://')) {
+        messageOptions.statusCallback = `${baseUrl}/api/sms/webhook/status`;
+      }
+    } catch {}
 
     const result = await twilioClient.messages.create(messageOptions);
 

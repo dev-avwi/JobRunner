@@ -54,6 +54,7 @@ export type NotificationType =
   | 'team_message'
   | 'chat_message'
   | 'sms_received'
+  | 'sms_failed'
   | 'team_invite'
   | 'team_location'
   | 'timesheet_submitted'

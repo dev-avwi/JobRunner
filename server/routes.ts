@@ -35148,6 +35148,65 @@ Respond with JSON in this format:
     }
   });
 
+  // Twilio webhook for SMS delivery status callbacks.
+  // Twilio POSTs here as a message moves through queued -> sent -> delivered/failed.
+  // We persist the final state and alert the sender when a message can't be delivered.
+  app.post("/api/sms/webhook/status", validateTwilioWebhook, async (req, res) => {
+    try {
+      const { MessageSid, MessageStatus, ErrorCode, ErrorMessage } = req.body;
+
+      if (!MessageSid || !MessageStatus) {
+        return res.status(400).send('Bad request');
+      }
+
+      const message = await storage.getSmsMessageByTwilioSid(MessageSid);
+      if (!message) {
+        // Unknown SID — acknowledge so Twilio stops retrying
+        res.set('Content-Type', 'text/xml');
+        return res.send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      }
+
+      const failed = MessageStatus === 'undelivered' || MessageStatus === 'failed';
+      const newStatus = failed
+        ? 'failed'
+        : (MessageStatus === 'delivered' ? 'delivered' : (message.status || 'sent'));
+
+      await storage.updateSmsMessage(message.id, {
+        status: newStatus,
+        errorMessage: failed
+          ? (ErrorMessage || `Delivery failed (code ${ErrorCode || 'unknown'})`)
+          : message.errorMessage,
+      });
+
+      // Alert the sender (or business owner) when a message can't be delivered
+      if (failed) {
+        try {
+          const conversation = await storage.getSmsConversation(message.conversationId);
+          const recipientUserId = message.senderUserId || conversation?.businessOwnerId;
+          if (recipientUserId) {
+            const who = conversation?.clientName || 'the client';
+            const { sendPushNotification } = await import('./pushNotifications');
+            await sendPushNotification({
+              userId: recipientUserId,
+              type: 'sms_failed',
+              title: 'SMS not delivered',
+              body: `Your text to ${who} could not be delivered. Tap to view the conversation.`,
+              data: { conversationId: message.conversationId, relatedType: 'sms' },
+            });
+          }
+        } catch (notifyErr) {
+          console.error('[SMS Status] Failed to notify sender of delivery failure:', notifyErr);
+        }
+      }
+
+      res.set('Content-Type', 'text/xml');
+      res.send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    } catch (error: any) {
+      console.error('Error handling SMS status callback:', error);
+      res.status(500).send('Internal error');
+    }
+  });
+
   // ===== SMS AUTOMATION ROUTES =====
   
   // Get all automation rules for user

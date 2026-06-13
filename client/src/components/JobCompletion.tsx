@@ -10,6 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Clock, MapPin, User, Play, Square, Plus, X, ListChecks, PartyPopper, ArrowRight, Receipt, Mail } from "lucide-react";
 import PhotoGallery from "./PhotoGallery";
@@ -78,6 +88,8 @@ export default function JobCompletion({
   const [isJobCompleted, setIsJobCompleted] = useState(false);
   const [smartActions, setSmartActions] = useState<SmartAction[]>([]);
   const [isExecutingActions, setIsExecutingActions] = useState(false);
+  const [showNoPhotoWarning, setShowNoPhotoWarning] = useState(false);
+  const [pendingCompletion, setPendingCompletion] = useState<JobCompletionData | null>(null);
 
   // Use time tracking hook
   const {
@@ -116,7 +128,7 @@ export default function JobCompletion({
     }
   };
 
-  const handleSubmit = async (data: JobCompletionData) => {
+  const completeJob = async (data: JobCompletionData) => {
     try {
       const updateData = {
         status: 'done' as const,
@@ -146,6 +158,17 @@ export default function JobCompletion({
         variant: "destructive",
       });
     }
+  };
+
+  const handleSubmit = async (data: JobCompletionData) => {
+    // Warn (but don't block) when completing a job with no photos — photos
+    // help protect the tradie in disputes.
+    if (!job.photos || job.photos.length === 0) {
+      setPendingCompletion(data);
+      setShowNoPhotoWarning(true);
+      return;
+    }
+    await completeJob(data);
   };
 
   const handleActionToggle = (actionId: string, enabled: boolean) => {
@@ -649,6 +672,31 @@ export default function JobCompletion({
           </Form>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showNoPhotoWarning} onOpenChange={setShowNoPhotoWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>No photos attached</AlertDialogTitle>
+            <AlertDialogDescription>
+              Photos help protect you if there's ever a dispute about this job. Are you sure you want to complete it without any?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-add-photos-instead">Go back and add photos</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-complete-without-photos"
+              onClick={async () => {
+                const data = pendingCompletion;
+                setShowNoPhotoWarning(false);
+                setPendingCompletion(null);
+                if (data) await completeJob(data);
+              }}
+            >
+              Complete anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
