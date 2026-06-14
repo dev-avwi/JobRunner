@@ -449,6 +449,7 @@ export default function MoreScreen() {
     role,
     isStaff, 
     isSubcontractor,
+    isStandaloneSubcontractor,
     isSolo,
     hasTeamAccess,
     canAccessTeamPages,
@@ -459,19 +460,25 @@ export default function MoreScreen() {
     canAccessBilling,
   } = useUserRole();
 
+  // A subcontractor in their OWN Personal profile has full owner powers
+  // (server returns isOwner:true). The Quick Create FAB already unlocks
+  // create for them, so the More menu must match: treat them as a solo
+  // owner so Clients / Documents / Payment Hub and the rest of the solo
+  // work tools appear instead of the locked-worker subset. A subcontractor
+  // switched INTO a joined business stays a worker (isStandalone=false).
   const filterOptions: FilterOptions = useMemo(() => ({
     isTeam: canAccessTeamPages && !isSolo,
-    isTradie: isStaff,
-    isOwner,
+    isTradie: isStandaloneSubcontractor ? false : isStaff,
+    isOwner: isOwner || isStandaloneSubcontractor,
     isManager,
-    isSolo,
-    isSubcontractor,
-    userRole: mapRoleToFilterRole(role),
+    isSolo: isSolo || isStandaloneSubcontractor,
+    isSubcontractor: isStandaloneSubcontractor ? false : isSubcontractor,
+    userRole: isStandaloneSubcontractor ? 'solo_owner' : mapRoleToFilterRole(role),
     isPlatformAdmin: user?.isPlatformAdmin || false,
     hasProSubscription,
     hasTeamSubscription,
     isSimpleMode: businessSettings?.simpleMode || false,
-  }), [canAccessTeamPages, isSolo, isStaff, isSubcontractor, isOwner, isManager, role, user?.isPlatformAdmin, hasProSubscription, hasTeamSubscription, businessSettings?.simpleMode]);
+  }), [canAccessTeamPages, isSolo, isStaff, isSubcontractor, isStandaloneSubcontractor, isOwner, isManager, role, user?.isPlatformAdmin, hasProSubscription, hasTeamSubscription, businessSettings?.simpleMode]);
 
   const categorizedItems = useMemo(() => 
     getMorePageItemsByCategory(filterOptions), 

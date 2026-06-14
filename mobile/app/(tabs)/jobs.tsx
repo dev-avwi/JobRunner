@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContentWidth, useIsTablet } from '../../src/lib/device';
 import { Feather } from '@expo/vector-icons';
 import { useJobsStore, useClientsStore, useAuthStore, type Job } from '../../src/lib/store';
+import { useUserRole } from '../../src/hooks/use-user-role';
 import { api } from '../../src/lib/api';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
@@ -322,9 +323,18 @@ export default function JobsScreen() {
   const isSoloOwner = user && businessSettings && (!roleInfo || roleInfo.isOwner);
   const subRole = roleInfo?.roleName?.toLowerCase();
   const isSubcontractor = subRole === 'subcontractor' || subRole === 'sub_contractor';
-  const canWriteJobs = !isSubcontractor && (isOwnerOrManager || isSoloOwner);
-  const canCreateQuotes = !isSubcontractor && (isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_quotes')));
-  const canCreateInvoices = !isSubcontractor && (isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_invoices')));
+  // A subcontractor in their OWN Personal profile has full owner powers
+  // (server returns isOwner:true) — same flag the Quick Create FAB and More
+  // menu use to unlock create, so the Create Job button + quote/invoice
+  // actions must appear here too. We read this from useUserRole (which keys
+  // off the server's teamMemberInfo.isOwner) rather than roleInfo.isOwner:
+  // roleInfo has two racing writers and gets clobbered to false for this
+  // role, whereas isStandaloneSubcontractor is the single canonical signal.
+  // A subcontractor switched INTO a joined business stays a locked worker.
+  const { isStandaloneSubcontractor } = useUserRole();
+  const canWriteJobs = isStandaloneSubcontractor || (!isSubcontractor && (isOwnerOrManager || isSoloOwner));
+  const canCreateQuotes = isStandaloneSubcontractor || (!isSubcontractor && (isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_quotes'))));
+  const canCreateInvoices = isStandaloneSubcontractor || (!isSubcontractor && (isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_invoices'))));
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState(params.filter || 'all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
