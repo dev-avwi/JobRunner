@@ -358,6 +358,12 @@ export function useUserRole() {
   const isManager = role === 'manager';
   const isStaff = role === 'staff' || role === 'subcontractor';
   const isSubcontractor = role === 'subcontractor';
+  // A subcontractor operating in their OWN Personal workspace has full owner
+  // powers — the server (/api/team/my-role) returns isOwner:true for them, but
+  // we keep role='subcontractor' so the Subcontractor dashboard/badge still
+  // shows. This flag distinguishes the free Personal profile from being
+  // switched INTO a joined business (where isOwner is absent and create locks).
+  const isStandaloneSubcontractor = isSubcontractor && (cache?.teamMemberInfo as any)?.isOwner === true;
   const isSolo = role === 'solo_owner';
   const teamMemberId = cache?.teamMemberInfo?.teamMemberId;
   
@@ -386,6 +392,7 @@ export function useUserRole() {
     isManager,
     isStaff,
     isSubcontractor,
+    isStandaloneSubcontractor,
     isSolo,
     teamMemberId,
     hasTeamAccess,

@@ -217,13 +217,14 @@ interface FloatingActionButtonProps {
 export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabStyle = 'phone', bottomOffset = 0 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { colors } = useTheme();
-  const { isOwner, isManager, isSubcontractor } = useUserRole();
+  const { isOwner, isManager, isSubcontractor, isStandaloneSubcontractor } = useUserRole();
   // Only owners and managers can create jobs/quotes/invoices/clients. Workers and
-  // subcontractors (in a joined business) see the tiles locked. A subcontractor in
-  // their own Personal profile is the owner, so everything is unlocked there.
-  // Lock by default until the role resolves to owner/manager — never flash an
-  // unlocked create tile to a worker during role loading.
-  const lockCreate = !isOwner && !isManager;
+  // subcontractors switched INTO a joined business see the tiles locked. A
+  // subcontractor in their own Personal profile has owner powers
+  // (isStandaloneSubcontractor), so everything is unlocked there.
+  // Lock by default until the role resolves — never flash an unlocked create
+  // tile to a worker during role loading.
+  const lockCreate = !isOwner && !isManager && !isStandaloneSubcontractor;
   const isTabletStyle = fabStyle === 'tablet';
   const styles = useMemo(() => createStyles(colors, isTabletStyle), [colors, isTabletStyle]);
   const fabInsets = useSafeAreaInsets();

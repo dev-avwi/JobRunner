@@ -19,6 +19,21 @@ React 19's `@types/react` removed the zero-arg `useRef` overload, so
 **Rule:** before trusting `mobile/scripts/typecheck.sh` (or claiming a CI typecheck
 failure is fixed), run `npm --prefix mobile ci` first to match CI exactly.
 
+**DANGER (env-specific, observed 2026-06-14): do NOT run `npm --prefix mobile ci` in
+the Replit workspace.** `npm ci` ALWAYS wipes `mobile/node_modules` first, then restores
+from registry/cache. The package firewall (`package-firewall.replit.local`) BLOCKS
+`shell-quote@1.8.3` (security policy → HTTP 403) and that tarball is NOT in the offline
+cache (`ENOTCACHED`), so the restore fails ATOMICALLY and leaves `mobile/node_modules`
+EMPTY and UNRECOVERABLE in-env (offline also lacks `@babel/core` etc). Online retries are
+forbidden per the package-management skill (403 = security block, don't retry). Net: one
+`npm ci` permanently breaks the workspace's mobile typecheck for the session. The
+workspace's `mobile/node_modules` appears to be platform-provisioned, NOT reproducible via
+`npm ci` here. The user's own Mac clone has its own intact node_modules and is unaffected;
+no Replit workflow (`Start application`, `check`) depends on `mobile/node_modules`, so the
+running app is fine. **If you need to verify mobile changes, rely on static reasoning +
+the architect review; do not `npm ci`. Server/web typecheck is `npm run check` (root tsc),
+which is independent of mobile.**
+
 **Env footguns:** `cd` in the bash tool is blocked — use `npm --prefix mobile ...` or
 `bash mobile/scripts/typecheck.sh` (it cds internally). `npm exec -- tsc` got killed.
 Background `npm ci` started with `nohup ... &` gets KILLED when the bash call returns —

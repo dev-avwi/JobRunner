@@ -29425,9 +29425,28 @@ Respond with JSON in this format:
   app.get("/api/team/my-role", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;
-      
-      // Check if this user is a team member of someone else's business
-      let myMembership = await storage.getTeamMembershipByMemberId(userId);
+
+      // Resolve membership in an ACTIVE-BUSINESS-aware way, mirroring
+      // getUserContext(). When the user is in their own Personal workspace
+      // (no active business set) they resolve to owner-mode even if they hold
+      // memberships in OTHER businesses; only when switched INTO a joined
+      // business do they take on that business's worker/subcontractor role.
+      // This keeps a subcontractor's Personal profile free to create their own
+      // jobs/quotes/invoices, while their joined-business workspace stays locked.
+      const currentUser = await storage.getUser(userId);
+      const activeBusinessId = currentUser?.activeBusinessId;
+      let myMembership;
+      if (activeBusinessId) {
+        myMembership = await storage.getTeamMemberByUserIdAndBusiness(userId, activeBusinessId);
+      } else {
+        const ownSettings = await storage.getBusinessSettings(userId);
+        const hasRealOwnBusiness =
+          !!ownSettings?.businessName &&
+          ownSettings.businessName !== WORKER_PROFILE_PLACEHOLDER_NAME;
+        if (!hasRealOwnBusiness) {
+          myMembership = await storage.getTeamMembershipByMemberId(userId);
+        }
+      }
 
       // A user can never be a team-member employee of their OWN business. A
       // self-membership (member_id === business_owner_id) created by legacy/
