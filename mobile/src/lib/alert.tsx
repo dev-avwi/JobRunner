@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Platform,
   Alert as RNAlert,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -52,6 +53,23 @@ export const Alert = {
     buttons?: AlertButton[],
     options?: AlertOptions,
   ) {
+    // iOS uses the native system alert so every alert matches the rest of the
+    // app (the confirm dialogs already go native on iOS). Android/web keep the
+    // branded modal via the mounted <AlertHost />.
+    if (Platform.OS === 'ios') {
+      const nativeButtons = buttons?.map((b) => ({
+        text: b.text,
+        onPress: b.onPress ? () => b.onPress!() : undefined,
+        style:
+          b.style === 'destructive'
+            ? 'destructive'
+            : b.style === 'cancel'
+            ? 'cancel'
+            : 'default',
+      }));
+      RNAlert.alert(title, message, nativeButtons as never, options as never);
+      return;
+    }
     if (externalShow) {
       externalShow(title, message, buttons, options);
       return;
