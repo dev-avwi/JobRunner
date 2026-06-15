@@ -746,12 +746,12 @@ export function SubcontractorDashboard() {
             <View style={styles.earningsRow}>
               <View style={styles.earningsStat}>
                 <Text style={styles.earningsLabel}>Hours This Month</Text>
-                <Text style={styles.perfStatValue}>{data.hoursMonth.toFixed(1)}h</Text>
+                <Text style={styles.perfStatValue}>{(data.hoursMonth ?? 0).toFixed(1)}h</Text>
               </View>
               <View style={[styles.earningsDivider, { backgroundColor: colors.border }]} />
               <View style={styles.earningsStat}>
                 <Text style={styles.earningsLabel}>Jobs Completed</Text>
-                <Text style={styles.perfStatValue}>{data.jobsCompletedMonth}</Text>
+                <Text style={styles.perfStatValue}>{data.jobsCompletedMonth ?? 0}</Text>
               </View>
             </View>
 
@@ -777,7 +777,7 @@ export function SubcontractorDashboard() {
                         <Text style={styles.earningsBreakdownName}>{biz.businessName}</Text>
                         <View style={{ alignItems: 'flex-end' }}>
                           <Text style={styles.earningsBreakdownAmount}>{formatCurrencyUtil(biz.amount)}</Text>
-                          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{biz.hours.toFixed(1)}h</Text>
+                          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{(biz.hours ?? 0).toFixed(1)}h</Text>
                         </View>
                       </View>
                     ))}

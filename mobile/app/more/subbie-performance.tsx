@@ -135,7 +135,7 @@ export default function SubbiePerformance() {
                   <View key={i} style={styles.bizRow}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.bizName}>{b.businessName}</Text>
-                      <Text style={styles.bizMeta}>{b.hours.toFixed(1)}h worked</Text>
+                      <Text style={styles.bizMeta}>{(b.hours ?? 0).toFixed(1)}h worked</Text>
                     </View>
                     <Text style={styles.bizAmount}>{formatCurrency(b.amount)}</Text>
                   </View>
