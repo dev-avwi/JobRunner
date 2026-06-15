@@ -230,7 +230,7 @@ export function useUserRole() {
               roleName: data.roleName,
               permissions,
               hasCustomPermissions: data.useCustomPermissions ?? false,
-              isOwner: role === 'owner' || role === 'solo_owner',
+              isOwner: (data as any).isOwner === true || role === 'owner' || role === 'solo_owner',
               teamMemberId: data.teamMemberId || undefined,
             },
             isWorker: role === 'staff',

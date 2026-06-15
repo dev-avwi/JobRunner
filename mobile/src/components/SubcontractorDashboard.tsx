@@ -875,7 +875,7 @@ export function SubcontractorDashboard() {
         scrollable={false}
         contentPadding={0}
       >
-        <View>
+        <View style={{ paddingHorizontal: spacing.lg }}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Decline Job</Text>
               <TouchableOpacity onPress={() => setShowDeclineModal(false)} style={{ padding: spacing.xs }}>
@@ -920,7 +920,7 @@ export function SubcontractorDashboard() {
         snapPoints={['90%']}
         scrollable={false}
         contentPadding={0}>
-        <View>
+        <View style={{ paddingHorizontal: spacing.lg }}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Create Tax Invoice</Text>
               <TouchableOpacity onPress={() => setShowInvoiceCreate(false)} style={{ padding: spacing.xs }}>
@@ -1190,7 +1190,7 @@ export function SubcontractorDashboard() {
         snapPoints={['90%']}
         scrollable={false}
         contentPadding={0}>
-        <View>
+        <View style={{ paddingHorizontal: spacing.lg }}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>My Invoices</Text>
               <TouchableOpacity onPress={() => setShowInvoices(false)} style={{ padding: spacing.xs }}>
