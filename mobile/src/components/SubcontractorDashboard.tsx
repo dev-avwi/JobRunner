@@ -23,6 +23,7 @@ import { AppBottomSheet } from './ui/AppBottomSheet';
 import { OnboardingSetupFailedBanner } from './ui/OnboardingSetupFailedBanner';
 import { spacing, radius, shadows, typography, pageShell, usePageShell } from '../lib/design-tokens';
 import { useScrollToTop } from '../contexts/ScrollContext';
+import { useUserRole } from '../hooks/use-user-role';
 
 interface SubcontractorJob {
   id: string;
@@ -73,6 +74,7 @@ export function SubcontractorDashboard() {
   const { scrollToTopTrigger } = useScrollToTop();
 
   const { user } = useAuthStore();
+  const { isStandaloneSubcontractor } = useUserRole();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -770,7 +772,8 @@ export function SubcontractorDashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Invoicing Section */}
+        {/* Invoicing Section — bill-a-business only; hidden on the free personal profile */}
+        {!isStandaloneSubcontractor && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={[styles.sectionIconContainer, { backgroundColor: colorWithOpacity(colors.primary, 0.12) }]}>
@@ -845,6 +848,7 @@ export function SubcontractorDashboard() {
             </TouchableOpacity>
           </View>
         </View>
+        )}
 
         {/* Connected Businesses */}
         {data.businesses.length > 0 && (
