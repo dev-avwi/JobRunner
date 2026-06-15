@@ -19,6 +19,7 @@ export interface NavItem {
   hideForStandaloneSubcontractor?: boolean;
   requiresProPlan?: boolean;
   requiresTeamPlan?: boolean;
+  freeForStandaloneSubcontractor?: boolean;
   showLockedIfNoAccess?: boolean;
   locked?: boolean;
   lockReason?: string;
@@ -325,6 +326,7 @@ export const mainMenuItems: NavItem[] = [
     bgColor: "primary",
     hideForStaff: true,
     requiresProPlan: true,
+    freeForStandaloneSubcontractor: true,
     showLockedIfNoAccess: true,
     showInMore: true,
     category: "addons",
@@ -552,7 +554,11 @@ export function filterNavItems(items: NavItem[], options: FilterOptions): NavIte
       }
     }
 
-    if (item.requiresProPlan && options.hasProSubscription === false) {
+    if (
+      item.requiresProPlan &&
+      options.hasProSubscription === false &&
+      !(item.freeForStandaloneSubcontractor && options.isStandaloneSubcontractor)
+    ) {
       if (item.showLockedIfNoAccess && !options.isSubcontractor) {
         item.locked = true;
         item.lockReason = 'Available on the Pro plan. Upgrade in Subscription settings.';
