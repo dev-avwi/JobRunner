@@ -82,18 +82,6 @@ export const mainMenuItems: NavItem[] = [
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
   },
   {
-    title: "Form Builder",
-    url: "/more/form-builder",
-    icon: "clipboard",
-    description: "Custom forms and checklists",
-    color: "primary",
-    bgColor: "primary",
-    hideForStaff: true,
-    showInMore: true,
-    category: "work",
-    allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
-  },
-  {
     title: "Payment Hub",
     url: "/more/payment-hub",
     icon: "dollar-sign",
