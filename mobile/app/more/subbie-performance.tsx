@@ -12,7 +12,7 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
-import { spacing, radius } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes } from '../../src/lib/design-tokens';
 import { formatCurrency } from '../../src/lib/format';
 import api from '../../src/lib/api';
 
@@ -23,6 +23,11 @@ interface PerformanceData {
   jobsCompletedMonth: number;
   earningsByBusiness: { businessName: string; amount: number; hours: number }[];
   earningsTrend: { period: string; earnings: number; hours: number }[];
+}
+
+function shortCurrency(value: number): string {
+  if (value >= 1000) return `$${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+  return `$${Math.round(value)}`;
 }
 
 export default function SubbiePerformance() {
@@ -51,8 +56,44 @@ export default function SubbiePerformance() {
 
   const maxTrend = useMemo(() => {
     if (!data?.earningsTrend?.length) return 0;
-    return Math.max(...data.earningsTrend.map(t => t.earnings), 0);
+    return Math.max(...data.earningsTrend.map(t => t.earnings ?? 0), 0);
   }, [data]);
+
+  const totalByBusiness = useMemo(() => {
+    if (!data?.earningsByBusiness?.length) return 0;
+    return data.earningsByBusiness.reduce((sum, b) => sum + (b.amount ?? 0), 0);
+  }, [data]);
+
+  const stats = [
+    {
+      label: 'Earned This Month',
+      value: formatCurrency(data?.earningsMonth ?? 0),
+      icon: 'dollar-sign' as const,
+      tint: colors.success,
+      bg: colors.successLight,
+    },
+    {
+      label: 'Earned This Week',
+      value: formatCurrency(data?.earningsWeek ?? 0),
+      icon: 'trending-up' as const,
+      tint: colors.primary,
+      bg: colorWithOpacity(colors.primary, 0.12),
+    },
+    {
+      label: 'Hours This Month',
+      value: `${(data?.hoursMonth ?? 0).toFixed(1)}h`,
+      icon: 'clock' as const,
+      tint: colors.info,
+      bg: colors.infoLight,
+    },
+    {
+      label: 'Jobs Completed',
+      value: `${data?.jobsCompletedMonth ?? 0}`,
+      icon: 'check-circle' as const,
+      tint: colors.warning,
+      bg: colors.warningLight,
+    },
+  ];
 
   return (
     <View style={styles.container}>
@@ -69,85 +110,98 @@ export default function SubbiePerformance() {
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing['3xl'] }} />
       ) : (
         <ScrollView
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: insets.bottom + 120 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + 120 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
         >
           {/* Headline stats */}
           <View style={styles.statGrid}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Earned This Month</Text>
-              <Text style={styles.statValue}>{formatCurrency(data?.earningsMonth ?? 0)}</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Earned This Week</Text>
-              <Text style={styles.statValue}>{formatCurrency(data?.earningsWeek ?? 0)}</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Hours This Month</Text>
-              <Text style={styles.statValue}>{(data?.hoursMonth ?? 0).toFixed(1)}h</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Jobs Completed</Text>
-              <Text style={styles.statValue}>{data?.jobsCompletedMonth ?? 0}</Text>
-            </View>
+            {stats.map((s, i) => (
+              <View key={i} style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: s.bg }]}>
+                  <Feather name={s.icon} size={iconSizes.xl} color={s.tint} />
+                </View>
+                <Text style={styles.statValue}>{s.value}</Text>
+                <Text style={styles.statLabel}>{s.label}</Text>
+              </View>
+            ))}
           </View>
 
           {/* Earnings trend */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Earnings Trend</Text>
-            <Text style={styles.sectionSubtitle}>Last 6 months</Text>
-            {data?.earningsTrend?.length && maxTrend > 0 ? (
-              <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Earnings Trend</Text>
+          <Text style={styles.sectionSubtitle}>Last 6 months</Text>
+          {data?.earningsTrend?.length && maxTrend > 0 ? (
+            <View style={styles.card}>
+              <View style={styles.chartRow}>
                 {data.earningsTrend.map((t, i) => {
-                  const pct = maxTrend > 0 ? Math.round((t.earnings / maxTrend) * 100) : 0;
+                  const e = t.earnings ?? 0;
+                  const barHeight = maxTrend > 0 ? Math.max((e / maxTrend) * 96, e > 0 ? 6 : 4) : 4;
+                  const isPeak = e === maxTrend && e > 0;
                   return (
-                    <View key={i} style={styles.trendRow}>
-                      <Text style={styles.trendPeriod}>{t.period}</Text>
-                      <View style={styles.trendBarTrack}>
-                        <View
-                          style={[
-                            styles.trendBarFill,
-                            { width: `${Math.max(pct, t.earnings > 0 ? 4 : 0)}%`, backgroundColor: colors.primary },
-                          ]}
-                        />
-                      </View>
-                      <Text style={styles.trendValue}>{formatCurrency(t.earnings)}</Text>
+                    <View key={i} style={styles.chartCol}>
+                      <Text style={styles.chartValue}>{shortCurrency(e)}</Text>
+                      <View
+                        style={[
+                          styles.chartBar,
+                          {
+                            height: barHeight,
+                            backgroundColor: isPeak ? colors.primary : colorWithOpacity(colors.primary, 0.35),
+                          },
+                        ]}
+                      />
+                      <Text style={styles.chartLabel} numberOfLines={1}>{t.period}</Text>
                     </View>
                   );
                 })}
               </View>
-            ) : (
-              <View style={styles.emptyWrap}>
-                <Feather name="bar-chart-2" size={36} color={colors.mutedForeground} />
-                <Text style={styles.emptyText}>No earnings recorded yet</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Earnings by business */}
-          {data?.earningsByBusiness?.length ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Earnings by Business</Text>
-              <Text style={styles.sectionSubtitle}>This month</Text>
-              <View style={styles.card}>
-                {data.earningsByBusiness.map((b, i) => (
-                  <View key={i} style={styles.bizRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.bizName}>{b.businessName}</Text>
-                      <Text style={styles.bizMeta}>{(b.hours ?? 0).toFixed(1)}h worked</Text>
-                    </View>
-                    <Text style={styles.bizAmount}>{formatCurrency(b.amount)}</Text>
-                  </View>
-                ))}
-              </View>
             </View>
           ) : (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Earnings by Business</Text>
-              <View style={[styles.card, { alignItems: 'center', paddingVertical: spacing.lg }]}>
-                <Text style={styles.emptyText}>All earnings are from your own solo work</Text>
+            <View style={styles.emptyCard}>
+              <View style={[styles.emptyIconWrap, { backgroundColor: colorWithOpacity(colors.primary, 0.1) }]}>
+                <Feather name="bar-chart-2" size={28} color={colors.primary} />
               </View>
+              <Text style={styles.emptyText}>No earnings recorded yet</Text>
+              <Text style={styles.emptySubtext}>Completed jobs will show here</Text>
+            </View>
+          )}
+
+          {/* Earnings by business */}
+          <Text style={styles.sectionTitle}>Earnings by Business</Text>
+          <Text style={styles.sectionSubtitle}>This month</Text>
+          {data?.earningsByBusiness?.length ? (
+            <View style={styles.card}>
+              {data.earningsByBusiness.map((b, i) => {
+                const amount = b.amount ?? 0;
+                const pct = totalByBusiness > 0 ? Math.round((amount / totalByBusiness) * 100) : 0;
+                const isLast = i === data.earningsByBusiness.length - 1;
+                return (
+                  <View key={i} style={[styles.bizRow, !isLast && styles.bizRowDivider]}>
+                    <View style={[styles.bizIcon, { backgroundColor: colorWithOpacity(colors.primary, 0.12) }]}>
+                      <Feather name="briefcase" size={iconSizes.lg} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.bizName} numberOfLines={1}>{b.businessName}</Text>
+                      <View style={styles.bizMetaRow}>
+                        <Text style={styles.bizMeta}>{(b.hours ?? 0).toFixed(1)}h worked</Text>
+                        <View style={styles.bizDot} />
+                        <Text style={styles.bizMeta}>{pct}%</Text>
+                      </View>
+                      <View style={styles.bizBarTrack}>
+                        <View style={[styles.bizBarFill, { width: `${Math.max(pct, amount > 0 ? 4 : 0)}%`, backgroundColor: colors.primary }]} />
+                      </View>
+                    </View>
+                    <Text style={styles.bizAmount}>{formatCurrency(amount)}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.emptyCard}>
+              <View style={[styles.emptyIconWrap, { backgroundColor: colorWithOpacity(colors.success, 0.12) }]}>
+                <Feather name="user" size={28} color={colors.success} />
+              </View>
+              <Text style={styles.emptyText}>All earnings are from your own solo work</Text>
+              <Text style={styles.emptySubtext}>Work for other businesses appears here</Text>
             </View>
           )}
         </ScrollView>
@@ -177,8 +231,9 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.foreground },
+    headerTitle: { ...typography.cardTitle, color: colors.foreground },
     headerRight: { width: 36 },
+
     statGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -187,50 +242,94 @@ function createStyles(colors: ThemeColors) {
     statCard: {
       width: '48%',
       backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
+      borderRadius: radius['2xl'],
       padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      ...shadows.sm,
     },
-    statLabel: { fontSize: 12, color: colors.mutedForeground, marginBottom: spacing.xs },
-    statValue: { fontSize: 20, fontWeight: '700', color: colors.foreground },
-    section: { marginTop: spacing.lg },
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.foreground },
-    sectionSubtitle: { fontSize: 12, color: colors.mutedForeground, marginTop: 2, marginBottom: spacing.sm },
+    statIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.xl,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.sm,
+    },
+    statValue: { ...typography.statValue, color: colors.foreground, letterSpacing: -0.5 },
+    statLabel: { ...typography.label, color: colors.mutedForeground, marginTop: spacing.xs },
+
+    sectionTitle: { ...typography.subtitle, color: colors.foreground, marginTop: spacing.xl },
+    sectionSubtitle: { ...typography.caption, color: colors.mutedForeground, marginTop: 2, marginBottom: spacing.sm },
+
     card: {
       backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
+      borderRadius: radius['2xl'],
       padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      ...shadows.sm,
     },
-    trendRow: {
+
+    chartRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-around',
+      height: 140,
+      paddingTop: spacing.sm,
+    },
+    chartCol: { flex: 1, alignItems: 'center', gap: spacing.xs },
+    chartValue: { fontSize: 11, fontWeight: '700', color: colors.foreground },
+    chartBar: { width: '52%', borderRadius: radius.md, minHeight: 4 },
+    chartLabel: { fontSize: 10, color: colors.mutedForeground, textAlign: 'center' },
+
+    bizRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
-      paddingVertical: spacing.xs,
+      gap: spacing.md,
+      paddingVertical: spacing.md,
     },
-    trendPeriod: { width: 40, fontSize: 13, color: colors.mutedForeground },
-    trendBarTrack: {
-      flex: 1,
-      height: 10,
+    bizRowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
+    bizIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.xl,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    bizName: { ...typography.bodySemibold, color: colors.foreground },
+    bizMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2, marginBottom: spacing.xs },
+    bizMeta: { fontSize: 12, color: colors.mutedForeground },
+    bizDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.mutedForeground },
+    bizBarTrack: {
+      height: 6,
       borderRadius: radius.pill,
       backgroundColor: colorWithOpacity(colors.mutedForeground, 0.15),
       overflow: 'hidden',
     },
-    trendBarFill: { height: 10, borderRadius: radius.pill },
-    trendValue: { width: 84, textAlign: 'right', fontSize: 13, fontWeight: '600', color: colors.foreground },
-    bizRow: {
-      flexDirection: 'row',
+    bizBarFill: { height: 6, borderRadius: radius.pill },
+    bizAmount: { ...typography.bodySemibold, fontWeight: '700', color: colors.foreground },
+
+    emptyCard: {
+      backgroundColor: colors.card,
+      borderRadius: radius['2xl'],
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      paddingVertical: spacing['2xl'],
+      paddingHorizontal: spacing.lg,
       alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: spacing.sm,
-      gap: spacing.sm,
+      gap: spacing.xs,
+      ...shadows.sm,
     },
-    bizName: { fontSize: 14, fontWeight: '600', color: colors.foreground },
-    bizMeta: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
-    bizAmount: { fontSize: 15, fontWeight: '700', color: colors.foreground },
-    emptyWrap: { alignItems: 'center', paddingVertical: spacing['2xl'], gap: spacing.sm },
-    emptyText: { fontSize: 14, color: colors.mutedForeground, textAlign: 'center' },
+    emptyIconWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.xs,
+    },
+    emptyText: { ...typography.bodySemibold, color: colors.foreground, textAlign: 'center' },
+    emptySubtext: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center' },
   });
 }
