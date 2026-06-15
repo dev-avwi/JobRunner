@@ -405,7 +405,7 @@ export async function analyzeCallSentiment(transcript: string | null, summary: s
   try {
     const inputText = text.length > 2000 ? text.slice(0, 2000) : text;
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         {
           role: "system",
@@ -421,8 +421,7 @@ Respond ONLY with valid JSON: {"sentiment":"positive"|"neutral"|"negative","scor
           content: inputText
         }
       ],
-      temperature: 0.1,
-      max_tokens: 50,
+      max_completion_tokens: 2000,
     });
 
     const content = response.choices[0]?.message?.content?.trim();
@@ -553,10 +552,10 @@ Return ONLY a JSON object like: {"suggestions": ["suggestion 1", "suggestion 2",
     }
 
     const response = await aiQueue.run(() => openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
-      max_tokens: 400,
+      max_completion_tokens: 2500,
     }));
 
     const content = response.choices[0]?.message?.content || '{"suggestions": []}';
@@ -826,14 +825,14 @@ You can do ALL of these for ${context.tradieFirstName}:
     }
 
     const response = await aiQueue.run(() => openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message }
       ],
       tools: tools,
       tool_choice: "auto",
-      max_tokens: 600,
+      max_completion_tokens: 2500,
     }));
 
     const responseMessage = response.choices[0]?.message;
@@ -1350,13 +1349,12 @@ Your response must be valid JSON with these fields:
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      temperature: 0.7,
-      max_tokens: 500,
+      max_completion_tokens: 2500,
       response_format: { type: "json_object" }
     });
 
@@ -1522,13 +1520,12 @@ Suggest the best times and team members for each unscheduled job. Consider locat
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      temperature: 0.7,
-      max_tokens: 1500,
+      max_completion_tokens: 3500,
       response_format: { type: "json_object" }
     });
 
@@ -1682,13 +1679,12 @@ Return a JSON object with this exact structure:
     }
 
     const completion = await aiQueue.run(() => openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent }
       ],
-      temperature: 0.7,
-      max_tokens: 1500,
+      max_completion_tokens: 3500,
       response_format: { type: "json_object" }
     }));
 
@@ -1928,13 +1924,12 @@ Return a JSON object:
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Parse this message for a ${tradeType} job:\n\n"${text}"` }
       ],
-      temperature: 0.3,
-      max_tokens: 500,
+      max_completion_tokens: 2500,
       response_format: { type: "json_object" }
     });
 
@@ -2014,13 +2009,12 @@ Return JSON:
   try {
     const context = hasMedia ? '(Message includes photo/image attachments)' : '';
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Analyze this SMS from ${clientName || 'a client'}: "${messageBody}" ${context}` }
       ],
-      temperature: 0.2,
-      max_tokens: 300,
+      max_completion_tokens: 2000,
       response_format: { type: "json_object" }
     });
 
@@ -2608,13 +2602,12 @@ Keep each tip to 1-2 sentences.`;
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         { role: "system", content: "You are a helpful scheduling assistant for Australian tradespeople. Be concise and practical." },
         { role: "user", content: prompt }
       ],
-      max_tokens: 300,
-      temperature: 0.7
+      max_completion_tokens: 2000
     });
 
     return response.choices[0]?.message?.content || 'Unable to generate recommendations.';

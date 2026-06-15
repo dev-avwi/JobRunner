@@ -390,7 +390,7 @@ export async function detectActionsFromTranscription(
     const openai = new OpenAI({ apiKey });
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [
         {
           role: 'system',
@@ -402,7 +402,7 @@ export async function detectActionsFromTranscription(
         }
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 500,
+      max_completion_tokens: 2500,
     });
 
     const content = response.choices[0]?.message?.content || '{"actions": []}';

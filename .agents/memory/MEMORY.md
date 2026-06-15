@@ -82,3 +82,4 @@
 - [tsc excess-prop masking](tsc-excess-prop-masking.md) — TS2353 reports only the FIRST excess prop per literal; removing it surfaces the next, so re-run check iteratively. esbuild prod build skips typecheck so server type errors are real bugs.
 - [Vapi assistant config write paths](vapi-assistant-write-paths.md) — new per-config AI-receptionist field must thread through create/update/by-id/resync routes + createAssistant/updateAssistant + UI, or it silently drops; prod needs raw ALTER too.
 - [runTest canonical URL dead port](runtest-canonical-url-dead-port.md) — runTest 502s: canonical URL maps to stale port 23636; forwarder workaround. Also full-reload-per-route trips 429 → marketing page (env artifact, not a bug).
+- [gpt-5-mini param constraints](gpt5-mini-param-constraints.md) — migrating OpenAI calls to gpt-5 family: rename max_tokens→max_completion_tokens, drop custom temperature, bump small budgets (reasoning eats them); Vapi aiModel is separate.

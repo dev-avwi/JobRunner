@@ -7844,7 +7844,7 @@ No text, no watermarks, no people.`;
       
       // Generate a description of the changes using GPT-4
       const descriptionResponse = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -7857,7 +7857,7 @@ Write 2-3 sentences explaining the key design elements and benefits of this reno
 Be specific about materials, colors, and features that would be included.`
           }
         ],
-        max_tokens: 200,
+        max_completion_tokens: 2000,
       });
       
       const description = descriptionResponse.choices[0]?.message?.content || 
@@ -25075,11 +25075,10 @@ Respond with JSON in this format:
       });
       
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
-        max_tokens: 500,
-        temperature: 0.7,
+        max_completion_tokens: 2500,
       });
       
       const responseText = completion.choices[0]?.message?.content || '{}';
@@ -35957,10 +35956,9 @@ ${context || 'No overdue invoices — great work!'}
 Give 3-5 short, specific recommendations. Mention client names. Use Australian English. Keep it under 200 words.`;
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 400,
-        temperature: 0.7,
+        max_completion_tokens: 2500,
       });
 
       const insights = completion.choices[0]?.message?.content || 'Unable to generate insights at this time.';
@@ -45350,10 +45348,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const { default: OpenAI } = await import("openai");
       const openai = new OpenAI();
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: conversationMessages,
-        max_tokens: 400,
-        temperature: 0.7,
+        max_completion_tokens: 2500,
       });
 
       const rawReply = completion.choices[0]?.message?.content || "Sorry, I couldn't process that request.";
