@@ -513,6 +513,11 @@ export default function MoreScreen() {
 
   const [signingOut, setSigningOut] = useState(false);
 
+  // While signing out, logout() clears the role cache before this screen
+  // unmounts, so useUserRole briefly re-resolves to the full owner role and
+  // the owner menu flashes. Keep the skeleton up through sign-out to hide it.
+  const showSkeleton = isRoleLoading || signingOut;
+
   const handleLogout = () => {
     if (signingOut) return;
     Alert.alert(
@@ -722,7 +727,7 @@ export default function MoreScreen() {
         }}
       />
 
-      {isRoleLoading && (
+      {showSkeleton && (
         <View style={styles.section}>
           {[0, 1, 2, 3, 4].map((i) => (
             <View
@@ -739,7 +744,7 @@ export default function MoreScreen() {
         </View>
       )}
 
-      {!isRoleLoading && quickActions.length > 0 && (
+      {!showSkeleton && quickActions.length > 0 && (
         <View style={styles.quickActionsContainer}>
           <Text style={styles.quickActionsLabel}>Quick Actions</Text>
           <View style={styles.quickActionsRow}>
@@ -755,7 +760,7 @@ export default function MoreScreen() {
         </View>
       )}
 
-      {!isRoleLoading && (
+      {!showSkeleton && (
       <View style={styles.categoryTabsContainer}>
         <ScrollView 
           horizontal 
@@ -802,11 +807,11 @@ export default function MoreScreen() {
       </View>
       )}
 
-      {!isRoleLoading && filteredCategories.filter(k => k !== 'account').map(categoryKey => 
+      {!showSkeleton && filteredCategories.filter(k => k !== 'account').map(categoryKey => 
         renderSection(categoryKey, categorizedItems[categoryKey] || [])
       )}
 
-      {!isRoleLoading && (activeCategory === 'all' || activeCategory === 'account') && (
+      {!showSkeleton && (activeCategory === 'all' || activeCategory === 'account') && (
         <>
           {activeCategory === 'all' && renderSectionHeader('account')}
           <View style={styles.section}>
