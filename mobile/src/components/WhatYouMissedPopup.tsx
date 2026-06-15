@@ -232,10 +232,10 @@ export function WhatYouMissedPopup() {
   const [hasUrgent, setHasUrgent] = useState(false);
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, dashboardReady } = useAuthStore();
 
   useEffect(() => {
-    if (!isAuthenticated || hasShownOnce) return;
+    if (!isAuthenticated || !dashboardReady || hasShownOnce) return;
 
     const fetchNotifications = async () => {
       try {
@@ -253,7 +253,7 @@ export function WhatYouMissedPopup() {
     };
 
     fetchNotifications();
-  }, [isAuthenticated, hasShownOnce]);
+  }, [isAuthenticated, dashboardReady, hasShownOnce]);
 
   useEffect(() => {
     if (!isOpen) return;

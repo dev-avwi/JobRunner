@@ -76,7 +76,7 @@ export function SubcontractorDashboard() {
   const scrollRef = useRef<ScrollView | null>(null);
   const { scrollToTopTrigger } = useScrollToTop();
 
-  const { user } = useAuthStore();
+  const { user, setDashboardReady } = useAuthStore();
   const { isStandaloneSubcontractor } = useUserRole();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -133,6 +133,14 @@ export function SubcontractorDashboard() {
       scrollRef.current?.scrollTo({ y: 0, animated: true });
     }
   }, [scrollToTopTrigger]);
+
+  // Signal dashboard ready once initial load settles, so deferred UI
+  // (e.g. the "What you missed" popup) waits for content to appear.
+  useEffect(() => {
+    if (!isLoading) {
+      setDashboardReady(true);
+    }
+  }, [isLoading, setDashboardReady]);
 
   const fetchDashboard = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setIsRefreshing(true);

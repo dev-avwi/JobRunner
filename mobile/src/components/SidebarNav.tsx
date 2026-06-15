@@ -76,7 +76,15 @@ export function SidebarNav() {
 
   // Derive role from user.role OR roleInfo.roleId, normalizing values
   const rawRole = user?.role || roleInfo?.roleId || '';
+  // A subcontractor in their OWN business has server isOwner:true. Give them the
+  // solo-owner kit (trimmed of team/owner-advanced items via the
+  // isStandaloneSubcontractor filter flag), not the owner menu. A subbie
+  // switched INTO a builder's business has isOwner absent → stays a worker.
+  const isStandaloneSub =
+    roleInfo?.isOwner === true &&
+    (roleInfo?.roleName || '').toLowerCase().includes('subcontractor');
   const normalizedRole = useMemo(() => {
+    if (isStandaloneSub) return 'solo_owner';
     const r = rawRole.toLowerCase();
     if (r === 'team_member' || r === 'team') return 'team';
     if (r === 'staff_tradie' || r === 'staff') return 'staff';
@@ -93,7 +101,7 @@ export function SidebarNav() {
     // Without this, custom roles match no allowedRoles and the menu is empty.
     if (user?.id) return 'staff';
     return r as UserRole;
-  }, [rawRole, roleInfo?.isOwner, user?.id]);
+  }, [rawRole, roleInfo?.isOwner, user?.id, isStandaloneSub]);
   
   const userRole = (normalizedRole || 'owner') as UserRole;
   const isOwner = userRole === 'owner' || userRole === 'solo_owner' || roleInfo?.isOwner;
@@ -110,13 +118,17 @@ export function SidebarNav() {
     isOwner: Boolean(isOwner),
     isManager: isManager,
     isSolo: userRole === 'solo_owner',
+    isSubcontractor: isStandaloneSub ? false : undefined,
+    isStandaloneSubcontractor: isStandaloneSub,
     userRole: userRole,
     hasProSubscription,
     hasTeamSubscription,
-  }), [userRole, isOwner, isManager, isStaffTradie, businessSettings, hasProSubscription, hasTeamSubscription]);
+  }), [userRole, isOwner, isManager, isStaffTradie, businessSettings, hasProSubscription, hasTeamSubscription, isStandaloneSub]);
 
-  // User is ready when initialized and has either role data or is authenticated
-  const isReady = isInitialized && (user?.id || roleInfo);
+  // User is ready ONLY once the authoritative role is known. Gating on role
+  // (not just user.id) prevents the full owner menu from flashing before
+  // fetchRoleInfo resolves on cold reopen / re-login.
+  const isReady = isInitialized && !!roleInfo;
   
   const filteredMainItems = useMemo(() => {
     if (!isReady) {

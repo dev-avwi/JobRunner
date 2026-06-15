@@ -16,6 +16,7 @@ export interface NavItem {
   hideForStaff?: boolean;
   hideInSimpleMode?: boolean;
   hideForSolo?: boolean;
+  hideForStandaloneSubcontractor?: boolean;
   requiresProPlan?: boolean;
   requiresTeamPlan?: boolean;
   showLockedIfNoAccess?: boolean;
@@ -35,6 +36,7 @@ export const mainMenuItems: NavItem[] = [
     url: "/more/action-center",
     icon: "crosshair",
     description: "What needs your attention today",
+    hideForStandaloneSubcontractor: true,
     color: "primary",
     bgColor: "primary",
     hideForStaff: true,
@@ -47,6 +49,7 @@ export const mainMenuItems: NavItem[] = [
     url: "/more/autopilot",
     icon: "cpu",
     description: "Automations that kill admin work",
+    hideForStandaloneSubcontractor: true,
     color: "primary",
     bgColor: "primary",
     requiresOwnerOrManager: true,
@@ -144,6 +147,7 @@ export const mainMenuItems: NavItem[] = [
     url: "/more/team-operations",
     icon: "activity",
     description: "Live crew map, status & performance",
+    hideForStandaloneSubcontractor: true,
     color: "primary",
     bgColor: "primary",
     requiresTeamPlan: true,
@@ -158,6 +162,7 @@ export const mainMenuItems: NavItem[] = [
     url: "/more/team-management",
     icon: "users",
     description: "Workers, roles, invites & seats",
+    hideForStandaloneSubcontractor: true,
     color: "primary",
     bgColor: "primary",
     requiresTeamPlan: true,
@@ -172,6 +177,7 @@ export const mainMenuItems: NavItem[] = [
     url: "/more/dispatch-board",
     icon: "grid",
     description: "Assign jobs to crew (schedule, kanban, map)",
+    hideForStandaloneSubcontractor: true,
     color: "primary",
     bgColor: "primary",
     requiresTeamPlan: true,
@@ -197,6 +203,7 @@ export const mainMenuItems: NavItem[] = [
     url: "/more/insights",
     icon: "trending-up",
     description: "Business health metrics and analytics",
+    hideForStandaloneSubcontractor: true,
     color: "primary",
     bgColor: "primary",
     requiresOwnerOrManager: true,
@@ -212,6 +219,7 @@ export const mainMenuItems: NavItem[] = [
     url: "/more/reports",
     icon: "bar-chart-2",
     description: "Business analytics and insights",
+    hideForStandaloneSubcontractor: true,
     color: "primary",
     bgColor: "primary",
     requiresOwnerOrManager: true,
@@ -298,6 +306,7 @@ export const mainMenuItems: NavItem[] = [
     url: "/more/ai-receptionist",
     icon: "phone",
     description: "AI-powered call answering and booking",
+    hideForStandaloneSubcontractor: true,
     color: "primary",
     bgColor: "primary",
     hideForStaff: true,
@@ -488,6 +497,7 @@ export interface FilterOptions {
   isManager: boolean;
   isSolo: boolean;
   isSubcontractor?: boolean;
+  isStandaloneSubcontractor?: boolean;
   userRole?: UserRole;
   isPlatformAdmin?: boolean;
   hasProSubscription?: boolean;
@@ -512,6 +522,10 @@ export function filterNavItems(items: NavItem[], options: FilterOptions): NavIte
       if (!item.allowedRoles.includes(options.userRole)) {
         continue;
       }
+    }
+    
+    if (item.hideForStandaloneSubcontractor && options.isStandaloneSubcontractor) {
+      continue;
     }
     
     if (item.hideForStaff && isStaffTradie) {
@@ -651,6 +665,7 @@ export interface SidebarNavItem {
   matchPaths?: string[];
   section: 'main' | 'settings';
   hideForStaff?: boolean;
+  hideForStandaloneSubcontractor?: boolean;
   requiresOwnerOrManager?: boolean;
   requiresProPlan?: boolean;
   requiresTeam?: boolean;
@@ -669,6 +684,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
   },
   { 
     id: 'action-center',
+    hideForStandaloneSubcontractor: true,
     title: 'Action Centre', 
     icon: 'crosshair', 
     path: '/more/action-center',
@@ -767,6 +783,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
   },
   { 
     id: 'insights',
+    hideForStandaloneSubcontractor: true,
     title: 'Insights', 
     icon: 'trending-up', 
     path: '/more/insights',
@@ -779,6 +796,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
   },
   { 
     id: 'autopilot',
+    hideForStandaloneSubcontractor: true,
     title: 'Autopilot', 
     icon: 'cpu', 
     path: '/more/autopilot',
@@ -791,6 +809,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
   },
   { 
     id: 'reports',
+    hideForStandaloneSubcontractor: true,
     title: 'Reports', 
     icon: 'bar-chart-2', 
     path: '/more/reports',
@@ -904,6 +923,10 @@ export function filterSidebarItems(items: SidebarNavItem[], options: FilterOptio
       if (!item.allowedRoles.includes(options.userRole)) {
         return false;
       }
+    }
+    
+    if (item.hideForStandaloneSubcontractor && options.isStandaloneSubcontractor) {
+      return false;
     }
     
     if (item.hideForStaff && isStaffTradie) {

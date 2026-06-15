@@ -83,3 +83,4 @@
 - [Vapi assistant config write paths](vapi-assistant-write-paths.md) — new per-config AI-receptionist field must thread through create/update/by-id/resync routes + createAssistant/updateAssistant + UI, or it silently drops; prod needs raw ALTER too.
 - [runTest canonical URL dead port](runtest-canonical-url-dead-port.md) — runTest 502s: canonical URL maps to stale port 23636; forwarder workaround. Also full-reload-per-route trips 429 → marketing page (env artifact, not a bug).
 - [gpt-5-mini param constraints](gpt5-mini-param-constraints.md) — migrating OpenAI calls to gpt-5 family: rename max_tokens→max_completion_tokens, drop custom temperature, bump small budgets (reasoning eats them); Vapi aiModel is separate.
+- [Readiness-gate deadlock](readiness-gate-deadlock.md) — a "ready" flag that gates deferred UI must flip in finally (even on fetch reject), else one failed load suppresses the gated UI for the whole session.

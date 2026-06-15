@@ -447,6 +447,7 @@ export default function MoreScreen() {
   
   const { 
     role,
+    isLoading: isRoleLoading,
     isStaff, 
     isSubcontractor,
     isStandaloneSubcontractor,
@@ -473,6 +474,7 @@ export default function MoreScreen() {
     isManager,
     isSolo: isSolo || isStandaloneSubcontractor,
     isSubcontractor: isStandaloneSubcontractor ? false : isSubcontractor,
+    isStandaloneSubcontractor,
     userRole: isStandaloneSubcontractor ? 'solo_owner' : mapRoleToFilterRole(role),
     isPlatformAdmin: user?.isPlatformAdmin || false,
     hasProSubscription,
@@ -717,7 +719,24 @@ export default function MoreScreen() {
         }}
       />
 
-      {quickActions.length > 0 && (
+      {isRoleLoading && (
+        <View style={styles.section}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <View
+              key={i}
+              style={{
+                height: 56,
+                borderRadius: radius.md,
+                backgroundColor: colors.muted,
+                marginBottom: spacing.sm,
+                opacity: 0.5,
+              }}
+            />
+          ))}
+        </View>
+      )}
+
+      {!isRoleLoading && quickActions.length > 0 && (
         <View style={styles.quickActionsContainer}>
           <Text style={styles.quickActionsLabel}>Quick Actions</Text>
           <View style={styles.quickActionsRow}>
@@ -733,6 +752,7 @@ export default function MoreScreen() {
         </View>
       )}
 
+      {!isRoleLoading && (
       <View style={styles.categoryTabsContainer}>
         <ScrollView 
           horizontal 
@@ -777,12 +797,13 @@ export default function MoreScreen() {
           </Text>
         )}
       </View>
+      )}
 
-      {filteredCategories.filter(k => k !== 'account').map(categoryKey => 
+      {!isRoleLoading && filteredCategories.filter(k => k !== 'account').map(categoryKey => 
         renderSection(categoryKey, categorizedItems[categoryKey] || [])
       )}
 
-      {(activeCategory === 'all' || activeCategory === 'account') && (
+      {!isRoleLoading && (activeCategory === 'all' || activeCategory === 'account') && (
         <>
           {activeCategory === 'all' && renderSectionHeader('account')}
           <View style={styles.section}>

@@ -277,6 +277,7 @@ interface AuthState {
   isInitialized: boolean;
   error: string | null;
   onboardingFinishing: boolean;
+  dashboardReady: boolean;
   
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -288,6 +289,7 @@ interface AuthState {
   fetchBusinessSettings: () => Promise<void>;
   setBusinessSettings: (settings: BusinessSettings) => void;
   setOnboardingFinishing: (value: boolean) => void;
+  setDashboardReady: (value: boolean) => void;
   setUser: (user: User) => void;
   refreshUser: () => Promise<void>;
   clearError: () => void;
@@ -312,6 +314,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isInitialized: false,
   error: null,
   onboardingFinishing: false,
+  dashboardReady: false,
 
   login: async (email: string, password: string) => {
     // Clear any stale onboarding-finishing suppression from a prior in-memory
@@ -417,6 +420,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         error: null,
         onboardingFinishing: false,
+        dashboardReady: false,
       });
     }
   },
@@ -724,6 +728,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setOnboardingFinishing: (value: boolean) => {
     set({ onboardingFinishing: value });
+  },
+
+  setDashboardReady: (value: boolean) => {
+    set({ dashboardReady: value });
   },
 
   setUser: (user: User) => {

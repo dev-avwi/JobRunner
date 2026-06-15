@@ -2320,7 +2320,7 @@ function OwnerDashboardScreen() {
     }
   }, [scrollToTopTrigger]);
   
-  const { user, businessSettings, roleInfo, isOwner, isStaff, teamState, fetchTeamState, hasActiveTeam: storeHasActiveTeam, refreshUser } = useAuthStore();
+  const { user, businessSettings, roleInfo, isOwner, isStaff, teamState, fetchTeamState, hasActiveTeam: storeHasActiveTeam, refreshUser, setDashboardReady } = useAuthStore();
   const { todaysJobs, fetchTodaysJobs, fetchJobs, isLoading: jobsLoading, updateJobStatus } = useJobsStore();
   const { stats, fetchStats, isLoading: statsLoading } = useDashboardStore();
   const { clients, fetchClients } = useClientsStore();
@@ -2329,6 +2329,14 @@ function OwnerDashboardScreen() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [isClearingDemo, setIsClearingDemo] = useState(false);
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
+
+  // Signal that the dashboard has finished its initial load so deferred UI
+  // (e.g. the "What you missed" popup) only appears once content is visible.
+  useEffect(() => {
+    if (initialLoadComplete) {
+      setDashboardReady(true);
+    }
+  }, [initialLoadComplete, setDashboardReady]);
   
   // Job Scheduler state for team owners
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
@@ -2875,18 +2883,23 @@ function OwnerDashboardScreen() {
   fetchWorkerStateRef.current = fetchWorkerState;
 
   const refreshData = useCallback(async () => {
-    await Promise.all([
-      fetchTodaysJobsRef.current(),
-      fetchStatsRef.current(),
-      fetchClientsRef.current(),
-      fetchActivitiesRef.current(),
-      fetchMyAllJobsRef.current(),
-      fetchToInvoiceCountRef.current(),
-      fetchDailySummaryRef.current(),
-      fetchWorkerStateRef.current(),
-    ]);
-    // Mark initial load as complete on first data fetch
-    setInitialLoadComplete(true);
+    try {
+      await Promise.all([
+        fetchTodaysJobsRef.current(),
+        fetchStatsRef.current(),
+        fetchClientsRef.current(),
+        fetchActivitiesRef.current(),
+        fetchMyAllJobsRef.current(),
+        fetchToInvoiceCountRef.current(),
+        fetchDailySummaryRef.current(),
+        fetchWorkerStateRef.current(),
+      ]);
+    } finally {
+      // Mark initial load complete even if a fetch rejected — the dashboard
+      // shell is still shown, and deferred UI (WhatYouMissedPopup, gated on
+      // dashboardReady) must never be permanently suppressed by a failed fetch.
+      setInitialLoadComplete(true);
+    }
   }, []); // Empty deps - uses refs
 
   // Initial load only once on mount
