@@ -53,7 +53,10 @@ interface DashboardData {
   activeJob: SubcontractorJob | null;
   earningsWeek: number;
   earningsMonth: number;
-  earningsByBusiness: { businessName: string; amount: number }[];
+  hoursMonth: number;
+  jobsCompletedMonth: number;
+  earningsByBusiness: { businessName: string; amount: number; hours: number }[];
+  earningsTrend: { period: string; earnings: number; hours: number }[];
   businesses: { id: string; name: string; color: string }[];
 }
 
@@ -521,12 +524,14 @@ export function SubcontractorDashboard() {
                 </View>
               )}
             </View>
-            <View style={styles.activeJobLocationBanner}>
-              <Feather name="radio" size={12} color={colors.info} />
-              <Text style={[styles.activeJobLocationText, { color: colors.info }]}>
-                Your location is visible to {data.activeJob.businessName}
-              </Text>
-            </View>
+            {data.activeJob.businessOwnerId !== user?.id && (
+              <View style={styles.activeJobLocationBanner}>
+                <Feather name="radio" size={12} color={colors.info} />
+                <Text style={[styles.activeJobLocationText, { color: colors.info }]}>
+                  Your location is visible to {data.activeJob.businessName}
+                </Text>
+              </View>
+            )}
             <TouchableOpacity
               style={[styles.completeButton, { backgroundColor: colors.success }]}
               onPress={() => router.push(`/job/${data.activeJob!.id}`)}
@@ -715,19 +720,15 @@ export function SubcontractorDashboard() {
           )}
         </View>
 
-        {/* Earnings Summary */}
+        {/* Earnings & Performance */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={[styles.sectionIconContainer, { backgroundColor: colorWithOpacity(colors.success, 0.12) }]}>
               <Feather name="dollar-sign" size={18} color={colors.success} />
             </View>
-            <Text style={styles.sectionTitle}>Earnings</Text>
+            <Text style={styles.sectionTitle}>Earnings & Performance</Text>
           </View>
-          <TouchableOpacity
-            style={styles.earningsCard}
-            onPress={() => setShowEarningsBreakdown(!showEarningsBreakdown)}
-            activeOpacity={0.7}
-          >
+          <View style={styles.earningsCard}>
             <View style={styles.earningsRow}>
               <View style={styles.earningsStat}>
                 <Text style={styles.earningsLabel}>This Week</Text>
@@ -739,36 +740,73 @@ export function SubcontractorDashboard() {
                 <Text style={styles.earningsAmount}>{formatCurrencyUtil(data.earningsMonth)}</Text>
               </View>
             </View>
-            {data.earningsByBusiness.length > 0 && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.sm }}>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
-                  Tap for breakdown
-                </Text>
-                <Feather name={showEarningsBreakdown ? 'chevron-up' : 'chevron-down'} size={14} color={colors.mutedForeground} />
+
+            {/* Performance stats */}
+            <View style={[styles.earningsBreakdownDivider, { backgroundColor: colors.border, marginVertical: spacing.md }]} />
+            <View style={styles.earningsRow}>
+              <View style={styles.earningsStat}>
+                <Text style={styles.earningsLabel}>Hours This Month</Text>
+                <Text style={styles.perfStatValue}>{data.hoursMonth.toFixed(1)}h</Text>
               </View>
-            )}
-            {showEarningsBreakdown && (
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.md, paddingVertical: spacing.sm }}
-                onPress={() => router.push('/more/invoices')}
-                activeOpacity={0.7}
-              >
-                <Feather name="file-text" size={14} color={colors.primary} />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>View Invoice History</Text>
-              </TouchableOpacity>
-            )}
-            {showEarningsBreakdown && data.earningsByBusiness.length > 0 && (
-              <View style={styles.earningsBreakdown}>
-                <View style={[styles.earningsBreakdownDivider, { backgroundColor: colors.border }]} />
-                <Text style={styles.earningsBreakdownTitle}>By Business</Text>
-                {data.earningsByBusiness.map((biz, i) => (
-                  <View key={i} style={styles.earningsBreakdownRow}>
-                    <Text style={styles.earningsBreakdownName}>{biz.businessName}</Text>
-                    <Text style={styles.earningsBreakdownAmount}>{formatCurrencyUtil(biz.amount)}</Text>
+              <View style={[styles.earningsDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.earningsStat}>
+                <Text style={styles.earningsLabel}>Jobs Completed</Text>
+                <Text style={styles.perfStatValue}>{data.jobsCompletedMonth}</Text>
+              </View>
+            </View>
+
+            {/* By-business breakdown (only when subcontracting for others) */}
+            {data.earningsByBusiness.length > 0 ? (
+              <>
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.md }}
+                  onPress={() => setShowEarningsBreakdown(!showEarningsBreakdown)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                    {showEarningsBreakdown ? 'Hide breakdown' : 'Earnings by business'}
+                  </Text>
+                  <Feather name={showEarningsBreakdown ? 'chevron-up' : 'chevron-down'} size={14} color={colors.mutedForeground} />
+                </TouchableOpacity>
+                {showEarningsBreakdown && (
+                  <View style={styles.earningsBreakdown}>
+                    <View style={[styles.earningsBreakdownDivider, { backgroundColor: colors.border }]} />
+                    <Text style={styles.earningsBreakdownTitle}>By Business (this month)</Text>
+                    {data.earningsByBusiness.map((biz, i) => (
+                      <View key={i} style={styles.earningsBreakdownRow}>
+                        <Text style={styles.earningsBreakdownName}>{biz.businessName}</Text>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={styles.earningsBreakdownAmount}>{formatCurrencyUtil(biz.amount)}</Text>
+                          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{biz.hours.toFixed(1)}h</Text>
+                        </View>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
+                )}
+              </>
+            ) : (
+              <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.md }}>
+                Earnings from your own solo work
+              </Text>
             )}
+          </View>
+
+          {/* Quick links */}
+          <TouchableOpacity
+            style={[styles.earningsCard, { marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+            onPress={() => router.push('/more/subbie-performance' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <View style={[styles.sectionIconContainer, { backgroundColor: colorWithOpacity(colors.info, 0.12) }]}>
+                <Feather name="bar-chart-2" size={18} color={colors.info} />
+              </View>
+              <View>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>View Performance</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Hours, jobs and earnings trend</Text>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
 
@@ -1706,6 +1744,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   earningsAmount: {
     fontSize: 22,
+    fontWeight: '700',
+    color: colors.foreground,
+  },
+  perfStatValue: {
+    fontSize: 18,
     fontWeight: '700',
     color: colors.foreground,
   },

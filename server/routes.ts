@@ -45560,28 +45560,26 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         .from(teamMembers)
         .where(and(eq(teamMembers.memberId, userId), eq(teamMembers.isActive, true)));
 
-      if (memberships.length === 0) {
-        return res.json({
-          availabilityStatus: 'available',
-          todaysJobs: [],
-          weekJobs: [],
-          pendingRequests: [],
-          activeJob: null,
-          earningsWeek: 0,
-          earningsMonth: 0,
-          earningsByBusiness: [],
-          businesses: [],
-        });
-      }
-
+      // NOTE: standalone subcontractors have no memberships but still do solo work,
+      // so we never short-circuit here — solo earnings/performance are aggregated below.
       const businessOwnerIds = memberships.map(m => m.businessOwnerId);
       const businessColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
       // Fetch business info for each connected business
-      const businessInfos = await db
-        .select({ id: businessSettings.id, userId: businessSettings.userId, businessName: businessSettings.businessName, brandColor: businessSettings.brandColor })
+      const businessInfos = businessOwnerIds.length > 0
+        ? await db
+            .select({ id: businessSettings.id, userId: businessSettings.userId, businessName: businessSettings.businessName, brandColor: businessSettings.brandColor })
+            .from(businessSettings)
+            .where(inArray(businessSettings.userId, businessOwnerIds))
+        : [];
+
+      // Standalone subcontractors own their own business; load their default rate for solo-work earnings
+      const [ownBiz] = await db
+        .select({ defaultHourlyRate: businessSettings.defaultHourlyRate })
         .from(businessSettings)
-        .where(inArray(businessSettings.userId, businessOwnerIds));
+        .where(eq(businessSettings.userId, userId))
+        .limit(1);
+      const ownRate = parseFloat(ownBiz?.defaultHourlyRate || '0') || 0;
 
       const businessMap: Record<string, { name: string; color: string }> = {};
       businessInfos.forEach((b, i) => {
@@ -45602,25 +45600,18 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       // Get availability status from the first membership
       const availabilityStatus = memberships[0]?.availabilityStatus || 'available';
 
-      if (assignedJobIds.length === 0) {
-        return res.json({
-          availabilityStatus,
-          todaysJobs: [],
-          weekJobs: [],
-          pendingRequests: [],
-          activeJob: null,
-          earningsWeek: 0,
-          earningsMonth: 0,
-          earningsByBusiness: [],
-          businesses: Object.entries(businessMap).map(([id, b]) => ({ id, ...b })),
-        });
-      }
+      // Fetch all assigned jobs (jobs from businesses this user subcontracts for)
+      const assignedJobs = assignedJobIds.length > 0
+        ? await db.select().from(jobs).where(inArray(jobs.id, assignedJobIds))
+        : [];
 
-      // Fetch all assigned jobs
-      const assignedJobs = await db
-        .select()
-        .from(jobs)
-        .where(inArray(jobs.id, assignedJobIds));
+      // Fetch this user's own solo jobs (they own these directly — standalone subcontractor work)
+      const soloJobs = await db.select().from(jobs).where(eq(jobs.userId, userId));
+
+      // Combined lookup of every job relevant to this user (assigned + solo), de-duped by id
+      const allJobsMap = new Map<string, (typeof soloJobs)[number]>();
+      for (const j of [...assignedJobs, ...soloJobs]) allJobsMap.set(j.id, j);
+      const allRelevantJobs = Array.from(allJobsMap.values());
 
       // Enrich jobs with business info and client names
       const clientIds = [...new Set(assignedJobs.map(j => j.clientId).filter(Boolean))];
@@ -45702,9 +45693,27 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of current week (Sunday)
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
+      // Performance window: last 6 months for the trend
+      const trendStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
       let earningsWeek = 0;
       let earningsMonth = 0;
-      const earningsByBusinessMap: Record<string, number> = {};
+      let hoursMonth = 0;
+      const earningsByBusinessMap: Record<string, { amount: number; hours: number }> = {};
+
+      // Monthly trend buckets (oldest -> newest)
+      const trendBuckets: { key: string; period: string; earnings: number; hours: number }[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        trendBuckets.push({
+          key: `${d.getFullYear()}-${d.getMonth()}`,
+          period: d.toLocaleDateString('en-AU', { month: 'short' }),
+          earnings: 0,
+          hours: 0,
+        });
+      }
+      const trendIndex: Record<string, number> = {};
+      trendBuckets.forEach((b, i) => { trendIndex[b.key] = i; });
 
       try {
         const entries = await db
@@ -45712,7 +45721,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           .from(timeEntries)
           .where(and(
             eq(timeEntries.userId, userId),
-            gte(timeEntries.startTime, monthStart),
+            gte(timeEntries.startTime, trendStart),
             isNotNull(timeEntries.endTime),
           ));
 
@@ -45722,32 +45731,67 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           const end = new Date(entry.endTime);
           const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
-          // Find the membership for this job's business
-          const jobEntry = entry.jobId ? assignedJobs.find(j => j.id === entry.jobId) : null;
-          const membership = jobEntry
-            ? memberships.find(m => m.businessOwnerId === jobEntry.userId)
-            : memberships[0];
-          const rate = parseFloat(membership?.hourlyRate || '0') || 0;
+          // Resolve the job this entry belongs to (assigned business job OR the user's own solo job)
+          const jobEntry = entry.jobId ? (allJobsMap.get(entry.jobId) || null) : null;
+          let rate: number;
+          if (jobEntry && jobEntry.userId !== userId) {
+            // Job belongs to a business this user subcontracts for — use the agreed membership rate
+            const membership = memberships.find(m => m.businessOwnerId === jobEntry.userId);
+            rate = parseFloat(membership?.hourlyRate || '0') || 0;
+          } else {
+            // Solo work (own job, or an entry with no matched job) — use the user's own default rate,
+            // falling back to a membership rate if no own rate is set
+            rate = ownRate || parseFloat(memberships[0]?.hourlyRate || '0') || 0;
+          }
           const earned = hours * rate;
 
-          earningsMonth += earned;
-          if (start >= weekStart) {
-            earningsWeek += earned;
+          // Monthly trend bucket
+          const bucketKey = `${start.getFullYear()}-${start.getMonth()}`;
+          const bi = trendIndex[bucketKey];
+          if (bi !== undefined) {
+            trendBuckets[bi].earnings += earned;
+            trendBuckets[bi].hours += hours;
           }
 
-          if (jobEntry) {
-            const bizName = businessMap[jobEntry.userId]?.name || 'Unknown';
-            earningsByBusinessMap[bizName] = (earningsByBusinessMap[bizName] || 0) + earned;
+          // This-month totals
+          if (start >= monthStart) {
+            earningsMonth += earned;
+            hoursMonth += hours;
+            if (start >= weekStart) {
+              earningsWeek += earned;
+            }
+            // Per-business breakdown is for external businesses only; solo work is summarised separately
+            if (jobEntry && jobEntry.userId !== userId) {
+              const bizName = businessMap[jobEntry.userId]?.name || 'Unknown';
+              const cur = earningsByBusinessMap[bizName] || { amount: 0, hours: 0 };
+              cur.amount += earned;
+              cur.hours += hours;
+              earningsByBusinessMap[bizName] = cur;
+            }
           }
         }
       } catch (e) {
         console.error('[Subcontractor Dashboard] Earnings calculation error:', e);
       }
 
-      const earningsByBusiness = Object.entries(earningsByBusinessMap).map(([name, amount]) => ({
+      const earningsByBusiness = Object.entries(earningsByBusinessMap).map(([name, v]) => ({
         businessName: name,
-        amount: Math.round(amount * 100) / 100,
+        amount: Math.round(v.amount * 100) / 100,
+        hours: Math.round(v.hours * 10) / 10,
       }));
+
+      const earningsTrend = trendBuckets.map(b => ({
+        period: b.period,
+        earnings: Math.round(b.earnings * 100) / 100,
+        hours: Math.round(b.hours * 10) / 10,
+      }));
+
+      // Jobs completed this month — across both subcontracted work and the user's own solo jobs
+      const jobsCompletedMonth = allRelevantJobs.filter(j => {
+        if (j.status !== 'completed') return false;
+        const c = j.completedAt ? new Date(j.completedAt) : null;
+        return c ? c >= monthStart : false;
+      }).length;
 
       res.json({
         availabilityStatus,
@@ -45757,7 +45801,10 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         activeJob,
         earningsWeek: Math.round(earningsWeek * 100) / 100,
         earningsMonth: Math.round(earningsMonth * 100) / 100,
+        hoursMonth: Math.round(hoursMonth * 10) / 10,
+        jobsCompletedMonth,
         earningsByBusiness,
+        earningsTrend,
         businesses: Object.entries(businessMap).map(([id, b]) => ({ id, ...b })),
       });
     } catch (error) {
