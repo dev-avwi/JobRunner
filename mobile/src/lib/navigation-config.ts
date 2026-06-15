@@ -378,6 +378,7 @@ export const settingsMenuItems: NavItem[] = [
     bgColor: "primary",
     hideForStaff: true,
     requiresProPlan: true,
+    freeForStandaloneSubcontractor: true,
     showLockedIfNoAccess: true,
     showInMore: true,
     category: "settings",

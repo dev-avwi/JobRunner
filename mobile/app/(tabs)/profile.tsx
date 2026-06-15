@@ -8,7 +8,6 @@ import {
   Linking,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
-import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -512,26 +511,30 @@ export default function MoreScreen() {
     return visibleCategories.filter(k => k === activeCategory);
   }, [activeCategory, visibleCategories]);
 
-  const confirm = useConfirmDialog();
   const [signingOut, setSigningOut] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     if (signingOut) return;
-    const ok = await confirm({
-      title: 'Sign out?',
-      message: "You'll need to sign back in.",
-      confirmText: 'Sign Out',
-      cancelText: 'Cancel',
-      destructive: true,
-    });
-    if (!ok) return;
-    setSigningOut(true);
-    try {
-      await logout();
-      router.replace('/(auth)/login');
-    } catch {
-      setSigningOut(false);
-    }
+    Alert.alert(
+      'Sign out?',
+      "You'll need to sign back in.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            setSigningOut(true);
+            try {
+              await logout();
+              router.replace('/(auth)/login');
+            } catch {
+              setSigningOut(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const getInitials = () => {
