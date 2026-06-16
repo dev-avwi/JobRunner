@@ -18,6 +18,7 @@ import { useAuthStore } from '../../src/lib/store';
 import { useTheme } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
 import { TradeTypeSelector } from '../../src/components/TradeTypeSelector';
+import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -36,21 +37,6 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   avatarSection: {
     alignItems: 'center',
     marginBottom: 32,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: colors.white,
-    textTransform: 'uppercase',
   },
   emailDisplay: {
     fontSize: 15,
@@ -191,10 +177,15 @@ export default function ProfileEditScreen() {
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <View style={styles.avatarSection}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {(form.firstName[0] || '') + (form.lastName[0] || '')}
-              </Text>
+            <View style={{ marginBottom: 12 }}>
+              <TeamAvatar
+                firstName={form.firstName || user?.firstName || undefined}
+                lastName={form.lastName || user?.lastName || undefined}
+                email={form.email || user?.email || undefined}
+                userId={user?.id ? String(user.id) : undefined}
+                profileImageUrl={(user as any)?.profileImageUrl}
+                size={80}
+              />
             </View>
             <Text style={styles.emailDisplay}>{form.email}</Text>
           </View>
