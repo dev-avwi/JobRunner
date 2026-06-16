@@ -12,8 +12,13 @@ So any **percentage** `width`/`maxWidth` is applied twice and compounds:
 - `width: '14.28%'` → outer 14.28% of parent, inner 14.28% of that ≈ **2%** → element ~7px.
 - `maxWidth: '75%'` → nests to ~56% (worse when an inner child also has its own `maxWidth`).
 
-This has caused at least two real bugs: calendar **month** day-cells collapsing + clipping
-the day number, and team-chat bubbles wrapping text per-character ("Wo rkin g?").
+This has caused at least three real bugs: calendar **month** day-cells collapsing + clipping
+the day number, team-chat bubbles wrapping text per-character ("Wo rkin g?"), and the
+quotes/receipts KPI stat cards + documents grid cards collapsing so the **list/section below
+visually overlaps them** (a "TouchableOpacity → PressableRow" sweep re-introduced this on
+percentage-width cards). Note the symptom isn't always a too-narrow element — when the
+collapsed card is in a `flexWrap` row with `flex:1`, the reserved box shrinks and following
+content paints on top of it (vertical overlap), which looks like a totally different bug.
 The Android branch is a single `Pressable` (no inner view) so it is unaffected.
 `flex: 1` and fixed-px sizes do NOT visibly break (same value applied twice ≈ same result);
 only **percentages** compound, and margins technically double too.

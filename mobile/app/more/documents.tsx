@@ -621,7 +621,7 @@ export default function DocumentsScreen() {
     const client = clientMap.get(quote.clientId);
     
     return (
-      <PressableRow key={quote.id} style={[styles.gridCard, { borderLeftColor: statusConfig.color }]} onPress={() => router.push(`/more/quote/${quote.id}`)} >
+      <TouchableOpacity activeOpacity={0.7} key={quote.id} style={[styles.gridCard, { borderLeftColor: statusConfig.color }]} onPress={() => router.push(`/more/quote/${quote.id}`)} >
         <View style={styles.gridCardHeader}>
           <Text style={styles.gridCardTitle} numberOfLines={1}>
             {quote.title || quote.number || `Q-${quote.id.slice(0, 6)}`}
@@ -639,7 +639,7 @@ export default function DocumentsScreen() {
             {quote.createdAt ? formatDistanceToNow(new Date(quote.createdAt), { addSuffix: true }) : ''}
           </Text>
         </View>
-      </PressableRow>
+      </TouchableOpacity>
     );
   };
 
@@ -677,7 +677,7 @@ export default function DocumentsScreen() {
     const linkedReceipt = receipts.find(r => r.invoiceId === invoice.id);
     
     return (
-      <PressableRow key={invoice.id} style={[styles.gridCard, { borderLeftColor: statusConfig.color }]} onPress={() => router.push(`/more/invoice/${invoice.id}`)} >
+      <TouchableOpacity activeOpacity={0.7} key={invoice.id} style={[styles.gridCard, { borderLeftColor: statusConfig.color }]} onPress={() => router.push(`/more/invoice/${invoice.id}`)} >
         <View style={styles.gridCardHeader}>
           <Text style={styles.gridCardTitle} numberOfLines={1}>
             {invoice.title || invoice.number || `INV-${invoice.id.slice(0, 6)}`}
@@ -701,7 +701,7 @@ export default function DocumentsScreen() {
             <Text style={styles.linkedBadgeText}>Receipt</Text>
           </View>
         )}
-      </PressableRow>
+      </TouchableOpacity>
     );
   };
 
@@ -745,7 +745,7 @@ export default function DocumentsScreen() {
     const client = clientMap.get(receipt.clientId);
     
     return (
-      <PressableRow key={receipt.id} style={[styles.gridCard, { borderLeftColor: '#22c55e' }]} onPress={() => router.push(`/more/receipt/${receipt.id}`)} >
+      <TouchableOpacity activeOpacity={0.7} key={receipt.id} style={[styles.gridCard, { borderLeftColor: '#22c55e' }]} onPress={() => router.push(`/more/receipt/${receipt.id}`)} >
         <View style={styles.gridCardHeader}>
           <Text style={styles.gridCardTitle} numberOfLines={1}>
             {receipt.receiptNumber}
@@ -761,7 +761,7 @@ export default function DocumentsScreen() {
             {format(new Date(receipt.paidAt), 'dd MMM')}
           </Text>
         </View>
-      </PressableRow>
+      </TouchableOpacity>
     );
   };
 

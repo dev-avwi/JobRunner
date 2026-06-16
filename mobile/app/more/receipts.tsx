@@ -85,7 +85,7 @@ function KPICard({
   colors: ThemeColors;
 }) {
   return (
-    <PressableRow style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder, minWidth: '45%', }} onPress={onPress} >
+    <TouchableOpacity activeOpacity={0.7} style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder, minWidth: '45%', }} onPress={onPress} >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
         <Feather name={icon as any} size={16} color={colors.success} />
         <Text style={{ fontSize: 12, color: colors.mutedForeground, fontWeight: '500' }}>{title}</Text>
@@ -93,7 +93,7 @@ function KPICard({
       <Text style={{ fontSize: isAmount ? 20 : 24, fontWeight: '700', color: colors.success }}>
         {isAmount ? formatCurrency(value) : value}
       </Text>
-    </PressableRow>
+    </TouchableOpacity>
   );
 }
 

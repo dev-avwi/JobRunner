@@ -53,13 +53,13 @@ function KPICard({
   colors: ThemeColors;
 }) {
   return (
-    <PressableRow style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder, minWidth: '45%', }} onPress={onPress} >
+    <TouchableOpacity activeOpacity={0.7} style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder, minWidth: '45%', }} onPress={onPress} >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
         <Feather name={icon as any} size={16} color={colors.primary} />
         <Text style={{ fontSize: 12, color: colors.mutedForeground, fontWeight: '500' }}>{title}</Text>
       </View>
       <Text style={{ fontSize: 24, fontWeight: '700', color: colors.foreground }}>{value}</Text>
-    </PressableRow>
+    </TouchableOpacity>
   );
 }
 
