@@ -3245,18 +3245,16 @@ function OwnerDashboardScreen() {
         onNavigateToItem={handleNavigateToItem}
       />
 
-      {/* Worker State Quick Set */}
+      {/* Worker State Quick Set — matches the subcontractor "Your Status" widget */}
       {isStaffUser && (
         <View style={{ marginTop: spacing.sm, marginBottom: spacing.md }}>
-          <View style={styles.statusCard}>
-            <View style={styles.statusCardHeader}>
-              <Text style={styles.statusCardLabel}>MY STATUS</Text>
-            </View>
-            <View style={styles.segmentedControl}>
+          <View style={styles.workerStatusCard}>
+            <Text style={styles.workerStatusLabel}>Your Status</Text>
+            <View style={styles.workerStatusRow}>
               {[
-                { state: 'available', label: 'Available', color: '#22c55e' },
-                { state: 'busy', label: 'Busy', color: '#f59e0b' },
-                { state: 'unavailable', label: 'Unavailable', color: '#9ca3af' },
+                { state: 'available', label: 'Available', icon: 'check-circle' as keyof typeof Feather.glyphMap, color: colors.success },
+                { state: 'busy', label: 'Busy', icon: 'clock' as keyof typeof Feather.glyphMap, color: colors.warning },
+                { state: 'unavailable', label: 'Unavailable', icon: 'x-circle' as keyof typeof Feather.glyphMap, color: colors.mutedForeground },
               ].map((btn) => {
                 const isActive = workerState.state === btn.state;
                 const isBusy = statusBusy === btn.state;
@@ -3266,23 +3264,25 @@ function OwnerDashboardScreen() {
                     activeOpacity={0.7}
                     disabled={!!statusBusy}
                     style={[
-                      styles.segment,
-                      isActive && styles.segmentActive,
+                      styles.workerStatusBtn,
+                      {
+                        backgroundColor: isActive ? colorWithOpacity(btn.color, 0.12) : colors.muted,
+                        borderColor: isActive ? btn.color : colors.border,
+                      },
                     ]}
                     onPress={() => handleStatusPress(btn.state)}
                   >
                     {isBusy ? (
                       <ActivityIndicator size="small" color={btn.color} />
                     ) : (
-                      <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: btn.color }} />
+                      <Feather name={btn.icon} size={16} color={isActive ? btn.color : colors.mutedForeground} />
                     )}
                     <Text
                       numberOfLines={1}
-                      style={{
-                        fontSize: 13,
-                        fontWeight: isActive ? '600' : '400',
-                        color: isActive ? '#111827' : '#6B7280',
-                      }}
+                      style={[
+                        styles.workerStatusBtnText,
+                        { color: isActive ? btn.color : colors.mutedForeground, fontWeight: isActive ? '700' : '500' },
+                      ]}
                     >
                       {btn.label}
                     </Text>
@@ -4338,6 +4338,39 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.cardBorder,
     padding: spacing.lg,
     ...shadows.sm,
+  },
+  workerStatusCard: {
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    ...shadows.sm,
+  },
+  workerStatusLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.md,
+  },
+  workerStatusRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  workerStatusBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+  },
+  workerStatusBtnText: {
+    fontSize: 13,
   },
   statusCardHeader: {
     flexDirection: 'row',

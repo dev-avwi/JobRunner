@@ -3686,18 +3686,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ).length;
       } catch (err) {}
 
-      businesses.push({
-        businessOwnerId: effectiveUserId,
-        businessName: hasRealOwnBusiness ? ownSettings!.businessName : null,
-        roleName: 'Owner',
-        teamMemberId: null,
-        logoUrl: ownSettings?.logoUrl || null,
-        pendingJobCount: ownJobCount,
-        isOwnBusiness: true,
-      });
+      // Personal profile visibility: a pure team member/worker (joined a business,
+      // has no real own business of their own, and is not a subcontractor) should
+      // NOT see a "Personal profile" workspace — only owners and subcontractors do.
+      const isSubcontractorAccount = ownSettings?.accountType === 'subcontractor';
+      const showPersonalProfile =
+        hasRealOwnBusiness || isSubcontractorAccount || teamBusinesses.length === 0;
+
+      if (showPersonalProfile) {
+        businesses.push({
+          businessOwnerId: effectiveUserId,
+          businessName: hasRealOwnBusiness ? ownSettings!.businessName : null,
+          roleName: 'Owner',
+          teamMemberId: null,
+          logoUrl: ownSettings?.logoUrl || null,
+          pendingJobCount: ownJobCount,
+          isOwnBusiness: true,
+        });
+      }
 
       businesses.push(...teamBusinesses);
-      
+
       res.json({
         businesses,
         activeBusinessId: user?.activeBusinessId || effectiveUserId,
