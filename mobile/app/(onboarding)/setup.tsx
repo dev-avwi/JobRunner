@@ -913,7 +913,7 @@ export default function OnboardingSetupScreen() {
       <View style={styles.codeInputWrap}>
         <TextInput
           style={styles.codeInput}
-          placeholder="e.g. MIKE42"
+          placeholder="e.g. A8B49S"
           placeholderTextColor={colors.mutedForeground + '60'}
           value={inviteCode}
           onChangeText={(text) => handleInviteCodeChange(text)}
@@ -1134,7 +1134,7 @@ export default function OnboardingSetupScreen() {
       <View style={styles.codeInputWrap}>
         <TextInput
           style={styles.codeInput}
-          placeholder="e.g. MIKE42"
+          placeholder="e.g. A8B49S"
           placeholderTextColor={colors.mutedForeground + '60'}
           value={subInviteCode}
           onChangeText={(text) => handleInviteCodeChange(text, true)}
