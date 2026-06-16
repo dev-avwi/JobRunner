@@ -85,3 +85,4 @@
 - [gpt-5-mini param constraints](gpt5-mini-param-constraints.md) — migrating OpenAI calls to gpt-5 family: rename max_tokens→max_completion_tokens, drop custom temperature, bump small budgets (reasoning eats them); Vapi aiModel is separate.
 - [Readiness-gate deadlock](readiness-gate-deadlock.md) — a "ready" flag that gates deferred UI must flip in finally (even on fetch reject), else one failed load suppresses the gated UI for the whole session.
 - [Logout owner-menu flash](logout-menu-flash.md) — sign-out re-resolves role to owner (cache cleared, role≠'loading'), so isRoleLoading misses it; gate menu render on a signingOut flag too.
+- [Worker presence state blast radius](worker-state-blast-radius.md) — adding/removing a worker state must touch server validStates, shared WORKER_STATES/_CONFIG, mobile MY STATUS pills+display colors, AND team-operations pill/subtitle chain (defaults to "Available" otherwise).

@@ -33,6 +33,7 @@ const STATUS_CONFIG: Record<string, { color: string; label: string; icon: keyof 
   travelling: { color: '#3b82f6', label: 'Travelling', icon: 'navigation' },
   delayed: { color: '#eab308', label: 'Delayed', icon: 'alert-triangle' },
   needs_help: { color: '#ef4444', label: 'Needs Help', icon: 'alert-circle' },
+  unavailable: { color: '#9ca3af', label: 'Unavailable', icon: 'x-circle' },
 };
 
 const ACTIVITY_CONFIG: Record<string, { icon: keyof typeof Feather.glyphMap; color: string; bgColor: string }> = {
@@ -487,11 +488,16 @@ export default function TeamOperationsScreen() {
     if (activeJob) { pillLabel = 'On Job'; pillColor = colors.success; }
     else if (enRouteJob) { pillLabel = 'En Route'; pillColor = colors.info || colors.primary; }
     else if (wsState === 'offline') { pillLabel = 'Offline'; pillColor = colors.mutedForeground; }
+    else if (wsState === 'busy') { pillLabel = 'Busy'; pillColor = '#f59e0b'; }
+    else if (wsState === 'unavailable') { pillLabel = 'Unavailable'; pillColor = colors.mutedForeground; }
 
     const locShort = focusJob?.address ? focusJob.address.split(',')[0] : null;
     const subtitle = focusJob
       ? `${focusJob.title}${locShort ? ` · ${locShort}` : ''}`
-      : (wsState === 'offline' ? 'Offline' : 'Free · ready for a job');
+      : (wsState === 'offline' ? 'Offline'
+        : wsState === 'busy' ? 'Busy'
+        : wsState === 'unavailable' ? 'Unavailable'
+        : 'Free · ready for a job');
 
     return (
       <PressableRow

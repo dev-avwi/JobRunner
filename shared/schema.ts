@@ -5427,11 +5427,13 @@ export type InsertSubcontractorInvoiceItem = z.infer<typeof insertSubcontractorI
 export type SubcontractorInvoiceItem = typeof subcontractorInvoiceItems.$inferSelect;
 
 // Worker State System
-export const WORKER_STATES = ['available', 'on_job', 'travelling', 'break', 'delayed', 'needs_help'] as const;
+export const WORKER_STATES = ['available', 'busy', 'unavailable', 'on_job', 'travelling', 'break', 'delayed', 'needs_help'] as const;
 export type WorkerStateValue = typeof WORKER_STATES[number];
 
 export const WORKER_STATE_CONFIG: Record<WorkerStateValue, { label: string; color: string }> = {
   available: { label: 'Available', color: '#22c55e' },
+  busy: { label: 'Busy', color: '#f59e0b' },
+  unavailable: { label: 'Unavailable', color: '#9ca3af' },
   on_job: { label: 'On Job', color: '#f97316' },
   travelling: { label: 'Travelling', color: '#3b82f6' },
   break: { label: 'Break', color: '#9ca3af' },

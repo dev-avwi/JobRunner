@@ -39517,7 +39517,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const userId = req.userId!;
       const { state, jobId, note, targetUserId } = req.body;
 
-      const validStates = ['available', 'on_job', 'travelling', 'break', 'delayed', 'needs_help'];
+      const validStates = ['available', 'on_job', 'travelling', 'break', 'delayed', 'needs_help', 'busy', 'unavailable'];
       if (!state || !validStates.includes(state)) {
         return res.status(400).json({ error: 'Invalid state. Must be one of: ' + validStates.join(', ') });
       }
