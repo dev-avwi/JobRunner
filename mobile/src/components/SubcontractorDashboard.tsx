@@ -77,7 +77,20 @@ export function SubcontractorDashboard() {
   const { scrollToTopTrigger } = useScrollToTop();
 
   const { user, setDashboardReady } = useAuthStore();
-  const { isStandaloneSubcontractor } = useUserRole();
+  const { isSubcontractor, isStandaloneSubcontractor } = useUserRole();
+  // Latched invoicing visibility. The role cache is deleted on every app
+  // foreground (useUserRole revalidates on AppState 'active'), so during the
+  // brief refetch window the derived role falls back to owner/loading and
+  // isStandaloneSubcontractor momentarily reads false — which would flash the
+  // invoicing section in and then hide it again. We only update the decision
+  // once the role has DEFINITIVELY resolved to subcontractor, ignoring the
+  // transient states, so the section no longer flickers on resume.
+  const [showInvoicing, setShowInvoicing] = useState(false);
+  useEffect(() => {
+    if (isSubcontractor) {
+      setShowInvoicing(!isStandaloneSubcontractor);
+    }
+  }, [isSubcontractor, isStandaloneSubcontractor]);
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -819,7 +832,7 @@ export function SubcontractorDashboard() {
         </View>
 
         {/* Invoicing Section — bill-a-business only; hidden on the free personal profile */}
-        {!isStandaloneSubcontractor && (
+        {showInvoicing && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={[styles.sectionIconContainer, { backgroundColor: colorWithOpacity(colors.primary, 0.12) }]}>
