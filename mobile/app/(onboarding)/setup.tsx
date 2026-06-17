@@ -262,7 +262,7 @@ export default function OnboardingSetupScreen() {
     const setValidation = isSub ? setSubInviteValidation : setInviteValidation;
     const setValidating = isSub ? setIsValidatingSubCode : setIsValidatingCode;
 
-    if (code.length !== 8) {
+    if (code.length !== 6) {
       setValidation(null);
       return;
     }
@@ -1408,18 +1408,6 @@ export default function OnboardingSetupScreen() {
           {currentStep === 'complete' && renderComplete()}
         </View>
 
-        {currentStep !== 'complete' && (
-          <TouchableOpacity
-            onPress={handleSkipOnboarding}
-            disabled={isLoading}
-            style={styles.skipFooter}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            testID="button-skip-onboarding-footer"
-            activeOpacity={0.7}
-          >
-            <Text style={styles.skipFooterText}>Skip setup for now</Text>
-          </TouchableOpacity>
-        )}
       </Animated.View>
     </SafeAreaView>
   );
@@ -1735,17 +1723,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 13,
     color: colors.primary,
     fontWeight: '600',
-  },
-  skipFooter: {
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-  },
-  skipFooterText: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    fontWeight: '500',
-    textDecorationLine: 'underline',
   },
 
   codeInputWrap: {
