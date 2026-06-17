@@ -432,21 +432,29 @@ export default function SubbieBillBuilder() {
       </View>
 
       {activeTab === 'preview' ? (
-        <LiveDocumentPreview
-          type={docType}
-          title={title}
-          date={formatLocalDate(new Date())}
-          validUntil={docType === 'quote' ? formatLocalDate(docDate) : undefined}
-          dueDate={docType === 'invoice' ? formatLocalDate(docDate) : undefined}
-          lineItems={previewLineItems}
-          notes={notes}
-          business={previewBusiness}
-          client={previewClient}
-          gstEnabled={gstEnabled}
-          templateId={(businessSettings as any)?.documentTemplate || 'minimal'}
-          templateCustomization={(businessSettings as any)?.documentTemplateSettings}
-          bottomPadding={insets.bottom + 120}
-        />
+        <View style={styles.previewContainer}>
+          <View style={styles.previewBar}>
+            <Text style={styles.previewBarLabel}>Live Preview</Text>
+            <View style={styles.previewBarBadge}>
+              <Text style={styles.previewBarBadgeText}>Updates as you type</Text>
+            </View>
+          </View>
+          <LiveDocumentPreview
+            type={docType}
+            title={title}
+            date={formatLocalDate(new Date())}
+            validUntil={docType === 'quote' ? formatLocalDate(docDate) : undefined}
+            dueDate={docType === 'invoice' ? formatLocalDate(docDate) : undefined}
+            lineItems={previewLineItems}
+            notes={notes}
+            business={previewBusiness}
+            client={previewClient}
+            gstEnabled={gstEnabled}
+            templateId={(businessSettings as any)?.documentTemplate || 'minimal'}
+            templateCustomization={(businessSettings as any)?.documentTemplateSettings}
+            bottomPadding={insets.bottom + 120}
+          />
+        </View>
       ) : (
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -467,7 +475,7 @@ export default function SubbieBillBuilder() {
             </View>
           ) : (
             <ScrollView
-              contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: insets.bottom + 120, gap: spacing.md }}
+              contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: insets.bottom + 120, gap: spacing.lg }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
@@ -858,12 +866,38 @@ function createStyles(colors: ThemeColors) {
     tabText: { fontSize: 15, fontWeight: '600', color: colors.foreground },
     tabTextActive: { color: colors.primaryForeground },
 
-    card: {
-      backgroundColor: colors.card,
-      borderRadius: radius.lg,
+    previewContainer: { flex: 1, backgroundColor: colors.background },
+    previewBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    previewBarLabel: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    previewBarBadge: {
+      backgroundColor: colors.muted,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.sm,
       borderWidth: 1,
       borderColor: colors.border,
-      padding: spacing.md,
+    },
+    previewBarBadgeText: { fontSize: 11, fontWeight: '500', color: colors.mutedForeground },
+
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.lg,
       gap: spacing.sm,
     },
     cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
@@ -977,10 +1011,10 @@ function createStyles(colors: ThemeColors) {
 
     totalsCard: {
       backgroundColor: colors.card,
-      borderRadius: radius.lg,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.border,
-      padding: spacing.md,
+      padding: spacing.lg,
       gap: spacing.xs,
     },
     totalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
