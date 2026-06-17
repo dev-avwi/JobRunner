@@ -10,6 +10,7 @@ import {
   startNewFetchSession,
   clearRoleCache,
   invalidateUserRoleCache,
+  markUserRoleCacheStale,
   type UserRoleType
 } from '../lib/role-cache';
 
@@ -150,9 +151,10 @@ export function useUserRole() {
         isOnline  // Only refetch when online
       ) {
         // App came to foreground - always refetch like web's focus refetch
-        // This ensures permission changes are picked up immediately
-        // Use invalidateUserRoleCache to properly increment session counter
-        invalidateUserRoleCache(userId);
+        // This ensures permission changes are picked up immediately.
+        // Mark stale (don't delete) so the last-settled role stays readable
+        // during the refetch — deleting flickers the owner view for subcontractors.
+        markUserRoleCacheStale(userId);
         setFetchVersion(v => v + 1);
       }
       appStateRef.current = nextAppState;
@@ -171,8 +173,9 @@ export function useUserRole() {
       // Only refetch if cache is stale AND we're online
       const cache = roleCache.get(userId);
       if (isCacheStale(cache) && isOnline) {
-        // Use invalidateUserRoleCache to properly increment session counter
-        invalidateUserRoleCache(userId);
+        // Mark stale (don't delete) so the last-settled role stays readable
+        // during the refetch — deleting flickers the owner view for subcontractors.
+        markUserRoleCacheStale(userId);
         setFetchVersion(v => v + 1);
       }
     }, PERIODIC_REFETCH_MS);

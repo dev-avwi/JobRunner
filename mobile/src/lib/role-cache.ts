@@ -39,6 +39,20 @@ export const invalidateUserRoleCache = (userId: string) => {
   fetchingUsers.delete(userId);
 };
 
+// Mark a user's cached role as stale WITHOUT removing it (stale-while-revalidate).
+// Used by the foreground/periodic revalidation so the last-settled role stays
+// readable during the background refetch. Deleting the entry (above) makes the
+// role momentarily fall back to the owner/loading default, which flickers the
+// owner "free" view for subcontractors before the real role reloads.
+// Does NOT increment session counter - that happens when fetch starts.
+export const markUserRoleCacheStale = (userId: string) => {
+  const cached = roleCache.get(userId);
+  if (cached) {
+    roleCache.set(userId, { ...cached, timestamp: 0 });
+  }
+  fetchingUsers.delete(userId);
+};
+
 // Increment session counter when a new fetch cycle begins
 // Returns the new session value to capture in the fetch
 export const startNewFetchSession = () => {
