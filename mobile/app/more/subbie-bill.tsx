@@ -596,6 +596,7 @@ export default function SubbieBillBuilder() {
                   </PressableRow>
                   <PressableRow style={styles.catalogButton} onPress={openCatalog}>
                     <Feather name="book-open" size={16} color={colors.foreground} />
+                    <Text style={styles.addItemText}>Catalog</Text>
                   </PressableRow>
                 </View>
               </View>
@@ -688,7 +689,7 @@ export default function SubbieBillBuilder() {
       <AppBottomSheet
         visible={editorVisible}
         onDismiss={() => setEditorVisible(false)}
-        snapPoints={['60%']}
+        snapPoints={['90%']}
         scrollable={false}
         contentPadding={0}
       >
@@ -962,9 +963,12 @@ function createStyles(colors: ThemeColors) {
     },
     addItemText: { fontSize: 14, fontWeight: '600', color: colors.foreground },
     catalogButton: {
-      width: 48,
+      flex: 1,
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: spacing.xs,
+      paddingVertical: 12,
       borderRadius: radius.md,
       borderWidth: 1,
       borderColor: colors.border,
@@ -1063,10 +1067,11 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: spacing.md,
-      marginTop: spacing.xs,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+      backgroundColor: colors.muted,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
     },
     modalSaveBtn: {
       backgroundColor: colors.primary,
