@@ -2734,7 +2734,17 @@ function OwnerDashboardScreen() {
   const displayJobs = isRouteOptimized ? optimizedJobs : todaysJobs;
   
   const roleResolved = roleInfo !== null;
-  const isStaffUser = isStaff();
+  // Authoritative owner signal from /api/auth/me (the `user` payload). Unlike
+  // the role hook's transient 404/loading fallback, this is never overwritten
+  // by a momentary placeholder role. Used to stop a freshly-signed-up owner
+  // from briefly rendering the worker dashboard while /api/team/my-role settles.
+  const serverSaysOwner = (user as any)?.isOwner === true;
+  // Narrow guard for the placeholder role the role hook writes on a transient
+  // 404 before the real role resolves: it is the EXACT shape roleId 'staff' +
+  // roleName 'STAFF' (uppercase). Real Staff users carry roleName 'Staff', so
+  // this never misclassifies a genuine staff member.
+  const isPlaceholderRole = roleInfo?.roleId === 'staff' && roleInfo?.roleName === 'STAFF';
+  const isStaffUser = !serverSaysOwner && !isPlaceholderRole && isStaff();
   const isOwnerUser = isOwner();
   const isSubcontractorUser = roleInfo?.roleName?.toLowerCase() === 'subcontractor' || roleInfo?.roleName?.toLowerCase() === 'sub_contractor';
   const isManager = roleInfo?.roleName?.toLowerCase() === 'manager';
@@ -3163,11 +3173,9 @@ function OwnerDashboardScreen() {
                   <Text style={[styles.roleBadgeText, { color: colors.primary }]}>
                     {isSubcontractorUser
                       ? 'Subcontractor'
-                      : isOwnerUser || roleInfo?.roleName === 'OWNER'
-                        ? 'Owner'
-                        : (roleInfo?.roleName && roleInfo.roleName !== 'STAFF')
-                          ? roleInfo.roleName
-                          : 'Team member'}
+                      : isStaffUser
+                        ? ((roleInfo?.roleName && roleInfo.roleName !== 'STAFF') ? roleInfo.roleName : 'Team member')
+                        : 'Owner'}
                   </Text>
                 </View>
               )}
