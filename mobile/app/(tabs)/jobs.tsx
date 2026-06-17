@@ -1671,6 +1671,9 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     flex: 1,
     ...typography.body,
     color: colors.foreground,
+    letterSpacing: 0,
+    textAlign: 'left',
+    padding: 0,
   },
   advancedFilterBtn: {
     width: sizes.searchBarHeight,
