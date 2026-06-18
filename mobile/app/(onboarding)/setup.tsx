@@ -270,7 +270,14 @@ export default function OnboardingSetupScreen() {
     setValidating(true);
     try {
       const response = await api.get(`/api/team/invite-code/validate/${code.toUpperCase()}`);
-      setValidation(response.data as { valid: boolean; businessName?: string; roleType?: string; ownerName?: string; error?: string });
+      if (response.error || !response.data) {
+        // A timeout / network / 5xx / 429 returns { error } with NO data. Surface
+        // it as an invalid result so the user sees a message instead of a button
+        // that silently refuses to do anything.
+        setValidation({ valid: false, error: response.error || "Couldn't check this code. Check your connection and try again." });
+      } else {
+        setValidation(response.data as { valid: boolean; businessName?: string; roleType?: string; ownerName?: string; error?: string });
+      }
     } catch (error) {
       setValidation({ valid: false, error: 'Failed to validate code' });
     } finally {
@@ -1174,7 +1181,7 @@ export default function OnboardingSetupScreen() {
 
       <View style={styles.ctaWrap}>
         <TouchableOpacity
-          style={[styles.ctaButton, isLoading && { opacity: 0.5 }]}
+          style={[styles.ctaButton, (isLoading || (!subInviteValidation?.valid && subInviteCode.length > 0)) && { opacity: 0.5 }]}
           onPress={() => handleSubConnect(false)}
           disabled={isLoading || (!subInviteValidation?.valid && subInviteCode.length > 0)}
           activeOpacity={0.8}
