@@ -3,7 +3,6 @@ import { storage, db } from './storage';
 import { loginSchema, insertUserSchema, SafeUser, User, clients, teamMembers } from '@shared/schema';
 import { and, eq, isNull, inArray, sql } from 'drizzle-orm';
 import crypto from 'crypto';
-import { sendWelcomeEmail } from './emailService';
 
 const SALT_ROUNDS = 12;
 const EMAIL_VERIFICATION_EXPIRY_HOURS = 24;
@@ -551,14 +550,8 @@ export class AuthService {
         console.error('Failed to seed message templates for Google user:', err);
       });
 
-      // Send welcome email (async, don't block user creation)
-      sendWelcomeEmail({
-        email: updatedUser.email || '',
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName
-      }).catch(err => {
-        console.error('Failed to send welcome email for Google user:', err);
-      });
+      // Welcome email is intentionally NOT sent at signup. It is sent once the
+      // user finishes onboarding (POST /api/onboarding/complete).
 
       // Return safe user data without password
       const { password, ...safeUser } = updatedUser;
@@ -647,14 +640,8 @@ export class AuthService {
         console.error('Failed to seed message templates for Apple user:', err);
       });
 
-      // Send welcome email (async, don't block user creation)
-      sendWelcomeEmail({
-        email: updatedUser.email || '',
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName
-      }).catch(err => {
-        console.error('Failed to send welcome email for Apple user:', err);
-      });
+      // Welcome email is intentionally NOT sent at signup. It is sent once the
+      // user finishes onboarding (POST /api/onboarding/complete).
 
       // Return safe user data without password
       const { password, ...safeUser } = updatedUser;
@@ -719,13 +706,8 @@ export class AuthService {
         console.error('Failed to seed message templates for Xero user:', err);
       });
 
-      sendWelcomeEmail({
-        email: updatedUser.email || '',
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName
-      }).catch(err => {
-        console.error('Failed to send welcome email for Xero user:', err);
-      });
+      // Welcome email is intentionally NOT sent at signup. It is sent once the
+      // user finishes onboarding (POST /api/onboarding/complete).
 
       const { password, ...safeUser } = updatedUser;
       return safeUser;

@@ -602,6 +602,15 @@ export default function OnboardingSetupScreen() {
     }
   };
 
+  const canSkipCurrentStep = () => {
+    // Only owners can skip, and only on the genuinely-optional steps (trade +
+    // team size). The role choice, required owner details, and the
+    // worker/subcontractor "join" steps must be completed — otherwise the user
+    // lands in a broken half-set-up account that the server then blocks with
+    // "complete your business setup".
+    return selectedRole === 'owner' && (ownerStep === 'trade' || ownerStep === 'teamSize');
+  };
+
   const getCurrentStep = () => {
     if (!selectedRole) return 'role';
     if (selectedRole === 'owner') return ownerStep;
@@ -1381,17 +1390,21 @@ export default function OnboardingSetupScreen() {
               </View>
             )}
 
-            <TouchableOpacity
-              onPress={handleSkipOnboarding}
-              disabled={isLoading}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              testID="button-skip-onboarding"
-              style={styles.skipChip}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.skipChipText}>Skip</Text>
-              <Ionicons name="arrow-forward" size={14} color={colors.primary} />
-            </TouchableOpacity>
+            {canSkipCurrentStep() ? (
+              <TouchableOpacity
+                onPress={handleSkipOnboarding}
+                disabled={isLoading}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                testID="button-skip-onboarding"
+                style={styles.skipChip}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.skipChipText}>Skip</Text>
+                <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: 40 }} />
+            )}
           </View>
         )}
 

@@ -2488,8 +2488,8 @@ export default function TeamManagementScreen() {
           snapPoints={['85%']}
           scrollable={false}
           contentPadding={0}>
-          <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <View testID="modal-invite">
+          <KeyboardAvoidingView style={{ flex: 1, width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <View testID="modal-invite" style={{ flex: 1 }}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Add Team Member</Text>
                 <TouchableOpacity testID="button-close-invite-modal" onPress={() => setShowInviteModal(false)}>
@@ -2530,7 +2530,7 @@ export default function TeamManagementScreen() {
 
               {inviteTab === 'email' ? (
                 <>
-                  <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                  <ScrollView style={[styles.modalBody, { flex: 1 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                     <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md }}>
                       Send a direct email invite to a specific person.
                     </Text>
@@ -2633,7 +2633,7 @@ export default function TeamManagementScreen() {
                   </View>
                 </>
               ) : (
-                <View style={styles.modalBody}>
+                <ScrollView style={[styles.modalBody, { flex: 1 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                   <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md }}>
                     Generate a code that anyone can use to join your team. Share it however you like.
                   </Text>
@@ -2696,7 +2696,7 @@ export default function TeamManagementScreen() {
                       </>
                     )}
                   </TouchableOpacity>
-                </View>
+                </ScrollView>
               )}
             </View>
           </KeyboardAvoidingView>

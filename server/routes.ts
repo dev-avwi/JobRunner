@@ -4313,16 +4313,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await AuthService.verifyEmail(token);
       
       if (result.success) {
-        // Send welcome email now that email is verified (non-blocking)
-        try {
-          if (result.user.email) {
-            await sendWelcomeEmail({ ...result.user, email: result.user.email });
-          }
-        } catch (welcomeEmailError) {
-          console.error('Failed to send welcome email:', welcomeEmailError);
-          // Don't fail verification if welcome email fails
-        }
-        
+        // Welcome email is sent after the user completes onboarding
+        // (POST /api/onboarding/complete), not at email verification.
+
         // Set session after successful verification and explicitly save — clear any demo flags
         req.session.userId = result.user.id;
         req.session.user = result.user;
@@ -12272,6 +12265,7 @@ Be specific about materials, colors, and features that would be included.`
     try {
       const userId = req.userId!;
       let settings = await storage.getBusinessSettings(userId);
+      const wasAlreadyCompleted = !!settings?.onboardingCompleted;
       if (settings) {
         settings = await storage.updateBusinessSettings(userId, { onboardingCompleted: true });
       } else {
@@ -12281,6 +12275,30 @@ Be specific about materials, colors, and features that would be included.`
           onboardingCompleted: true,
         });
       }
+
+      // Send the welcome email the first time onboarding is completed (it is
+      // deliberately NOT sent at signup / email verification anymore). This
+      // route is ownerOnly(), so the welcome only goes to business owners —
+      // which is intended: the email is owner-centric (set up business, add a
+      // client, create a quote, get paid) and is not relevant to invited
+      // workers/subcontractors. Non-blocking; never fail the request on an
+      // email error.
+      if (!wasAlreadyCompleted) {
+        (async () => {
+          try {
+            const user = await storage.getUser(userId);
+            if (user?.email) {
+              await sendWelcomeEmail(
+                { email: user.email, firstName: user.firstName, lastName: user.lastName },
+                settings?.businessName || undefined,
+              );
+            }
+          } catch (welcomeEmailError) {
+            console.error('[Onboarding Complete] Failed to send welcome email:', welcomeEmailError);
+          }
+        })();
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error('[Onboarding Complete] Error:', error);
