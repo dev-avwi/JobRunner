@@ -2,17 +2,18 @@ import { Platform, Dimensions, useWindowDimensions } from 'react-native';
 
 const IPAD_WIDTH_THRESHOLD = 768;
 // Tablet detection threshold (drives sidebar navigation, grid columns, etc.).
-// 672 so that:
+// 600 so that:
 //  - iPad mini (min 744) and larger tablets qualify;
-//  - an UNFOLDED foldable (Z Fold / Pixel Fold inner display) gets the sidebar,
-//    including landscape where the live `window` min-dimension is the height and
-//    is shaved by the status/nav bars to ~700pt (below the old 744 → it was
-//    wrongly treated as a phone and never reverted to sidebar on unfold);
-//  - the largest phones (min-dimension ~430-480pt) stay on phone navigation.
-const TABLET_MIN_DIMENSION = 672;
-// Wide-content threshold — purely for content-column centring on Android
-// foldables. Lower than the tablet threshold so a Z Fold (unfolded ~600pt)
-// gets a centred reading column without flipping to sidebar navigation.
+//  - an UNFOLDED foldable (Z Fold / Pixel Fold inner display, min-dimension
+//    ~600-700pt depending on model and the status/nav-bar inset) reliably gets
+//    the sidebar on unfold. At 672 narrower inner displays were classed as a
+//    phone and never switched to the sidebar on unfold;
+//  - the largest phones (min-dimension ~430-480pt) stay on phone navigation
+//    with a comfortable margin below 600.
+const TABLET_MIN_DIMENSION = 600;
+// Wide-content threshold — content-column centring on Android wide displays
+// (tablets / unfolded foldables). Matches the tablet threshold so any display
+// wide enough for the sidebar also gets the capped reading column.
 export const WIDE_CONTENT_THRESHOLD = 600;
 // Maximum reading width for primary content columns on wide screens.
 export const OPTIMAL_CONTENT_MAX_WIDTH = 720;
