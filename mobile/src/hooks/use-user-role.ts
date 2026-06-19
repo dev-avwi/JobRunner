@@ -128,6 +128,12 @@ export function useUserRole() {
   const { user, businessSettings } = useAuthStore();
   const userId: string | undefined = user?.id;
   const { isOnline } = useOfflineStore();
+  // Authoritative owner signal from /api/auth/me. The server computes this
+  // against the user's ACTIVE business, so it is correct even for a freshly
+  // signed-up user who joined another business (it returns false there). Use
+  // this — never a businessSettings heuristic — for the pre-fetch optimistic
+  // guess, so we never flash "owner" before /api/team/my-role settles.
+  const serverIsOwner = (user as any)?.isOwner === true;
   
   // Force re-render trigger when fetch completes
   const [fetchVersion, setFetchVersion] = useState(0);
@@ -302,20 +308,22 @@ export function useUserRole() {
     // If we have cache, use it
     if (cache) return cache.role;
     
-    // If fetching, determine preliminary role from business settings
+    // If fetching, determine preliminary role from the authoritative server
+    // isOwner flag (NOT a businessSettings heuristic — that flashes "owner" for
+    // a joined subcontractor before my-role settles).
     if (isFetching || !cache) {
-      if (isBusinessOwner(businessSettings, userId)) {
-        // Likely owner - return owner to prevent flicker
+      if (serverIsOwner) {
+        // Genuine owner - return owner to prevent flicker
         const settings = businessSettings as any;
         const teamSize = settings?.teamSize || settings?.team_size || 'solo';
         return teamSize === '1' || teamSize === 'solo' ? 'solo_owner' : 'owner';
       }
-      // Unknown - return loading
+      // Unknown / not a confirmed owner - return loading (no owner flash)
       return 'loading';
     }
     
     return 'staff';
-  }, [userId, cache, isFetching, businessSettings]);
+  }, [userId, cache, isFetching, businessSettings, serverIsOwner]);
 
   // Get permissions
   const getPermissions = useCallback((): string[] => {
@@ -324,13 +332,14 @@ export function useUserRole() {
     // If we have cache, use it (guard against non-array permissions)
     if (cache) return Array.isArray(cache.permissions) ? cache.permissions : [];
     
-    // If likely owner during loading, grant all
-    if (isBusinessOwner(businessSettings, userId)) {
+    // Only grant-all during loading for a CONFIRMED server owner (avoids
+    // leaking owner permissions to a joined subcontractor mid-fetch).
+    if (serverIsOwner) {
       return Object.values(PERMISSION_KEYS);
     }
     
     return [];
-  }, [userId, cache, businessSettings]);
+  }, [userId, cache, businessSettings, serverIsOwner]);
 
   const role = getCurrentRole();
   const permissions = getPermissions();
@@ -350,12 +359,12 @@ export function useUserRole() {
       return perms.includes(key);
     }
     
-    // During loading, check if likely owner
-    if (isBusinessOwner(businessSettings, userId)) return true;
+    // During loading, only grant for a CONFIRMED server owner.
+    if (serverIsOwner) return true;
     
     // Otherwise deny (safe default)
     return false;
-  }, [userId, cache, businessSettings]);
+  }, [userId, cache, businessSettings, serverIsOwner]);
 
   const isOwner = role === 'owner' || role === 'solo_owner';
   const isManager = role === 'manager';

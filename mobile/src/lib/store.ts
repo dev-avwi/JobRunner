@@ -626,9 +626,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   fetchRoleInfo: async () => {
     const { isOnline } = useOfflineStore.getState();
+    // Only default to OWNER when the authoritative /api/auth/me isOwner flag
+    // says so. A freshly-joined subcontractor has isOwner=false, so we leave
+    // roleInfo unresolved (dashboard shows a brief loading state) rather than
+    // flashing the owner dashboard before my-role settles.
+    const serverOwner = (get().user as any)?.isOwner === true;
     if (!isOnline) {
       const currentRoleInfo = get().roleInfo;
-      if (!currentRoleInfo) {
+      if (!currentRoleInfo && serverOwner) {
         set({
           roleInfo: {
             roleId: 'owner',
@@ -670,10 +675,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
         const rnLower = roleName.toLowerCase();
         locationTracking.setSubcontractorMode(rnLower.includes('subcontractor') || rnLower.includes('sub_contractor'));
-      } else if (!get().roleInfo) {
-        // No response AND no prior role known → cold-start unknown, assume owner.
-        // If a role is already known, keep it (don't clobber a real
-        // subcontractor/worker with an owner default on an empty response).
+      } else if (!get().roleInfo && serverOwner) {
+        // No response AND no prior role known → cold-start unknown. Only assume
+        // owner when the authoritative isOwner flag agrees (never escalate a
+        // joined subcontractor to owner on an empty response).
         set({
           roleInfo: {
             roleId: 'owner',
@@ -689,7 +694,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // the existing role rather than escalating to owner. Only fall back to the
       // owner default when no role has ever been resolved on this device — never
       // overwrite an already-known subcontractor/worker role on a blip.
-      if (!get().roleInfo) {
+      if (!get().roleInfo && serverOwner) {
         console.warn('[Auth] Failed to fetch role info with no prior role, defaulting to owner:', error);
         locationTracking.setSubcontractorMode(false);
         set({

@@ -2294,8 +2294,24 @@ function PendingInvitesBanner() {
 }
 
 export default function DashboardScreen() {
-  const { roleInfo } = useAuthStore();
-  
+  const { roleInfo, user } = useAuthStore();
+  const { colors } = useTheme();
+  // Authoritative owner signal from /api/auth/me — true for a genuine owner,
+  // false for a freshly-joined subcontractor.
+  const serverSaysOwner = (user as any)?.isOwner === true;
+
+  // Wait for the role to resolve before committing to a dashboard variant, so a
+  // joined subcontractor never flashes the owner dashboard first. Genuine
+  // owners are known immediately (serverSaysOwner / checkAuth sets roleInfo
+  // right after /api/auth/me), so they don't hit this spinner.
+  if (!roleInfo && !serverSaysOwner) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   const isSubcontractorRole = roleInfo?.roleName?.toLowerCase() === 'subcontractor' || roleInfo?.roleName?.toLowerCase() === 'sub_contractor';
   if (isSubcontractorRole) {
     return <SubcontractorDashboard />;

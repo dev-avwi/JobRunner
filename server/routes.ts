@@ -3827,6 +3827,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         inviteAcceptedAt: new Date(),
       } as Partial<InsertTeamMember>);
 
+      // Land the joiner inside the business they just accepted, so role
+      // resolution (/api/team/my-role, getUserContext) treats them as a member
+      // of THAT business instead of falling back to owner-mode of their own
+      // auto-created business. Mirrors the invite-code redeem path.
+      try {
+        await storage.updateUser(effectiveUserId, { activeBusinessId: targetMember.businessOwnerId } as any);
+      } catch (e) { console.error('Set activeBusinessId after invite accept failed:', e); }
+
       try {
         const { broadcastTeamMemberChange } = await import('./websocket');
         broadcastTeamMemberChange(targetMember.businessOwnerId, 'accepted', teamMemberId);
@@ -3965,6 +3973,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         inviteAcceptedAt: new Date(),
         inviteToken: null,
       } as any);
+
+      // Land the joiner inside the business they just accepted (mirrors the
+      // invite-code redeem path) so role resolution doesn't fall back to
+      // owner-mode of their own auto-created business.
+      try {
+        await storage.updateUser(user.id, { activeBusinessId: teamMember.businessOwnerId } as any);
+      } catch (e) { console.error('Set activeBusinessId after passwordless accept failed:', e); }
 
       try {
         const { broadcastTeamMemberChange } = await import('./websocket');
@@ -29205,6 +29220,13 @@ Respond with JSON in this format:
         inviteAcceptedAt: new Date(),
         inviteToken: null, // Clear the token so it can't be reused
       });
+
+      // Land the joiner inside the business they just accepted (mirrors the
+      // invite-code redeem path) so role resolution doesn't fall back to
+      // owner-mode of their own auto-created business.
+      try {
+        await storage.updateUser(user.id, { activeBusinessId: teamMember.businessOwnerId } as any);
+      } catch (e) { console.error('Set activeBusinessId after token accept failed:', e); }
 
       try {
         const { broadcastTeamMemberChange } = await import('./websocket');

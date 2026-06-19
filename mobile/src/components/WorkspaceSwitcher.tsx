@@ -122,6 +122,10 @@ export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitc
       const res = await api.switchBusiness(businessId);
       if (res.data?.success) {
         clearRoleCache();
+        // Drop the previous workspace's resolved role so the dashboard shows a
+        // brief loading state (not the old workspace's role) while checkAuth +
+        // my-role re-resolve for the newly active business.
+        useAuthStore.setState({ roleInfo: null });
         await offlineStorage.clearCache();
         await locationTracking.stopTracking();
         await forceRefreshAuth();
