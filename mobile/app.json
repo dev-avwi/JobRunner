@@ -287,7 +287,8 @@
       ],
       "./plugins/withIAPStoreFlavor",
       "./plugins/withIAPKotlinFix",
-      "./plugins/withLiveActivity"
+      "./plugins/withLiveActivity",
+      "./plugins/withAndroidFoldableConfigChanges"
     ],
     "experiments": {
       "typedRoutes": true

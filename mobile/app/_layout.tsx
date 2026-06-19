@@ -686,61 +686,59 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // iPad Landscape / Tablet: Sidebar layout with header in content area
-  if (shouldUseSidebar) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background, position: 'relative', overflow: 'visible' }]}>
-        <View style={styles.tabletLayout}>
-          {/* Sidebar on the left */}
-          <SidebarNav />
-          
-          {/* Main content area on the right */}
-          <View style={styles.tabletContent}>
-            {/* Header at top of content area - show JobRunner branding like web, hide avatar (in sidebar) */}
-            <Header showMenuButton={true} showAvatar={false} />
-            
-            {/* Content fills remaining space */}
-            <View style={styles.content}>
-              {children}
-            </View>
-          </View>
-        </View>
-        
-        {/* Overlays - absolutely positioned so they don't affect layout */}
-        <View style={styles.overlayContainer} pointerEvents="box-none">
-          <OfflineBanner />
-          <ConflictResolutionPanel />
-          <OfflineIndicator />
-        </View>
-        
-        {/* FAB positioned in content area - right of sidebar */}
-        {showFab && (
-          <View style={styles.tabletFabWrapper} pointerEvents="box-none">
-            <FloatingActionButton isTeamOwner={isTeamOwner} fabStyle="tablet" />
-          </View>
-        )}
-      </View>
-    );
-  }
-
-  // iPhone / iPad Portrait: Bottom nav layout
+  // Single layout tree for BOTH tablet (sidebar) and phone (header + bottom-nav)
+  // chrome. Crossing the tablet-width threshold (folding/unfolding an Android
+  // foldable, iPad rotation, split-view resize) only toggles the surrounding
+  // chrome and the layout-flex styles — the content host that wraps {children}
+  // (and therefore the navigation <Stack> inside it) stays at the exact same
+  // position in the React tree, so the navigator is NOT remounted. Remounting
+  // it is what previously re-initialized Expo Router / linking (the
+  // "linking configured in multiple places" error) and dropped the current
+  // route/role state. Conditional siblings are rendered as `null` rather than
+  // omitted so the content column keeps a stable sibling index across the swap.
   return (
     <View style={[styles.container, { backgroundColor: colors.background, position: 'relative', overflow: 'visible' }]}>
-      <Header />
-      
-      <View style={[styles.content, { paddingBottom: bottomNavHeight, backgroundColor: colors.background }]}>
-        {children}
+      <View style={shouldUseSidebar ? styles.tabletLayout : styles.phoneLayout}>
+        {/* Sidebar (tablet only). Kept as a stable slot so the content column
+            after it does not shift index when it appears/disappears. */}
+        {shouldUseSidebar ? <SidebarNav /> : null}
+
+        {/* Content column — same element in both modes. On tablet the header
+            hides the avatar (it lives in the sidebar); on phone it shows it. */}
+        <View style={styles.tabletContent}>
+          <Header showAvatar={!shouldUseSidebar} />
+
+          <View
+            style={[
+              styles.content,
+              !shouldUseSidebar && { paddingBottom: bottomNavHeight, backgroundColor: colors.background },
+            ]}
+          >
+            {children}
+          </View>
+        </View>
       </View>
-      
+
+      {/* Overlays - absolutely positioned so they don't affect layout */}
       <View style={styles.overlayContainer} pointerEvents="box-none">
         <OfflineBanner />
         <ConflictResolutionPanel />
         <OfflineIndicator />
       </View>
-      
-      {showFab && <FloatingActionButton isTeamOwner={isTeamOwner} bottomOffset={bottomNavHeight} />}
-      
-      <BottomNav />
+
+      {/* FAB - floats right of the sidebar on tablet, above the bottom-nav on phone */}
+      {showFab && (
+        shouldUseSidebar ? (
+          <View style={styles.tabletFabWrapper} pointerEvents="box-none">
+            <FloatingActionButton isTeamOwner={isTeamOwner} fabStyle="tablet" />
+          </View>
+        ) : (
+          <FloatingActionButton isTeamOwner={isTeamOwner} bottomOffset={bottomNavHeight} />
+        )
+      )}
+
+      {/* Bottom nav (phone only) */}
+      {!shouldUseSidebar ? <BottomNav /> : null}
     </View>
   );
 }
@@ -994,6 +992,10 @@ const styles = StyleSheet.create({
   tabletLayout: {
     flex: 1,
     flexDirection: 'row',
+  },
+  phoneLayout: {
+    flex: 1,
+    flexDirection: 'column',
   },
   tabletContent: {
     flex: 1,
