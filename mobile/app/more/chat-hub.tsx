@@ -250,6 +250,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     ...typography.body,
     color: colors.foreground,
+    letterSpacing: 0,
+    textAlign: 'left',
     height: sizes.searchBarHeight,
     paddingVertical: 0,
     includeFontPadding: false,

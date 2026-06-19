@@ -21,16 +21,36 @@ export function OnboardingSetupFailedBanner() {
   const { colors } = useTheme();
   const userId = useAuthStore((s) => s.user?.id);
   const fetchBusinessSettings = useAuthStore((s) => s.fetchBusinessSettings);
+  const onboardingCompleted = useAuthStore((s) => (s.businessSettings as any)?.onboardingCompleted === true);
   const [failure, setFailure] = useState<OnboardingSetupFailure | null>(null);
   const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     getOnboardingSetupFailure(userId)
-      .then((f) => { if (mounted) setFailure(f); })
+      .then(async (f) => {
+        if (!mounted) return;
+        // Self-heal: if onboarding is genuinely complete, the "complete" step
+        // succeeded — drop any stale completeFailed flag so we don't nag a user
+        // whose setup is actually done (e.g. the failure was a transient error
+        // that has since resolved). Only the seed step (demo data) can
+        // legitimately still be outstanding.
+        if (f && onboardingCompleted && f.completeFailed) {
+          const remaining = { seedFailed: f.seedFailed, completeFailed: false };
+          if (!remaining.seedFailed) {
+            await clearOnboardingSetupFailure(userId);
+            if (mounted) setFailure(null);
+            return;
+          }
+          await markOnboardingSetupFailed(userId, remaining);
+          if (mounted) setFailure(remaining);
+          return;
+        }
+        setFailure(f);
+      })
       .catch(() => { if (mounted) setFailure(null); });
     return () => { mounted = false; };
-  }, [userId]);
+  }, [userId, onboardingCompleted]);
 
   const onRetry = useCallback(async () => {
     if (!failure || retrying) return;

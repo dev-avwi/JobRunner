@@ -3214,15 +3214,15 @@ export default function CollectScreen() {
 
               <View style={{ marginTop: spacing.lg }}>
                 <Button 
-                  variant="default" 
+                  variant="brand" 
                   onPress={handleSubmitCustomAmount} 
                   fullWidth
                   disabled={!canContinue}
                 >
-                  <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 16 }}>
+                  <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 16 }}>
                     {canContinue ? `Continue — $${parseFloat(customAmountValue).toFixed(2)}` : 'Continue'}
                   </Text>
-                  <Feather name="arrow-right" size={18} color={colors.primaryForeground} style={{ marginLeft: spacing.xs }} />
+                  <Feather name="arrow-right" size={18} color="#FFFFFF" style={{ marginLeft: spacing.xs }} />
                 </Button>
               </View>
             </ScrollView>

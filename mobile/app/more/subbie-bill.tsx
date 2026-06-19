@@ -928,6 +928,8 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: Platform.OS === 'ios' ? 12 : 10,
       fontSize: 15,
       color: colors.foreground,
+      letterSpacing: 0,
+      textAlign: 'left',
     },
     textArea: { height: 88, paddingTop: 10 },
 

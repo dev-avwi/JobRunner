@@ -1231,8 +1231,8 @@ export default function OnboardingSetupScreen() {
         </View>
 
         <View style={styles.privacyRow}>
-          <View style={[styles.privacyDot, { backgroundColor: colors.accent + '18' }]}>
-            <Ionicons name="eye-off" size={18} color={colors.accent} />
+          <View style={[styles.privacyDot, { backgroundColor: '#8b5cf6' + '18' }]}>
+            <Ionicons name="eye-off" size={18} color="#8b5cf6" />
           </View>
           <View style={styles.privacyTextWrap}>
             <Text style={styles.privacyTitle}>Private between jobs</Text>

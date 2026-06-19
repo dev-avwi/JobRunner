@@ -301,12 +301,14 @@ export const typography = {
     fontSize: 15,
     fontWeight: '400' as const,
     lineHeight: 22,
+    letterSpacing: 0,
   },
   // Body semibold
   bodySemibold: {
     fontSize: 15,
     fontWeight: '600' as const,
     lineHeight: 22,
+    letterSpacing: 0,
   },
   // iOS Caption - 13px on web (.ios-caption)
   caption: {
