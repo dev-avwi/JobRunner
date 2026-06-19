@@ -46673,27 +46673,36 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       const result = await Promise.all(completedJobs.map(async job => {
         const assignment = assignments.find(a => a.jobId === job.id);
-        const hourlyRate = parseFloat(assignment?.hourlyRateOverride || membershipRate || '0');
+        const fallbackRate = parseFloat(assignment?.hourlyRateOverride || membershipRate || '0');
         const jobTimeEntries = allTimeEntries.filter(te => te.jobId === job.id);
         let totalHours = 0;
+        let labourAmount = 0;
+        let effectiveRate = fallbackRate;
         jobTimeEntries.forEach(te => {
           if (!te.endTime) return;
           const durationMinutes = te.duration || Math.round((new Date(te.endTime).getTime() - new Date(te.startTime).getTime()) / 60000);
-          totalHours += Math.round(durationMinutes / 60 * 100) / 100;
+          const hrs = Math.round(durationMinutes / 60 * 100) / 100;
+          totalHours += hrs;
+          // Prefer the rate captured on the entry itself (this is what the worker
+          // already sees as "earned" in Time Tracking); fall back to their
+          // assignment/membership rate only when the entry has no rate of its own.
+          const entryRate = parseFloat(te.hourlyRate || '0') || fallbackRate;
+          if (entryRate > 0) effectiveRate = entryRate;
+          labourAmount += Math.round(hrs * entryRate * 100) / 100;
         });
         totalHours = Math.round(totalHours * 100) / 100;
+        labourAmount = Math.round(labourAmount * 100) / 100;
 
         const materials = await storage.getJobMaterials(job.id, userId);
         const materialsCost = Math.round(materials.reduce((sum: number, m: { totalCost?: string | number | null }) => sum + parseFloat(m.totalCost?.toString() || '0'), 0) * 100) / 100;
 
-        const labourAmount = Math.round(totalHours * hourlyRate * 100) / 100;
         return {
           jobId: job.id,
           jobTitle: job.title,
           jobStatus: job.status,
           completedAt: job.completedAt,
           suggestedHours: totalHours,
-          hourlyRate,
+          hourlyRate: effectiveRate,
           materialsCost,
           suggestedAmount: Math.round((labourAmount + materialsCost) * 100) / 100,
           alreadyBilled: billedJobIds.has(job.id),
