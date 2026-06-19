@@ -5,7 +5,7 @@ initSentry();
 installGlobalErrorHandler();
 
 import { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, InteractionManager, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, InteractionManager, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform } from 'react-native';
 import { Alert } from '@/lib/alert';
 
 import { Stack } from 'expo-router';
@@ -34,7 +34,7 @@ import offlineStorage from '../src/lib/offline-storage';
 import { ScrollProvider } from '../src/contexts/ScrollContext';
 import api from '../src/lib/api';
 import { FloatingActionButton } from '../src/components/FloatingActionButton';
-import { useIsTablet, useShouldUseSidebar, isIPad, useOrientation } from '../src/lib/device';
+import { useShouldUseSidebar, isIPad, useOrientation } from '../src/lib/device';
 import { MapPreferenceModal } from '../src/components/MapPreferenceModal';
 import { WhatYouMissedPopup } from '../src/components/WhatYouMissedPopup';
 import { WhatsNewSheet } from '../src/components/WhatsNewSheet';
@@ -568,10 +568,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isOwner, isStaff, hasActiveTeam, user, logout, businessSettings, onboardingFinishing, setOnboardingFinishing } = useAuthStore();
   const { colors } = useTheme();
   const { isOnline, isInitialized: offlineInitialized } = useOfflineStore();
-  const isTabletDevice = useIsTablet();
   const shouldUseSidebar = useShouldUseSidebar();
   const orientation = useOrientation();
-  const { width: dbgW, height: dbgH } = useWindowDimensions();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -740,27 +738,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
       {/* Bottom nav (phone only) */}
       {!shouldUseSidebar ? <BottomNav /> : null}
-
-      {/* TEMP diagnostic — remove after foldable sidebar is confirmed. */}
-      {__DEV__ && (
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: insets.top + 2,
-            alignSelf: 'center',
-            backgroundColor: 'rgba(0,0,0,0.78)',
-            paddingHorizontal: 8,
-            paddingVertical: 3,
-            borderRadius: 6,
-            zIndex: 99999,
-          }}
-        >
-          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>
-            {`${Math.round(dbgW)}x${Math.round(dbgH)} min:${Math.round(Math.min(dbgW, dbgH))} sb:${shouldUseSidebar ? 'Y' : 'N'} tab:${isTabletDevice ? 'Y' : 'N'} ${Platform.OS}`}
-          </Text>
-        </View>
-      )}
     </View>
   );
 }
