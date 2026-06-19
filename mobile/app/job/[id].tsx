@@ -9786,7 +9786,7 @@ export default function JobDetailScreen() {
         footer={(
           <Button
             size="lg"
-            variant="default"
+            variant="brand"
             fullWidth
             loading={isSavingNotes}
             disabled={isSavingNotes}
@@ -9818,7 +9818,7 @@ export default function JobDetailScreen() {
         footer={(
           <Button
             size="lg"
-            variant="default"
+            variant="brand"
             fullWidth
             loading={isSendingSiteUpdate}
             disabled={isSendingSiteUpdate}

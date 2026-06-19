@@ -939,14 +939,22 @@ export default function TimeTrackingScreen() {
     await Promise.all([fetchJobs(), fetchActiveTimer(), fetchTimeStats(), fetchWeeklyData()]);
   }, [fetchJobs, fetchActiveTimer, fetchTimeStats, fetchWeeklyData]);
 
+  // Keep the latest refreshData in a ref so the focus effect below does not
+  // re-fire on every render. refreshData's identity changes whenever `jobs`
+  // updates (fetchTimeStats depends on it), and refreshData itself calls
+  // fetchJobs() — wiring that directly into useFocusEffect's deps caused an
+  // infinite refetch loop (the page "kept physically refreshing").
+  const refreshDataRef = useRef(refreshData);
+  refreshDataRef.current = refreshData;
+
   useEffect(() => {
-    refreshData();
+    refreshDataRef.current();
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      refreshData();
-    }, [refreshData])
+      refreshDataRef.current();
+    }, [])
   );
 
   useEffect(() => {
