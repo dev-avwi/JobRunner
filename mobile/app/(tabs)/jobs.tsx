@@ -33,6 +33,7 @@ import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { spacing, radius, shadows, sizes, pageShell, typography, iconSizes, usePageShell } from '../../src/lib/design-tokens';
 import { useScrollToTop } from '../../src/contexts/ScrollContext';
+import { usePreserveScrollOnFold } from '../../src/hooks/usePreserveScrollOnFold';
 import { getJobUrgency, type JobUrgency } from '../../src/lib/jobUrgency';
 import UsageLimitBanner from '../../src/components/UsageLimitBanner';
 import { QuickActionSheet, type QuickAction } from '../../src/components/QuickActionSheet';
@@ -305,6 +306,7 @@ export default function JobsScreen() {
   const confirm = useConfirmDialog();
   const scrollRef = useRef<FlatList | null>(null);
   const { scrollToTopTrigger } = useScrollToTop();
+  const { onScroll: preserveOnScroll, scrollEventThrottle } = usePreserveScrollOnFold(scrollRef);
   
   useEffect(() => {
     if (scrollToTopTrigger > 0) {
@@ -1363,6 +1365,8 @@ export default function JobsScreen() {
         style={styles.scrollView}
         contentContainerStyle={responsiveContentStyle}
         showsVerticalScrollIndicator={false}
+        onScroll={preserveOnScroll}
+        scrollEventThrottle={scrollEventThrottle}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         refreshControl={

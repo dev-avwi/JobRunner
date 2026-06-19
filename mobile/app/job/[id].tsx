@@ -30,6 +30,7 @@ import LiveActivity from '../../modules/LiveActivity/src';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useActionSheet } from '@/components/ui/ActionSheet';
+import { usePreserveScrollOnFold } from '@/hooks/usePreserveScrollOnFold';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { WebView } from 'react-native-webview';
@@ -1887,6 +1888,8 @@ export default function JobDetailScreen() {
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
+  const scrollRef = useRef<ScrollView | null>(null);
+  const { onScroll: preserveOnScroll, scrollEventThrottle } = usePreserveScrollOnFold(scrollRef);
   
   const [job, setJob] = useState<Job | null>(null);
   const [client, setClient] = useState<Client | null>(null);
@@ -9224,8 +9227,11 @@ export default function JobDetailScreen() {
 
       {/* Tab Content - Scrollable */}
       <ScrollView 
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={preserveOnScroll}
+        scrollEventThrottle={scrollEventThrottle}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

@@ -38,6 +38,7 @@ import { TrustBanner } from '../../src/components/ui/TrustBanner';
 import { OnboardingReminderBanner } from '../../src/components/ui/OnboardingReminderBanner';
 import { OnboardingSetupFailedBanner } from '../../src/components/ui/OnboardingSetupFailedBanner';
 import { useScrollToTop } from '../../src/contexts/ScrollContext';
+import { usePreserveScrollOnFold } from '../../src/hooks/usePreserveScrollOnFold';
 import UsageLimitBanner from '../../src/components/UsageLimitBanner';
 import { SubcontractorDashboard } from '../../src/components/SubcontractorDashboard';
 import { showToast } from '../../src/lib/toast';
@@ -2329,6 +2330,7 @@ function OwnerDashboardScreen() {
   const { activeTimer, pauseTimer, resumeTimer, startTimer, stopTimer } = useTimeTrackingStore();
   const scrollRef = useRef<ScrollView | null>(null);
   const { scrollToTopTrigger } = useScrollToTop();
+  const { onScroll: preserveOnScroll, scrollEventThrottle } = usePreserveScrollOnFold(scrollRef);
   
   useEffect(() => {
     if (scrollToTopTrigger > 0) {
@@ -3177,6 +3179,8 @@ function OwnerDashboardScreen() {
         />
       }
       showsVerticalScrollIndicator={false}
+      onScroll={preserveOnScroll}
+      scrollEventThrottle={scrollEventThrottle}
     >
       {/* iOS-Style Header with Notification Bell */}
       <View style={styles.header}>

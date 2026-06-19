@@ -24,6 +24,7 @@ import {
   type UserRole,
 } from '../../src/lib/navigation-config';
 import { useScrollToTop } from '../../src/contexts/ScrollContext';
+import { usePreserveScrollOnFold } from '../../src/hooks/usePreserveScrollOnFold';
 import { WorkspaceSwitcher } from '../../src/components/WorkspaceSwitcher';
 import { api } from '../../src/lib/api';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
@@ -417,6 +418,7 @@ export default function MoreScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const scrollRef = useRef<ScrollView | null>(null);
   const { scrollToTopTrigger } = useScrollToTop();
+  const { onScroll: preserveOnScroll, scrollEventThrottle } = usePreserveScrollOnFold(scrollRef);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showWorkspaceSwitcher, setShowWorkspaceSwitcher] = useState(false);
   const [multiBusinessCount, setMultiBusinessCount] = useState(0);
@@ -640,6 +642,8 @@ export default function MoreScreen() {
       style={styles.container}
       contentContainerStyle={responsiveContentStyle}
       showsVerticalScrollIndicator={false}
+      onScroll={preserveOnScroll}
+      scrollEventThrottle={scrollEventThrottle}
     >
       <PressableRow style={styles.profileHeader} onPress={() => router.push('/more/profile-edit')} >
         <TeamAvatar
