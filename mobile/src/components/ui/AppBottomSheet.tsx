@@ -117,7 +117,16 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
     // leaving the sheet sized to the wrong screen. useWindowDimensions tracks
     // the live active display.
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-    const maxSheetHeight = screenHeight * 0.92;
+    // The sheet is bottom-anchored inside a status-bar-translucent full-screen
+    // Modal, so its TOP edge is (screenHeight - sheetHeight) from the very top
+    // of the display. A flat 92% cap leaves an 8% gap that is taller than the
+    // status bar on phones but SHORTER than it on a short screen (Android
+    // foldable unfolded), letting the header text ride up into the status bar.
+    // Reserving insets.top guarantees the top safe area is always left clear.
+    const maxSheetHeight = Math.max(
+      0,
+      Math.min(screenHeight * 0.92, screenHeight - insets.top - spacing.sm),
+    );
     // autoHeight defaults to true UNLESS snapPoints is provided.
     const useAutoHeight = autoHeight ?? !snapPoints;
     const fixedSheetHeight = Math.min(

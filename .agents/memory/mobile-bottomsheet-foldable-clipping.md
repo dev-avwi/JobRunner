@@ -32,3 +32,16 @@ vertical space is squeezed.
 **How to apply:** any new sheet-content rendering branch must preserve this
 scrollable/autoHeight/snapPoints split, and any sizing must come from the
 reactive hook, or foldables regress.
+
+**Related top-safe-area rule (status bar overlap):** the sheet is bottom-anchored
+inside a `statusBarTranslucent` `overFullScreen` Modal, so its top edge is at
+`screenHeight - sheetHeight`. A flat `screenHeight * 0.92` cap leaves an 8% top
+gap that exceeds the status bar on tall phones but is SHORTER than it on a short
+display (Android foldable UNFOLDED) → 90%/92% snapPoint sheets (Add Item, Create
+Tax Invoice, Edit Item, etc.) push their header title up into the status bar.
+Fix = cap `maxSheetHeight = Math.max(0, Math.min(screenHeight*0.92, screenHeight
+- insets.top - spacing.sm))`. `Math.min` keeps phones at 92% (the new term only
+bites on short screens); `Math.max(0,...)` guards extreme multi-window. Both
+fixed (`fixedSheetHeight` clamps to it) and autoHeight (`maxHeight`) paths use it,
+so this one cap fixes every `<AppBottomSheet>` caller at once — fix here, not per
+screen.
