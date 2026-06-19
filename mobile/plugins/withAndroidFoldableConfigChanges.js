@@ -25,6 +25,13 @@ module.exports = function withAndroidFoldableConfigChanges(config) {
       config.modResults
     );
     mainActivity.$["android:configChanges"] = CONFIG_CHANGES;
+    // Without this, some foldable emulators/devices letterbox + SCALE the
+    // cover-display surface to fill the larger inner display instead of
+    // actually resizing the window. The app then keeps reporting the small
+    // (cover) dimensions to useWindowDimensions even while unfolded, so the
+    // tablet sidebar never triggers. Forcing resizeableActivity=true makes the
+    // OS hand the activity the real inner-display size on unfold.
+    mainActivity.$["android:resizeableActivity"] = "true";
     return config;
   });
 };

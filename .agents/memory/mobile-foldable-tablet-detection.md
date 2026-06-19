@@ -41,7 +41,23 @@ sees that error + a full-app reload on fold, the running build is stale: the ans
 "rebuild", not more code. JS layout/threshold changes reach the device via Metro
 reload; the configChanges does not.
 
+**Rule 5 — if UNFOLDED still reports COVER dimensions (e.g. 443x970, min 443),
+the activity is being letterbox-SCALED, not resized — add `resizeableActivity=true`.**
+A temp `__DEV__` badge printing `useWindowDimensions` proved that on the foldable
+emulator the UNFOLDED view still reports the small cover-display size (443 wide), so no
+threshold (even 443) is correct — a 443-wide surface IS a phone. The OS was scaling the
+cover surface up to fill the inner display (looks "wide" but app still sees 443).
+Fix: the same `withAndroidFoldableConfigChanges.js` plugin now also sets
+`android:resizeableActivity="true"` on MainActivity so the OS hands over the REAL
+inner-display size on unfold. Like configChanges, this is a NATIVE manifest change —
+INERT until `expo prebuild` + native rebuild. Confirmation that the running build is
+stale: the "linking configured in multiple places" error CANNOT fire if configChanges
+is active (it only appears on Activity remount), so seeing it = the plugin isn't in the
+build yet = rebuild needed before judging any foldable behavior.
+
 **Why:** prior session fixed fold-back (Rule 1) and the remount/linking error (Rule 4,
 JS layout kept the navigator mounted + native configChanges), but the unfolded display
 was still under 672 so the sidebar never appeared; 600 + fresh dims fixes detection,
-and the linking error only clears once the native configChanges build ships.
+the linking error only clears once the native configChanges build ships, AND the
+unfolded surface only reports its true inner-display size once resizeableActivity ships
+in that same native rebuild (Rule 5).
