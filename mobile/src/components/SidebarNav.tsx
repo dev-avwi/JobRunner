@@ -113,7 +113,7 @@ export function SidebarNav() {
   const hasTeamSubscription = subscriptionTier === 'team' || subscriptionTier === 'business' || subscriptionTier === 'beta';
 
   const filterOptions: FilterOptions = useMemo(() => ({
-    isTeam: ((businessSettings as any)?.teamSize ?? 'solo') !== 'solo',
+    isTeam: hasTeamSubscription || ((businessSettings as any)?.teamSize ?? 'solo') !== 'solo',
     isTradie: isStaffTradie,
     isOwner: Boolean(isOwner),
     isManager: isManager,
