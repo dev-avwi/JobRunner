@@ -146,6 +146,7 @@ export default function PaymentHubScreen() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [accessRestricted, setAccessRestricted] = useState(false);
   
   const [stripeStatus, setStripeStatus] = useState<StripeConnectStatus | null>(null);
   const [stripeBalance, setStripeBalance] = useState<StripeBalance | null>(null);
@@ -292,11 +293,30 @@ export default function PaymentHubScreen() {
       setInvoices(invoicesRes.error ? [] : (Array.isArray(invoicesRes.data) ? invoicesRes.data : []));
       setQuotes(quotesRes.error ? [] : (Array.isArray(quotesRes.data) ? quotesRes.data : []));
       setClients(clientsRes.error ? [] : (Array.isArray(clientsRes.data) ? clientsRes.data : []));
-      if (invoicesRes.error || quotesRes.error || clientsRes.error) {
-        Alert.alert('Loading Error', 'Some payment data could not be loaded. Pull down to retry.');
+
+      const isPermissionError = (e?: string) =>
+        !!e && /access denied|permission|not authorized|forbidden/i.test(e);
+      const restricted =
+        isPermissionError(invoicesRes.error) || isPermissionError(quotesRes.error);
+
+      if (restricted) {
+        // The current workspace role can't view this business's invoices/quotes
+        // (e.g. a subcontractor in a joined business). Show a clean restricted
+        // state instead of an alarming "Loading Error" retry prompt.
+        setAccessRestricted(true);
+      } else {
+        setAccessRestricted(false);
+        const transientError =
+          (invoicesRes.error && !isPermissionError(invoicesRes.error)) ||
+          (quotesRes.error && !isPermissionError(quotesRes.error)) ||
+          (clientsRes.error && !isPermissionError(clientsRes.error));
+        if (transientError) {
+          Alert.alert('Loading Error', 'Some payment data could not be loaded. Pull down to retry.');
+        }
       }
     } catch (error) {
       console.warn('Failed to fetch money hub data:', error);
+      setAccessRestricted(false);
       Alert.alert('Loading Error', 'Could not load payment data. Pull down to retry.');
     } finally {
       setIsLoading(false);
@@ -1221,6 +1241,38 @@ export default function PaymentHubScreen() {
     );
   }
 
+  if (accessRestricted) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.header}>
+          <PressableRow style={styles.backButton} onPress={() => router.back()} >
+            <Feather name="arrow-left" size={24} color={colors.foreground} />
+          </PressableRow>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Payment Hub</Text>
+            <Text style={styles.headerSubtitle}>Track invoices, payments & quotes</Text>
+          </View>
+        </View>
+        <View style={styles.restrictedContainer}>
+          <View style={styles.restrictedIcon}>
+            <Feather name="lock" size={28} color={colors.mutedForeground} />
+          </View>
+          <Text style={styles.restrictedTitle}>Payments not available</Text>
+          <Text style={styles.restrictedText}>
+            Your role in this business doesn{'\u2019'}t include access to invoices and
+            payments. Switch to your own workspace, or ask the business owner for
+            access.
+          </Text>
+          <PressableRow style={styles.restrictedButton} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={16} color={colors.primaryForeground} />
+            <Text style={styles.restrictedButtonText}>Go back</Text>
+          </PressableRow>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -1392,6 +1444,49 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   headerSubtitle: {
     fontSize: 13,
     color: colors.mutedForeground,
+  },
+  restrictedContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing['2xl'],
+  },
+  restrictedIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  restrictedTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.foreground,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  restrictedText: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  restrictedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.lg,
+  },
+  restrictedButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.primaryForeground,
   },
   scrollView: {
     flex: 1,

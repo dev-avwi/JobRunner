@@ -23,7 +23,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { getAvatarColor as getAvatarColorUtil } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
-import { spacing, radius, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, shadows } from '../../src/lib/design-tokens';
 import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 
@@ -139,10 +139,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.card,
     paddingHorizontal: spacing.md,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
     gap: spacing.sm,
+    ...shadows.sm,
+    zIndex: 10,
   },
   backButton: {
     width: 32,
@@ -405,7 +407,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   messageBubbleOther: {
-    backgroundColor: colors.isDark ? colors.muted : '#e9ecef',
+    backgroundColor: colors.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     borderBottomLeftRadius: 4,
   },
   messageText: {
@@ -417,7 +421,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.white,
   },
   messageTextOther: {
-    color: colors.isDark ? '#e4e6ea' : '#1c1e21',
+    color: colors.foreground,
   },
   messageFooter: {
     flexDirection: 'row',
@@ -434,7 +438,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: 'rgba(255,255,255,0.6)',
   },
   messageTimeOther: {
-    color: colors.isDark ? '#8a8d91' : '#65676b',
+    color: colors.mutedForeground,
   },
   attachmentPreview: {
     marginTop: spacing.sm,
@@ -518,7 +522,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   composerInputWrapper: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.muted,
     borderRadius: 22,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,

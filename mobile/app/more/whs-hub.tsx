@@ -103,7 +103,8 @@ const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: num
   pageTitle: { fontSize: 28, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 },
   pageSubtitle: { fontSize: 14, color: colors.mutedForeground, marginTop: spacing.xs, lineHeight: 20 },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  statCard: { flex: 1, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder },
+  statCard: { flex: 1, backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, ...shadows.sm },
+  signRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
   statIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   statValue: { fontSize: 16, fontWeight: '700', color: colors.foreground },
   statLabel: { fontSize: 11, color: colors.mutedForeground, marginTop: 1 },
@@ -691,7 +692,7 @@ export default function WhsHubScreen() {
           <Text style={[styles.badgeText, { color: colors.info }]}>{installed}/{signs.length} Installed</Text>
         </View>
         {signs.map(sign => (
-          <TouchableOpacity key={sign.id} onPress={() => toggleSignInstalled(sign)} style={styles.checkRow}>
+          <TouchableOpacity key={sign.id} onPress={() => toggleSignInstalled(sign)} style={styles.signRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: spacing.sm }}>
               <Feather name={sign.isInstalled ? 'check-circle' : 'circle'} size={20} color={sign.isInstalled ? colors.success : colors.mutedForeground} />
               <View>
