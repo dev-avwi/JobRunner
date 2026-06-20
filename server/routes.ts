@@ -45713,7 +45713,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const todaysJobsList = enrichedJobs.filter(j => {
         if (pendingStatuses.includes(j.assignmentStatus)) return false;
         if (j.assignmentStatus === 'declined') return false;
-        if (!j.scheduledAt) return j.status === 'in_progress';
+        // In-progress jobs are active work — always show them, even if scheduled for another day
+        if (j.status === 'in_progress') return true;
+        if (!j.scheduledAt) return false;
         const d = new Date(j.scheduledAt);
         return d >= todayStart && d < todayEnd;
       }).sort((a, b) => {
@@ -45842,7 +45844,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       // Jobs completed this month — across both subcontracted work and the user's own solo jobs
       const jobsCompletedMonth = allRelevantJobs.filter(j => {
-        if (j.status !== 'completed') return false;
+        if (j.status !== 'done' && j.status !== 'invoiced') return false;
         const c = j.completedAt ? new Date(j.completedAt) : null;
         return c ? c >= monthStart : false;
       }).length;

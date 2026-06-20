@@ -93,3 +93,4 @@
 - [Personal profile workspace gating](workspace-personal-profile-gating.md) — my-businesses hides Personal profile for pure workers (show only owners/subcontractors); don't fake activeBusinessId, switcher disables the active card.
 - [Role-gated UI foreground flicker](role-gated-ui-foreground-flicker.md) — section gated on a useUserRole flag flashes in/out on app resume; cache is DELETED on foreground so role briefly falls back. Latch the visibility in the component.
 - [Worker presence state blast radius](worker-state-blast-radius.md) — adding/removing a worker state must touch server validStates, shared WORKER_STATES/_CONFIG, mobile MY STATUS pills+display colors, AND team-operations pill/subtitle chain (defaults to "Available" otherwise).
+- [Job completed status vocab](job-completed-status-vocab.md) — finished job is status 'done' (+ 'invoiced'), NEVER 'completed'; filtering on 'completed' silently returns 0/empty (bit the subbie dashboard jobs-completed stat).
