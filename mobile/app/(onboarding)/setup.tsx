@@ -414,6 +414,13 @@ export default function OnboardingSetupScreen() {
     } else {
       await clearOnboardingSetupFailure(userId);
     }
+    // Re-resolve the authoritative role now that the join/redeem has committed.
+    // fetchBusinessSettings does NOT refresh roleInfo, so without this a freshly
+    // joined subcontractor/worker lands on the dashboard with the stale owner
+    // default role and sees the Owner dashboard until a manual reload.
+    try {
+      await useAuthStore.getState().fetchRoleInfo();
+    } catch {}
   };
 
   const handleOwnerComplete = async () => {
