@@ -485,9 +485,9 @@ export class AuthService {
     }
   }
 
-  static async linkGoogleAccount(userId: string, googleId: string): Promise<void> {
+  static async linkGoogleAccount(userId: string, googleId: string, profileImageUrl?: string | null): Promise<void> {
     try {
-      await storage.linkGoogleAccount(userId, googleId);
+      await storage.linkGoogleAccount(userId, googleId, profileImageUrl);
     } catch (error) {
       console.error('Error linking Google account:', error);
       throw error;

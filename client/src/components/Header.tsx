@@ -16,7 +16,7 @@ import { useLocation } from "wouter";
 import { useAppMode } from "@/hooks/use-app-mode";
 import { useQuery } from "@tanstack/react-query";
 import appIconUrl from '@assets/jobrunner-logo-cropped.png';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,21 +59,20 @@ export default function Header({
   
   // Fetch current user data
   const { data: user } = useQuery<{
-    id: number;
+    id: string;
     email: string;
     firstName?: string;
     lastName?: string;
     businessName?: string;
+    profileImageUrl?: string | null;
+    themeColor?: string | null;
   }>({ queryKey: ["/api/auth/me"] });
   
-  // Get display name and initials
+  // Get display name
   const displayName = user?.businessName || 
     (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) || 
     'User';
   const userEmail = user?.email || '';
-  const initials = user?.firstName && user?.lastName 
-    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-    : user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
   
   // Add keyboard shortcut for search (Cmd+K / Ctrl+K)
   useEffect(() => {
@@ -218,10 +217,18 @@ export default function Header({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full" data-testid="button-profile-menu">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="" />
-                <AvatarFallback data-testid="avatar-initials">{initials}</AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                className="h-8 w-8"
+                fallbackClassName="text-xs"
+                user={{
+                  id: user?.id,
+                  firstName: user?.firstName,
+                  lastName: user?.lastName,
+                  email: user?.email,
+                  photoUrl: user?.profileImageUrl,
+                  themeColor: user?.themeColor,
+                }}
+              />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end">

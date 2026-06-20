@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { 
   X, 
@@ -226,10 +226,11 @@ export function ChatWidget({ isOpen, onClose, targetUser, jobId, jobTitle, mode 
         {/* Header */}
         <div className="shrink-0 p-3 border-b bg-muted/30 flex items-center gap-3">
           {mode === 'direct' && targetUser ? (
-            <Avatar className="h-8 w-8 shrink-0">
-              <AvatarImage src={targetUser.profileImageUrl || undefined} />
-              <AvatarFallback className="text-xs">{getInitials(targetUser)}</AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              className="h-8 w-8 shrink-0"
+              fallbackClassName="text-xs"
+              user={{ id: targetUser.id, firstName: targetUser.firstName, lastName: targetUser.lastName, email: targetUser.email, photoUrl: targetUser.profileImageUrl }}
+            />
           ) : mode === 'job' ? (
             <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
               <Briefcase className="h-4 w-4 text-amber-600" />
@@ -375,12 +376,11 @@ export function ChatWidget({ isOpen, onClose, targetUser, jobId, jobTitle, mode 
                       return (
                         <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                           {!isOwn && (
-                            <Avatar className="h-6 w-6 mr-2 shrink-0">
-                              <AvatarImage src={msg.senderAvatar || undefined} />
-                              <AvatarFallback className="text-[10px]">
-                                {msg.senderName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                              className="h-6 w-6 mr-2 shrink-0"
+                              fallbackClassName="text-[10px]"
+                              user={{ id: msg.userId || msg.senderName, name: msg.senderName, photoUrl: msg.senderAvatar }}
+                            />
                           )}
                           <div
                             className={cn(

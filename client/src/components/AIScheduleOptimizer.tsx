@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/UserAvatar';
 import { Sparkles, MapPin, Clock, Route, Calendar as CalendarIcon, ChevronRight, Lightbulb, Loader2, Navigation, AlertTriangle, Users, Wrench, User, HardHat, ArrowRight } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -328,11 +328,11 @@ export function AIScheduleOptimizer({ onApplySchedule, className }: AIScheduleOp
                     const count = workerJobCounts[member.memberId] || 0;
                     return (
                       <div key={member.id} className="flex items-center gap-1.5 text-xs">
-                        <Avatar className="h-5 w-5">
-                          <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
-                            {getInitials(member.name)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          className="h-5 w-5"
+                          fallbackClassName="text-[8px]"
+                          user={{ id: member.memberId, name: member.name }}
+                        />
                         <span className="text-foreground">{member.name.split(' ')[0]}</span>
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                           {count} job{count !== 1 ? 's' : ''}

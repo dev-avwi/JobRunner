@@ -218,6 +218,7 @@ export function JobChat({ jobId, currentUserId, className }: JobChatProps) {
                     id={msg.id}
                     message={msg.message}
                     messageType={msg.messageType}
+                    senderId={msg.userId}
                     senderName={msg.senderName}
                     senderAvatar={msg.senderAvatar}
                     isCurrentUser={msg.userId === currentUserId}

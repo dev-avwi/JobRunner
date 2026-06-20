@@ -82,6 +82,8 @@ import {
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogoUpload } from "./LogoUpload";
+import { ObjectUploader } from "./ObjectUploader";
+import { UserAvatar } from "@/components/UserAvatar";
 import { QuickRepliesSettings } from "./QuickRepliesSettings";
 import { useToast } from "@/hooks/use-toast";
 import DataSafetyBanner from "./DataSafetyBanner";
@@ -482,6 +484,31 @@ export default function Settings({
     onError: (error: any) => {
       toast({
         title: "Failed to update profile",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update profile photo (separate from the edit form so it works inline)
+  const updatePhotoMutation = useMutation({
+    mutationFn: async (profileImageUrl: string | null) => {
+      const response = await apiRequest('PATCH', '/api/profile/me', { profileImageUrl });
+      return response.json();
+    },
+    onSuccess: (_data, profileImageUrl) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      toast({
+        title: profileImageUrl ? "Photo updated" : "Photo removed",
+        description: profileImageUrl
+          ? "Your profile photo has been saved."
+          : "Your profile photo has been removed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update photo",
         description: error.message || "Please try again.",
         variant: "destructive",
       });
@@ -1035,6 +1062,42 @@ export default function Settings({
                   )}
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <UserAvatar
+                      className="h-16 w-16 text-lg"
+                      user={{
+                        id: String(profile.user.id),
+                        firstName: profile.user.firstName,
+                        lastName: profile.user.lastName,
+                        email: profile.user.email,
+                        photoUrl: profile.user.profileImageUrl,
+                      }}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ObjectUploader
+                        maxFileSize={5 * 1024 * 1024}
+                        uploadEndpoint="/api/objects/upload-file"
+                        onComplete={(url) => updatePhotoMutation.mutate(url)}
+                        accept="image/*"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Upload className="h-4 w-4" />
+                          <span>{profile.user.profileImageUrl ? "Change photo" : "Upload photo"}</span>
+                        </div>
+                      </ObjectUploader>
+                      {profile.user.profileImageUrl && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => updatePhotoMutation.mutate(null)}
+                          disabled={updatePhotoMutation.isPending}
+                          data-testid="button-remove-photo"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>

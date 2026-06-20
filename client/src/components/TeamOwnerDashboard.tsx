@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import GettingStartedChecklist from "./GettingStartedChecklist";
@@ -305,12 +305,6 @@ export default function TeamOwnerDashboard({
 
   const cancelJobSelection = () => {
     setSelectedJob(null);
-  };
-
-  const getInitials = (member: TeamMember) => {
-    const first = member.firstName?.charAt(0) || '';
-    const last = member.lastName?.charAt(0) || '';
-    return (first + last).toUpperCase() || member.email?.charAt(0).toUpperCase() || 'T';
   };
 
   const getMemberName = (member: TeamMember) => {
@@ -728,14 +722,12 @@ export default function TeamOwnerDashboard({
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-2">
                         {teamMembers.slice(0, 4).map((member) => (
-                          <Avatar key={member.id} className="h-8 w-8 border-2 border-background">
-                            <AvatarFallback 
-                              className="text-xs font-medium"
-                              style={{ backgroundColor: 'hsl(var(--trade) / 0.1)', color: 'hsl(var(--trade))' }}
-                            >
-                              {getInitials(member)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            key={member.id}
+                            className="h-8 w-8 border-2 border-background"
+                            fallbackClassName="text-xs font-medium"
+                            user={{ id: member.userId || member.id, firstName: member.firstName, lastName: member.lastName, email: member.email, photoUrl: (member as any).profileImageUrl }}
+                          />
                         ))}
                         {teamMembers.length > 4 && (
                           <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
@@ -804,14 +796,11 @@ export default function TeamOwnerDashboard({
                       >
                         <div className="flex items-center gap-3">
                           <div className="relative">
-                            <Avatar className="h-9 w-9">
-                              <AvatarFallback 
-                                className="text-sm font-medium"
-                                style={{ backgroundColor: 'hsl(var(--trade) / 0.1)', color: 'hsl(var(--trade))' }}
-                              >
-                                {getInitials(member)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                              className="h-9 w-9"
+                              fallbackClassName="text-sm font-medium"
+                              user={{ id: member.userId || member.id, firstName: member.firstName, lastName: member.lastName, email: member.email, photoUrl: (member as any).profileImageUrl }}
+                            />
                             <div 
                               className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background"
                               style={{ backgroundColor: getPresenceColor(getPresenceStatus(member.userId)) }}

@@ -64,6 +64,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import "leaflet/dist/leaflet.css";
+import { getInitials, getAvatarColor } from "@/lib/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 
 interface JobMapData {
   id: string;
@@ -206,11 +208,11 @@ function createJobIcon(status: string, isDark: boolean) {
 }
 
 function createTeamMemberIcon(member: TeamMemberLocation, isDark: boolean) {
-  const initials = member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const initials = getInitials(member.name, member.email);
   
-  const memberColor = member.themeColor || (member.isActive 
-    ? (member.isDriving ? ACTIVITY_COLORS.driving : member.activityStatus === 'working' ? ACTIVITY_COLORS.working : ACTIVITY_COLORS.online)
-    : ACTIVITY_COLORS.offline);
+  // Identity colour stays constant regardless of work status (themeColor wins,
+  // else deterministic by stable id). Live status shows on the activity dot only.
+  const memberColor = getAvatarColor(member.id, member.themeColor);
   
   const activityColor = member.isActive 
     ? (member.isDriving ? ACTIVITY_COLORS.driving : member.activityStatus === 'working' ? ACTIVITY_COLORS.working : ACTIVITY_COLORS.online)
@@ -1493,20 +1495,20 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
               <Popup>
                 <div className="min-w-[260px] p-2">
                   <div className="flex items-center gap-3 mb-4">
-                    <div 
-                      className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg border-2"
-                      style={{
-                        backgroundColor: member.themeColor || (member.isActive 
-                          ? (member.isDriving ? ACTIVITY_COLORS.driving : member.activityStatus === 'working' ? ACTIVITY_COLORS.working : ACTIVITY_COLORS.online)
-                          : ACTIVITY_COLORS.offline),
-                        backgroundImage: member.profileImageUrl ? `url(${member.profileImageUrl})` : undefined,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        borderColor: isDark ? '#4b5563' : '#e5e7eb',
+                    <UserAvatar
+                      className="h-14 w-14 text-lg"
+                      showStatus
+                      statusColor={member.isActive 
+                        ? (member.isDriving ? ACTIVITY_COLORS.driving : member.activityStatus === 'working' ? ACTIVITY_COLORS.working : ACTIVITY_COLORS.online)
+                        : ACTIVITY_COLORS.offline}
+                      user={{
+                        id: member.id,
+                        name: member.name,
+                        email: member.email,
+                        photoUrl: member.profileImageUrl,
+                        themeColor: member.themeColor,
                       }}
-                    >
-                      {!member.profileImageUrl && member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </div>
+                    />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{member.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
@@ -2159,11 +2161,9 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
           <div className="overflow-x-auto pb-2 scrollbar-hide pointer-events-auto">
             <div className="flex gap-2 w-max">
               {sortedTeamLocations.map((member) => {
-                const initials = member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
                 const activityFallback = member.isActive 
                   ? (member.isDriving ? ACTIVITY_COLORS.driving : member.activityStatus === 'working' ? ACTIVITY_COLORS.working : ACTIVITY_COLORS.online)
                   : ACTIVITY_COLORS.offline;
-                const color = member.themeColor || activityFallback;
                 
                 return (
                   <div
@@ -2175,17 +2175,19 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
                       className="flex items-center gap-2 hover-elevate transition-all rounded-full"
                       data-testid={`button-team-member-${member.id}`}
                     >
-                      <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs border-2"
-                        style={{
-                          backgroundColor: color,
-                          backgroundImage: member.profileImageUrl ? `url(${member.profileImageUrl})` : undefined,
-                          backgroundSize: 'cover',
-                          borderColor: color,
+                      <UserAvatar
+                        className="h-8 w-8"
+                        fallbackClassName="text-xs"
+                        showStatus
+                        statusColor={activityFallback}
+                        user={{
+                          id: member.id,
+                          name: member.name,
+                          email: member.email,
+                          photoUrl: member.profileImageUrl,
+                          themeColor: member.themeColor,
                         }}
-                      >
-                        {!member.profileImageUrl && initials}
-                      </div>
+                      />
                       <div className="text-left">
                         <p className="text-sm font-medium leading-tight">
                           {member.name.split(' ')[0]}

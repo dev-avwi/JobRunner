@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,22 +48,14 @@ export function PresenceIndicator({ editors }: { editors: JobEditor[] }) {
   return (
     <div className="flex items-center gap-2">
       <div className="flex -space-x-2">
-        {editors.slice(0, 3).map((editor) => {
-          const initials = editor.userName
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-
-          return (
-            <Avatar key={editor.userId} className="h-7 w-7 border-2 border-background">
-              <AvatarFallback className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          );
-        })}
+        {editors.slice(0, 3).map((editor) => (
+          <UserAvatar
+            key={editor.userId}
+            className="h-7 w-7 border-2 border-background"
+            fallbackClassName="text-[10px]"
+            user={{ id: editor.userId, name: editor.userName }}
+          />
+        ))}
       </div>
       <span className="text-xs text-muted-foreground">
         {editors.length === 1

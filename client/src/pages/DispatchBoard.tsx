@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -589,11 +589,16 @@ function KanbanBoard({ dispatchJobs, teamMembers: kanbanTeam }: { dispatchJobs: 
                             <div className="flex items-center gap-2 flex-wrap">
                               {firstAssignment && (
                                 <div className="flex items-center gap-1">
-                                  <Avatar className="h-4 w-4">
-                                    <AvatarFallback className="text-[8px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.2)' }}>
-                                      {(firstAssignment.memberFirstName?.[0] || '') + (firstAssignment.memberLastName?.[0] || '')}
-                                    </AvatarFallback>
-                                  </Avatar>
+                                  <UserAvatar
+                                    className="h-4 w-4"
+                                    fallbackClassName="text-[8px]"
+                                    user={{
+                                      id: firstAssignment.memberId || `${firstAssignment.memberFirstName || ''} ${firstAssignment.memberLastName || ''}`.trim(),
+                                      firstName: firstAssignment.memberFirstName,
+                                      lastName: firstAssignment.memberLastName,
+                                      email: firstAssignment.memberEmail,
+                                    }}
+                                  />
                                   <span className="text-[11px] text-muted-foreground truncate max-w-[80px]">
                                     {firstAssignment.memberFirstName}
                                   </span>
@@ -2064,12 +2069,17 @@ export default function DispatchBoard() {
                                               </div>
                                               <div className="flex items-center gap-1.5 mt-0.5">
                                                 {assignedMember && (
-                                                  <Avatar className="h-4 w-4 flex-shrink-0">
-                                                    <AvatarImage src={assignedMember.profileImageUrl} />
-                                                    <AvatarFallback className="text-[7px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.2)' }}>
-                                                      {(assignedMember.firstName?.[0] || '') + (assignedMember.lastName?.[0] || '')}
-                                                    </AvatarFallback>
-                                                  </Avatar>
+                                                  <UserAvatar
+                                                    className="h-4 w-4 flex-shrink-0"
+                                                    fallbackClassName="text-[7px]"
+                                                    user={{
+                                                      id: assignedMember.memberId || assignedMember.id,
+                                                      firstName: assignedMember.firstName,
+                                                      lastName: assignedMember.lastName,
+                                                      email: assignedMember.email,
+                                                      photoUrl: assignedMember.profileImageUrl,
+                                                    }}
+                                                  />
                                                 )}
                                                 <span className={`text-xs font-medium truncate ${statusStyle.text}`}>
                                                   {job.title}
@@ -2111,12 +2121,17 @@ export default function DispatchBoard() {
                         {visibleMembers.map(member => (
                           <th key={member.id} className="border-b border-l border-border p-2 text-left" style={{ minWidth: 140 }}>
                             <div className="flex items-center gap-2">
-                              <Avatar className="h-7 w-7 flex-shrink-0">
-                                <AvatarImage src={member.profileImageUrl} />
-                                <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.2)' }}>
-                                  {(member.firstName?.[0] || '') + (member.lastName?.[0] || member.email[0] || '')}
-                                </AvatarFallback>
-                              </Avatar>
+                              <UserAvatar
+                                className="h-7 w-7 flex-shrink-0"
+                                fallbackClassName="text-[10px]"
+                                user={{
+                                  id: member.memberId || member.id,
+                                  firstName: member.firstName,
+                                  lastName: member.lastName,
+                                  email: member.email,
+                                  photoUrl: member.profileImageUrl,
+                                }}
+                              />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium truncate">
                                   {member.firstName} {member.lastName?.[0] ? member.lastName[0] + '.' : ''}
@@ -2372,11 +2387,17 @@ export default function DispatchBoard() {
                                   <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-dashed">
                                     <Sparkles className="h-3 w-3 flex-shrink-0" style={{ color: 'hsl(var(--trade))' }} />
                                     <span className="text-[10px] text-muted-foreground">Available:</span>
-                                    <Avatar className="h-3.5 w-3.5">
-                                      <AvatarFallback className="text-[7px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.15)' }}>
-                                        {(bestFit.firstName?.[0] || '') + (bestFit.lastName?.[0] || '')}
-                                      </AvatarFallback>
-                                    </Avatar>
+                                    <UserAvatar
+                                      className="h-3.5 w-3.5"
+                                      fallbackClassName="text-[7px]"
+                                      user={{
+                                        id: (bestFit as any).memberId || bestFit.id,
+                                        firstName: bestFit.firstName,
+                                        lastName: bestFit.lastName,
+                                        email: bestFit.email,
+                                        photoUrl: bestFit.profileImageUrl,
+                                      }}
+                                    />
                                     <span className="text-[10px] font-medium truncate">
                                       {bestFit.firstName}
                                     </span>
@@ -2428,11 +2449,17 @@ export default function DispatchBoard() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="relative">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.15)' }}>
-                              {(member.firstName?.[0] || '') + (member.lastName?.[0] || '')}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            className="h-6 w-6"
+                            fallbackClassName="text-[10px]"
+                            user={{
+                              id: (member as any).memberId || (member as any).userId || member.id,
+                              firstName: member.firstName,
+                              lastName: member.lastName,
+                              email: member.email,
+                              photoUrl: member.profileImageUrl,
+                            }}
+                          />
                           <span
                             className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background"
                             style={{ backgroundColor: stateHexColors[wsState] || '#22c55e' }}
@@ -2992,11 +3019,17 @@ export default function DispatchBoard() {
                   {teamMembersWithJobs.map(member => (
                     <SelectItem key={member.memberId} value={member.memberId}>
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-5 w-5">
-                          <AvatarFallback className="text-[10px]">
-                            {(member.firstName?.[0] || '') + (member.lastName?.[0] || '')}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          className="h-5 w-5"
+                          fallbackClassName="text-[10px]"
+                          user={{
+                            id: member.memberId,
+                            firstName: member.firstName,
+                            lastName: member.lastName,
+                            email: member.email,
+                            photoUrl: member.profileImageUrl,
+                          }}
+                        />
                         {member.firstName} {member.lastName}
                       </div>
                     </SelectItem>
@@ -3079,11 +3112,17 @@ export default function DispatchBoard() {
                   {teamMembers.filter(m => m.isActive).map(member => (
                     <SelectItem key={member.memberId} value={member.memberId}>
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-4 w-4">
-                          <AvatarFallback className="text-[7px]">
-                            {(member.firstName?.[0] || '') + (member.lastName?.[0] || '')}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          className="h-4 w-4"
+                          fallbackClassName="text-[7px]"
+                          user={{
+                            id: member.memberId,
+                            firstName: member.firstName,
+                            lastName: member.lastName,
+                            email: member.email,
+                            photoUrl: member.profileImageUrl,
+                          }}
+                        />
                         {member.firstName} {member.lastName}
                       </div>
                     </SelectItem>
@@ -3298,12 +3337,17 @@ export default function DispatchBoard() {
                       {visibleMembers.map(member => (
                         <th key={member.id} className="border-b border-l border-border p-2 text-left" style={{ minWidth: 160 }}>
                           <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7 flex-shrink-0">
-                              <AvatarImage src={member.profileImageUrl} />
-                              <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.2)' }}>
-                                {(member.firstName?.[0] || '') + (member.lastName?.[0] || member.email[0] || '')}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                              className="h-7 w-7 flex-shrink-0"
+                              fallbackClassName="text-[10px]"
+                              user={{
+                                id: member.memberId || member.id,
+                                firstName: member.firstName,
+                                lastName: member.lastName,
+                                email: member.email,
+                                photoUrl: member.profileImageUrl,
+                              }}
+                            />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">
                                 {member.firstName} {member.lastName?.[0] ? member.lastName[0] + '.' : ''}

@@ -440,7 +440,7 @@ export interface IStorage {
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   updateUserJobCount(id: string, count: number): Promise<User | undefined>;
   resetUserJobCount(id: string, nextResetDate: Date): Promise<User | undefined>;
-  linkGoogleAccount(userId: string, googleId: string): Promise<void>;
+  linkGoogleAccount(userId: string, googleId: string, profileImageUrl?: string | null): Promise<void>;
   linkAppleAccount(userId: string, appleId: string): Promise<void>;
   linkXeroAccount(userId: string, xeroId: string): Promise<void>;
 
@@ -1488,10 +1488,25 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
-  async linkGoogleAccount(userId: string, googleId: string): Promise<void> {
+  async linkGoogleAccount(userId: string, googleId: string, profileImageUrl?: string | null): Promise<void> {
+    // Only adopt the Google picture when the user has none yet, so we never
+    // clobber a photo the user uploaded themselves.
+    let setPicture = false;
+    if (profileImageUrl) {
+      const existing = await db
+        .select({ profileImageUrl: users.profileImageUrl })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      setPicture = !existing[0]?.profileImageUrl;
+    }
     await db
       .update(users)
-      .set({ googleId: googleId, updatedAt: new Date() })
+      .set({
+        googleId: googleId,
+        ...(setPicture ? { profileImageUrl } : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(users.id, userId));
     const { invalidateUser } = await import('./cache');
     invalidateUser(userId);

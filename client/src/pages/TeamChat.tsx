@@ -200,6 +200,7 @@ export default function TeamChatPage() {
                   id={msg.id}
                   message={msg.message}
                   messageType={msg.messageType}
+                  senderId={msg.senderId}
                   senderName={msg.senderName}
                   senderAvatar={msg.senderAvatar}
                   isCurrentUser={currentUser ? msg.senderId === currentUser.id : false}

@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -950,10 +950,11 @@ function WeekGridView({
             {allMembers.map((member: TeamMember) => (
               <div key={member.id} className="grid grid-cols-8 border-b last:border-b-0" data-testid={`team-row-${member.id}`}>
                 <div className="p-3 border-r flex items-start gap-2 bg-muted/10">
-                  <Avatar className="h-8 w-8 flex-shrink-0">
-                    <AvatarImage src={member.profileImageUrl} />
-                    <AvatarFallback className="text-xs">{getInitials(member.firstName, member.lastName, member.email)}</AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    className="h-8 w-8 flex-shrink-0"
+                    fallbackClassName="text-xs"
+                    user={{ id: member.memberId, firstName: member.firstName, lastName: member.lastName, email: member.email, photoUrl: member.profileImageUrl }}
+                  />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{getMemberDisplayName(member)}</p>
                     <p className="text-xs text-muted-foreground truncate">{member.roleName}</p>
@@ -1123,10 +1124,11 @@ function TimelineView({
                 return (
                   <div key={member.id} className={`flex-1 min-w-[140px] ${mIdx < allMembers.length - 1 ? 'border-r' : ''}`}>
                     <div className="h-10 border-b flex items-center justify-center gap-1 px-1 bg-muted/10">
-                      <Avatar className="h-5 w-5 flex-shrink-0">
-                        <AvatarImage src={member.profileImageUrl} />
-                        <AvatarFallback className="text-[8px]">{getInitials(member.firstName, member.lastName, member.email)}</AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        className="h-5 w-5 flex-shrink-0"
+                        fallbackClassName="text-[8px]"
+                        user={{ id: member.memberId, firstName: member.firstName, lastName: member.lastName, email: member.email, photoUrl: member.profileImageUrl }}
+                      />
                       <span className="text-xs font-medium truncate">{getMemberDisplayName(member)}</span>
                     </div>
 

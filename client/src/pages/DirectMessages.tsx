@@ -4,7 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
@@ -175,10 +175,16 @@ export default function DirectMessages() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={selectedConversation.profileImageUrl || undefined} />
-            <AvatarFallback>{getInitials(selectedConversation)}</AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            className="h-10 w-10"
+            user={{
+              id: selectedConversation.id,
+              firstName: selectedConversation.firstName,
+              lastName: selectedConversation.lastName,
+              email: selectedConversation.email,
+              photoUrl: selectedConversation.profileImageUrl,
+            }}
+          />
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate" data-testid="text-conversation-name">
               {getUserDisplayName(selectedConversation)}
@@ -302,10 +308,16 @@ export default function DirectMessages() {
                       onClick={() => setSelectedConversation(conversation.otherUser)}
                       data-testid={`conversation-${conversation.otherUser.id}`}
                     >
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={conversation.otherUser.profileImageUrl || undefined} />
-                        <AvatarFallback>{getInitials(conversation.otherUser)}</AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        className="h-12 w-12"
+                        user={{
+                          id: conversation.otherUser.id,
+                          firstName: conversation.otherUser.firstName,
+                          lastName: conversation.otherUser.lastName,
+                          email: conversation.otherUser.email,
+                          photoUrl: conversation.otherUser.profileImageUrl,
+                        }}
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-medium truncate">
@@ -343,10 +355,16 @@ export default function DirectMessages() {
                         onClick={() => setSelectedConversation(member)}
                         data-testid={`new-conversation-${member.id}`}
                       >
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={member.profileImageUrl || undefined} />
-                          <AvatarFallback>{getInitials(member)}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          className="h-12 w-12"
+                          user={{
+                            id: member.id,
+                            firstName: member.firstName,
+                            lastName: member.lastName,
+                            email: member.email,
+                            photoUrl: member.profileImageUrl,
+                          }}
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">
                             {getUserDisplayName(member)}

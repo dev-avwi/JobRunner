@@ -5,7 +5,7 @@ import L from "leaflet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -332,18 +332,12 @@ export default function WorkerCommandCenter({ memberId, open, onOpenChange }: Wo
               <div className="p-6 pb-4">
                 <div className="flex items-start gap-4">
                   <div className="relative">
-                    <Avatar 
-                      className="h-20 w-20 border-4 shadow-lg" 
+                    <UserAvatar
+                      className="h-20 w-20 border-4 shadow-lg text-xl"
+                      fallbackClassName="font-bold"
                       style={{ borderColor: themeColor }}
-                    >
-                      <AvatarImage src={data.member.profileImageUrl || undefined} />
-                      <AvatarFallback 
-                        style={{ backgroundColor: themeColor }} 
-                        className="text-white text-xl font-bold"
-                      >
-                        {getInitials(data.member.firstName, data.member.lastName)}
-                      </AvatarFallback>
-                    </Avatar>
+                      user={{ id: data.member.memberId, firstName: data.member.firstName, lastName: data.member.lastName, email: data.member.email, photoUrl: data.member.profileImageUrl, themeColor: data.member.themeColor }}
+                    />
                     {data.location && (
                       <div 
                         className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-background flex items-center justify-center ${

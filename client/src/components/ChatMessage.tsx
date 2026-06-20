@@ -1,5 +1,5 @@
 import { formatDistanceToNow, format } from "date-fns";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pin, Trash2, AlertCircle, FileText, Info } from "lucide-react";
@@ -8,6 +8,7 @@ interface ChatMessageProps {
   id: string;
   message: string;
   messageType?: string;
+  senderId?: string | null;
   senderName: string;
   senderAvatar?: string | null;
   isCurrentUser: boolean;
@@ -26,6 +27,7 @@ export function ChatMessage({
   id,
   message,
   messageType = 'text',
+  senderId,
   senderName,
   senderAvatar,
   isCurrentUser,
@@ -39,15 +41,6 @@ export function ChatMessage({
   onPin,
   canPin,
 }: ChatMessageProps) {
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   const timeAgo = formatDistanceToNow(new Date(createdAt), { addSuffix: true });
   const timeOnly = format(new Date(createdAt), 'h:mm a');
 
@@ -89,10 +82,11 @@ export function ChatMessage({
       data-testid={`chat-message-${id}`}
     >
       {!isCurrentUser && (
-        <Avatar className="w-7 h-7 shrink-0">
-          {senderAvatar && <AvatarImage src={senderAvatar} alt={senderName} />}
-          <AvatarFallback className="text-[10px]">{getInitials(senderName)}</AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          className="w-7 h-7 shrink-0"
+          fallbackClassName="text-[10px]"
+          user={{ id: senderId || senderName, name: senderName, photoUrl: senderAvatar }}
+        />
       )}
       
       <div className={`flex flex-col max-w-[80%] ${isCurrentUser ? 'items-end' : 'items-start'}`}>

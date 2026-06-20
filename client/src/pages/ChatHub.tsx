@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -1918,10 +1918,16 @@ export default function ChatHub() {
                           <MessageCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                         </div>
                       ) : (
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={item.avatar || undefined} />
-                          <AvatarFallback className="text-xs" style={item.themeColor ? { backgroundColor: item.themeColor, color: 'white' } : undefined}>{item.avatarFallback}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          className="h-9 w-9"
+                          fallbackClassName="text-xs"
+                          user={{
+                            id: item.data?.id ?? item.title,
+                            name: item.title,
+                            photoUrl: item.avatar,
+                            themeColor: item.themeColor,
+                          }}
+                        />
                       )}
                       {item.isOnline && (
                         <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-background" />
@@ -2092,6 +2098,7 @@ export default function ChatHub() {
                     id={msg.id}
                     message={msg.message}
                     messageType={msg.messageType}
+                    senderId={msg.senderId}
                     senderName={msg.senderName}
                     senderAvatar={msg.senderAvatar}
                     isCurrentUser={msg.senderId === currentUser?.id}
@@ -2131,10 +2138,18 @@ export default function ChatHub() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="relative shrink-0">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={selectedDirectUser.profileImageUrl || undefined} />
-                <AvatarFallback className="text-xs" style={selectedConversation?.themeColor ? { backgroundColor: selectedConversation.themeColor, color: 'white' } : undefined}>{getInitials(getUserDisplayName(selectedDirectUser))}</AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                className="h-9 w-9"
+                fallbackClassName="text-xs"
+                user={{
+                  id: selectedDirectUser.id,
+                  firstName: selectedDirectUser.firstName,
+                  lastName: selectedDirectUser.lastName,
+                  email: selectedDirectUser.email,
+                  photoUrl: selectedDirectUser.profileImageUrl,
+                  themeColor: selectedConversation?.themeColor,
+                }}
+              />
               <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-background" />
             </div>
             <div className="flex-1 min-w-0">
@@ -2818,10 +2833,19 @@ export default function ChatHub() {
                       data-testid={`team-member-${member.userId}`}
                     >
                       <div className="relative">
-                        <Avatar className="h-7 w-7">
-                          <AvatarImage src={member.profileImageUrl || undefined} />
-                          <AvatarFallback className="text-[10px]" style={member.themeColor ? { backgroundColor: member.themeColor, color: 'white' } : undefined}>{getInitials(memberName)}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          className="h-7 w-7"
+                          fallbackClassName="text-[10px]"
+                          user={{
+                            id: member.userId || member.id,
+                            name: memberName,
+                            firstName: member.firstName,
+                            lastName: member.lastName,
+                            email: member.email,
+                            photoUrl: member.profileImageUrl,
+                            themeColor: member.themeColor,
+                          }}
+                        />
                         <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-background" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -2889,10 +2913,17 @@ export default function ChatHub() {
           
           <div className="p-4">
             <div className="flex flex-col items-center mb-4">
-              <Avatar className="h-16 w-16 mb-2">
-                <AvatarImage src={selectedDirectUser.profileImageUrl || undefined} />
-                <AvatarFallback style={selectedConversation?.themeColor ? { backgroundColor: selectedConversation.themeColor, color: 'white' } : undefined}>{getInitials(getUserDisplayName(selectedDirectUser))}</AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                className="h-16 w-16 mb-2"
+                user={{
+                  id: selectedDirectUser.id,
+                  firstName: selectedDirectUser.firstName,
+                  lastName: selectedDirectUser.lastName,
+                  email: selectedDirectUser.email,
+                  photoUrl: selectedDirectUser.profileImageUrl,
+                  themeColor: selectedConversation?.themeColor,
+                }}
+              />
               <h4 className="font-medium">{getUserDisplayName(selectedDirectUser)}</h4>
               <p className="text-sm text-muted-foreground">{selectedDirectUser.email}</p>
             </div>
@@ -3108,10 +3139,17 @@ export default function ChatHub() {
                 }}
                 disabled={assignWorkerMutation.isPending}
               >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={currentUser.profileImageUrl || undefined} />
-                  <AvatarFallback style={teamMembers.find(m => m.userId === currentUser.id)?.themeColor ? { backgroundColor: teamMembers.find(m => m.userId === currentUser.id)!.themeColor!, color: 'white' } : undefined}>{getInitials(getUserDisplayName(currentUser))}</AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  className="h-8 w-8"
+                  user={{
+                    id: currentUser.id,
+                    firstName: currentUser.firstName,
+                    lastName: currentUser.lastName,
+                    email: currentUser.email,
+                    photoUrl: currentUser.profileImageUrl,
+                    themeColor: teamMembers.find(m => m.userId === currentUser.id)?.themeColor,
+                  }}
+                />
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-medium">{getUserDisplayName(currentUser)}</span>
                   <span className="text-xs text-muted-foreground">Assign myself</span>
@@ -3130,10 +3168,18 @@ export default function ChatHub() {
                 }}
                 disabled={assignWorkerMutation.isPending}
               >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={member.profileImageUrl || undefined} />
-                  <AvatarFallback style={member.themeColor ? { backgroundColor: member.themeColor, color: 'white' } : undefined}>{getInitials(getTeamMemberName(member))}</AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  className="h-8 w-8"
+                  user={{
+                    id: member.userId || member.id,
+                    name: getTeamMemberName(member),
+                    firstName: member.firstName,
+                    lastName: member.lastName,
+                    email: member.email,
+                    photoUrl: member.profileImageUrl,
+                    themeColor: member.themeColor,
+                  }}
+                />
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-medium">{getTeamMemberName(member)}</span>
                   <span className="text-xs text-muted-foreground">{member.role}</span>

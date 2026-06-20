@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -477,11 +477,11 @@ export default function PayrollReports() {
                                   className="flex items-center gap-2.5 cursor-pointer"
                                   onClick={() => toggleWorker(w.id || w.userId)}
                                 >
-                                  <Avatar className="h-7 w-7">
-                                    <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.15)', color: 'hsl(var(--trade))' }}>
-                                      {initials}
-                                    </AvatarFallback>
-                                  </Avatar>
+                                  <UserAvatar
+                                    className="h-7 w-7"
+                                    fallbackClassName="text-[10px]"
+                                    user={{ id: w.userId || w.id || name, firstName: w.firstName, lastName: w.lastName, photoUrl: w.profileImageUrl, themeColor: w.themeColor }}
+                                  />
                                   <span className="font-medium truncate max-w-[120px]">{name}</span>
                                 </div>
                               </td>
@@ -601,11 +601,11 @@ export default function PayrollReports() {
                           <tr key={w.id || w.userId || `subcontractor-${index}`} className="border-b last:border-0">
                             <td className="px-4 py-2.5">
                               <div className="flex items-center gap-2.5">
-                                <Avatar className="h-7 w-7">
-                                  <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.15)', color: 'hsl(var(--trade))' }}>
-                                    {initials}
-                                  </AvatarFallback>
-                                </Avatar>
+                                <UserAvatar
+                                  className="h-7 w-7"
+                                  fallbackClassName="text-[10px]"
+                                  user={{ id: w.userId || w.id || name, firstName: w.firstName, lastName: w.lastName, photoUrl: w.profileImageUrl, themeColor: w.themeColor }}
+                                />
                                 <span className="font-medium truncate max-w-[120px]">{name}</span>
                               </div>
                             </td>
@@ -873,11 +873,11 @@ export default function PayrollReports() {
                             <tr key={w.id || w.userId || `util-worker-${index}`} className="border-b last:border-0">
                               <td className="px-4 py-2.5">
                                 <div className="flex items-center gap-2.5">
-                                  <Avatar className="h-7 w-7">
-                                    <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.15)', color: 'hsl(var(--trade))' }}>
-                                      {initials}
-                                    </AvatarFallback>
-                                  </Avatar>
+                                  <UserAvatar
+                                    className="h-7 w-7"
+                                    fallbackClassName="text-[10px]"
+                                    user={{ id: w.userId || w.id || name, firstName: w.firstName, lastName: w.lastName, photoUrl: w.profileImageUrl, themeColor: w.themeColor }}
+                                  />
                                   <span className="font-medium truncate max-w-[120px]">{name}</span>
                                 </div>
                               </td>
@@ -972,11 +972,11 @@ export default function PayrollReports() {
                         onClick={() => toggleDispute(entry.id)}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <Avatar className="h-8 w-8 flex-shrink-0">
-                            <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'hsl(var(--trade) / 0.15)', color: 'hsl(var(--trade))' }}>
-                              {getInitials(entry.workerName?.split(' ')[0], entry.workerName?.split(' ')[1])}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            className="h-8 w-8 flex-shrink-0"
+                            fallbackClassName="text-[10px]"
+                            user={{ id: entry.workerName || entry.id, name: entry.workerName || 'Unknown' }}
+                          />
                           <div className="min-w-0">
                             <p className="font-medium text-sm truncate">{entry.workerName || 'Unknown'}</p>
                             <p className="text-xs text-muted-foreground">

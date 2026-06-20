@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users, Clock, Briefcase, TrendingUp, ChevronDown, ChevronRight,
@@ -252,15 +252,11 @@ export default function WorkerPerformanceSection() {
                       className="flex items-center gap-3 p-4 cursor-pointer"
                       onClick={() => toggleWorker(w.memberId)}
                     >
-                      <Avatar className="h-9 w-9">
-                        {w.profileImageUrl && <AvatarImage src={w.profileImageUrl} alt={w.name} />}
-                        <AvatarFallback
-                          className="text-xs"
-                          style={{ backgroundColor: 'hsl(var(--trade) / 0.15)', color: 'hsl(var(--trade))' }}
-                        >
-                          {getInitials(w.name)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        className="h-9 w-9"
+                        fallbackClassName="text-xs"
+                        user={{ id: w.userId, name: w.name, photoUrl: w.profileImageUrl }}
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-sm truncate">{w.name}</span>

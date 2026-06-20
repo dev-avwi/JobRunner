@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -487,12 +488,17 @@ function LiveOpsTab() {
                             data-testid={`member-status-${member.id}`}
                           >
                             <div className="relative">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={member.profileImageUrl} />
-                                <AvatarFallback style={member.themeColor ? { backgroundColor: member.themeColor, color: 'white' } : undefined}>
-                                  {getInitials(member.firstName, member.lastName, member.email)}
-                                </AvatarFallback>
-                              </Avatar>
+                              <UserAvatar
+                                className="h-10 w-10"
+                                user={{
+                                  id: member.userId || member.id,
+                                  firstName: member.firstName,
+                                  lastName: member.lastName,
+                                  email: member.email,
+                                  photoUrl: member.profileImageUrl,
+                                  themeColor: member.themeColor,
+                                }}
+                              />
                               {(status === 'online' || status === 'on_job') && (
                                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-card" />
                               )}
@@ -873,12 +879,18 @@ function LiveOpsTab() {
               <SheetHeader>
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <Avatar className="h-16 w-16">
-                      <AvatarImage src={selectedMember.profileImageUrl} />
-                      <AvatarFallback className="text-lg" style={selectedMember.themeColor ? { backgroundColor: selectedMember.themeColor, color: 'white' } : undefined}>
-                        {getInitials(selectedMember.firstName, selectedMember.lastName, selectedMember.email)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      className="h-16 w-16"
+                      fallbackClassName="text-lg"
+                      user={{
+                        id: selectedMember.userId || selectedMember.id,
+                        firstName: selectedMember.firstName,
+                        lastName: selectedMember.lastName,
+                        email: selectedMember.email,
+                        photoUrl: selectedMember.profileImageUrl,
+                        themeColor: selectedMember.themeColor,
+                      }}
+                    />
                     {selectedMember.presence && (
                       <div 
                         className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-background ${
@@ -1595,12 +1607,26 @@ function TeamAdminTab() {
                 )}
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-                    <Avatar className={`h-11 w-11 sm:h-12 sm:w-12 shrink-0 ${isPending ? 'opacity-70' : ''}`}>
-                      <AvatarImage src={member.profileImageUrl} />
-                      <AvatarFallback className={isPending ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' : ''} style={!isPending && member.themeColor ? { backgroundColor: member.themeColor, color: 'white' } : undefined}>
-                        {getInitials(member.firstName, member.lastName, member.email)}
-                      </AvatarFallback>
-                    </Avatar>
+                    {isPending ? (
+                      <Avatar className="h-11 w-11 sm:h-12 sm:w-12 shrink-0 opacity-70">
+                        <AvatarImage src={member.profileImageUrl} />
+                        <AvatarFallback className="bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
+                          {getInitials(member.firstName, member.lastName, member.email)}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <UserAvatar
+                        className="h-11 w-11 sm:h-12 sm:w-12 shrink-0"
+                        user={{
+                          id: member.userId || member.id,
+                          firstName: member.firstName,
+                          lastName: member.lastName,
+                          email: member.email,
+                          photoUrl: member.profileImageUrl,
+                          themeColor: member.themeColor,
+                        }}
+                      />
+                    )}
                     <div className="min-w-0">
                       <p className="font-semibold text-base truncate">
                         {getWorkerDisplayName(member)}
@@ -2597,15 +2623,18 @@ function SchedulingTab() {
             )}
           </div>
           {assignedMember && (
-            <Avatar className="h-5 w-5 shrink-0">
-              <AvatarImage src={assignedMember.profileImageUrl} />
-              <AvatarFallback
-                className="text-[8px]"
-                style={assignedMember.themeColor ? { backgroundColor: assignedMember.themeColor, color: 'white' } : undefined}
-              >
-                {getInitials(assignedMember.firstName, assignedMember.lastName, assignedMember.email)}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              className="h-5 w-5 shrink-0"
+              fallbackClassName="text-[8px]"
+              user={{
+                id: assignedMember.userId || assignedMember.id,
+                firstName: assignedMember.firstName,
+                lastName: assignedMember.lastName,
+                email: assignedMember.email,
+                photoUrl: assignedMember.profileImageUrl,
+                themeColor: assignedMember.themeColor,
+              }}
+            />
           )}
           {isUnassigned && isOverdue && (
             <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0 mt-0.5" />
@@ -2764,15 +2793,18 @@ function SchedulingTab() {
                         const weeklyCount = getMemberWeeklyJobCount(member.userId);
                         return [
                           <div key={`name-${member.id}`} className="bg-card p-2 flex items-center gap-2 border-t border-border">
-                            <Avatar className="h-6 w-6 shrink-0">
-                              <AvatarImage src={member.profileImageUrl} />
-                              <AvatarFallback
-                                className="text-[10px]"
-                                style={member.themeColor ? { backgroundColor: member.themeColor, color: 'white' } : undefined}
-                              >
-                                {getInitials(member.firstName, member.lastName, member.email)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                              className="h-6 w-6 shrink-0"
+                              fallbackClassName="text-[10px]"
+                              user={{
+                                id: member.userId || member.id,
+                                firstName: member.firstName,
+                                lastName: member.lastName,
+                                email: member.email,
+                                photoUrl: member.profileImageUrl,
+                                themeColor: member.themeColor,
+                              }}
+                            />
                             <div className="flex-1 min-w-0">
                               <span className="text-xs font-medium truncate block">{member.firstName}</span>
                               {weeklyCount > 0 && (
@@ -3022,15 +3054,18 @@ function SchedulingTab() {
                         data-testid={`timeoff-${request.id}`}
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <Avatar className="h-7 w-7 shrink-0">
-                            <AvatarImage src={member?.profileImageUrl} />
-                            <AvatarFallback
-                              className="text-xs"
-                              style={member?.themeColor ? { backgroundColor: member.themeColor, color: 'white' } : undefined}
-                            >
-                              {getInitials(member?.firstName, member?.lastName, member?.email)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            className="h-7 w-7 shrink-0"
+                            fallbackClassName="text-xs"
+                            user={{
+                              id: member?.userId || member?.id || null,
+                              firstName: member?.firstName,
+                              lastName: member?.lastName,
+                              email: member?.email,
+                              photoUrl: member?.profileImageUrl,
+                              themeColor: member?.themeColor,
+                            }}
+                          />
                           <div className="min-w-0">
                             <p className="font-medium text-sm truncate">
                               {getWorkerDisplayName(member)}
@@ -3074,15 +3109,18 @@ function SchedulingTab() {
                     const member = teamMembers.find(m => m.id === leave.teamMemberId);
                     return (
                       <div key={leave.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
-                        <Avatar className="h-6 w-6 shrink-0">
-                          <AvatarImage src={member?.profileImageUrl} />
-                          <AvatarFallback
-                            className="text-[10px]"
-                            style={member?.themeColor ? { backgroundColor: member.themeColor, color: 'white' } : undefined}
-                          >
-                            {getInitials(member?.firstName, member?.lastName, member?.email)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          className="h-6 w-6 shrink-0"
+                          fallbackClassName="text-[10px]"
+                          user={{
+                            id: member?.userId || member?.id || null,
+                            firstName: member?.firstName,
+                            lastName: member?.lastName,
+                            email: member?.email,
+                            photoUrl: member?.profileImageUrl,
+                            themeColor: member?.themeColor,
+                          }}
+                        />
                         <span className="text-sm flex-1 truncate">{getWorkerDisplayName(member)}</span>
                         <span className="text-xs text-muted-foreground shrink-0">
                           {format(new Date(leave.startDate), 'MMM d')} - {format(new Date(leave.endDate), 'MMM d')}
@@ -3996,12 +4034,18 @@ function PerformanceTab() {
               >
                 <div className="p-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <Avatar className="h-9 w-9 sm:h-10 sm:w-10 shrink-0">
-                      <AvatarImage src={member.profileImageUrl} />
-                      <AvatarFallback className="text-xs sm:text-sm" style={member.themeColor ? { backgroundColor: member.themeColor, color: 'white' } : undefined}>
-                        {getInitials(member.firstName, member.lastName, member.email)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
+                      fallbackClassName="text-xs sm:text-sm"
+                      user={{
+                        id: member.userId || member.id,
+                        firstName: member.firstName,
+                        lastName: member.lastName,
+                        email: member.email,
+                        photoUrl: member.profileImageUrl,
+                        themeColor: member.themeColor,
+                      }}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm sm:text-base truncate">{getWorkerDisplayName(member)}</p>
                       <p className="text-xs text-muted-foreground truncate">{member.roleName || member.role || 'Team Member'}</p>

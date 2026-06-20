@@ -191,7 +191,7 @@ export function setupGoogleAuth(app: Express) {
           userId: emailUser.id,
           hadGoogleId: !!(emailUser as any).googleId
         });
-        await AuthService.linkGoogleAccount(emailUser.id, profile.id);
+        await AuthService.linkGoogleAccount(emailUser.id, profile.id, profile.photos?.[0]?.value || null);
         (emailUser as any).isNewUser = false;
         return done(null, emailUser);
       }

@@ -4490,7 +4490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Existing user found - link Google ID if not already linked
         console.log(`✅ Existing Google user found for mobile: ${email}`);
         if (!user.googleId) {
-          await AuthService.linkGoogleAccount(user.id, googleId);
+          await AuthService.linkGoogleAccount(user.id, googleId, profileImageUrl || null);
         }
       }
 
@@ -6548,13 +6548,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/profile/me", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const { firstName, lastName, phone } = req.body;
+      const { firstName, lastName, phone, profileImageUrl } = req.body;
       
       // Update user record
       const updatedUser = await storage.updateUser(userId, {
         firstName,
         lastName,
         phone,
+        ...(profileImageUrl !== undefined ? { profileImageUrl } : {}),
       });
       
       res.json({ success: true, user: updatedUser });
