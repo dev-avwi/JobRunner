@@ -29491,7 +29491,11 @@ Respond with JSON in this format:
         const hasRealOwnBusiness =
           !!ownSettings?.businessName &&
           ownSettings.businessName !== WORKER_PROFILE_PLACEHOLDER_NAME;
-        if (!hasRealOwnBusiness) {
+        // A subcontractor in their Personal profile (no active business) stays
+        // in owner-mode over their own solo data; only plain workers fall back
+        // to the joined business. Mirrors getUserContext().
+        const isSubcontractorAccount = ownSettings?.accountType === 'subcontractor';
+        if (!hasRealOwnBusiness && !isSubcontractorAccount) {
           myMembership = await storage.getTeamMembershipByMemberId(userId);
         }
       }

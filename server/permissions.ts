@@ -249,7 +249,13 @@ export async function getUserContext(userId: string): Promise<UserContext> {
     const hasRealOwnBusiness =
       !!ownSettings?.businessName &&
       ownSettings.businessName !== WORKER_PROFILE_PLACEHOLDER_NAME;
-    if (!hasRealOwnBusiness) {
+    // A subcontractor who has switched to their Personal profile (no active
+    // business) must resolve to owner-mode over their OWN solo data — never
+    // fall back to a joined-business membership, which would re-lock their
+    // ability to create their own jobs/quotes/invoices. Only plain workers
+    // inherit the invited business here.
+    const isSubcontractorAccount = ownSettings?.accountType === 'subcontractor';
+    if (!hasRealOwnBusiness && !isSubcontractorAccount) {
       teamMembership = await storage.getTeamMembershipByMemberId(userId);
     }
   }
