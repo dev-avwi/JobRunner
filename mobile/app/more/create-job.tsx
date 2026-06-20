@@ -823,6 +823,13 @@ export default function CreateJobScreen() {
       const response = await api.post<{ id: string }>('/api/jobs', jobData);
 
       if (response.data?.id) {
+        if (assignedToId) {
+          try {
+            await api.post(`/api/jobs/${response.data.id}/multi-assign`, { workerIds: [assignedToId] });
+          } catch (assignErr) {
+            if (__DEV__) console.log('Failed to assign worker on create:', assignErr);
+          }
+        }
         if (params.smsConversationId) {
           try {
             await api.patch(`/api/sms/conversations/${params.smsConversationId}`, { jobId: response.data.id });

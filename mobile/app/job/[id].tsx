@@ -6225,12 +6225,12 @@ export default function JobDetailScreen() {
       </View>
 
       {/* Scheduled Date Card - right after action buttons */}
-      {job.scheduledAt && (
+      {(job.scheduledAt || job.status === 'scheduled') && (
         <PressableRow 
  
           style={styles.card}
           onPress={isSubcontractorUser ? undefined : () => {
-            setScheduleDate(new Date(job.scheduledAt!));
+            setScheduleDate(job.scheduledAt ? new Date(job.scheduledAt) : new Date());
             setShowScheduleModal(true);
           }}
         >
@@ -6239,8 +6239,10 @@ export default function JobDetailScreen() {
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.cardLabel}>Scheduled</Text>
-            <Text style={styles.cardValue}>
-              {formatDate(job.scheduledAt)} at {formatTime(job.scheduledAt)}
+            <Text style={[styles.cardValue, !job.scheduledAt && { color: colors.mutedForeground }]}>
+              {job.scheduledAt
+                ? `${formatDate(job.scheduledAt)} at ${formatTime(job.scheduledAt)}`
+                : 'No time set — tap to schedule'}
             </Text>
           </View>
           {!isSubcontractorUser && (
@@ -9293,7 +9295,7 @@ export default function JobDetailScreen() {
             <Button variant="outline" onPress={() => { setShowAddMaterialModal(false); setEditingMaterial(null); }} style={{ flex: 1 }}>
               Cancel
             </Button>
-            <Button onPress={handleSaveMaterial} disabled={isSavingMaterial || !materialForm.name.trim()} style={{ flex: 1 }}>
+            <Button variant="brand" onPress={handleSaveMaterial} disabled={isSavingMaterial || !materialForm.name.trim()} style={{ flex: 1 }}>
               {isSavingMaterial ? 'Saving...' : editingMaterial ? 'Update' : 'Add Material'}
             </Button>
           </View>
@@ -9521,6 +9523,11 @@ export default function JobDetailScreen() {
               </View>
             )}
             <View>
+              {teamMembers.length > 0 && (
+                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs }}>
+                  Team Members
+                </Text>
+              )}
               {teamMembers.map((member) => {
                 const memberId = member.memberId || member.userId || member.id;
                 const isSelected = selectedWorkerIds.has(memberId);
@@ -9649,6 +9656,9 @@ export default function JobDetailScreen() {
               )}
 
               <View style={{ borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing.md, paddingTop: spacing.md, paddingHorizontal: spacing.lg }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm }}>
+                  Invite Someone New
+                </Text>
                 {!showMagicLinkInAssign ? (
                   <TouchableOpacity
                     style={{
@@ -9760,7 +9770,7 @@ export default function JobDetailScreen() {
             <Button variant="outline" onPress={() => setShowRenameModal(false)} style={{ flex: 1 }}>
               Cancel
             </Button>
-            <Button onPress={handleRenameJob} disabled={isSavingTitle || !newJobTitle.trim()} style={{ flex: 1 }}>
+            <Button variant="brand" onPress={handleRenameJob} disabled={isSavingTitle || !newJobTitle.trim()} style={{ flex: 1 }}>
               {isSavingTitle ? 'Saving...' : 'Save'}
             </Button>
           </View>
@@ -11022,7 +11032,7 @@ export default function JobDetailScreen() {
             <Button variant="outline" onPress={() => setShowCreateSwmsModal(false)} style={{ flex: 1 }}>
               Cancel
             </Button>
-            <Button onPress={handleCreateSwms} disabled={isSavingSwms || !swmsForm.title.trim()} style={{ flex: 1 }}>
+            <Button variant="brand" onPress={handleCreateSwms} disabled={isSavingSwms || !swmsForm.title.trim()} style={{ flex: 1 }}>
               {isSavingSwms ? 'Saving...' : 'Create SWMS'}
             </Button>
           </View>
@@ -11258,7 +11268,7 @@ export default function JobDetailScreen() {
             <Button variant="outline" onPress={() => { setShowSignSwmsModal(false); setSigningSwmsId(null); setSwmsSignatureData(null); }} style={{ flex: 1 }}>
               Cancel
             </Button>
-            <Button onPress={handleSignSwms} disabled={isSigningSwms || !signWorkerName.trim() || !swmsSignatureData} style={{ flex: 1 }}>
+            <Button variant="brand" onPress={handleSignSwms} disabled={isSigningSwms || !signWorkerName.trim() || !swmsSignatureData} style={{ flex: 1 }}>
               {isSigningSwms ? 'Signing...' : 'Sign SWMS'}
             </Button>
           </View>

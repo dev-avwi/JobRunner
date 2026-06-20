@@ -782,7 +782,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   loadingContainer: {
     flex: 1,
@@ -807,8 +809,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: radius.xl,
-    padding: spacing.xl,
-    marginBottom: spacing.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     ...shadows.sm,

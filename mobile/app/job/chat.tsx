@@ -1363,21 +1363,6 @@ export default function JobChatScreen() {
           </View>
         </View>
 
-        <View style={styles.internalBanner}>
-          <View style={styles.internalBannerIcon}>
-            <Feather name="lock" size={10} color={colors.white} />
-          </View>
-          <Text style={styles.internalBannerText}>
-            Internal notes — only your team sees these
-          </Text>
-          {client?.phone && (
-            <PressableRow style={styles.textClientBannerBtn} onPress={handleContactClient} >
-              <Feather name="smartphone" size={10} color={colors.primary} />
-              <Text style={styles.textClientBannerBtnText}>Text Client</Text>
-            </PressableRow>
-          )}
-        </View>
-
         <ScrollView
           ref={scrollRef}
           style={styles.messagesContainer}
