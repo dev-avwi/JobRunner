@@ -36,15 +36,23 @@ export function Button({
       : 'transparent';
     
     switch (variant) {
-      case 'default':
+      case 'default': {
+        // Use the guaranteed-visible helper so primary buttons never render
+        // white-on-white when a theme's primary colour lacks contrast.
+        const safe = getVisibleButtonColors(
+          colors.primary,
+          colors.primaryDark,
+          colors.primaryForeground,
+          colors.card,
+          isDark,
+        );
         return {
-          backgroundColor: colors.primary,
-          borderColor: isDark 
-            ? `rgba(238, 242, 245, 0.15)` 
-            : `rgba(31, 39, 51, 0.15)`,
-          textColor: colors.primaryForeground,
+          backgroundColor: pressed ? safe.bgPressed : safe.bg,
+          borderColor: safe.border,
+          textColor: safe.text,
           overlayColor: elevateColor,
         };
+      }
       case 'destructive':
         return {
           backgroundColor: colors.destructive,

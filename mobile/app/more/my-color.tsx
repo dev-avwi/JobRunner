@@ -131,32 +131,33 @@ export default function MyColorScreen() {
               const isMine = option.isCurrentUser;
               const dim = !option.available && !isMine;
               return (
-                <PressableRow
-                  key={option.color}
-                  style={styles.swatchWrap}
-                  onPress={() => handleSelect(option)}
-                  disabled={isMine}
-                >
-                  <View
-                    style={[
-                      styles.swatch,
-                      { backgroundColor: option.color },
-                      dim && styles.swatchDim,
-                      isMine && styles.swatchMine,
-                    ]}
+                <View key={option.color} style={styles.swatchWrap}>
+                  <PressableRow
+                    style={styles.swatchPress}
+                    onPress={() => handleSelect(option)}
+                    disabled={isMine}
                   >
-                    {saving === option.color ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : isMine ? (
-                      <Feather name="check" size={22} color="#FFFFFF" />
-                    ) : dim ? (
-                      <Text style={styles.swatchInitials}>{taken?.initials || ''}</Text>
-                    ) : null}
-                  </View>
-                  <Text style={styles.swatchCaption} numberOfLines={1}>
-                    {isMine ? 'You' : dim ? (taken?.firstName || 'Taken') : 'Spare'}
-                  </Text>
-                </PressableRow>
+                    <View
+                      style={[
+                        styles.swatch,
+                        { backgroundColor: option.color },
+                        dim && styles.swatchDim,
+                        isMine && styles.swatchMine,
+                      ]}
+                    >
+                      {saving === option.color ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : isMine ? (
+                        <Feather name="check" size={22} color="#FFFFFF" />
+                      ) : dim ? (
+                        <Text style={styles.swatchInitials}>{taken?.initials || ''}</Text>
+                      ) : null}
+                    </View>
+                    <Text style={styles.swatchCaption} numberOfLines={1}>
+                      {isMine ? 'You' : dim ? (taken?.firstName || 'Taken') : 'Spare'}
+                    </Text>
+                  </PressableRow>
+                </View>
               );
             })}
           </View>
@@ -194,8 +195,9 @@ const createStyles = (colors: any, bottomNavHeight: number) =>
     currentSub: { fontSize: 13, color: colors.mutedForeground, lineHeight: 18 },
     sectionLabel: { fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 4 },
     sectionHint: { fontSize: 13, color: colors.mutedForeground, lineHeight: 18, marginBottom: 16 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    swatchWrap: { width: '22%', alignItems: 'center' },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, columnGap: 12 },
+    swatchWrap: { width: '22%' },
+    swatchPress: { width: '100%', alignItems: 'center' },
     swatch: {
       width: '100%',
       aspectRatio: 1,
@@ -206,5 +208,11 @@ const createStyles = (colors: any, bottomNavHeight: number) =>
     swatchDim: { opacity: 0.35 },
     swatchMine: { borderWidth: 3, borderColor: colors.foreground },
     swatchInitials: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
-    swatchCaption: { fontSize: 11, color: colors.mutedForeground, marginTop: 6 },
+    swatchCaption: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+      marginTop: 6,
+      width: '100%',
+      textAlign: 'center',
+    },
   });
