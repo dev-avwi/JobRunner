@@ -217,7 +217,7 @@ interface FloatingActionButtonProps {
 export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabStyle = 'phone', bottomOffset = 0 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { colors } = useTheme();
-  const { isOwner, isManager, isSubcontractor, isStandaloneSubcontractor } = useUserRole();
+  const { isOwner, isManager, isSubcontractor, isStandaloneSubcontractor, canAccessTeamPages } = useUserRole();
   // Only owners and managers can create jobs/quotes/invoices/clients. Workers and
   // subcontractors switched INTO a joined business see the tiles locked. A
   // subcontractor in their own Personal profile has owner powers
@@ -296,8 +296,10 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
         router.push('/more/client/new');
       },
     },
-    // iPad only: extra actions to fill space
-    ...(isTabletStyle ? [
+    // iPad only: extra actions to fill space. Check Team is owner/manager only —
+    // it routes to Team Operations, which is itself hidden from subcontractors/
+    // workers in the nav, so it must not appear here for them either.
+    ...(isTabletStyle && canAccessTeamPages ? [
       {
         icon: 'users' as keyof typeof Feather.glyphMap,
         label: 'Check Team',
@@ -307,6 +309,8 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
           router.push('/more/team-operations' as any);
         },
       },
+    ] : []),
+    ...(isTabletStyle ? [
       {
         icon: 'calendar' as keyof typeof Feather.glyphMap,
         label: 'Schedule',
