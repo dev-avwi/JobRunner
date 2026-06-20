@@ -295,15 +295,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: spacing['2xl'],
   },
   emptyIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary + '0A',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.primary + '12',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
-    borderWidth: 2,
-    borderColor: colors.primary + '15',
   },
   emptyText: {
     fontSize: 18,
@@ -398,8 +396,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginLeft: 4,
   },
   messageBubble: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: 18,
   },
   messageBubbleOwn: {
@@ -413,9 +411,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   messageText: {
-    fontSize: 16,
-    fontWeight: '400',
-    lineHeight: 22,
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 21,
   },
   messageTextOwn: {
     color: colors.white,
