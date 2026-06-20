@@ -218,7 +218,6 @@ export default function LoginScreen() {
         const isNewUser = url.searchParams.get('isNewUser') === 'true';
         
         if ((auth === 'success' || auth === 'google_success') && token) {
-          const api = (await import('../../src/lib/api')).default;
           await api.setToken(token);
           await checkAuth();
           if (isNewUser) {
