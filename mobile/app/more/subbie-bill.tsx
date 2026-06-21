@@ -418,14 +418,14 @@ export default function SubbieBillBuilder() {
             style={[styles.tabItem, activeTab === 'edit' && styles.tabItemActive]}
             onPress={() => setActiveTab('edit')}
           >
-            <Feather name="edit-2" size={16} color={activeTab === 'edit' ? colors.primaryForeground : colors.foreground} />
+            <Feather name="edit-2" size={16} color={activeTab === 'edit' ? colors.primaryForeground : colors.mutedForeground} />
             <Text style={[styles.tabText, activeTab === 'edit' && styles.tabTextActive]}>Edit</Text>
           </PressableRow>
           <PressableRow
             style={[styles.tabItem, activeTab === 'preview' && styles.tabItemActive]}
             onPress={() => setActiveTab('preview')}
           >
-            <Feather name="eye" size={16} color={activeTab === 'preview' ? colors.primaryForeground : colors.foreground} />
+            <Feather name="eye" size={16} color={activeTab === 'preview' ? colors.primaryForeground : colors.mutedForeground} />
             <Text style={[styles.tabText, activeTab === 'preview' && styles.tabTextActive]}>Preview</Text>
           </PressableRow>
         </View>
@@ -850,17 +850,19 @@ function createStyles(colors: ThemeColors) {
     tabBar: {
       flexDirection: 'row',
       backgroundColor: colors.muted,
-      borderRadius: 10,
+      borderRadius: 12,
       padding: 4,
+      gap: 4,
+      marginTop: 8,
     },
     tabItem: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 10,
-      borderRadius: 8,
       gap: 8,
+      minHeight: 44,
+      borderRadius: 8,
     },
     tabItemActive: { backgroundColor: colors.primary },
     tabText: { fontSize: 15, fontWeight: '600', color: colors.foreground },
