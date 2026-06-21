@@ -23,7 +23,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { getAvatarColor as getAvatarColorUtil } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
-import { spacing, radius, typography, shadows } from '../../src/lib/design-tokens';
+import { spacing, radius, typography } from '../../src/lib/design-tokens';
 import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 
@@ -137,28 +137,26 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   headerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
+    gap: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-    gap: spacing.sm,
-    ...shadows.sm,
     zIndex: 10,
   },
   backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.muted,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerIconContainer: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.primary + '12',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary + '30',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -183,10 +181,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 6,
   },
   headerActionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.muted,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: `${colors.success}12`,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1338,26 +1336,28 @@ export default function JobChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <View style={[styles.headerCard, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.headerCard}>
           <PressableRow style={styles.backButton} onPress={() => router.back()} >
-            <Feather name="chevron-left" size={20} color={colors.foreground} />
+            <Feather name="chevron-left" size={22} color={colors.foreground} />
           </PressableRow>
           <View style={styles.headerIconContainer}>
-            <Feather name="lock" size={16} color={colors.primary} />
+            <Feather name="lock" size={18} color={colors.primary} />
           </View>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle} numberOfLines={1}>{job?.title || 'Job Chat'}</Text>
             <Text style={styles.headerSubtitle} numberOfLines={1}>Internal team notes</Text>
           </View>
           <View style={styles.headerActions}>
-            <View style={styles.messageBadge}>
-              <Text style={styles.messageBadgeText}>
-                {allMessages.length}
-              </Text>
-            </View>
+            {allMessages.length > 0 && (
+              <View style={styles.messageBadge}>
+                <Text style={styles.messageBadgeText}>
+                  {allMessages.length}
+                </Text>
+              </View>
+            )}
             {client && (
               <PressableRow style={styles.headerActionBtn} onPress={handleContactClient}>
-                <Feather name="phone" size={15} color={colors.foreground} />
+                <Feather name="phone" size={16} color={colors.success} />
               </PressableRow>
             )}
           </View>

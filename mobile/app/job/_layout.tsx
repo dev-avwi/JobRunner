@@ -1,11 +1,8 @@
-import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTheme } from '../../src/lib/theme';
 
-const isIOS = Platform.OS === 'ios';
-
 export default function JobLayout() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   
   return (
     <Stack
@@ -27,12 +24,10 @@ export default function JobLayout() {
       }}
     >
       <Stack.Screen name="[id]" />
-      <Stack.Screen name="chat" options={{
-        headerShown: isIOS,
-        headerTransparent: true,
-        headerBlurEffect: isDark ? 'systemChromeMaterialDark' : 'systemChromeMaterial',
-        headerStyle: { backgroundColor: 'transparent' },
-      }} />
+      {/* The global <Header/> (app/_layout) is always on, so a native stack
+          header here double-stacks and leaves a big top gap on iOS. Keep it off
+          and use the in-content header row, matching the SMS conversation screen. */}
+      <Stack.Screen name="chat" options={{ headerShown: false }} />
     </Stack>
   );
 }

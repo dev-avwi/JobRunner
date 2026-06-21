@@ -451,10 +451,12 @@ export default function SmsConversationScreen() {
             key={i}
             style={{
               textDecorationLine: 'underline',
-              color: isOutbound
-                ? (colors.isDark ? colors.primaryForeground : colors.primary)
-                : colors.primary,
-              fontWeight: '600',
+              // Outbound bubbles have a saturated blue background with white
+              // text, so the link must be white to stay legible (it was using
+              // primary blue, which blended into the bubble). Inbound bubbles are
+              // neutral, so primary blue reads fine there.
+              color: isOutbound ? '#FFFFFF' : colors.primary,
+              fontWeight: '700',
             }}
             onPress={() => Linking.openURL(part)}
           >
