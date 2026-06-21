@@ -387,6 +387,57 @@ import { logSystemEvent } from "../systemEventService";
     return null;
   }
 
+  // Job completion is restricted to the lead worker (primary assignee), in
+  // addition to owner/manager. Other assigned workers finish by clocking off
+  // their own timer; they cannot mark the whole job Done.
+  async function isPrimaryAssignee(job: any, userId: string): Promise<boolean> {
+    if (!job || !userId) return false;
+    const assignments = await storage.getJobAssignments(job.id);
+    const primary = assignments.find((a: any) => a.isPrimary);
+    if (primary) return primary.userId === userId;
+    // Legacy fallback: a job with no explicit primary treats its single
+    // assignedTo worker as the lead.
+    return job.assignedTo === userId;
+  }
+
+  // Shared "all timers stopped / time entries sane" precondition for marking a
+  // job done. Returns a list of human-readable problems (empty = OK to complete).
+  async function getJobCompletionErrors(jobId: string): Promise<string[]> {
+    const timeEntries = await storage.getTimeEntriesForJob(jobId);
+    const validationErrors: string[] = [];
+
+    const openEntries = timeEntries.filter(e => !e.endTime && !e.isBreak);
+    if (openEntries.length > 0) {
+      validationErrors.push(`${openEntries.length} timer(s) still running - stop all timers before completing`);
+    }
+
+    const negativeDurations = timeEntries.filter(e => e.duration !== null && e.duration < 0);
+    if (negativeDurations.length > 0) {
+      validationErrors.push(`${negativeDurations.length} time entry/entries have negative duration`);
+    }
+
+    const byWorker = new Map<string, typeof timeEntries>();
+    for (const entry of timeEntries.filter(e => e.startTime && e.endTime)) {
+      const key = entry.userId;
+      if (!byWorker.has(key)) byWorker.set(key, []);
+      byWorker.get(key)!.push(entry);
+    }
+
+    for (const [, entries] of Array.from(byWorker)) {
+      const sorted = entries.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const current = sorted[i];
+        const next = sorted[i + 1];
+        if (current.endTime && new Date(current.endTime) > new Date(next.startTime)) {
+          validationErrors.push('Overlapping time entries detected for a worker');
+          break;
+        }
+      }
+    }
+
+    return validationErrors;
+  }
+
   export function registerJobsRoutes(app: Express, deps: JobsRoutesDeps): void {
     const {
       trackingTokens,
@@ -2535,6 +2586,22 @@ import { logSystemEvent } from "../systemEventService";
       const bulkBusinessSettings = status === 'in_progress'
         ? await storage.getBusinessSettings(effectiveUserId)
         : null;
+      // Job completion is restricted to owner/manager/lead worker. Resolve the
+      // caller's owner/manager status once; lead-worker is checked per job.
+      let bulkIsOwner = false;
+      let bulkIsManager = false;
+      if (status === 'done') {
+        const cbs = await storage.getBusinessSettings(effectiveUserId);
+        bulkIsOwner = !!cbs && cbs.userId === req.userId;
+        if (!bulkIsOwner) {
+          const tm = await storage.getTeamMemberByUserIdAndBusiness(req.userId, effectiveUserId);
+          if (tm && tm.roleId) {
+            const role = await storage.getUserRole(tm.roleId);
+            bulkIsManager = role?.name?.toLowerCase().includes('manager') ||
+                            role?.name?.toLowerCase().includes('admin') || false;
+          }
+        }
+      }
       for (const id of ids) {
         try {
           const existingJob = await storage.getJob(id, effectiveUserId);
@@ -2555,6 +2622,19 @@ import { logSystemEvent } from "../systemEventService";
             results.failed++;
             results.errors.push(`Job ${id}: ${startGate.body.error}`);
             continue;
+          }
+          if (status === 'done' && !bulkIsOwner && !bulkIsManager && !(await isPrimaryAssignee(existingJob, req.userId))) {
+            results.failed++;
+            results.errors.push(`Job ${id}: Only the lead worker or owner can complete this job`);
+            continue;
+          }
+          if (status === 'done') {
+            const completionErrors = await getJobCompletionErrors(id);
+            if (completionErrors.length > 0) {
+              results.failed++;
+              results.errors.push(`Job ${id}: ${completionErrors.join('; ')}`);
+              continue;
+            }
           }
           const now = new Date();
           const updateData: any = { status };
@@ -2671,38 +2751,29 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       if (data.status === 'done' || data.status === 'completed') {
-        const timeEntries = await storage.getTimeEntriesForJob(req.params.id);
-        const validationErrors: string[] = [];
-
-        const openEntries = timeEntries.filter(e => !e.endTime && !e.isBreak);
-        if (openEntries.length > 0) {
-          validationErrors.push(`${openEntries.length} timer(s) still running - stop all timers before completing`);
-        }
-
-        const negativeDurations = timeEntries.filter(e => e.duration !== null && e.duration < 0);
-        if (negativeDurations.length > 0) {
-          validationErrors.push(`${negativeDurations.length} time entry/entries have negative duration`);
-        }
-
-        const byWorker = new Map<string, typeof timeEntries>();
-        for (const entry of timeEntries.filter(e => e.startTime && e.endTime)) {
-          const key = entry.userId;
-          if (!byWorker.has(key)) byWorker.set(key, []);
-          byWorker.get(key)!.push(entry);
-        }
-
-        for (const [workerId, entries] of Array.from(byWorker)) {
-          const sorted = entries.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-          for (let i = 0; i < sorted.length - 1; i++) {
-            const current = sorted[i];
-            const next = sorted[i + 1];
-            if (current.endTime && new Date(current.endTime) > new Date(next.startTime)) {
-              validationErrors.push('Overlapping time entries detected for a worker');
-              break;
+        // Only the lead worker (primary assignee) or an owner/manager may
+        // complete the whole job. Other assigned workers clock off instead.
+        if (existingJob) {
+          const completeBusinessSettings = await storage.getBusinessSettings(effectiveUserId);
+          const isCompleteOwner = !!completeBusinessSettings && completeBusinessSettings.userId === req.userId;
+          let isCompleteManager = false;
+          if (!isCompleteOwner) {
+            const teamMemberInfo = await storage.getTeamMemberByUserIdAndBusiness(req.userId, effectiveUserId);
+            if (teamMemberInfo && teamMemberInfo.roleId) {
+              const role = await storage.getUserRole(teamMemberInfo.roleId);
+              isCompleteManager = role?.name?.toLowerCase().includes('manager') ||
+                                  role?.name?.toLowerCase().includes('admin') || false;
             }
+          }
+          if (!isCompleteOwner && !isCompleteManager && !(await isPrimaryAssignee(existingJob, req.userId))) {
+            return res.status(403).json({
+              error: "Only the lead worker or owner can complete this job. Use Clock Off to finish your own work.",
+              code: "NOT_LEAD_WORKER"
+            });
           }
         }
 
+        const validationErrors = await getJobCompletionErrors(req.params.id);
         if (validationErrors.length > 0) {
           return res.status(400).json({
             error: 'Time entries need attention before completing this job',
@@ -3034,38 +3105,16 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       if (status === 'done' || status === 'completed') {
-        const timeEntries = await storage.getTimeEntriesForJob(req.params.id);
-        const validationErrors: string[] = [];
-
-        const openEntries = timeEntries.filter(e => !e.endTime && !e.isBreak);
-        if (openEntries.length > 0) {
-          validationErrors.push(`${openEntries.length} timer(s) still running - stop all timers before completing`);
+        // Only the lead worker (primary assignee) or an owner/manager may
+        // complete the whole job. Other assigned workers clock off instead.
+        if (!isOwner && !isManager && !(await isPrimaryAssignee(existingJob, req.userId))) {
+          return res.status(403).json({
+            error: "Only the lead worker or owner can complete this job. Use Clock Off to finish your own work.",
+            code: "NOT_LEAD_WORKER"
+          });
         }
 
-        const negativeDurations = timeEntries.filter(e => e.duration !== null && e.duration < 0);
-        if (negativeDurations.length > 0) {
-          validationErrors.push(`${negativeDurations.length} time entry/entries have negative duration`);
-        }
-
-        const byWorker = new Map<string, typeof timeEntries>();
-        for (const entry of timeEntries.filter(e => e.startTime && e.endTime)) {
-          const key = entry.userId;
-          if (!byWorker.has(key)) byWorker.set(key, []);
-          byWorker.get(key)!.push(entry);
-        }
-
-        for (const [workerId, entries] of Array.from(byWorker)) {
-          const sorted = entries.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-          for (let i = 0; i < sorted.length - 1; i++) {
-            const current = sorted[i];
-            const next = sorted[i + 1];
-            if (current.endTime && new Date(current.endTime) > new Date(next.startTime)) {
-              validationErrors.push('Overlapping time entries detected for a worker');
-              break;
-            }
-          }
-        }
-
+        const validationErrors = await getJobCompletionErrors(req.params.id);
         if (validationErrors.length > 0) {
           return res.status(400).json({
             error: 'Time entries need attention before completing this job',

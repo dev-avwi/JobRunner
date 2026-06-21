@@ -463,6 +463,7 @@ interface NextActionCardProps {
   onSchedule?: () => void;
   onStartJob?: () => void;
   onCompleteJob?: () => void;
+  canCompleteJob?: boolean;
   onSendInvoice?: () => void;
   onSendReminder?: () => void;
   urgencyLabel?: string;
@@ -535,6 +536,12 @@ function getNextAction(props: NextActionCardProps): NextAction | null {
       };
 
     case 'in_progress':
+      // Only the lead worker (or owner/manager) can complete the whole job.
+      // Other assigned workers finish by clocking off their own timer, so no
+      // "complete" guidance is shown to them here.
+      if (props.canCompleteJob === false) {
+        return null;
+      }
       return {
         title: 'Complete the Job',
         subtitle: 'Mark as done when work is finished',

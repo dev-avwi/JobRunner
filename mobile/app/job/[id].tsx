@@ -6042,7 +6042,30 @@ export default function JobDetailScreen() {
 
   const rawAction = STATUS_ACTIONS[job.status];
   const canCreateInvoices = isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_invoices'));
-  const action = (!canCreateInvoices && rawAction?.next === 'invoiced') ? null : rawAction;
+
+  // Lead-worker gate: only the primary assignee (or owner/manager) may mark the
+  // whole job Done. Other assigned workers finish by clocking off their own timer.
+  const myAssignment = jobAssignments.find((a: any) => a.userId === user?.id);
+  const hasPrimaryAssignment = jobAssignments.some((a: any) => a.isPrimary);
+  const isPrimaryAssignee = myAssignment?.isPrimary === true || (!hasPrimaryAssignment && job.assignedTo === user?.id);
+  const isLeadWorker = isOwnerOrManager || isSoloOwner || isPrimaryAssignee;
+
+  let action: { next: string; label: string; icon: keyof typeof Feather.glyphMap; iconSize: number } | null =
+    (!canCreateInvoices && rawAction?.next === 'invoiced') ? null : (rawAction as any);
+  if (action && action.next === 'done' && !isLeadWorker) {
+    // Non-lead workers can't complete the job; they clock off their own timer.
+    action = isTimerForThisJob
+      ? { next: 'clock_off', label: "Clock Off / I'm Done", icon: 'check-circle', iconSize: 20 }
+      : null;
+  }
+
+  const handleMainAction = () => {
+    if (action && action.next === 'clock_off') {
+      handleStopTimer();
+    } else {
+      handleStatusChange();
+    }
+  };
   const statusColor = getStatusColor(job.status);
   const clientInitials = client?.name ? client.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
 
@@ -6176,7 +6199,7 @@ export default function JobDetailScreen() {
               
               <PressableRow
                 style={[styles.mainActionButton, { backgroundColor: statusColor, flex: 1, flexBasis: 0, minWidth: 0 }]}
-                onPress={handleStatusChange}
+                onPress={handleMainAction}
 
                 data-testid="button-main-action"
               >
@@ -6215,7 +6238,7 @@ export default function JobDetailScreen() {
           ) : (
             <PressableRow
               style={[styles.mainActionButton, { backgroundColor: statusColor }]}
-              onPress={handleStatusChange}
+              onPress={handleMainAction}
 
               data-testid="button-main-action"
             >
@@ -6602,6 +6625,7 @@ export default function JobDetailScreen() {
         onSchedule={handleStatusChange}
         onStartJob={handleStatusChange}
         onCompleteJob={handleStatusChange}
+        canCompleteJob={isLeadWorker}
         onSendInvoice={async () => {
           if (invoice?.id && client?.email) {
             try {
