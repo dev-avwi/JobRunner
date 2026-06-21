@@ -124,7 +124,7 @@ const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: num
   complianceBannerText: { fontSize: 14, fontWeight: '500', color: colors.success },
   stickyBar: { backgroundColor: colors.background, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   filterScroll: { paddingHorizontal: spacing.lg, gap: spacing.xs, paddingBottom: spacing.sm, paddingTop: spacing.sm },
-  filterChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  filterChip: { paddingHorizontal: spacing.sm, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 5 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary, ...shadows.sm },
   filterChipText: { fontSize: 13, color: colors.mutedForeground, fontWeight: '500' },
   filterChipTextActive: { color: colors.primaryForeground, fontWeight: '700' },

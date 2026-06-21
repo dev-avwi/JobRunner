@@ -283,8 +283,8 @@ function JobCard({
           >
             <Button
               size="sm"
-              variant="default"
-              icon={<Feather name="file-text" size={iconSizes.sm} color={colors.primaryForeground} />}
+              variant="brand"
+              icon={<Feather name="file-text" size={iconSizes.sm} color="#FFFFFF" />}
               onPress={() => router.push(`/more/invoice/new?jobId=${job.id}`)}
             >
               Invoice
