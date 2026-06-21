@@ -1262,11 +1262,11 @@ ${businessName}`;
                 data-testid="button-send-to-client"
               >
                 {isSendingQuote ? (
-                  <ActivityIndicator size="small" color={colors.white} />
+                  <ActivityIndicator size="small" color={colors.primaryForeground} />
                 ) : (
-                  <Feather name="send" size={20} color={colors.white} />
+                  <Feather name="send" size={20} color={colors.primaryForeground} />
                 )}
-                <Text style={[styles.quickActionText, { color: colors.white }]}>
+                <Text style={[styles.quickActionText, { color: colors.primaryForeground }]}>
                   {isSendingQuote ? 'Sending...' : 'Send to Client'}
                 </Text>
               </PressableRow>
@@ -1297,11 +1297,11 @@ ${businessName}`;
                 disabled={isSendingQuote}
               >
                 {isSendingQuote ? (
-                  <ActivityIndicator size="small" color={colors.white} />
+                  <ActivityIndicator size="small" color={colors.primaryForeground} />
                 ) : (
-                  <Feather name="send" size={20} color={colors.white} />
+                  <Feather name="send" size={20} color={colors.primaryForeground} />
                 )}
-                <Text style={[styles.quickActionText, { color: colors.white }]}>
+                <Text style={[styles.quickActionText, { color: colors.primaryForeground }]}>
                   {isSendingQuote ? 'Sending...' : 'Resend to Client'}
                 </Text>
               </PressableRow>
@@ -1332,11 +1332,11 @@ ${businessName}`;
                 data-testid="button-create-invoice"
               >
                 {isCreatingInvoice ? (
-                  <ActivityIndicator size="small" color={colors.white} />
+                  <ActivityIndicator size="small" color={colors.primaryForeground} />
                 ) : (
-                  <Feather name="file-text" size={20} color={colors.white} />
+                  <Feather name="file-text" size={20} color={colors.primaryForeground} />
                 )}
-                <Text style={[styles.quickActionText, { color: colors.white }]}>
+                <Text style={[styles.quickActionText, { color: colors.primaryForeground }]}>
                   {isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
                 </Text>
               </PressableRow>
@@ -1369,11 +1369,11 @@ ${businessName}`;
                   data-testid="button-create-invoice"
                 >
                   {isCreatingInvoice ? (
-                    <ActivityIndicator size="small" color={colors.white} />
+                    <ActivityIndicator size="small" color={colors.primaryForeground} />
                   ) : (
-                    <Feather name="file-text" size={20} color={colors.white} />
+                    <Feather name="file-text" size={20} color={colors.primaryForeground} />
                   )}
-                  <Text style={[styles.quickActionText, { color: colors.white }]}>
+                  <Text style={[styles.quickActionText, { color: colors.primaryForeground }]}>
                     {isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
                   </Text>
                 </PressableRow>
@@ -2429,7 +2429,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   primaryButtonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: colors.white,
+    color: colors.primaryForeground,
     letterSpacing: 0.2,
   },
   secondaryButton: {
@@ -2557,7 +2557,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   sendButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   buttonDisabled: {
     opacity: 0.6,

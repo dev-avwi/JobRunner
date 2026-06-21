@@ -211,7 +211,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   manageButtonText: {
     ...typography.body,
-    color: colors.white,
+    color: colors.primaryForeground,
     fontWeight: '700',
   },
   manageDescription: {
@@ -893,10 +893,10 @@ export default function SubscriptionPage() {
         {hasActiveSubscription && (
           <PressableRow style={styles.manageButton} onPress={handleManageBilling} disabled={managingSubscription} >
             {managingSubscription ? (
-              <ActivityIndicator color={colors.white} size="small" />
+              <ActivityIndicator color={colors.primaryForeground} size="small" />
             ) : (
               <>
-                <Feather name="settings" size={18} color={colors.white} />
+                <Feather name="settings" size={18} color={colors.primaryForeground} />
                 <Text style={styles.manageButtonText}>
                   {subscriptionStatus?.subscriptionSource === 'apple' ? 'Manage in App Store' : 'Manage Billing'}
                 </Text>

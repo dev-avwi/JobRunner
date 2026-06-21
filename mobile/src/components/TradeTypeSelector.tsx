@@ -209,7 +209,7 @@ export function TradeTypeSelector({
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </PressableRow>
               <PressableRow style={styles.submitButton} onPress={handleRequestSubmit} >
-                <Feather name="send" size={16} color={colors.white} />
+                <Feather name="send" size={16} color={colors.primaryForeground} />
                 <Text style={styles.submitButtonText}>Submit Request</Text>
               </PressableRow>
             </View>
@@ -400,6 +400,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   submitButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
 });

@@ -800,7 +800,7 @@ export default function ActionCenterScreen() {
             {batchJobs.map(job => (
               <PressableRow key={job.id} style={[styles.batchJobItem, { borderColor: job.selected ? colors.primary : colors.border, backgroundColor: job.selected ? colorWithOpacity(colors.primary, 0.04) : 'transparent' }]} onPress={() => toggleBatchJob(job.id)} >
                 <View style={[styles.batchCheckbox, { borderColor: job.selected ? colors.primary : colors.border, backgroundColor: job.selected ? colors.primary : 'transparent' }]}>
-                  {job.selected && <Feather name="check" size={14} color={colors.white} />}
+                  {job.selected && <Feather name="check" size={14} color={colors.primaryForeground} />}
                 </View>
                 <View style={styles.batchJobInfo}>
                   <Text style={[styles.batchJobTitle, { color: colors.foreground }]} numberOfLines={1}>
@@ -825,11 +825,11 @@ export default function ActionCenterScreen() {
             </Text>
             <PressableRow style={[styles.batchCreateButton, { backgroundColor: selectedCount> 0 ? colors.primary : colors.muted, opacity: isBatchCreating ? 0.7 : 1 }]} onPress={handleBatchCreate} disabled={isBatchCreating || selectedCount === 0} >
               {isBatchCreating ? (
-                <ActivityIndicator size="small" color={colors.white} />
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
                 <>
-                  <Feather name="file-text" size={16} color={colors.white} />
-                  <Text style={styles.batchCreateText}>
+                  <Feather name="file-text" size={16} color={selectedCount > 0 ? colors.primaryForeground : colors.white} />
+                  <Text style={[styles.batchCreateText, { color: selectedCount > 0 ? colors.primaryForeground : colors.white }]}>
                     Create {selectedCount} Invoice{selectedCount !== 1 ? 's' : ''}
                   </Text>
                 </>

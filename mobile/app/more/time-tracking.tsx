@@ -1333,11 +1333,11 @@ export default function TimeTrackingScreen() {
             activeOpacity={0.7}
           >
             {isStarting ? (
-              <ActivityIndicator size="small" color={colors.white} />
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
             ) : (
               <>
-                <Feather name="play" size={20} color={colors.white} />
-                <Text style={styles.timerButtonText}>Start Timer</Text>
+                <Feather name="play" size={20} color={colors.primaryForeground} />
+                <Text style={[styles.timerButtonText, { color: colors.primaryForeground }]}>Start Timer</Text>
               </>
             )}
           </TouchableOpacity>

@@ -3424,7 +3424,7 @@ ${businessName}`;
                       <Feather
                         name={preset.id === 'custom' ? 'sliders' : 'layers'}
                         size={18}
-                        color={milestonePreset === preset.id ? colors.white : colors.primary}
+                        color={milestonePreset === preset.id ? colors.primaryForeground : colors.primary}
                       />
                     </View>
                     <Text style={[
@@ -3665,11 +3665,11 @@ ${businessName}`;
                 disabled={isSavingMilestones}
               >
                 {isSavingMilestones ? (
-                  <ActivityIndicator size="small" color={colors.white} />
+                  <ActivityIndicator size="small" color={colors.primaryForeground} />
                 ) : (
                   <>
-                    <Feather name="check" size={18} color={colors.white} />
-                    <Text style={styles.paymentMethodConfirmText}>Save Milestones</Text>
+                    <Feather name="check" size={18} color={colors.primaryForeground} />
+                    <Text style={[styles.paymentMethodConfirmText, { color: colors.primaryForeground }]}>Save Milestones</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -3716,7 +3716,7 @@ ${businessName}`;
                       <Feather 
                         name={method.icon as any} 
                         size={20} 
-                        color={selectedPaymentMethod === method.id ? colors.white : colors.primary} 
+                        color={selectedPaymentMethod === method.id ? colors.primaryForeground : colors.primary} 
                       />
                     </View>
                     <Text style={[
@@ -4475,7 +4475,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   primaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   secondaryButtonText: {
     fontSize: 16,
@@ -4588,7 +4588,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   sendButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   buttonDisabled: {
     opacity: 0.6,

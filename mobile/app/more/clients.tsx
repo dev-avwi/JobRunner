@@ -176,7 +176,7 @@ function ClientCard({
           </PressableRow>
         )}
         <PressableRow style={[styles.cardActionButton, styles.cardActionButtonPrimary]} onPress={(e) => { e.stopPropagation(); onCreateJob?.(); }} >
-          <Feather name="briefcase" size={14} color={colors.white} />
+          <Feather name="briefcase" size={14} color={colors.primaryForeground} />
           <Text style={[styles.cardActionText, styles.cardActionTextPrimary]}>Job</Text>
         </PressableRow>
         <PressableRow style={[styles.cardActionButton, styles.cardActionButtonDestructive]} onPress={(e) => { e.stopPropagation(); onDelete?.(); }} >
@@ -398,7 +398,7 @@ export default function ClientsScreen() {
           <Text style={styles.pageSubtitle}>All your clients in one place</Text>
         </View>
         <PressableRow style={styles.newButton} onPress={handleCreateClient} >
-          <Feather name="plus" size={18} color={colors.white} />
+          <Feather name="plus" size={18} color={colors.primaryForeground} />
           <Text style={styles.newButtonText}>New Client</Text>
         </PressableRow>
       </View>
@@ -456,7 +456,7 @@ export default function ClientsScreen() {
           contentContainerStyle={styles.filtersContent}
         >
           <PressableRow onPress={() => setActiveTagFilter(null)} style={[styles.tagFilterPill, !activeTagFilter && styles.tagFilterPillActive]} >
-            <Feather name="tag" size={12} color={!activeTagFilter ? colors.white : colors.mutedForeground} />
+            <Feather name="tag" size={12} color={!activeTagFilter ? colors.primaryForeground : colors.mutedForeground} />
             <Text style={[styles.tagFilterPillText, !activeTagFilter && styles.tagFilterPillTextActive]}>All Tags</Text>
           </PressableRow>
           {allTags.map((tag) => (
@@ -522,7 +522,7 @@ export default function ClientsScreen() {
         </Text>
         {!searchQuery && activeFilter === 'all' && (
           <PressableRow style={styles.emptyStateButton} onPress={handleCreateClient} >
-            <Feather name="plus" size={16} color={colors.white} />
+            <Feather name="plus" size={16} color={colors.primaryForeground} />
             <Text style={styles.emptyStateButtonText}>Add Your First Client</Text>
           </PressableRow>
         )}
@@ -611,7 +611,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     minHeight: 40,
   },
   newButtonText: {
-    color: colors.white,
+    color: colors.primaryForeground,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -663,7 +663,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.foreground,
   },
   filterPillTextActive: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   filterCount: {
     backgroundColor: colors.muted,
@@ -709,7 +709,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.foreground,
   },
   tagFilterPillTextActive: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
 
   section: {
@@ -764,7 +764,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.xs,
   },
   emptyStateButtonText: {
-    color: colors.white,
+    color: colors.primaryForeground,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -922,7 +922,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.primary,
   },
   cardActionTextPrimary: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   avatar: {
     width: 44,

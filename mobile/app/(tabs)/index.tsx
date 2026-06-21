@@ -1724,7 +1724,7 @@ function TodayJobCard({
           disabled={isUpdating}
 
         >
-          <Feather name="check-circle" size={iconSizes.lg} color={colors.white} />
+          <Feather name="check-circle" size={iconSizes.lg} color={colors.primaryForeground} />
           <Text style={styles.primaryActionButtonText}>Complete Job</Text>
         </PressableRow>
       );
@@ -2094,7 +2094,7 @@ function EmptyTodayState({ onCreateJob }: { onCreateJob: () => void }) {
         onPress={onCreateJob}
         activeOpacity={0.8}
       >
-        <Feather name="plus" size={iconSizes.md} color={colors.white} />
+        <Feather name="plus" size={iconSizes.md} color={colors.primaryForeground} />
         <Text style={styles.scheduleJobButtonText}>Create Job</Text>
       </TouchableOpacity>
     </View>
@@ -3687,7 +3687,7 @@ function OwnerDashboardScreen() {
               Start Route ({jobsWithCoords.length} stop{jobsWithCoords.length !== 1 ? 's' : ''})
               {totalDriveTime !== null ? ` \u00b7 ~${totalDriveTime < 60 ? `${totalDriveTime} min` : `${Math.floor(totalDriveTime / 60)}h ${totalDriveTime % 60}m`}` : ''}
             </Text>
-            <Feather name="chevron-right" size={18} color={colors.white} />
+            <Feather name="chevron-right" size={18} color={colors.primaryForeground} />
           </TouchableOpacity>
         )}
 
@@ -3717,7 +3717,7 @@ function OwnerDashboardScreen() {
               onPress={() => openDirections(nextJobSuggestion)}
               activeOpacity={0.7}
             >
-              <Feather name="navigation" size={14} color={colors.white} />
+              <Feather name="navigation" size={14} color={colors.primaryForeground} />
               <Text style={styles.nextJobGoButtonText}>Go</Text>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -5048,7 +5048,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   nextJobGoButtonText: {
     ...typography.captionSmall,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   startRouteButton: {
     flexDirection: 'row',
@@ -5074,7 +5074,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   startRouteText: {
     ...typography.body,
     fontWeight: '700',
-    color: colors.white,
+    color: colors.primaryForeground,
     flex: 1,
   },
   orderBadge: {
@@ -5088,7 +5088,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   orderBadgeText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   actionButtonsRow: {
     flexDirection: 'row',
@@ -5187,7 +5187,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   scheduleJobButtonText: {
     ...typography.body,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
 
   timeTrackingWidget: {
@@ -5508,7 +5508,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   stopButtonText: {
     ...typography.button,
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   saveButton: {
     flex: 1,

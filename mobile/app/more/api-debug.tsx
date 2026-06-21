@@ -81,7 +81,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   actionButtonText: {
     ...typography.body,
-    color: colors.white,
+    color: colors.primaryForeground,
     fontWeight: '700',
   },
   warningBanner: {
@@ -202,7 +202,7 @@ export default function ApiDebugScreen() {
             <Text style={styles.value} numberOfLines={2}>{apiFromEnv}</Text>
           </View>
           <PressableRow style={styles.actionButton} onPress={() => copy('API host', API_URL)} >
-            <Feather name="copy" size={16} color={colors.white} />
+            <Feather name="copy" size={16} color={colors.primaryForeground} />
             <Text style={styles.actionButtonText}>Copy API host</Text>
           </PressableRow>
         </View>
@@ -277,7 +277,7 @@ export default function ApiDebugScreen() {
           {__DEV__ && (
             <>
               <PressableRow style={styles.actionButton} onPress={async () => { await resetReviewPromptForTesting(); setReviewShown(false); Alert.alert('Reset', 'Review prompt unlocked for this version.'); }} >
-                <Feather name="rotate-ccw" size={16} color={colors.white} />
+                <Feather name="rotate-ccw" size={16} color={colors.primaryForeground} />
                 <Text style={styles.actionButtonText}>Reset review lock (dev)</Text>
               </PressableRow>
               <PressableRow style={[styles.actionButton, { backgroundColor: colors.muted }]} onPress={async () => { await maybeRequestReview('debug-trigger'); const shown = await hasShownReviewThisVersion(); setReviewShown(shown); }} >

@@ -6021,13 +6021,13 @@ export default function JobDetailScreen() {
             <Button
               variant="default"
               onPress={() => { logout(); }}
-              icon={<Feather name="log-in" size={16} color={colors.white} />}
+              icon={<Feather name="log-in" size={16} color={colors.primaryForeground} />}
             >Sign in</Button>
           ) : (
             <Button
               variant="default"
               onPress={loadJob}
-              icon={<Feather name="refresh-cw" size={16} color={colors.white} />}
+              icon={<Feather name="refresh-cw" size={16} color={colors.primaryForeground} />}
             >Retry</Button>
           )}
           <Button
@@ -9176,7 +9176,7 @@ export default function JobDetailScreen() {
                     justifyContent: 'center',
                     paddingHorizontal: 3,
                   }}>
-                    <Text style={{ fontSize: 9, fontWeight: '700', color: colors.white }}>
+                    <Text style={{ fontSize: 9, fontWeight: '700', color: tab.id === 'documents' ? colors.white : colors.primaryForeground }}>
                       {badgeCount > 99 ? '99+' : badgeCount}
                     </Text>
                   </View>

@@ -820,11 +820,11 @@ export function NextActionCard(props: NextActionCardProps) {
                   </PressableRow>
                   <PressableRow style={[styles.smsSendButton, { backgroundColor: props.isOverdue ? '#ea580c' : colors.primary }]} onPress={handleSendSms} disabled={isSendingSms || !smsPreviewMessage.trim()} >
                     {isSendingSms ? (
-                      <ActivityIndicator size="small" color={colors.white} />
+                      <ActivityIndicator size="small" color={props.isOverdue ? colors.white : colors.primaryForeground} />
                     ) : (
                       <>
-                        <Feather name="send" size={14} color={colors.white} />
-                        <Text style={styles.smsSendButtonText}>Send</Text>
+                        <Feather name="send" size={14} color={props.isOverdue ? colors.white : colors.primaryForeground} />
+                        <Text style={[styles.smsSendButtonText, !props.isOverdue && { color: colors.primaryForeground }]}>Send</Text>
                       </>
                     )}
                   </PressableRow>
@@ -1423,11 +1423,11 @@ export function SmsContactCard({
       </View>
       <PressableRow style={[styles.actionButton, { backgroundColor: buttonBg }]} onPress={handleOpenPreview} disabled={isSending || isPreparing} >
         {isSending || isPreparing ? (
-          <ActivityIndicator size="small" color={colors.white} />
+          <ActivityIndicator size="small" color={isOverdue ? colors.white : colors.primaryForeground} />
         ) : (
           <>
-            <Feather name="message-square" size={14} color={colors.white} />
-            <Text style={styles.actionButtonText}>{buttonLabel}</Text>
+            <Feather name="message-square" size={14} color={isOverdue ? colors.white : colors.primaryForeground} />
+            <Text style={[styles.actionButtonText, !isOverdue && { color: colors.primaryForeground }]}>{buttonLabel}</Text>
           </>
         )}
       </PressableRow>
@@ -1506,11 +1506,11 @@ export function SmsContactCard({
                   </PressableRow>
                   <PressableRow style={[styles.sendButton, { backgroundColor: buttonBg }]} onPress={handleSendSms} disabled={isSending || !previewMessage.trim()} >
                     {isSending ? (
-                      <ActivityIndicator size="small" color={colors.white} />
+                      <ActivityIndicator size="small" color={isOverdue ? colors.white : colors.primaryForeground} />
                     ) : (
                       <>
-                        <Feather name="send" size={14} color={colors.white} />
-                        <Text style={styles.sendButtonText}>Send</Text>
+                        <Feather name="send" size={14} color={isOverdue ? colors.white : colors.primaryForeground} />
+                        <Text style={[styles.sendButtonText, !isOverdue && { color: colors.primaryForeground }]}>Send</Text>
                       </>
                     )}
                   </PressableRow>

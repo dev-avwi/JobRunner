@@ -536,7 +536,7 @@ export default function ExpensesScreen() {
                 </Text>
                 {!searchQuery && activeFilter === 'all' && (
                   <PressableRow style={styles.emptyButton} onPress={() => { resetForm(); setShowExpenseModal(true); }} >
-                    <Feather name="plus" size={14} color={colors.white} />
+                    <Feather name="plus" size={14} color={colors.primaryForeground} />
                     <Text style={styles.emptyButtonText}>Record Expense</Text>
                   </PressableRow>
                 )}
@@ -1054,7 +1054,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
     emptyButtonText: {
       fontSize: 14,
       fontWeight: '600',
-      color: colors.white,
+      color: colors.primaryForeground,
     },
     expensesList: {
       gap: spacing.xs,

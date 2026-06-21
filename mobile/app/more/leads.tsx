@@ -402,7 +402,7 @@ export default function LeadsScreen() {
               <Text style={styles.emptyTitle}>Something went wrong</Text>
               <Text style={styles.emptySubtitle}>{error}</Text>
               <PressableRow style={styles.emptyButton} onPress={() => { setLoading(true); fetchLeads(); }}>
-                <Feather name="refresh-cw" size={iconSizes.sm} color={colors.white} />
+                <Feather name="refresh-cw" size={iconSizes.sm} color={colors.primaryForeground} />
                 <Text style={styles.emptyButtonText}>Retry</Text>
               </PressableRow>
             </View>
@@ -417,7 +417,7 @@ export default function LeadsScreen() {
               </Text>
               {!searchQuery && activeFilter === 'all' && (
                 <PressableRow style={styles.emptyButton} onPress={() => { resetForm(); setEditingLead(null); setShowForm(true); }}>
-                  <Feather name="plus" size={iconSizes.sm} color={colors.white} />
+                  <Feather name="plus" size={iconSizes.sm} color={colors.primaryForeground} />
                   <Text style={styles.emptyButtonText}>Add Lead</Text>
                 </PressableRow>
               )}
@@ -570,19 +570,19 @@ export default function LeadsScreen() {
             </Text>
             <PressableRow style={styles.convertOption} onPress={() => setConvertOptions(p => ({ ...p, createJob: !p.createJob }))}>
               <View style={[styles.convertCheckbox, convertOptions.createJob && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                {convertOptions.createJob && <Feather name="check" size={14} color={colors.white} />}
+                {convertOptions.createJob && <Feather name="check" size={14} color={colors.primaryForeground} />}
               </View>
               <Text style={styles.convertOptionText}>Create a job</Text>
             </PressableRow>
             <PressableRow style={styles.convertOption} onPress={() => setConvertOptions(p => ({ ...p, createQuote: !p.createQuote }))}>
               <View style={[styles.convertCheckbox, convertOptions.createQuote && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                {convertOptions.createQuote && <Feather name="check" size={14} color={colors.white} />}
+                {convertOptions.createQuote && <Feather name="check" size={14} color={colors.primaryForeground} />}
               </View>
               <Text style={styles.convertOptionText}>Create a quote</Text>
             </PressableRow>
             <PressableRow style={styles.convertOption} onPress={() => setConvertOptions(p => ({ ...p, createInspection: !p.createInspection }))}>
               <View style={[styles.convertCheckbox, convertOptions.createInspection && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                {convertOptions.createInspection && <Feather name="check" size={14} color={colors.white} />}
+                {convertOptions.createInspection && <Feather name="check" size={14} color={colors.primaryForeground} />}
               </View>
               <Text style={styles.convertOptionText}>Create an inspection</Text>
             </PressableRow>
@@ -591,9 +591,9 @@ export default function LeadsScreen() {
                 <Text style={styles.convertCancelText}>Cancel</Text>
               </PressableRow>
               <PressableRow style={[styles.convertConfirmBtn, { backgroundColor: colors.primary }]} onPress={handleConvert} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={colors.white} /> : (
+                {saving ? <ActivityIndicator size="small" color={colors.primaryForeground} /> : (
                   <>
-                    <Feather name="user-check" size={16} color={colors.white} />
+                    <Feather name="user-check" size={16} color={colors.primaryForeground} />
                     <Text style={styles.convertConfirmText}>Convert</Text>
                   </>
                 )}
@@ -632,7 +632,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   emptyTitle: { fontSize: 17, fontWeight: '600', color: colors.foreground },
   emptySubtitle: { fontSize: 14, color: colors.mutedForeground, textAlign: 'center', lineHeight: 20 },
   emptyButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: 10, borderRadius: radius.lg, marginTop: spacing.sm },
-  emptyButtonText: { fontSize: 14, fontWeight: '600', color: colors.white },
+  emptyButtonText: { fontSize: 14, fontWeight: '600', color: colors.primaryForeground },
   card: { backgroundColor: colors.card, borderRadius: radius.xl, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden' },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, paddingBottom: spacing.sm },
   cardAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' },
@@ -673,5 +673,5 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   convertCancelBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md },
   convertCancelText: { ...typography.body, color: colors.mutedForeground },
   convertConfirmBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md },
-  convertConfirmText: { ...typography.label, color: colors.white },
+  convertConfirmText: { ...typography.label, color: colors.primaryForeground },
 });

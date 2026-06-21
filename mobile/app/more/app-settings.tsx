@@ -641,7 +641,7 @@ export default function AppSettingsScreen() {
                       <Feather 
                         name={icon as any} 
                         size={22} 
-                        color={themeMode === mode ? colors.white : colors.mutedForeground} 
+                        color={themeMode === mode ? colors.primaryForeground : colors.mutedForeground} 
                       />
                     </View>
                     <Text style={[
@@ -819,9 +819,9 @@ export default function AppSettingsScreen() {
                     {(isSyncing || isFullSyncing) ? (
                       <ActivityIndicator size="small" color={colors.white} />
                     ) : (
-                      <Feather name="refresh-cw" size={16} color={isOnline ? colors.white : colors.mutedForeground} />
+                      <Feather name="refresh-cw" size={16} color={isOnline ? colors.primaryForeground : colors.mutedForeground} />
                     )}
-                    <Text style={[styles.syncButtonText, { color: isOnline ? colors.white : colors.mutedForeground }]}>
+                    <Text style={[styles.syncButtonText, { color: isOnline ? ((isSyncing || isFullSyncing) ? colors.white : colors.primaryForeground) : colors.mutedForeground }]}>
                       {(isSyncing || isFullSyncing) ? 'Syncing...' : 'Sync Now'}
                     </Text>
                   </PressableRow>

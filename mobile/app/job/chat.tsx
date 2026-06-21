@@ -416,7 +416,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     lineHeight: 21,
   },
   messageTextOwn: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   messageTextOther: {
     color: colors.foreground,

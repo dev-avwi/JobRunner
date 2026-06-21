@@ -1126,7 +1126,7 @@ export default function PhotoLibrary() {
         {selectionMode && (
           <View style={styles.thumbSelectOverlay}>
             <View style={[styles.thumbCheckbox, isSelected && styles.thumbCheckboxSelected]}>
-              {isSelected && <Feather name="check" size={14} color={colors.white} />}
+              {isSelected && <Feather name="check" size={14} color={colors.primaryForeground} />}
             </View>
           </View>
         )}

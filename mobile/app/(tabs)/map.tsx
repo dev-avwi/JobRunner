@@ -1548,7 +1548,7 @@ export default function MapScreen() {
             onPress={() => router.push('/(tabs)/jobs')}
             activeOpacity={0.8}
           >
-            <Text style={{ color: colors.white, fontWeight: '600' }}>View My Jobs</Text>
+            <Text style={{ color: colors.primaryForeground, fontWeight: '600' }}>View My Jobs</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -285,7 +285,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     lineHeight: 18,
   },
   templateChipTextActive: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   templatesContainer: {
     flexDirection: 'row',

@@ -292,7 +292,7 @@ export default function SubcontractorsScreen() {
         )}
         {sub.kind === 'magic_link' && (
           <PressableRow style={[styles.upgradeButton, !hasTeamPlan && styles.upgradeButtonDisabled]} onPress={() => openUpgrade(sub)} accessibilityLabel={`Upgrade ${sub.name} to a full account`} accessibilityRole="button" accessibilityHint={ hasTeamPlan ? 'Sends them an invite to create their own login.' : 'Requires a Team plan.' } testID={`button-upgrade-sub-${sub.id}`} >
-            <Feather name="arrow-up-circle" size={14} color={colors.white} />
+            <Feather name="arrow-up-circle" size={14} color={colors.primaryForeground} />
             <Text style={styles.upgradeButtonText}>Upgrade</Text>
           </PressableRow>
         )}
@@ -382,7 +382,7 @@ export default function SubcontractorsScreen() {
               <Text style={styles.emptyTitle}>Couldn't load subs</Text>
               <Text style={styles.emptyDesc}>{fetchError}</Text>
               <PressableRow style={styles.retryButton} onPress={() => { setIsLoading(true); fetchSubs(); }} accessibilityLabel="Retry loading subcontractors" accessibilityRole="button" testID="button-subs-retry" >
-                <Feather name="refresh-cw" size={14} color={colors.white} />
+                <Feather name="refresh-cw" size={14} color={colors.primaryForeground} />
                 <Text style={styles.retryButtonText}>Retry</Text>
               </PressableRow>
             </View>
@@ -401,7 +401,7 @@ export default function SubcontractorsScreen() {
               </Text>
               {!search && (
                 <PressableRow style={styles.retryButton} onPress={() => router.push('/(tabs)/jobs' as any)} accessibilityLabel="Go to jobs" accessibilityRole="button" testID="button-go-to-jobs" >
-                  <Feather name="briefcase" size={14} color={colors.white} />
+                  <Feather name="briefcase" size={14} color={colors.primaryForeground} />
                   <Text style={styles.retryButtonText}>Open Jobs</Text>
                 </PressableRow>
               )}
@@ -512,10 +512,10 @@ export default function SubcontractorsScreen() {
                 </PressableRow>
                 <PressableRow style={[ styles.modalBtn, styles.modalBtnPrimary, isUpgrading && styles.modalBtnDisabled, ]} disabled={isUpgrading} onPress={handleUpgrade} testID="button-upgrade-submit" >
                   {isUpgrading ? (
-                    <ActivityIndicator size="small" color={colors.white} />
+                    <ActivityIndicator size="small" color={colors.primaryForeground} />
                   ) : (
                     <>
-                      <Feather name="arrow-up-circle" size={16} color={colors.white} />
+                      <Feather name="arrow-up-circle" size={16} color={colors.primaryForeground} />
                       <Text style={styles.modalBtnPrimaryText}>Send invite</Text>
                     </>
                   )}
@@ -625,7 +625,7 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 8,
       marginTop: spacing.lg,
     },
-    retryButtonText: { color: colors.white, fontSize: 13, fontWeight: '600' },
+    retryButtonText: { color: colors.primaryForeground, fontSize: 13, fontWeight: '600' },
 
     list: { paddingHorizontal: spacing.lg, gap: 10 },
     subCard: {
@@ -681,7 +681,7 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.primary,
     },
     upgradeButtonDisabled: { opacity: 0.55 },
-    upgradeButtonText: { color: colors.white, fontSize: 13, fontWeight: '600' },
+    upgradeButtonText: { color: colors.primaryForeground, fontSize: 13, fontWeight: '600' },
 
     modalOverlay: {
       flex: 1,
@@ -771,5 +771,5 @@ const createStyles = (colors: ThemeColors) =>
     modalBtnGhostText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
     modalBtnPrimary: { backgroundColor: colors.primary },
     modalBtnDisabled: { opacity: 0.6 },
-    modalBtnPrimaryText: { color: colors.white, fontSize: 14, fontWeight: '600' },
+    modalBtnPrimaryText: { color: colors.primaryForeground, fontSize: 14, fontWeight: '600' },
   });

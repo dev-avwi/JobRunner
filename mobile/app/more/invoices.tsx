@@ -125,7 +125,7 @@ function InvoiceCard({
                   <Feather 
                     name={quickAction.icon} 
                     size={14} 
-                    color={quickAction.variant === 'primary' ? colors.white : colors.foreground} 
+                    color={quickAction.variant === 'primary' ? colors.primaryForeground : colors.foreground} 
                   />
                   <Text style={[
                     styles.actionButtonText,
@@ -413,7 +413,7 @@ export default function InvoicesScreen() {
                   <Text style={styles.pageSubtitle}>{invoices.length} total</Text>
                 </View>
                 <PressableRow style={styles.newButton} onPress={navigateToCreateInvoice} >
-                  <Feather name="plus" size={iconSizes.lg} color={colors.white} />
+                  <Feather name="plus" size={iconSizes.lg} color={colors.primaryForeground} />
                   <Text style={styles.newButtonText}>New Invoice</Text>
                 </PressableRow>
               </View>
@@ -702,7 +702,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.foreground,
   },
   filterPillTextActive: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   filterCount: {
     backgroundColor: colors.muted,
@@ -890,7 +890,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   
   // Details section - indented to align with text (pl-12 = 48px, approx icon width + gap)

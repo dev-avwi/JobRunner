@@ -648,7 +648,7 @@ export function SubcontractorDashboard() {
           >
             <Text style={[
               styles.viewToggleText,
-              viewMode === 'today' && { color: colors.white, fontWeight: '700' },
+              viewMode === 'today' && { color: colors.primaryForeground, fontWeight: '700' },
             ]}>
               Today
             </Text>
@@ -663,7 +663,7 @@ export function SubcontractorDashboard() {
           >
             <Text style={[
               styles.viewToggleText,
-              viewMode === 'week' && { color: colors.white, fontWeight: '700' },
+              viewMode === 'week' && { color: colors.primaryForeground, fontWeight: '700' },
             ]}>
               This Week
             </Text>
@@ -1040,7 +1040,7 @@ export function SubcontractorDashboard() {
                         alignItems: 'center', justifyContent: 'center',
                         marginRight: spacing.sm,
                       }}>
-                        {selectedJobs[item.jobId] && <Feather name="check" size={14} color={colors.white} />}
+                        {selectedJobs[item.jobId] && <Feather name="check" size={14} color={colors.primaryForeground} />}
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }} numberOfLines={1}>
@@ -1158,7 +1158,7 @@ export function SubcontractorDashboard() {
                                           alignItems: 'center', justifyContent: 'center',
                                           marginRight: 6,
                                         }}>
-                                          {isIncluded && <Feather name="check" size={10} color={colors.white} />}
+                                          {isIncluded && <Feather name="check" size={10} color={colors.primaryForeground} />}
                                         </View>
                                         <Text style={{ fontSize: 11, color: colors.foreground, flex: 1 }}>
                                           {new Date(te.startTime).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} — {te.hours.toFixed(1)}h ({formatCurrencyUtil(te.amount)})
@@ -1235,9 +1235,9 @@ export function SubcontractorDashboard() {
                     activeOpacity={0.7}
                   >
                     {isSubmittingInvoice ? (
-                      <ActivityIndicator size="small" color={colors.white} />
+                      <ActivityIndicator size="small" color={colors.primaryForeground} />
                     ) : (
-                      <Text style={[styles.modalButtonText, { color: colors.white }]}>Submit Invoice</Text>
+                      <Text style={[styles.modalButtonText, { color: colors.primaryForeground }]}>Submit Invoice</Text>
                     )}
                   </TouchableOpacity>
                 </View>

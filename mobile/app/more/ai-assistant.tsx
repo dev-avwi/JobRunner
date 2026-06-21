@@ -766,9 +766,9 @@ export default function AIAssistantScreen() {
           />
           <PressableRow onPress={handleSendMessage} disabled={!chatMessage.trim() || isSending} style={[ styles.sendButton, (!chatMessage.trim() || isSending) && styles.sendButtonDisabled ]} >
             {isSending ? (
-              <ActivityIndicator size="small" color={colors.white} />
+              <ActivityIndicator size="small" color={colors.mutedForeground} />
             ) : (
-              <Feather name="send" size={20} color={colors.white} />
+              <Feather name="send" size={20} color={chatMessage.trim() ? colors.primaryForeground : colors.mutedForeground} />
             )}
           </PressableRow>
         </View>

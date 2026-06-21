@@ -1443,7 +1443,7 @@ export default function AutopilotScreen() {
                 Automations
               </Text>
               <View style={[styles.tabBadge, { backgroundColor: colors.primary }]}>
-                <Text style={styles.tabBadgeText}>{automations.length}</Text>
+                <Text style={[styles.tabBadgeText, { color: colors.primaryForeground }]}>{automations.length}</Text>
               </View>
             </PressableRow>
 

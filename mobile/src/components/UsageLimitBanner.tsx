@@ -85,8 +85,8 @@ export default function UsageLimitBanner({ variant = 'compact' }: UsageLimitBann
         </View>
       </View>
       <PressableRow style={[styles.upgradeButton, hasExceeded ? styles.upgradeButtonExceeded : styles.upgradeButtonWarning]} onPress={() => router.push('/more/subscription')} >
-        <Text style={styles.upgradeButtonText}>View Plan</Text>
-        <Feather name="arrow-right" size={12} color={colors.white} />
+        <Text style={[styles.upgradeButtonText, !hasExceeded && { color: colors.primaryForeground }]}>View Plan</Text>
+        <Feather name="arrow-right" size={12} color={hasExceeded ? colors.white : colors.primaryForeground} />
       </PressableRow>
     </View>
   );

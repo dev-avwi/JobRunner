@@ -408,7 +408,7 @@ export default function EquipmentScreen() {
                 <Feather
                   name={config.icon}
                   size={iconSizes.sm}
-                  color={isActive ? colors.white : config.color}
+                  color={isActive ? colors.primaryForeground : config.color}
                 />
               )}
               <Text style={[styles.filterText, isActive && styles.activeFilterText]}>
@@ -520,7 +520,7 @@ export default function EquipmentScreen() {
       </Text>
       {activeFilter === 'all' && (
         <PressableRow style={styles.emptyButton} onPress={openCreate} >
-          <Feather name="plus" size={iconSizes.md} color={colors.white} />
+          <Feather name="plus" size={iconSizes.md} color={colors.primaryForeground} />
           <Text style={styles.emptyButtonText}>Add Equipment</Text>
         </PressableRow>
       )}
@@ -818,7 +818,7 @@ export default function EquipmentScreen() {
               <View style={styles.maintenanceHeader}>
                 <Text style={styles.detailSectionTitle}>MAINTENANCE HISTORY</Text>
                 <PressableRow style={styles.addMaintenanceBtn} onPress={() => { setMaintenanceForm(defaultMaintenanceForm); setShowMaintenanceModal(true); }} >
-                  <Feather name="plus" size={14} color={colors.white} />
+                  <Feather name="plus" size={14} color={colors.primaryForeground} />
                   <Text style={styles.addMaintenanceBtnText}>Add</Text>
                 </PressableRow>
               </View>
@@ -989,7 +989,7 @@ export default function EquipmentScreen() {
             </PressableRow>
             <PressableRow style={[styles.categoryModalSave, (!newCategoryName.trim() || isCreatingCategory) && { opacity: 0.5 }]} onPress={handleCreateCategory} disabled={!newCategoryName.trim() || isCreatingCategory} >
               {isCreatingCategory ? (
-                <ActivityIndicator size="small" color={colors.white} />
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
                 <Text style={styles.categoryModalSaveText}>Create</Text>
               )}
@@ -1028,7 +1028,7 @@ export default function EquipmentScreen() {
                 <Text style={styles.pageSubtitle}>{equipment.length} total items</Text>
               </View>
               <PressableRow style={styles.addButton} onPress={openCreate} >
-                <Feather name="plus" size={18} color={colors.white} />
+                <Feather name="plus" size={18} color={colors.primaryForeground} />
                 <Text style={styles.addButtonText}>Add</Text>
               </PressableRow>
             </View>

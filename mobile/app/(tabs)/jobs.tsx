@@ -799,7 +799,7 @@ export default function JobsScreen() {
               onPress={toggleBatchMode}
               activeOpacity={0.7}
             >
-              <Feather name="check-square" size={20} color={batchMode ? colors.white : colors.foreground} />
+              <Feather name="check-square" size={20} color={batchMode ? colors.primaryForeground : colors.foreground} />
             </TouchableOpacity>
           )}
           <View style={styles.headerViewToggle}>
@@ -820,7 +820,7 @@ export default function JobsScreen() {
           </View>
           {canWriteJobs && (
             <TouchableOpacity style={styles.headerAddIcon} onPress={navigateToCreateJob} activeOpacity={0.85}>
-              <Feather name="plus" size={22} color={colors.white} />
+              <Feather name="plus" size={22} color={colors.primaryForeground} />
             </TouchableOpacity>
           )}
         </View>
@@ -845,7 +845,7 @@ export default function JobsScreen() {
           onPress={() => setAdvancedOpen(prev => !prev)}
           activeOpacity={0.7}
         >
-          <Feather name="sliders" size={20} color={(advancedOpen || hasAdvancedFilters) ? colors.white : colors.foreground} />
+          <Feather name="sliders" size={20} color={(advancedOpen || hasAdvancedFilters) ? colors.primaryForeground : colors.foreground} />
           {activeFilterCount > 0 && (
             <View style={styles.filterBadge}>
               <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
@@ -1304,7 +1304,7 @@ export default function JobsScreen() {
               onPress={() => toggleJobSelection(job.id)}
               activeOpacity={0.7}
             >
-              {isSelected && <Feather name="check" size={14} color={colors.white} />}
+              {isSelected && <Feather name="check" size={14} color={colors.primaryForeground} />}
             </TouchableOpacity>
           )}
           <JobCard
@@ -1771,7 +1771,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     color: colors.foreground,
   },
   advancedStatusChipTextActive: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   advancedDateRow: {
     flexDirection: 'row',
@@ -1892,7 +1892,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   modalSaveText: {
     ...typography.caption,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
 
   filtersScroll: {
@@ -1924,7 +1924,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     color: colors.foreground,
   },
   filterPillTextActive: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   filterCount: {
     backgroundColor: colors.muted,
@@ -2161,7 +2161,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   invoiceBtnText: {
     ...typography.captionSmall,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
 
   urgencyBadge: {
@@ -2276,7 +2276,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   batchInvoiceBtnText: {
     ...typography.caption,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   batchCheckbox: {
     width: 24,

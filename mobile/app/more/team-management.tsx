@@ -2338,7 +2338,7 @@ export default function TeamManagementScreen() {
                   style={styles.inviteButton}
                   onPress={() => setShowInviteModal(true)}
                 >
-                  <Feather name="user-plus" size={20} color={colors.white} />
+                  <Feather name="user-plus" size={20} color={colors.primaryForeground} />
                 </TouchableOpacity>
               )}
             </View>
@@ -2471,7 +2471,7 @@ export default function TeamManagementScreen() {
                     style={styles.emptyStateButton}
                     onPress={() => setShowInviteModal(true)}
                   >
-                    <Feather name="user-plus" size={18} color={colors.white} />
+                    <Feather name="user-plus" size={18} color={colors.primaryForeground} />
                     <Text style={styles.emptyStateButtonText}>Invite Member</Text>
                   </TouchableOpacity>
                 )}
@@ -2622,10 +2622,10 @@ export default function TeamManagementScreen() {
                       disabled={isSending}
                     >
                       {isSending ? (
-                        <ActivityIndicator size="small" color={colors.white} />
+                        <ActivityIndicator size="small" color={colors.primaryForeground} />
                       ) : (
                         <>
-                          <Feather name="send" size={16} color={colors.white} />
+                          <Feather name="send" size={16} color={colors.primaryForeground} />
                           <Text style={styles.saveButtonText}>Send Invite</Text>
                         </>
                       )}
@@ -2688,11 +2688,11 @@ export default function TeamManagementScreen() {
                     disabled={isGeneratingCode}
                   >
                     {isGeneratingCode ? (
-                      <ActivityIndicator color={colors.white} size="small" />
+                      <ActivityIndicator color={colors.primaryForeground} size="small" />
                     ) : (
                       <>
-                        <Feather name="zap" size={18} color={colors.white} />
-                        <Text style={{ color: colors.white, fontSize: 15, fontWeight: '600' }}>Generate Code</Text>
+                        <Feather name="zap" size={18} color={colors.primaryForeground} />
+                        <Text style={{ color: colors.primaryForeground, fontSize: 15, fontWeight: '600' }}>Generate Code</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -2915,7 +2915,7 @@ export default function TeamManagementScreen() {
                         );
                       }}
                     >
-                      <Feather name="edit-2" size={16} color={colors.white} />
+                      <Feather name="edit-2" size={16} color={colors.primaryForeground} />
                       <Text style={styles.saveButtonText}>Change Role</Text>
                     </TouchableOpacity>
                   </>
@@ -3014,10 +3014,10 @@ export default function TeamManagementScreen() {
                   disabled={isSavingEdit}
                 >
                   {isSavingEdit ? (
-                    <ActivityIndicator size="small" color={colors.white} />
+                    <ActivityIndicator size="small" color={colors.primaryForeground} />
                   ) : (
                     <>
-                      <Feather name="save" size={16} color={colors.white} />
+                      <Feather name="save" size={16} color={colors.primaryForeground} />
                       <Text style={styles.saveButtonText}>Save Changes</Text>
                     </>
                   )}
@@ -3100,7 +3100,7 @@ export default function TeamManagementScreen() {
                               onPress={() => setSelectedPermissions([...preset.permissions])}
                             >
                               <View style={[styles.presetIcon, isActive && styles.presetIconSelected]}>
-                                <Feather name={preset.icon as any} size={14} color={isActive ? colors.white : colors.mutedForeground} />
+                                <Feather name={preset.icon as any} size={14} color={isActive ? colors.primaryForeground : colors.mutedForeground} />
                               </View>
                               <View style={styles.presetContent}>
                                 <Text style={styles.presetName}>{preset.name}</Text>
@@ -3122,7 +3122,7 @@ export default function TeamManagementScreen() {
                                 onPress={() => setSelectedPermissions([...preset.permissions])}
                               >
                                 <View style={[styles.presetIcon, isActive && styles.presetIconSelected]}>
-                                  <Feather name={preset.icon as any} size={14} color={isActive ? colors.white : colors.mutedForeground} />
+                                  <Feather name={preset.icon as any} size={14} color={isActive ? colors.primaryForeground : colors.mutedForeground} />
                                 </View>
                                 <View style={styles.presetContent}>
                                   <Text style={styles.presetName}>{preset.name}</Text>
@@ -3200,7 +3200,7 @@ export default function TeamManagementScreen() {
                                   }
                                 ]}>
                                   {isSelected && (
-                                    <Feather name="check" size={14} color={colors.white} />
+                                    <Feather name="check" size={14} color={colors.primaryForeground} />
                                   )}
                                 </View>
                                 <Text style={styles.permissionLabel}>{perm.label}</Text>
@@ -3250,10 +3250,10 @@ export default function TeamManagementScreen() {
                   disabled={isSavingPermissions}
                 >
                   {isSavingPermissions ? (
-                    <ActivityIndicator size="small" color={colors.white} />
+                    <ActivityIndicator size="small" color={colors.primaryForeground} />
                   ) : (
                     <>
-                      <Feather name="save" size={16} color={colors.white} />
+                      <Feather name="save" size={16} color={colors.primaryForeground} />
                       <Text style={styles.saveButtonText}>Save</Text>
                     </>
                   )}
@@ -3328,7 +3328,7 @@ export default function TeamManagementScreen() {
                                 backgroundColor: isSelected ? colors.primary : 'transparent',
                               }
                             ]}>
-                              {isSelected && <Feather name="check" size={12} color={colors.white} />}
+                              {isSelected && <Feather name="check" size={12} color={colors.primaryForeground} />}
                             </View>
                           </View>
                           <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
@@ -3366,10 +3366,10 @@ export default function TeamManagementScreen() {
                   disabled={isAssigningJob || !selectedJobId}
                 >
                   {isAssigningJob ? (
-                    <ActivityIndicator size="small" color={colors.white} />
+                    <ActivityIndicator size="small" color={colors.primaryForeground} />
                   ) : (
                     <>
-                      <Feather name="check" size={16} color={colors.white} />
+                      <Feather name="check" size={16} color={colors.primaryForeground} />
                       <Text style={styles.saveButtonText}>Assign Job</Text>
                     </>
                   )}

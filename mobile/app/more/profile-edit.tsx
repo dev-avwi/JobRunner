@@ -100,7 +100,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
 });
 

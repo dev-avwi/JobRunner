@@ -320,7 +320,7 @@ export default function DocumentsScreen() {
           </PressableRow>
         </View>
         <PressableRow style={styles.addButton} onPress={() => { if (activeTab === 'quotes') router.push('/more/quote/new'); else if (activeTab === 'invoices') router.push('/more/invoice/new'); }} >
-          <Feather name="plus" size={18} color={colors.white} />
+          <Feather name="plus" size={18} color={colors.primaryForeground} />
           <Text style={styles.addButtonText}>New</Text>
         </PressableRow>
       </View>
@@ -446,7 +446,7 @@ export default function DocumentsScreen() {
           const count = filter === 'all' ? quotes.length : quotes.filter(q => q.status === filter).length;
           return (
             <PressableRow key={filter} style={[styles.filterChip, quoteFilter === filter && styles.activeFilterChip]} onPress={() => setQuoteFilter(filter)} >
-              {config && <Feather name={config.icon} size={14} color={quoteFilter === filter ? colors.white : config.color} />}
+              {config && <Feather name={config.icon} size={14} color={quoteFilter === filter ? colors.primaryForeground : config.color} />}
               <Text style={[styles.filterText, quoteFilter === filter && styles.activeFilterText]}>
                 {filter.charAt(0).toUpperCase() + filter.slice(1)}
               </Text>
@@ -470,7 +470,7 @@ export default function DocumentsScreen() {
           const count = filter === 'all' ? invoices.length : invoices.filter(i => i.status === filter).length;
           return (
             <PressableRow key={filter} style={[styles.filterChip, invoiceFilter === filter && styles.activeFilterChip]} onPress={() => setInvoiceFilter(filter)} >
-              {config && <Feather name={config.icon} size={14} color={invoiceFilter === filter ? colors.white : config.color} />}
+              {config && <Feather name={config.icon} size={14} color={invoiceFilter === filter ? colors.primaryForeground : config.color} />}
               <Text style={[styles.filterText, invoiceFilter === filter && styles.activeFilterText]}>
                 {filter.charAt(0).toUpperCase() + filter.slice(1)}
               </Text>
@@ -986,7 +986,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     minHeight: 40,
   },
   addButtonText: {
-    color: colors.white,
+    color: colors.primaryForeground,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1125,7 +1125,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     color: colors.foreground,
   },
   activeFilterText: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   filterBadge: {
     backgroundColor: colors.muted,

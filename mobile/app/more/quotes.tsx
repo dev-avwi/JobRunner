@@ -149,7 +149,7 @@ function QuoteCard({
                   <Feather 
                     name={quickAction.icon} 
                     size={14} 
-                    color={quickAction.variant === 'primary' ? colors.white : colors.foreground} 
+                    color={quickAction.variant === 'primary' ? colors.primaryForeground : colors.foreground} 
                   />
                   <Text style={[
                     styles.actionButtonText,
@@ -396,7 +396,7 @@ export default function QuotesScreen() {
                   <Text style={styles.pageSubtitle}>{quotes.length} total</Text>
                 </View>
                 <PressableRow style={styles.newButton} onPress={navigateToCreateQuote} >
-                  <Feather name="plus" size={iconSizes.lg} color={colors.white} />
+                  <Feather name="plus" size={iconSizes.lg} color={colors.primaryForeground} />
                   <Text style={styles.newButtonText}>New Quote</Text>
                 </PressableRow>
               </View>
@@ -432,7 +432,7 @@ export default function QuotesScreen() {
                       <Feather 
                         name={filter.icon as any} 
                         size={12} 
-                        color={isActive ? colors.white : colors.foreground} 
+                        color={isActive ? colors.primaryForeground : colors.foreground} 
                       />
                       <Text style={[
                         styles.filterPillText,
@@ -527,7 +527,7 @@ export default function QuotesScreen() {
                 {!searchQuery && activeFilter === 'all' && (
                   <>
                     <PressableRow style={styles.emptyStateButton} onPress={navigateToCreateQuote} >
-                      <Feather name="plus" size={16} color={colors.white} />
+                      <Feather name="plus" size={16} color={colors.primaryForeground} />
                       <Text style={styles.emptyStateButtonText}>Create Your First Quote</Text>
                     </PressableRow>
                     <Text style={styles.emptyStateTip}>
@@ -661,7 +661,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.foreground,
   },
   filterPillTextActive: {
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   filterCount: {
     backgroundColor: colors.muted,
@@ -744,7 +744,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.lg,
   },
   emptyStateButtonText: {
-    color: colors.white,
+    color: colors.primaryForeground,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -876,7 +876,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   
   // Details section - indented to align with text (pl-12 = 48px, approx icon width + gap)

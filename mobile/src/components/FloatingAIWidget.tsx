@@ -365,7 +365,7 @@ export function FloatingAIWidget({ isVisible, onClose }: FloatingAIWidgetProps) 
 
                         {msg.richContent.filter(item => item.type === 'action_button').map((item) => (
                           <PressableRow key={item.id} onPress={() => handleRichContentClick(item)} style={styles.actionButton} >
-                            {item.label.includes('Map') && <Feather name="map-pin" size={14} color={colors.white} />}
+                            {item.label.includes('Map') && <Feather name="map-pin" size={14} color={colors.primaryForeground} />}
                             <Text style={styles.actionButtonText}>{item.label}</Text>
                           </PressableRow>
                         ))}
@@ -377,7 +377,7 @@ export function FloatingAIWidget({ isVisible, onClose }: FloatingAIWidgetProps) 
                   {msg.role === 'assistant' && pendingAction && index === chatHistory.length - 1 && (
                     <View style={styles.confirmationButtons}>
                       <PressableRow onPress={confirmAction} style={styles.confirmButton}>
-                        <Feather name="check" size={16} color={colors.white} />
+                        <Feather name="check" size={16} color={colors.primaryForeground} />
                         <Text style={styles.confirmButtonText}>
                           {pendingAction.type === 'send_email' ? 'Send it' : 'Do it'}
                         </Text>
@@ -423,7 +423,7 @@ export function FloatingAIWidget({ isVisible, onClose }: FloatingAIWidgetProps) 
               multiline={false}
             />
             <PressableRow onPress={() => sendMessage(message)} disabled={!message.trim() || isLoading} style={[ styles.sendButton, (!message.trim() || isLoading) && styles.sendButtonDisabled, ]} >
-              <Feather name="send" size={20} color={colors.white} />
+              <Feather name="send" size={20} color={colors.primaryForeground} />
             </PressableRow>
           </View>
         </Animated.View>
@@ -436,7 +436,7 @@ export function FloatingAIWidget({ isVisible, onClose }: FloatingAIWidgetProps) 
 export function FloatingAIButton({ onPress }: { onPress: () => void }) {
   return (
     <PressableRow onPress={onPress} style={styles.floatingButton} >
-      <Feather name="star" size={24} color={colors.white} />
+      <Feather name="star" size={24} color={colors.primaryForeground} />
     </PressableRow>
   );
 }
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   confirmationButtons: {
     flexDirection: 'row',
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   cancelButton: {
     paddingHorizontal: 16,

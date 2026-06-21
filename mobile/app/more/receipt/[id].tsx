@@ -663,10 +663,10 @@ ${businessName}`;
         <View style={styles.actionsRow}>
           <PressableRow style={[styles.actionButton, styles.actionButtonPrimary]} onPress={handleSharePdf} disabled={isDownloadingPdf} data-testid="button-download-pdf" >
             {isDownloadingPdf ? (
-              <ActivityIndicator size="small" color={colors.white} />
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
             ) : (
               <>
-                <Feather name="download" size={18} color={colors.white} />
+                <Feather name="download" size={18} color={colors.primaryForeground} />
                 <Text style={styles.actionButtonPrimaryText}>PDF</Text>
               </>
             )}
@@ -1185,7 +1185,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   actionButtonPrimaryText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.primaryForeground,
   },
   actionButtonTextDisabled: {
     color: colors.mutedForeground,

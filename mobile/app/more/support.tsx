@@ -714,8 +714,8 @@ export default function SupportScreen() {
             ))}
           </View>
           <PressableRow style={[styles.copyDebugButton, { backgroundColor: colors.primary }]} onPress={handleCopyDebugInfo} >
-            <Feather name="copy" size={iconSizes.md} color={colors.white} />
-            <Text style={[styles.copyDebugText, { color: colors.white }]}>Copy Debug Info</Text>
+            <Feather name="copy" size={iconSizes.md} color={colors.primaryForeground} />
+            <Text style={[styles.copyDebugText, { color: colors.primaryForeground }]}>Copy Debug Info</Text>
           </PressableRow>
 
           <View style={styles.footer}>

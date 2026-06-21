@@ -545,7 +545,7 @@ export default function InventoryScreen() {
               <Feather
                 name={tab.icon}
                 size={iconSizes.sm}
-                color={isActive ? colors.white : colors.mutedForeground}
+                color={isActive ? colors.primaryForeground : colors.mutedForeground}
               />
               <Text style={[styles.tabText, isActive && styles.activeTabText]}>
                 {tab.label}
@@ -577,7 +577,7 @@ export default function InventoryScreen() {
         </View>
         {onAddPress && (
           <PressableRow style={styles.pageHeaderAdd} onPress={onAddPress}>
-            <Feather name="plus" size={18} color={colors.white} />
+            <Feather name="plus" size={18} color={colors.primaryForeground} />
             <Text style={styles.pageHeaderAddText}>{addLabel}</Text>
           </PressableRow>
         )}
@@ -741,7 +741,7 @@ export default function InventoryScreen() {
           </Text>
           {!searchQuery && !filterCategoryId && (
             <TouchableOpacity style={styles.emptyButton} onPress={openCreateItem} activeOpacity={0.7}>
-              <Feather name="plus" size={iconSizes.md} color={colors.white} />
+              <Feather name="plus" size={iconSizes.md} color={colors.primaryForeground} />
               <Text style={styles.emptyButtonText}>Add Item</Text>
             </TouchableOpacity>
           )}
@@ -770,7 +770,7 @@ export default function InventoryScreen() {
             Create categories to organize your inventory items.
           </Text>
           <TouchableOpacity style={styles.emptyButton} onPress={() => setShowCategoryModal(true)} activeOpacity={0.7}>
-            <Feather name="plus" size={iconSizes.md} color={colors.white} />
+            <Feather name="plus" size={iconSizes.md} color={colors.primaryForeground} />
             <Text style={styles.emptyButtonText}>Add Category</Text>
           </TouchableOpacity>
         </View>
@@ -861,7 +861,7 @@ export default function InventoryScreen() {
             Create purchase orders to track your supply orders.
           </Text>
           <TouchableOpacity style={styles.emptyButton} onPress={() => setShowPOModal(true)} activeOpacity={0.7}>
-            <Feather name="plus" size={iconSizes.md} color={colors.white} />
+            <Feather name="plus" size={iconSizes.md} color={colors.primaryForeground} />
             <Text style={styles.emptyButtonText}>New Order</Text>
           </TouchableOpacity>
         </View>
@@ -1923,7 +1923,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     minHeight: 40,
   },
   pageHeaderAddText: {
-    color: colors.white,
+    color: colors.primaryForeground,
     fontSize: 14,
     fontWeight: '600',
   },
