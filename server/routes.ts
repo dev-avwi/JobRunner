@@ -45715,7 +45715,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       // Standalone subcontractors own their own business; load their default rate for solo-work earnings
       const [ownBiz] = await db
-        .select({ defaultHourlyRate: businessSettings.defaultHourlyRate })
+        .select({ defaultHourlyRate: businessSettings.defaultHourlyRate, businessName: businessSettings.businessName })
         .from(businessSettings)
         .where(eq(businessSettings.userId, userId))
         .limit(1);
@@ -45827,8 +45827,75 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       // Pending requests (jobs with assignment_status = 'assigned' or 'invited' - not yet accepted)
       const pendingRequests = enrichedJobs.filter(j => pendingStatuses.includes(j.assignmentStatus));
 
-      // Active job (in_progress)
-      const activeJob = enrichedJobs.find(j => j.status === 'in_progress') || null;
+      // Active job — what the subcontractor is CURRENTLY clocked into. The running
+      // time entry (no endTime) is the source of truth, mirroring the owner's
+      // "who's on the clock" view. Falls back to any in_progress assigned job, and
+      // also covers the subcontractor's own solo jobs (not in the assigned list).
+      type EnrichedJob = (typeof enrichedJobs)[number];
+      let activeJob: EnrichedJob | null = enrichedJobs.find(j => j.status === 'in_progress') || null;
+
+      const [runningEntry] = await db
+        .select()
+        .from(timeEntries)
+        .where(and(eq(timeEntries.userId, userId), isNull(timeEntries.endTime)))
+        .orderBy(desc(timeEntries.startTime))
+        .limit(1);
+
+      if (runningEntry?.jobId) {
+        const existing = enrichedJobs.find(j => j.id === runningEntry.jobId);
+        if (existing) {
+          // Assigned job already enriched — pin the live timer start so the card's
+          // elapsed time matches the running timer.
+          activeJob = { ...existing, startedAt: runningEntry.startTime };
+        } else {
+          // Solo job (owned by this subcontractor) or a job not in the assigned
+          // list — load + enrich inline. This is the user's own time entry, so
+          // surfacing the linked job is not a cross-tenant leak.
+          let runningJob = allJobsMap.get(runningEntry.jobId);
+          if (!runningJob) {
+            const [j] = await db.select().from(jobs).where(eq(jobs.id, runningEntry.jobId)).limit(1);
+            runningJob = j;
+          }
+          if (runningJob) {
+            const isOwn = runningJob.userId === userId;
+            let bizName = isOwn ? (ownBiz?.businessName || 'My Business') : (businessMap[runningJob.userId]?.name || 'Business');
+            let bizColor = isOwn ? '#6B7280' : (businessMap[runningJob.userId]?.color || '#6B7280');
+            if (!isOwn && !businessMap[runningJob.userId]) {
+              const [b] = await db
+                .select({ businessName: businessSettings.businessName, brandColor: businessSettings.brandColor })
+                .from(businessSettings)
+                .where(eq(businessSettings.userId, runningJob.userId))
+                .limit(1);
+              if (b?.businessName) bizName = b.businessName;
+              if (b?.brandColor) bizColor = b.brandColor;
+            }
+            let activeClientName: string | null = runningJob.clientId ? (clientMap[runningJob.clientId] || null) : null;
+            if (runningJob.clientId && !activeClientName) {
+              const [c] = await db.select({ name: clients.name }).from(clients).where(eq(clients.id, runningJob.clientId)).limit(1);
+              activeClientName = c?.name || null;
+            }
+            activeJob = {
+              id: runningJob.id,
+              title: runningJob.title,
+              description: runningJob.description,
+              address: runningJob.address,
+              status: runningJob.status,
+              scheduledAt: runningJob.scheduledAt,
+              scheduledTime: runningJob.scheduledTime,
+              estimatedDuration: runningJob.estimatedDuration,
+              latitude: runningJob.latitude,
+              longitude: runningJob.longitude,
+              clientName: activeClientName,
+              businessName: bizName,
+              businessColor: bizColor,
+              businessOwnerId: runningJob.userId,
+              assignmentStatus: 'accepted',
+              completedAt: runningJob.completedAt,
+              startedAt: runningEntry.startTime,
+            };
+          }
+        }
+      }
 
       // Earnings calculations from time entries
       const weekStart = new Date(todayStart);
