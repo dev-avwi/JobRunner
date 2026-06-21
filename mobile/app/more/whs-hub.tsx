@@ -102,6 +102,10 @@ const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: num
   heroSection: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   pageTitle: { fontSize: 28, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 },
   pageSubtitle: { fontSize: 14, color: colors.mutedForeground, marginTop: spacing.xs, lineHeight: 20 },
+  heroTitleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+  heroTitleText: { flex: 1 },
+  heroAddButton: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.md, marginTop: 4, ...shadows.sm },
+  heroAddText: { fontSize: 13, fontWeight: '700', color: colors.primaryForeground },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   statCard: { flex: 1, backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, ...shadows.sm },
   signRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
@@ -1358,6 +1362,17 @@ export default function WhsHubScreen() {
   }
 
   const showFab = !showIncidentForm && !showEmergencyForm && !showJsaForm && !showEnvForm && !showSignForm && !showHazardForm && !showPpeForm && !showTrainingForm;
+  const tabActionLabel: Record<TabKey, string> = {
+    incidents: 'New Report',
+    emergency: 'Add Plan',
+    jsa: 'New JSA',
+    environments: 'Add Hazard',
+    signage: 'Add Sign',
+    hazard_reports: 'New Report',
+    ppe: 'New Checklist',
+    training: 'Add Record',
+  };
+
   const fabAction = () => {
     switch (activeTab) {
       case 'incidents': setShowIncidentForm(true); break;
@@ -1389,10 +1404,18 @@ export default function WhsHubScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.heroSection}>
-              <Text style={styles.pageTitle}>WHS Safety</Text>
-              <Text style={styles.pageSubtitle}>
-                Incidents, JSAs & site compliance all in one place.
-              </Text>
+              <View style={styles.heroTitleRow}>
+                <View style={styles.heroTitleText}>
+                  <Text style={styles.pageTitle}>WHS Safety</Text>
+                  <Text style={styles.pageSubtitle}>
+                    Incidents, JSAs & site compliance all in one place.
+                  </Text>
+                </View>
+                <PressableRow style={styles.heroAddButton} onPress={fabAction}>
+                  <Feather name="plus" size={16} color={colors.primaryForeground} />
+                  <Text style={styles.heroAddText}>{tabActionLabel[activeTab]}</Text>
+                </PressableRow>
+              </View>
 
               <View style={styles.statsRow}>
                 {[
