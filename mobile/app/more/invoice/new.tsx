@@ -121,6 +121,30 @@ function createStyles(colors: ThemeColors) {
     tabTextActive: {
       color: colors.primaryForeground,
     },
+    tabSwitcher: {
+      flexDirection: 'row',
+      backgroundColor: colors.muted,
+      borderRadius: 12,
+      padding: 4,
+      gap: 4,
+      marginTop: 2,
+    },
+    tabSwitch: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      minHeight: 40,
+      borderRadius: 8,
+    },
+    tabSwitchActive: {
+      backgroundColor: colors.primary,
+    },
+    tabSwitchText: {
+      fontSize: 15,
+      fontWeight: '600',
+    },
     previewContainer: {
       flex: 1,
       backgroundColor: colors.background,
@@ -1226,68 +1250,27 @@ export default function NewInvoiceScreen() {
             </View>
           </View>
           
-          {/* Tab Switcher */}
-          <View style={{
-            flexDirection: 'row',
-            backgroundColor: colors.muted,
-            borderRadius: 10,
-            padding: 4,
-            width: '100%',
-          }}>
-            <Pressable
-              style={{
-                flex: 1,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 10,
-                paddingHorizontal: 14,
-                borderRadius: 8,
-                gap: 8,
-                backgroundColor: activeTab === 'edit' ? colors.primary : 'transparent',
-              }}
-              onPress={() => setActiveTab('edit')}
-            >
-              <Feather 
-                name="edit-2" 
-                size={16} 
-                color={activeTab === 'edit' ? colors.primaryForeground : colors.foreground} 
-              />
-              <Text style={{
-                fontSize: 15,
-                fontWeight: '600',
-                color: activeTab === 'edit' ? colors.primaryForeground : colors.foreground,
-              }}>
-                Edit
-              </Text>
-            </Pressable>
-            <Pressable
-              style={{
-                flex: 1,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 10,
-                paddingHorizontal: 14,
-                borderRadius: 8,
-                gap: 8,
-                backgroundColor: activeTab === 'preview' ? colors.primary : 'transparent',
-              }}
-              onPress={() => setActiveTab('preview')}
-            >
-              <Feather 
-                name="eye" 
-                size={16} 
-                color={activeTab === 'preview' ? colors.primaryForeground : colors.foreground} 
-              />
-              <Text style={{
-                fontSize: 15,
-                fontWeight: '600',
-                color: activeTab === 'preview' ? colors.primaryForeground : colors.foreground,
-              }}>
-                Preview
-              </Text>
-            </Pressable>
+          {/* Edit / Preview switcher */}
+          <View style={styles.tabSwitcher}>
+            {(['edit', 'preview'] as const).map((tab) => {
+              const active = activeTab === tab;
+              return (
+                <Pressable
+                  key={tab}
+                  style={[styles.tabSwitch, active && styles.tabSwitchActive]}
+                  onPress={() => setActiveTab(tab)}
+                >
+                  <Feather
+                    name={tab === 'edit' ? 'edit-2' : 'eye'}
+                    size={16}
+                    color={active ? colors.primaryForeground : colors.mutedForeground}
+                  />
+                  <Text style={[styles.tabSwitchText, { color: active ? colors.primaryForeground : colors.foreground }]}>
+                    {tab === 'edit' ? 'Edit' : 'Preview'}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
