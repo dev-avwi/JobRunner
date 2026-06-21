@@ -10,6 +10,17 @@ attached_assets/
 mobile/ios/
 mobile/android/
 
+# Signing secrets — NEVER commit (certificates, keystores, provisioning, passwords)
+mobile/credentials.json
+mobile/credentials/
+**/*.p12
+**/*.p8
+**/*.jks
+**/*.keystore
+**/*.mobileprovision
+mobile/google-services.json
+mobile/GoogleService-Info.plist
+
 # macOS Finder metadata — never commit these
 .DS_Store
 **/.DS_Store
