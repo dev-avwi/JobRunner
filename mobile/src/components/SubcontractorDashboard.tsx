@@ -13,9 +13,9 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { useAuthStore } from '../lib/store';
+import { useAuthStore, useTimeTrackingStore } from '../lib/store';
 import { api } from '../lib/api';
 import { formatCurrency as formatCurrencyUtil } from '../lib/format';
 import { useTheme, ThemeColors, colorWithOpacity } from '../lib/theme';
@@ -77,6 +77,8 @@ export function SubcontractorDashboard() {
   const { scrollToTopTrigger } = useScrollToTop();
 
   const { user, setDashboardReady } = useAuthStore();
+  const activeTimer = useTimeTrackingStore((s) => s.activeTimer);
+  const fetchActiveTimer = useTimeTrackingStore((s) => s.fetchActiveTimer);
   const { isSubcontractor, isStandaloneSubcontractor } = useUserRole();
   // Latched invoicing visibility. The role cache is deleted on every app
   // foreground (useUserRole revalidates on AppState 'active'), so during the
@@ -173,6 +175,15 @@ export function SubcontractorDashboard() {
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
+
+  // Keep the active timer (and its break state) authoritative so the active-job
+  // card can reflect On Break in orange. The store is otherwise only synced by
+  // the owner Time Tracking widget, which doesn't mount on this route.
+  useFocusEffect(
+    useCallback(() => {
+      fetchActiveTimer();
+    }, [fetchActiveTimer])
+  );
 
   // Timer for active job
   useEffect(() => {
@@ -512,12 +523,19 @@ export function SubcontractorDashboard() {
         </View>
 
         {/* Active Job Card */}
-        {data.activeJob && (
-          <View style={[styles.activeJobCard, { borderColor: data.activeJob.businessColor }]}>
+        {data.activeJob && (() => {
+          const activeJob = data.activeJob;
+          const onBreak = activeTimer?.isBreak === true && activeTimer?.jobId === activeJob.id;
+          return (
+          <View style={[styles.activeJobCard, { borderColor: onBreak ? colors.warning : activeJob.businessColor }]}>
             <View style={styles.activeJobHeader}>
-              <View style={[styles.activeJobPulse, { backgroundColor: colors.success }]} />
-              <Text style={styles.activeJobLabel}>In Progress</Text>
-              <Text style={styles.activeJobTimer}>{elapsedTime}</Text>
+              {onBreak ? (
+                <Feather name="coffee" size={13} color={colors.warning} />
+              ) : (
+                <View style={[styles.activeJobPulse, { backgroundColor: colors.success }]} />
+              )}
+              <Text style={[styles.activeJobLabel, onBreak && { color: colors.warning }]}>{onBreak ? 'On Break' : 'In Progress'}</Text>
+              <Text style={[styles.activeJobTimer, onBreak && { color: colors.warning }]}>{elapsedTime}</Text>
             </View>
             <View style={styles.activeJobContent}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
@@ -562,7 +580,8 @@ export function SubcontractorDashboard() {
               <Text style={styles.completeButtonText}>View / Complete Job</Text>
             </TouchableOpacity>
           </View>
-        )}
+          );
+        })()}
 
         {/* Incoming Job Requests */}
         {data.pendingRequests.length > 0 && (
