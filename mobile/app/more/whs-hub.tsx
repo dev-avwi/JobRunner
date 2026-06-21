@@ -123,10 +123,10 @@ const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: num
   complianceBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.md, marginTop: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
   complianceBannerText: { fontSize: 14, fontWeight: '500', color: colors.success },
   stickyBar: { backgroundColor: colors.background, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  filterWrap: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
-  filterChip: { maxWidth: '100%', paddingHorizontal: spacing.sm, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
+  filterChip: { paddingHorizontal: spacing.sm, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 5 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary, ...shadows.sm },
-  filterChipText: { fontSize: 13, color: colors.mutedForeground, fontWeight: '500', flexShrink: 1 },
+  filterChipText: { fontSize: 13, color: colors.mutedForeground, fontWeight: '500' },
   filterChipTextActive: { color: colors.primaryForeground, fontWeight: '700' },
   chipCount: { minWidth: 18, paddingHorizontal: 5, paddingVertical: 1, borderRadius: radius.full, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   chipCountActive: { backgroundColor: colorWithOpacity(colors.primaryForeground, 0.25) },
@@ -1536,7 +1536,7 @@ export default function WhsHubScreen() {
                   )}
                   {!hasComplianceBaseline && (
                     <Text style={[styles.actionItemText, { paddingHorizontal: spacing.sm, paddingTop: 4 }]}>
-                      Add {MIN_SETUP_FOR_SCORE} categories to unlock your compliance score.
+                      Add at least {MIN_SETUP_FOR_SCORE} categories to unlock your compliance score.
                     </Text>
                   )}
                 </View>
@@ -1571,7 +1571,11 @@ export default function WhsHubScreen() {
             </View>
 
             <View style={styles.stickyBar}>
-              <View style={styles.filterWrap}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterRow}
+              >
                 {TABS.map(tab => (
                   <TouchableOpacity
                     key={tab.key}
@@ -1585,7 +1589,7 @@ export default function WhsHubScreen() {
                     </View>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
 
               <View style={styles.catHeader}>
                 <View style={styles.catHeaderLeft}>
