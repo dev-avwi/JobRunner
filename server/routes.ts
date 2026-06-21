@@ -25894,6 +25894,92 @@ Respond with JSON in this format:
     }
   });
 
+  // Business-wide active timers — who is clocked in right now across all jobs.
+  // Owners/managers see the whole team; everyone else sees only their own.
+  app.get("/api/time-entries/active/team", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const userContext = await getUserContext(userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const canSeeTeam = userContext.isOwner || userContext.permissions.includes('manage_team');
+
+      let userIds: string[] = [userId];
+      if (canSeeTeam) {
+        userIds = [effectiveUserId];
+        const teamMembers = await storage.getTeamMembers(effectiveUserId);
+        for (const m of teamMembers as any[]) {
+          if (m.memberId) userIds.push(m.memberId);
+        }
+        userIds = Array.from(new Set(userIds));
+      }
+
+      const activeEntries = await db.select().from(timeEntries)
+        .where(and(
+          inArray(timeEntries.userId, userIds),
+          isNull(timeEntries.endTime)
+        ))
+        .orderBy(desc(timeEntries.startTime));
+
+      const userCache = new Map<string, any>();
+      const jobCache = new Map<string, any>();
+      const enrichedRaw = await Promise.all(activeEntries.map(async (entry: any) => {
+        const isSelf = entry.userId === userId;
+        // Tenant isolation: time_entries has no business-owner column, so for any
+        // entry that is NOT the caller's own we require the linked job to belong to
+        // THIS business (resolved via getJob(..., effectiveUserId)). This prevents a
+        // worker who is a member of multiple businesses from leaking an active timer
+        // on another workspace's job into this owner's list.
+        let job: any = null;
+        if (entry.jobId) {
+          if (!jobCache.has(entry.jobId)) jobCache.set(entry.jobId, await storage.getJob(entry.jobId, effectiveUserId));
+          job = jobCache.get(entry.jobId);
+        }
+        if (!isSelf && !job) return null;
+
+        let workerName = 'Unknown';
+        let workerAvatar: string | null = null;
+        let themeColor: string | null = null;
+        if (entry.userId) {
+          if (!userCache.has(entry.userId)) userCache.set(entry.userId, await storage.getUser(entry.userId));
+          const u = userCache.get(entry.userId);
+          if (u) {
+            workerName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || '';
+            workerAvatar = u.profileImageUrl || null;
+            themeColor = (u as any).themeColor || null;
+          }
+        }
+        const jobTitle: string | null = job?.title || null;
+        const now = Date.now();
+        const startMs = entry.startTime ? new Date(entry.startTime).getTime() : now;
+        const pausedMs = entry.pausedDuration ? Number(entry.pausedDuration) * 60 * 1000 : 0;
+        let currentPauseMs = 0;
+        if (entry.isPaused && entry.pausedAt) currentPauseMs = now - new Date(entry.pausedAt).getTime();
+        const effectiveMs = Math.max(0, (now - startMs) - pausedMs - currentPauseMs);
+        return {
+          id: entry.id,
+          userId: entry.userId,
+          workerName,
+          workerAvatar,
+          themeColor,
+          jobId: entry.jobId,
+          jobTitle,
+          startTime: entry.startTime,
+          isPaused: entry.isPaused || false,
+          isBreak: entry.isBreak || false,
+          elapsedMinutes: Math.floor(effectiveMs / (1000 * 60)),
+          hourlyRate: entry.hourlyRate,
+          isCurrentUser: entry.userId === userId,
+        };
+      }));
+
+      const enriched = enrichedRaw.filter(Boolean);
+      res.json(enriched);
+    } catch (error) {
+      console.error('Error fetching active team timers:', error);
+      res.status(500).json({ error: 'Failed to fetch active team timers' });
+    }
+  });
+
   // Get all time entries for a job across all team members (owner/manager view)
   app.get("/api/time-entries/job-all/:jobId", requireAuth, async (req: any, res) => {
     try {

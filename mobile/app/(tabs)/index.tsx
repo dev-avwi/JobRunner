@@ -506,10 +506,11 @@ function ActivityFeed({
 
 // Time Tracking Widget - Enhanced with job info and manual controls
 // Uses global useTimeTrackingStore for unified state with Time Tracking page
-function TimeTrackingWidget() {
+function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const confirm = useConfirmDialog();
+  const [teamTimers, setTeamTimers] = useState<any[]>([]);
   
   // Use global store for activeTimer - synced with Time Tracking page
   const { 
@@ -541,6 +542,26 @@ function TimeTrackingWidget() {
       loadDashboardData();
       loadTodaysJobs();
     }, [])
+  );
+
+  // Who's clocked in across the whole business (owners/managers only).
+  const loadTeamTimers = useCallback(async () => {
+    if (!showTeam) return;
+    try {
+      const res = await api.get('/api/time-entries/active/team');
+      if (Array.isArray(res.data)) setTeamTimers(res.data);
+    } catch {
+      // Non-critical — leave the last known list in place.
+    }
+  }, [showTeam]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!showTeam) return;
+      loadTeamTimers();
+      const iv = setInterval(loadTeamTimers, 30000);
+      return () => clearInterval(iv);
+    }, [showTeam, loadTeamTimers])
   );
 
   useEffect(() => {
@@ -950,7 +971,63 @@ function TimeTrackingWidget() {
     );
   };
 
-  // Jobs available to start a timer for (not already being tracked)
+  // Team on the clock - shows other workers currently tracking time across all jobs.
+  const otherActiveTimers = teamTimers.filter((t: any) => !t.isCurrentUser);
+  const renderTeamOnClock = () => {
+    if (!showTeam || otherActiveTimers.length === 0) return null;
+    return (
+      <View style={styles.teamOnClockContainer}>
+        <View style={styles.teamOnClockHeader}>
+          <View style={styles.teamOnClockIcon}>
+            <Feather name="users" size={18} color={colors.info} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.teamOnClockTitle}>Team on the clock</Text>
+            <Text style={styles.teamOnClockSubtitle}>
+              {otherActiveTimers.length} working now
+            </Text>
+          </View>
+        </View>
+        {otherActiveTimers.map((t: any, idx: number) => {
+          const hrs = Math.floor(t.elapsedMinutes / 60);
+          const m = t.elapsedMinutes % 60;
+          const timeStr = hrs > 0 ? `${hrs}h ${m}m` : `${m}m`;
+          const active = !(t.isPaused || t.isBreak);
+          const statusColor = active ? colors.success : colors.warning;
+          return (
+            <TouchableOpacity
+              key={t.id}
+              style={[styles.teamOnClockRow, idx > 0 && styles.teamOnClockRowBorder]}
+              onPress={() => t.jobId && router.push(`/job/${t.jobId}`)}
+              disabled={!t.jobId}
+              activeOpacity={0.7}
+            >
+              <TeamAvatar
+                name={t.workerName}
+                userId={t.userId ? String(t.userId) : undefined}
+                themeColor={t.themeColor}
+                size={36}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.teamOnClockName} numberOfLines={1}>{t.workerName}</Text>
+                <Text style={styles.teamOnClockJob} numberOfLines={1}>{t.jobTitle || 'No job'}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[styles.teamOnClockTime, { color: statusColor }]}>{timeStr}</Text>
+                <View style={[styles.teamOnClockBadge, { backgroundColor: colorWithOpacity(statusColor, 0.12) }]}>
+                  <View style={[styles.teamOnClockDot, { backgroundColor: statusColor }]} />
+                  <Text style={[styles.teamOnClockBadgeText, { color: statusColor }]}>
+                    {t.isPaused ? 'Paused' : t.isBreak ? 'On Break' : 'Working'}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
   const availableJobs = todaysJobs.filter((job: any) => !activeTimer || activeTimer.jobId !== job.id);
 
   if (!activeTimer) {
@@ -1012,6 +1089,7 @@ function TimeTrackingWidget() {
           </View>
         )}
         
+        {renderTeamOnClock()}
         {renderTodayEntries()}
       </View>
     );
@@ -1123,6 +1201,7 @@ function TimeTrackingWidget() {
           )}
         </TouchableOpacity>
       </View>
+      {renderTeamOnClock()}
       {renderTodayEntries()}
     </View>
   );
@@ -3426,7 +3505,7 @@ function OwnerDashboardScreen() {
       {/* Time Tracking Widget - All Users */}
       {roleResolved && (
         <View style={styles.section}>
-          <TimeTrackingWidget />
+          <TimeTrackingWidget showTeam={isOwnerUser || isManager} />
         </View>
       )}
 
@@ -5272,6 +5351,79 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...typography.captionSmall,
     fontWeight: '600',
     color: colors.primary,
+  },
+  teamOnClockContainer: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: spacing.md,
+    ...shadows.sm,
+  },
+  teamOnClockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  teamOnClockIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colorWithOpacity(colors.info, 0.12),
+  },
+  teamOnClockTitle: {
+    ...typography.body,
+    fontWeight: '700',
+    color: colors.foreground,
+  },
+  teamOnClockSubtitle: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+  },
+  teamOnClockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  teamOnClockRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  teamOnClockName: {
+    ...typography.caption,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  teamOnClockJob: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+  },
+  teamOnClockTime: {
+    ...typography.caption,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  teamOnClockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    marginTop: 2,
+  },
+  teamOnClockDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  teamOnClockBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   todayEntriesContainer: {
     backgroundColor: colors.muted,
