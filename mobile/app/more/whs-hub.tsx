@@ -122,7 +122,8 @@ const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: num
   actionMoreText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
   complianceBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.md, marginTop: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
   complianceBannerText: { fontSize: 14, fontWeight: '500', color: colors.success },
-  filterScroll: { paddingHorizontal: spacing.lg, gap: spacing.xs, paddingBottom: spacing.sm },
+  stickyBar: { backgroundColor: colors.background, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  filterScroll: { paddingHorizontal: spacing.lg, gap: spacing.xs, paddingBottom: spacing.sm, paddingTop: spacing.sm },
   filterChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 6 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary, ...shadows.sm },
   filterChipText: { fontSize: 13, color: colors.mutedForeground, fontWeight: '500' },
@@ -1484,6 +1485,7 @@ export default function WhsHubScreen() {
             contentContainerStyle={{ paddingBottom: bottomNavHeight }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
             keyboardShouldPersistTaps="handled"
+            stickyHeaderIndices={[1]}
           >
             <View style={styles.heroSection}>
               <View style={styles.heroTitleRow}>
@@ -1563,34 +1565,36 @@ export default function WhsHubScreen() {
               )}
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll} style={{ flexGrow: 0 }}>
-              {TABS.map(tab => (
-                <TouchableOpacity
-                  key={tab.key}
-                  style={[styles.filterChip, activeTab === tab.key && styles.filterChipActive]}
-                  onPress={() => setActiveTab(tab.key)}
-                >
-                  <Feather name={tab.icon} size={14} color={activeTab === tab.key ? colors.primaryForeground : colors.mutedForeground} />
-                  <Text style={[styles.filterChipText, activeTab === tab.key && styles.filterChipTextActive]}>{tab.label}</Text>
-                  <View style={[styles.chipCount, activeTab === tab.key && styles.chipCountActive]}>
-                    <Text style={[styles.chipCountText, activeTab === tab.key && styles.chipCountTextActive]}>{tabCounts[tab.key]}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={styles.stickyBar}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll} style={{ flexGrow: 0 }}>
+                {TABS.map(tab => (
+                  <TouchableOpacity
+                    key={tab.key}
+                    style={[styles.filterChip, activeTab === tab.key && styles.filterChipActive]}
+                    onPress={() => setActiveTab(tab.key)}
+                  >
+                    <Feather name={tab.icon} size={14} color={activeTab === tab.key ? colors.primaryForeground : colors.mutedForeground} />
+                    <Text style={[styles.filterChipText, activeTab === tab.key && styles.filterChipTextActive]}>{tab.label}</Text>
+                    <View style={[styles.chipCount, activeTab === tab.key && styles.chipCountActive]}>
+                      <Text style={[styles.chipCountText, activeTab === tab.key && styles.chipCountTextActive]}>{tabCounts[tab.key]}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-            <View style={styles.catHeader}>
-              <View style={styles.catHeaderLeft}>
-                <Feather name={activeTabMeta.icon} size={18} color={colors.primary} />
-                <Text style={styles.catTitle} numberOfLines={1}>{tabFullLabel[activeTab]}</Text>
-                <View style={styles.catCountBadge}>
-                  <Text style={styles.catCountText}>{tabCounts[activeTab]}</Text>
+              <View style={styles.catHeader}>
+                <View style={styles.catHeaderLeft}>
+                  <Feather name={activeTabMeta.icon} size={18} color={colors.primary} />
+                  <Text style={styles.catTitle} numberOfLines={1}>{tabFullLabel[activeTab]}</Text>
+                  <View style={styles.catCountBadge}>
+                    <Text style={styles.catCountText}>{tabCounts[activeTab]}</Text>
+                  </View>
                 </View>
+                <PressableRow style={styles.catAddButton} onPress={fabAction}>
+                  <Feather name="plus" size={15} color={colors.primaryForeground} />
+                  <Text style={styles.catAddText}>{tabActionLabel[activeTab]}</Text>
+                </PressableRow>
               </View>
-              <PressableRow style={styles.catAddButton} onPress={fabAction}>
-                <Feather name="plus" size={15} color={colors.primaryForeground} />
-                <Text style={styles.catAddText}>{tabActionLabel[activeTab]}</Text>
-              </PressableRow>
             </View>
 
             <View style={styles.listSection}>
