@@ -12,6 +12,7 @@ import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { BottomSheetScrollView } from '../../src/components/ui/AppBottomSheet';
 import { api } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, pageShell, componentStyles, iconSizes, typographySizes, sizes } from '../../src/lib/design-tokens';
+import { JobLinkField } from '../../src/components/JobLinkField';
 
 type TabKey = 'incidents' | 'emergency' | 'jsa' | 'environments' | 'signage' | 'hazard_reports' | 'ppe' | 'training';
 
@@ -122,10 +123,25 @@ const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: num
   complianceBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.md, marginTop: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
   complianceBannerText: { fontSize: 14, fontWeight: '500', color: colors.success },
   filterScroll: { paddingHorizontal: spacing.lg, gap: spacing.xs, paddingBottom: spacing.sm },
-  filterChip: { paddingHorizontal: spacing.lg, paddingVertical: 7, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  filterChipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+  filterChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary, ...shadows.sm },
   filterChipText: { fontSize: 13, color: colors.mutedForeground, fontWeight: '500' },
-  filterChipTextActive: { color: colors.primary, fontWeight: '600' },
+  filterChipTextActive: { color: colors.primaryForeground, fontWeight: '700' },
+  chipCount: { minWidth: 18, paddingHorizontal: 5, paddingVertical: 1, borderRadius: radius.full, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
+  chipCountActive: { backgroundColor: colorWithOpacity(colors.primaryForeground, 0.25) },
+  chipCountText: { fontSize: 10, fontWeight: '700', color: colors.mutedForeground },
+  chipCountTextActive: { color: colors.primaryForeground },
+  catHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, flexWrap: 'wrap', paddingHorizontal: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.sm },
+  catHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },
+  catTitle: { fontSize: 18, fontWeight: '700', color: colors.foreground, flexShrink: 1 },
+  catCountBadge: { minWidth: 22, paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.full, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
+  catCountText: { fontSize: 12, fontWeight: '700', color: colors.mutedForeground },
+  catAddButton: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.md, ...shadows.sm },
+  catAddText: { fontSize: 13, fontWeight: '700', color: colors.primaryForeground },
+  viewJobRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  linkedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colorWithOpacity(colors.primary, 0.12), paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
+  linkedBadgeText: { fontSize: 10, fontWeight: '700', color: colors.primary },
+  viewJobText: { flex: 1, fontSize: 12, fontWeight: '600', color: colors.primary },
   listSection: { paddingHorizontal: spacing.lg, paddingBottom: bottomNavHeight },
   card: { backgroundColor: colors.card, borderRadius: radius['2xl'], padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.cardBorder, ...shadows.sm },
   cardTitle: { fontSize: 15, fontWeight: '600', color: colors.foreground },
@@ -137,7 +153,7 @@ const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: num
   emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
   emptyTitle: { fontSize: 17, fontWeight: '600', color: colors.foreground },
   emptyDesc: { fontSize: 14, color: colors.mutedForeground, textAlign: 'center' as const, lineHeight: 20 },
-  emptyButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radius.lg, marginTop: spacing.sm },
+  emptyButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.lg, marginTop: spacing.md, ...shadows.sm },
   emptyButtonText: { fontSize: 14, fontWeight: '600', color: colors.primaryForeground },
   fab: { position: 'absolute', bottom: spacing.xl, right: spacing.lg, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', ...shadows.lg },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -204,17 +220,17 @@ export default function WhsHubScreen() {
   const [incidentForm, setIncidentForm] = useState({
     title: '', description: '', incidentType: 'near_miss', severity: 'minor',
     location: '', reportedTo: '', reportedToRole: 'supervisor', workerName: '',
-    immediateActions: '', isNotifiable: false,
+    immediateActions: '', isNotifiable: false, jobId: '',
   });
 
   const [emergencyForm, setEmergencyForm] = useState({
     siteName: '', siteAddress: '', assemblyPoint: '', firstAidLocation: '',
     firstAidOfficer: '', firstAidOfficerPhone: '', emergencyNumber: '000',
-    nearestHospital: '',
+    nearestHospital: '', jobId: '',
   });
 
   const [jsaForm, setJsaForm] = useState({
-    title: '', description: '', siteAddress: '', assessedBy: '',
+    title: '', description: '', siteAddress: '', assessedBy: '', jobId: '',
     steps: [{ taskDescription: '', hazards: '', riskLevel: 'medium', controlMeasures: '', responsiblePerson: '' }],
   });
 
@@ -223,7 +239,7 @@ export default function WhsHubScreen() {
   const [hazardForm, setHazardForm] = useState({
     description: '', location: '', dateIdentified: new Date().toISOString().split('T')[0],
     timeIdentified: '', recommendedAction: '', reportedBy: '', supervisorName: '',
-    riskLevel: 'medium', status: 'open',
+    riskLevel: 'medium', status: 'open', jobId: '',
   });
   const [ppeForm, setPpeForm] = useState<Record<string, any>>({
     workerName: '', date: new Date().toISOString().split('T')[0],
@@ -297,7 +313,7 @@ export default function WhsHubScreen() {
     try {
       await api.post('/api/whs/incidents', incidentForm);
       setShowIncidentForm(false);
-      setIncidentForm({ title: '', description: '', incidentType: 'near_miss', severity: 'minor', location: '', reportedTo: '', reportedToRole: 'supervisor', workerName: '', immediateActions: '', isNotifiable: false });
+      setIncidentForm({ title: '', description: '', incidentType: 'near_miss', severity: 'minor', location: '', reportedTo: '', reportedToRole: 'supervisor', workerName: '', immediateActions: '', isNotifiable: false, jobId: '' });
       fetchData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to submit');
@@ -312,7 +328,7 @@ export default function WhsHubScreen() {
     try {
       await api.post('/api/whs/emergency-info', emergencyForm);
       setShowEmergencyForm(false);
-      setEmergencyForm({ siteName: '', siteAddress: '', assemblyPoint: '', firstAidLocation: '', firstAidOfficer: '', firstAidOfficerPhone: '', emergencyNumber: '000', nearestHospital: '' });
+      setEmergencyForm({ siteName: '', siteAddress: '', assemblyPoint: '', firstAidLocation: '', firstAidOfficer: '', firstAidOfficerPhone: '', emergencyNumber: '000', nearestHospital: '', jobId: '' });
       fetchData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to save');
@@ -332,7 +348,7 @@ export default function WhsHubScreen() {
     try {
       await api.post('/api/whs/jsa', { ...jsaForm, steps: validSteps });
       setShowJsaForm(false);
-      setJsaForm({ title: '', description: '', siteAddress: '', assessedBy: '', steps: [{ taskDescription: '', hazards: '', riskLevel: 'medium', controlMeasures: '', responsiblePerson: '' }] });
+      setJsaForm({ title: '', description: '', siteAddress: '', assessedBy: '', jobId: '', steps: [{ taskDescription: '', hazards: '', riskLevel: 'medium', controlMeasures: '', responsiblePerson: '' }] });
       fetchData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to create');
@@ -442,6 +458,20 @@ export default function WhsHubScreen() {
     ? null
     : (totalItems === 0 ? 0 : Math.round(((totalItems - actionItems.length) / totalItems) * 100));
 
+  function renderJobLink(jobId?: string) {
+    if (!jobId) return null;
+    return (
+      <TouchableOpacity style={styles.viewJobRow} onPress={() => router.push(`/job/${jobId}` as any)} activeOpacity={0.7}>
+        <View style={styles.linkedBadge}>
+          <Feather name="link" size={11} color={colors.primary} />
+          <Text style={styles.linkedBadgeText}>Linked</Text>
+        </View>
+        <Text style={styles.viewJobText}>View job</Text>
+        <Feather name="chevron-right" size={15} color={colors.primary} />
+      </TouchableOpacity>
+    );
+  }
+
   function renderIncidents() {
     if (incidents.length === 0) {
       return (
@@ -483,6 +513,7 @@ export default function WhsHubScreen() {
               </View>
               <Text numberOfLines={2} style={[styles.cardSubtext, { marginTop: 6 }]}>{report.description}</Text>
               {report.location && <Text style={styles.cardSubtext}>{report.location}</Text>}
+              {renderJobLink(report.jobId)}
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {report.status === 'open' && (
@@ -561,6 +592,7 @@ export default function WhsHubScreen() {
             </View>
           </View>
         </View>
+        {renderJobLink(info.jobId)}
       </View>
     ));
   }
@@ -618,6 +650,7 @@ export default function WhsHubScreen() {
             })}
           </View>
         )}
+        {renderJobLink(doc.jobId)}
       </View>
     ));
   }
@@ -730,6 +763,12 @@ export default function WhsHubScreen() {
             <Text style={styles.inputLabel}>Title *</Text>
             <TextInput style={styles.input} value={incidentForm.title} onChangeText={v => setIncidentForm(p => ({ ...p, title: v }))} placeholder="What happened?" placeholderTextColor={colors.mutedForeground} />
 
+            <JobLinkField
+              value={incidentForm.jobId}
+              onChange={id => setIncidentForm(p => ({ ...p, jobId: id }))}
+              onJobSelected={job => setIncidentForm(p => ({ ...p, location: p.location || job.address || '' }))}
+            />
+
             <Text style={styles.inputLabel}>Incident Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
               <View style={styles.optionRow}>
@@ -797,6 +836,12 @@ export default function WhsHubScreen() {
             <Text style={styles.inputLabel}>Site Name *</Text>
             <TextInput style={styles.input} value={emergencyForm.siteName} onChangeText={v => setEmergencyForm(p => ({ ...p, siteName: v }))} placeholder="e.g. 42 Smith St Build" placeholderTextColor={colors.mutedForeground} />
 
+            <JobLinkField
+              value={emergencyForm.jobId}
+              onChange={id => setEmergencyForm(p => ({ ...p, jobId: id }))}
+              onJobSelected={job => setEmergencyForm(p => ({ ...p, siteName: p.siteName || job.title || '', siteAddress: p.siteAddress || job.address || '' }))}
+            />
+
             <Text style={styles.inputLabel}>Site Address</Text>
             <TextInput style={styles.input} value={emergencyForm.siteAddress} onChangeText={v => setEmergencyForm(p => ({ ...p, siteAddress: v }))} placeholder="Full address" placeholderTextColor={colors.mutedForeground} />
 
@@ -844,6 +889,12 @@ export default function WhsHubScreen() {
           <BottomSheetScrollView style={styles.modalBody}>
             <Text style={styles.inputLabel}>Title *</Text>
             <TextInput style={styles.input} value={jsaForm.title} onChangeText={v => setJsaForm(p => ({ ...p, title: v }))} placeholder="e.g. Roof Repair" placeholderTextColor={colors.mutedForeground} />
+
+            <JobLinkField
+              value={jsaForm.jobId}
+              onChange={id => setJsaForm(p => ({ ...p, jobId: id }))}
+              onJobSelected={job => setJsaForm(p => ({ ...p, title: p.title || job.title || '', siteAddress: p.siteAddress || job.address || '' }))}
+            />
 
             <Text style={styles.inputLabel}>Site Address</Text>
             <TextInput style={styles.input} value={jsaForm.siteAddress} onChangeText={v => setJsaForm(p => ({ ...p, siteAddress: v }))} placeholder="Job site address" placeholderTextColor={colors.mutedForeground} />
@@ -990,7 +1041,7 @@ export default function WhsHubScreen() {
     try {
       await api.post('/api/whs/hazard-reports', hazardForm);
       setShowHazardForm(false);
-      setHazardForm({ description: '', location: '', dateIdentified: new Date().toISOString().split('T')[0], timeIdentified: '', recommendedAction: '', reportedBy: '', supervisorName: '', riskLevel: 'medium', status: 'open' });
+      setHazardForm({ description: '', location: '', dateIdentified: new Date().toISOString().split('T')[0], timeIdentified: '', recommendedAction: '', reportedBy: '', supervisorName: '', riskLevel: 'medium', status: 'open', jobId: '' });
       fetchData();
     } catch (e) { Alert.alert('Error', 'Failed to submit hazard report'); }
   }
@@ -1049,6 +1100,7 @@ export default function WhsHubScreen() {
             <Feather name="trash-2" size={18} color={colors.destructive} />
           </TouchableOpacity>
         </View>
+        {renderJobLink(h.jobId)}
       </View>
     ));
   }
@@ -1081,6 +1133,12 @@ export default function WhsHubScreen() {
 
             <Text style={styles.inputLabel}>Location *</Text>
             <TextInput style={[styles.input, { color: colors.foreground, borderColor: colors.cardBorder, backgroundColor: colors.card }]} value={hazardForm.location} onChangeText={v => setHazardForm(p => ({ ...p, location: v }))} placeholder="Where is the hazard located?" placeholderTextColor={colors.mutedForeground} />
+
+            <JobLinkField
+              value={hazardForm.jobId}
+              onChange={id => setHazardForm(p => ({ ...p, jobId: id }))}
+              onJobSelected={job => setHazardForm(p => ({ ...p, location: p.location || job.address || '' }))}
+            />
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>
@@ -1386,6 +1444,30 @@ export default function WhsHubScreen() {
     }
   };
 
+  const tabFullLabel: Record<TabKey, string> = {
+    incidents: 'Incidents',
+    emergency: 'Emergency Plans',
+    jsa: 'Job Safety Analyses',
+    environments: 'Hazardous Environments',
+    signage: 'Safety Signage',
+    hazard_reports: 'Hazard Reports',
+    ppe: 'PPE Checklists',
+    training: 'Training Records',
+  };
+
+  const tabCounts: Record<TabKey, number> = {
+    incidents: incidents.length,
+    emergency: emergencyInfo.length,
+    jsa: jsaDocs.length,
+    environments: environments.length,
+    signage: signs.length,
+    hazard_reports: hazardReports.length,
+    ppe: ppeChecklists.length,
+    training: trainingRecords.length,
+  };
+
+  const activeTabMeta = TABS.find(t => t.key === activeTab) || TABS[0];
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -1411,10 +1493,6 @@ export default function WhsHubScreen() {
                     Incidents, JSAs & site compliance all in one place.
                   </Text>
                 </View>
-                <PressableRow style={styles.heroAddButton} onPress={fabAction}>
-                  <Feather name="plus" size={16} color={colors.primaryForeground} />
-                  <Text style={styles.heroAddText}>{tabActionLabel[activeTab]}</Text>
-                </PressableRow>
               </View>
 
               <View style={styles.statsRow}>
@@ -1492,11 +1570,28 @@ export default function WhsHubScreen() {
                   style={[styles.filterChip, activeTab === tab.key && styles.filterChipActive]}
                   onPress={() => setActiveTab(tab.key)}
                 >
-                  <Feather name={tab.icon} size={14} color={activeTab === tab.key ? colors.primary : colors.mutedForeground} />
+                  <Feather name={tab.icon} size={14} color={activeTab === tab.key ? colors.primaryForeground : colors.mutedForeground} />
                   <Text style={[styles.filterChipText, activeTab === tab.key && styles.filterChipTextActive]}>{tab.label}</Text>
+                  <View style={[styles.chipCount, activeTab === tab.key && styles.chipCountActive]}>
+                    <Text style={[styles.chipCountText, activeTab === tab.key && styles.chipCountTextActive]}>{tabCounts[tab.key]}</Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
+
+            <View style={styles.catHeader}>
+              <View style={styles.catHeaderLeft}>
+                <Feather name={activeTabMeta.icon} size={18} color={colors.primary} />
+                <Text style={styles.catTitle} numberOfLines={1}>{tabFullLabel[activeTab]}</Text>
+                <View style={styles.catCountBadge}>
+                  <Text style={styles.catCountText}>{tabCounts[activeTab]}</Text>
+                </View>
+              </View>
+              <PressableRow style={styles.catAddButton} onPress={fabAction}>
+                <Feather name="plus" size={15} color={colors.primaryForeground} />
+                <Text style={styles.catAddText}>{tabActionLabel[activeTab]}</Text>
+              </PressableRow>
+            </View>
 
             <View style={styles.listSection}>
               {activeTab === 'incidents' && renderIncidents()}
