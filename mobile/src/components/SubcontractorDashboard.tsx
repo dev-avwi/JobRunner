@@ -24,6 +24,7 @@ import { OnboardingSetupFailedBanner } from './ui/OnboardingSetupFailedBanner';
 import { spacing, radius, shadows, typography, pageShell, usePageShell } from '../lib/design-tokens';
 import { useScrollToTop } from '../contexts/ScrollContext';
 import { useUserRole } from '../hooks/use-user-role';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 interface SubcontractorJob {
   id: string;
@@ -94,6 +95,8 @@ export function SubcontractorDashboard() {
     }
   }, [isSubcontractor, isStandaloneSubcontractor]);
   const [data, setData] = useState<DashboardData | null>(null);
+  const [activeBusinessId, setActiveBusinessId] = useState<string | null>(null);
+  const [showSwitcher, setShowSwitcher] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('today');
@@ -182,6 +185,15 @@ export function SubcontractorDashboard() {
   useFocusEffect(
     useCallback(() => {
       fetchActiveTimer();
+      // Track which workspace is currently active so the active-job card can lock
+      // when the running job belongs to a business the user isn't currently in
+      // (e.g. viewing from their Personal profile). Refetched on focus because
+      // switching workspaces changes this.
+      api.getMyBusinesses()
+        .then((res) => {
+          if (res.data) setActiveBusinessId(res.data.activeBusinessId);
+        })
+        .catch(() => {});
     }, [fetchActiveTimer])
   );
 
@@ -526,6 +538,12 @@ export function SubcontractorDashboard() {
         {data.activeJob && (() => {
           const activeJob = data.activeJob;
           const onBreak = activeTimer?.isBreak === true && activeTimer?.jobId === activeJob.id;
+          // In Personal profile (or any other workspace), the running job still
+          // shows so the user knows it's live — but it's "locked": they must
+          // switch into that business's workspace to actually open/manage it.
+          const currentWorkspaceOwnerId = activeBusinessId ?? user?.id ?? null;
+          const lockedToOtherWorkspace =
+            !!activeJob.businessOwnerId && currentWorkspaceOwnerId !== activeJob.businessOwnerId;
           return (
           <View style={[styles.activeJobCard, { borderColor: onBreak ? colors.warning : activeJob.businessColor }]}>
             <View style={styles.activeJobHeader}>
@@ -563,22 +581,42 @@ export function SubcontractorDashboard() {
                 </View>
               )}
             </View>
-            {data.activeJob.businessOwnerId !== user?.id && (
+            {lockedToOtherWorkspace ? (
+              <View style={styles.activeJobLockedBanner}>
+                <Feather name="lock" size={12} color={colors.warning} />
+                <Text style={[styles.activeJobLocationText, { color: colors.warning }]}>
+                  You're in a different workspace. Switch to {data.activeJob.businessName} to open this job.
+                </Text>
+              </View>
+            ) : data.activeJob.businessOwnerId !== user?.id ? (
               <View style={styles.activeJobLocationBanner}>
                 <Feather name="radio" size={12} color={colors.info} />
                 <Text style={[styles.activeJobLocationText, { color: colors.info }]}>
                   Your location is visible to {data.activeJob.businessName}
                 </Text>
               </View>
+            ) : null}
+            {lockedToOtherWorkspace ? (
+              <TouchableOpacity
+                style={[styles.completeButton, styles.switchButton]}
+                onPress={() => setShowSwitcher(true)}
+                activeOpacity={0.7}
+              >
+                <Feather name="repeat" size={18} color={colors.primary} />
+                <Text style={[styles.completeButtonText, { color: colors.primary }]}>
+                  Switch to {data.activeJob.businessName}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.completeButton, { backgroundColor: colors.success }]}
+                onPress={() => router.push(`/job/${data.activeJob!.id}`)}
+                activeOpacity={0.7}
+              >
+                <Feather name="check-circle" size={18} color={colors.white} />
+                <Text style={styles.completeButtonText}>View / Complete Job</Text>
+              </TouchableOpacity>
             )}
-            <TouchableOpacity
-              style={[styles.completeButton, { backgroundColor: colors.success }]}
-              onPress={() => router.push(`/job/${data.activeJob!.id}`)}
-              activeOpacity={0.7}
-            >
-              <Feather name="check-circle" size={18} color={colors.white} />
-              <Text style={styles.completeButtonText}>View / Complete Job</Text>
-            </TouchableOpacity>
           </View>
           );
         })()}
@@ -1346,6 +1384,23 @@ export function SubcontractorDashboard() {
             )}
         </View>
       </AppBottomSheet>
+
+      <WorkspaceSwitcher
+        visible={showSwitcher}
+        onClose={() => setShowSwitcher(false)}
+        onSwitch={() => {
+          setShowSwitcher(false);
+          // The screen stays focused while the modal opens/closes, so the focus
+          // effect won't re-run — refresh the active workspace id here so the
+          // card unlocks immediately after switching into the matching business.
+          api.getMyBusinesses()
+            .then((res) => {
+              if (res.data) setActiveBusinessId(res.data.activeBusinessId);
+            })
+            .catch(() => {});
+          fetchDashboard();
+        }}
+      />
     </>
   );
 }
@@ -1550,6 +1605,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   activeJobLocationText: {
     fontSize: 12,
     flex: 1,
+  },
+  activeJobLockedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colorWithOpacity(colors.warning, 0.1),
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  switchButton: {
+    backgroundColor: colorWithOpacity(colors.primary, 0.1),
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   completeButton: {
     flexDirection: 'row',
