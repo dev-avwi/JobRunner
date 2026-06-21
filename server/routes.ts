@@ -45885,6 +45885,31 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         .set({ availabilityStatus: status, updatedAt: new Date() })
         .where(and(eq(teamMembers.memberId, userId), eq(teamMembers.isActive, true)));
 
+
+      // Mirror availability into worker_states so business owners see it on the
+      // Team Operations / Live Ops board, which reads worker_states.state (NOT
+      // teamMembers.availabilityStatus). Subbie statuses map 1:1 to valid worker
+      // states. Upsert + broadcast per business for real-time owner updates.
+      try {
+        const ownerRows = await db
+          .select({ businessOwnerId: teamMembers.businessOwnerId })
+          .from(teamMembers)
+          .where(and(eq(teamMembers.memberId, userId), eq(teamMembers.isActive, true)));
+        const ownerIds = Array.from(
+          new Set(ownerRows.map(r => r.businessOwnerId).filter(Boolean))
+        ) as string[];
+        const { broadcastWorkerStateChange } = await import('./websocket');
+        for (const ownerId of ownerIds) {
+          await storage.upsertWorkerState(userId, ownerId, status, null, null);
+          try {
+            broadcastWorkerStateChange(ownerId, { userId, state: status, jobId: null, note: null });
+          } catch (wsErr) {
+            console.warn('[Subcontractor Availability] WS broadcast failed:', wsErr);
+          }
+        }
+      } catch (mirrorErr) {
+        console.warn('[Subcontractor Availability] Failed to mirror to worker_states:', mirrorErr);
+      }
       res.json({ status });
     } catch (error) {
       console.error('[Subcontractor Availability] Error:', error);
