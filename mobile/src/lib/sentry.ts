@@ -28,6 +28,14 @@ export function initSentry() {
       if (tags && typeof tags['os.build'] === 'string' && /sdk_phone|generic|emulator/i.test(tags['os.build'] as string)) {
         return null;
       }
+      // Drop crashes originating in Expo's dev-client launcher / dev tooling.
+      // These only exist in development/preview builds (never in App Store
+      // production) — e.g. the iOS 26 DevLauncherNetworkInterceptor deinit
+      // assertion. They are noise, not real production failures.
+      const exceptionBlob = JSON.stringify(event.exception?.values ?? []);
+      if (/DevLauncher|ExpoDevLauncher|EXDevLauncher|DevMenu|DevLoadingView/i.test(exceptionBlob)) {
+        return null;
+      }
       return event;
     },
   });
