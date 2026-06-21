@@ -31,6 +31,7 @@ import api from '../../src/lib/api';
 import { Card, CardContent } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
+import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
@@ -3213,17 +3214,13 @@ export default function CollectScreen() {
               />
 
               <View style={{ marginTop: spacing.lg }}>
-                <Button 
-                  variant="brand" 
-                  onPress={handleSubmitCustomAmount} 
+                <SheetButton
+                  onPress={handleSubmitCustomAmount}
                   fullWidth
                   disabled={!canContinue}
-                >
-                  <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 16 }}>
-                    {canContinue ? `Continue — $${parseFloat(customAmountValue).toFixed(2)}` : 'Continue'}
-                  </Text>
-                  <Feather name="arrow-right" size={18} color="#FFFFFF" style={{ marginLeft: spacing.xs }} />
-                </Button>
+                  label={canContinue ? `Continue — $${parseFloat(customAmountValue).toFixed(2)}` : 'Continue'}
+                  trailingIcon={<Feather name="arrow-right" size={18} color={colors.primaryForeground} />}
+                />
               </View>
             </ScrollView>
           </KeyboardAvoidingView>

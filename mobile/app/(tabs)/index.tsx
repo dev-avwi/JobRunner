@@ -44,6 +44,7 @@ import UsageLimitBanner from '../../src/components/UsageLimitBanner';
 import { SubcontractorDashboard } from '../../src/components/SubcontractorDashboard';
 import { showToast } from '../../src/lib/toast';
 import { Button } from '../../src/components/ui/Button';
+import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import LiveActivity from '../../modules/LiveActivity/src';
 
@@ -4203,13 +4204,11 @@ function OwnerDashboardScreen() {
                 >
                   Send a polished quote to a client in under a minute.
                 </Text>
-                <Button
-                  variant="brand"
+                <SheetButton
                   onPress={() => router.push(asHref('/more/quote/new'))}
-                  icon={<Feather name="plus" size={16} color="#FFFFFF" />}
-                >
-                  New Quote
-                </Button>
+                  icon={<Feather name="plus" size={16} color={colors.primaryForeground} />}
+                  label="New Quote"
+                />
               </View>
             ) : (
               <ActivityFeed

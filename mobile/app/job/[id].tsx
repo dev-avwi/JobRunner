@@ -49,6 +49,7 @@ import { maybeRequestReview } from '../../src/lib/store-review';
 import { locationTracking } from '../../src/lib/location-tracking';
 import { useJobsStore, useTimeTrackingStore, useAuthStore } from '../../src/lib/store';
 import { Button } from '../../src/components/ui/Button';
+import { SheetButton } from '../../src/components/ui/SheetButton';
 import { AIPhotoAnalysisModal } from '../../src/components/AIPhotoAnalysis';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
@@ -9322,12 +9323,8 @@ export default function JobDetailScreen() {
         snapPoints={['85%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <Button variant="outline" onPress={() => { setShowAddMaterialModal(false); setEditingMaterial(null); }} style={{ flex: 1 }}>
-              Cancel
-            </Button>
-            <Button variant="brand" onPress={handleSaveMaterial} disabled={isSavingMaterial || !materialForm.name.trim()} style={{ flex: 1 }}>
-              {isSavingMaterial ? 'Saving...' : editingMaterial ? 'Update' : 'Add Material'}
-            </Button>
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddMaterialModal(false); setEditingMaterial(null); }} style={{ flex: 1 }} />
+            <SheetButton onPress={handleSaveMaterial} loading={isSavingMaterial} disabled={isSavingMaterial || !materialForm.name.trim()} label={editingMaterial ? 'Update' : 'Add Material'} style={{ flex: 1 }} />
           </View>
         )}>
         <View>
@@ -9797,12 +9794,8 @@ export default function JobDetailScreen() {
         showCloseButton
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <Button variant="outline" onPress={() => setShowRenameModal(false)} style={{ flex: 1 }}>
-              Cancel
-            </Button>
-            <Button variant="brand" onPress={handleRenameJob} disabled={isSavingTitle || !newJobTitle.trim()} style={{ flex: 1 }}>
-              {isSavingTitle ? 'Saving...' : 'Save'}
-            </Button>
+            <SheetButton variant="outline" label="Cancel" onPress={() => setShowRenameModal(false)} style={{ flex: 1 }} />
+            <SheetButton onPress={handleRenameJob} loading={isSavingTitle} disabled={isSavingTitle || !newJobTitle.trim()} label="Save" style={{ flex: 1 }} />
           </View>
         )}>
         <View>
@@ -9824,16 +9817,13 @@ export default function JobDetailScreen() {
         title="Job Notes"
         showCloseButton
         footer={(
-          <Button
-            size="lg"
-            variant="brand"
+          <SheetButton
             fullWidth
             loading={isSavingNotes}
             disabled={isSavingNotes}
             onPress={handleSaveNotes}
-          >
-            Save Notes
-          </Button>
+            label="Save Notes"
+          />
         )}
       >
         <View>
@@ -11071,12 +11061,8 @@ export default function JobDetailScreen() {
         snapPoints={['90%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <Button variant="outline" onPress={() => setShowCreateSwmsModal(false)} style={{ flex: 1 }}>
-              Cancel
-            </Button>
-            <Button variant="brand" onPress={handleCreateSwms} disabled={isSavingSwms || !swmsForm.title.trim()} style={{ flex: 1 }}>
-              {isSavingSwms ? 'Saving...' : 'Create SWMS'}
-            </Button>
+            <SheetButton variant="outline" label="Cancel" onPress={() => setShowCreateSwmsModal(false)} style={{ flex: 1 }} />
+            <SheetButton onPress={handleCreateSwms} loading={isSavingSwms} disabled={isSavingSwms || !swmsForm.title.trim()} label="Create SWMS" style={{ flex: 1 }} />
           </View>
         )}>
         <View>
@@ -11307,12 +11293,8 @@ export default function JobDetailScreen() {
         snapPoints={['90%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <Button variant="outline" onPress={() => { setShowSignSwmsModal(false); setSigningSwmsId(null); setSwmsSignatureData(null); }} style={{ flex: 1 }}>
-              Cancel
-            </Button>
-            <Button variant="brand" onPress={handleSignSwms} disabled={isSigningSwms || !signWorkerName.trim() || !swmsSignatureData} style={{ flex: 1 }}>
-              {isSigningSwms ? 'Signing...' : 'Sign SWMS'}
-            </Button>
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowSignSwmsModal(false); setSigningSwmsId(null); setSwmsSignatureData(null); }} style={{ flex: 1 }} />
+            <SheetButton onPress={handleSignSwms} loading={isSigningSwms} disabled={isSigningSwms || !signWorkerName.trim() || !swmsSignatureData} label="Sign SWMS" style={{ flex: 1 }} />
           </View>
         )}>
         <View>
