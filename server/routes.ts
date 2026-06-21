@@ -28973,7 +28973,18 @@ Respond with JSON in this format:
       let roleId = inviteCode.roleId;
       if (!roleId) {
         const roles = await storage.getUserRoles();
-        const matchRole = roles.find((r: { id: string; name: string }) => r.name.toLowerCase() === inviteCode.roleType);
+        let matchRole = roles.find((r: { id: string; name: string }) => r.name.toLowerCase() === inviteCode.roleType);
+        // If the role this invite was created for doesn't exist yet, create it
+        // instead of silently downgrading the member to Worker. A "Subcontractor"
+        // invite MUST land the member on the Subcontractor role.
+        if (!matchRole && inviteCode.roleType === 'subcontractor') {
+          matchRole = await storage.createUserRole({
+            name: 'Subcontractor',
+            description: ROLE_PRESETS.subcontractor.description,
+            permissions: ROLE_PRESETS.subcontractor.permissions as any,
+            isActive: true,
+          } as any);
+        }
         if (matchRole) {
           roleId = matchRole.id;
         } else {
@@ -29067,6 +29078,33 @@ Respond with JSON in this format:
       const businessSettingsData = await storage.getBusinessSettings(inviteCode.businessOwnerId);
 
       await storage.updateUser(userId, { activeBusinessId: inviteCode.businessOwnerId } as any);
+
+      // Mark the joiner's OWN account as a subcontractor so their Personal
+      // workspace shows the Subcontractor label. Their joined-business role is
+      // already correct via the membership created above. Only do this for users
+      // who don't already run their own real business — never overwrite an
+      // established owner's accountType just because they joined a sub code.
+      if (inviteCode.roleType === 'subcontractor') {
+        try {
+          const ownSettings = await storage.getBusinessSettings(userId);
+          if (!ownSettings) {
+            await storage.createBusinessSettings({
+              userId,
+              businessName: WORKER_PROFILE_PLACEHOLDER_NAME,
+              accountType: 'subcontractor',
+            } as any);
+          } else {
+            const hasRealOwnBusiness =
+              !!ownSettings.businessName &&
+              ownSettings.businessName !== WORKER_PROFILE_PLACEHOLDER_NAME;
+            if (!hasRealOwnBusiness && ownSettings.accountType !== 'subcontractor') {
+              await storage.updateBusinessSettings(userId, { accountType: 'subcontractor' } as any);
+            }
+          }
+        } catch (e) {
+          console.error('[invite-code] Failed to set subcontractor accountType:', e);
+        }
+      }
 
       res.json({
         success: true,
