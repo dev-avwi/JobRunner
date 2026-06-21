@@ -775,11 +775,7 @@ export default function WorkPage({
               <Button
                 size="sm"
                 variant={job.status === 'done' ? 'default' : 'outline'}
-                className={cn(
-                  "rounded-lg h-7 text-xs px-2",
-                  job.status === 'done' && "text-white"
-                )}
-                style={job.status === 'done' ? { backgroundColor: 'hsl(var(--trade))' } : {}}
+                className="rounded-lg h-7 text-xs px-2"
                 onClick={(e) => {
                   e.stopPropagation();
                   nextAction.action();
