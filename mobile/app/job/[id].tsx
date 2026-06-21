@@ -9190,75 +9190,6 @@ export default function JobDetailScreen() {
         })}
       </View>
 
-      {isSubcontractor && subbieLocationSharing && (
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginHorizontal: spacing.md,
-          marginTop: spacing.sm,
-          backgroundColor: colors.card,
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-          paddingHorizontal: spacing.sm + 2,
-          paddingVertical: spacing.sm + 2,
-          gap: spacing.sm,
-        }}>
-          <View style={{
-            width: 34,
-            height: 34,
-            borderRadius: 17,
-            backgroundColor: '#8B5CF61A',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <Feather name="map-pin" size={16} color="#8B5CF6" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 13.5, fontWeight: '700', color: colors.foreground, marginBottom: 1 }}>
-              Location sharing on
-            </Text>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 16 }}>
-              Visible to {businessSettings?.businessName || 'the business'} while this job is active
-            </Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#22c55e' }} />
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#16a34a' }}>LIVE</Text>
-          </View>
-        </View>
-      )}
-
-      {isSubcontractor && subbieLocationStopped && !subbieLocationSharing && (
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginHorizontal: spacing.md,
-          marginTop: spacing.sm,
-          backgroundColor: colors.card,
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-          paddingHorizontal: spacing.sm + 2,
-          paddingVertical: spacing.sm + 2,
-          gap: spacing.sm,
-        }}>
-          <View style={{
-            width: 34,
-            height: 34,
-            borderRadius: 17,
-            backgroundColor: colors.muted,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <Feather name="shield" size={16} color={colors.mutedForeground} />
-          </View>
-          <Text style={{ fontSize: 13, color: colors.mutedForeground, fontWeight: '600', flex: 1 }}>
-            Location sharing stopped
-          </Text>
-        </View>
-      )}
-
       {/* Tab Content - Scrollable */}
       <ScrollView 
         ref={scrollRef}
@@ -9274,6 +9205,73 @@ export default function JobDetailScreen() {
           />
         }
       >
+        {isSubcontractor && subbieLocationSharing && (
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: spacing.md,
+            backgroundColor: colors.card,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            paddingHorizontal: spacing.sm + 2,
+            paddingVertical: spacing.sm + 2,
+            gap: spacing.sm,
+          }}>
+            <View style={{
+              width: 34,
+              height: 34,
+              borderRadius: 17,
+              backgroundColor: '#8B5CF61A',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Feather name="map-pin" size={16} color="#8B5CF6" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13.5, fontWeight: '700', color: colors.foreground, marginBottom: 1 }}>
+                Location sharing on
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 16 }}>
+                Visible to {businessSettings?.businessName || 'the business'} while this job is active
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#22c55e' }} />
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#16a34a' }}>LIVE</Text>
+            </View>
+          </View>
+        )}
+
+        {isSubcontractor && subbieLocationStopped && !subbieLocationSharing && (
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: spacing.md,
+            backgroundColor: colors.card,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            paddingHorizontal: spacing.sm + 2,
+            paddingVertical: spacing.sm + 2,
+            gap: spacing.sm,
+          }}>
+            <View style={{
+              width: 34,
+              height: 34,
+              borderRadius: 17,
+              backgroundColor: colors.muted,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Feather name="shield" size={16} color={colors.mutedForeground} />
+            </View>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, fontWeight: '600', flex: 1 }}>
+              Location sharing stopped
+            </Text>
+          </View>
+        )}
+
         {activeTab === 'overview' && renderOverviewTab()}
         {activeTab === 'documents' && (
           <>
