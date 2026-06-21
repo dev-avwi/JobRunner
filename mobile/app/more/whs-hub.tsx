@@ -1534,10 +1534,15 @@ export default function WhsHubScreen() {
                   {actionItems.length > 3 && (
                     <Text style={styles.actionMoreText}>+{actionItems.length - 3} more</Text>
                   )}
+                  {!hasComplianceBaseline && (
+                    <Text style={[styles.actionItemText, { paddingHorizontal: spacing.sm, paddingTop: 4 }]}>
+                      Add {MIN_SETUP_FOR_SCORE} categories to unlock your compliance score.
+                    </Text>
+                  )}
                 </View>
               )}
 
-              {!hasComplianceBaseline && (
+              {!hasComplianceBaseline && actionItems.length === 0 && (
                 <View style={[styles.actionBanner, { borderColor: colorWithOpacity(colors.warning, 0.25) }]}>
                   <View style={styles.actionBannerHeader}>
                     <View style={[styles.actionBannerIcon, { backgroundColor: colorWithOpacity(colors.warning, 0.12) }]}>
