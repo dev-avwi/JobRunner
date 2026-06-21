@@ -123,10 +123,10 @@ const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: num
   complianceBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.md, marginTop: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
   complianceBannerText: { fontSize: 14, fontWeight: '500', color: colors.success },
   stickyBar: { backgroundColor: colors.background, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  filterScroll: { paddingHorizontal: spacing.lg, gap: spacing.xs, paddingBottom: spacing.sm, paddingTop: spacing.sm },
-  filterChip: { paddingHorizontal: spacing.sm, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  filterWrap: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
+  filterChip: { maxWidth: '100%', paddingHorizontal: spacing.sm, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 5 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary, ...shadows.sm },
-  filterChipText: { fontSize: 13, color: colors.mutedForeground, fontWeight: '500' },
+  filterChipText: { fontSize: 13, color: colors.mutedForeground, fontWeight: '500', flexShrink: 1 },
   filterChipTextActive: { color: colors.primaryForeground, fontWeight: '700' },
   chipCount: { minWidth: 18, paddingHorizontal: 5, paddingVertical: 1, borderRadius: radius.full, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   chipCountActive: { backgroundColor: colorWithOpacity(colors.primaryForeground, 0.25) },
@@ -1548,7 +1548,7 @@ export default function WhsHubScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.actionItemText, { paddingHorizontal: spacing.sm, paddingTop: 4 }]}>
-                    Compliance score will appear once you've added at least {MIN_SETUP_FOR_SCORE} categories (emergency plans, training, JSAs, PPE, signage, or sites).
+                    Add at least {MIN_SETUP_FOR_SCORE} categories to unlock your compliance score.
                   </Text>
                 </View>
               )}
@@ -1566,7 +1566,7 @@ export default function WhsHubScreen() {
             </View>
 
             <View style={styles.stickyBar}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll} style={{ flexGrow: 0 }}>
+              <View style={styles.filterWrap}>
                 {TABS.map(tab => (
                   <TouchableOpacity
                     key={tab.key}
@@ -1574,13 +1574,13 @@ export default function WhsHubScreen() {
                     onPress={() => setActiveTab(tab.key)}
                   >
                     <Feather name={tab.icon} size={14} color={activeTab === tab.key ? colors.primaryForeground : colors.mutedForeground} />
-                    <Text style={[styles.filterChipText, activeTab === tab.key && styles.filterChipTextActive]}>{tab.label}</Text>
+                    <Text style={[styles.filterChipText, activeTab === tab.key && styles.filterChipTextActive]} numberOfLines={1}>{tab.label}</Text>
                     <View style={[styles.chipCount, activeTab === tab.key && styles.chipCountActive]}>
                       <Text style={[styles.chipCountText, activeTab === tab.key && styles.chipCountTextActive]}>{tabCounts[tab.key]}</Text>
                     </View>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </View>
 
               <View style={styles.catHeader}>
                 <View style={styles.catHeaderLeft}>
