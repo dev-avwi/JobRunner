@@ -332,6 +332,26 @@ class LocationTrackingService {
   }
 
   /**
+   * Prompt for foreground location permission (if not already granted) and
+   * return a fresh GPS fix. Used by the "On My Way" flow so the server can
+   * compute a REAL road ETA instead of falling back to the static default.
+   * Returns null if permission is denied or no fix is available.
+   */
+  async getFreshCoordsForEta(): Promise<{ latitude: number; longitude: number } | null> {
+    try {
+      const granted = await this.requestForegroundPermission();
+      if (!granted) return null;
+      const loc = await this.getCurrentLocation();
+      if (loc && typeof loc.latitude === 'number' && typeof loc.longitude === 'number') {
+        return { latitude: loc.latitude, longitude: loc.longitude };
+      }
+    } catch {
+      // ignore — caller falls back to no-coords behaviour
+    }
+    return null;
+  }
+
+  /**
    * Start background location tracking
    */
   async startTracking(): Promise<boolean> {

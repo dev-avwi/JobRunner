@@ -23,6 +23,7 @@ import { asHref } from '../../src/lib/nav';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { locationTracking } from '../../src/lib/location-tracking';
 import { useAuthStore, useJobsStore, useDashboardStore, useClientsStore, useTimeTrackingStore } from '../../src/lib/store';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
 import { api } from '../../src/lib/api';
@@ -3078,7 +3079,11 @@ function OwnerDashboardScreen() {
               }
               
               if (clientId) {
-                const response = await api.post(`/api/jobs/${jobId}/on-my-way`);
+                const coords = await locationTracking.getFreshCoordsForEta();
+                const response = await api.post(`/api/jobs/${jobId}/on-my-way`, {
+                  latitude: coords?.latitude,
+                  longitude: coords?.longitude,
+                });
                 if ((response.data as any)?.demoMode) {
                   showToast({ type: 'info', message: 'SMS Not Configured', description: 'Twilio SMS is not set up. The "On My Way" action was logged but no message was sent to the client.\n\nSet up Twilio in Settings > Integrations to enable real SMS notifications.' });
                   router.push(`/job/${jobId}`);

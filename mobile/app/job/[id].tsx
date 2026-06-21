@@ -2405,6 +2405,28 @@ export default function JobDetailScreen() {
     setSubbieLocationSharing(isTracking && job.status === 'in_progress');
   }, []);
 
+  // Keep the worker's live location flowing to the client portal while EN ROUTE
+  // (workerStatus === 'on_my_way'), so the tracking page shows a real,
+  // counting-down road ETA instead of a single static estimate. Works for
+  // owners and subbies: /api/team-locations updates the live pin and bridges the
+  // moving location into the portal's ETA recompute. Stops on arrival; the
+  // in_progress working phase is handled by the subcontractor effect above.
+  useEffect(() => {
+    if (!job) return;
+    const businessName = businessSettings?.businessName || 'Business';
+    if (job.workerStatus === 'on_my_way') {
+      if (!locationTracking.isTrackingJob(job.id)) {
+        if (isSubcontractor) locationTracking.setSubcontractorMode(true);
+        locationTracking.startJobTracking(job.id, job.title, businessName)
+          .then((started) => setSubbieLocationSharing(started))
+          .catch(() => {});
+      }
+    } else if (locationTracking.isTrackingJob(job.id) && job.status !== 'in_progress') {
+      locationTracking.stopJobTrackingForJob(job.id);
+      setSubbieLocationSharing(false);
+    }
+  }, [job?.workerStatus, job?.status, job?.id, isSubcontractor]);
+
   const loadMaterials = useCallback(async () => {
     if (!id) return;
     setIsLoadingMaterials(true);
@@ -5174,14 +5196,7 @@ export default function JobDetailScreen() {
     if (!nextJob) return;
     setIsHeadingToNext(true);
     try {
-      let coords: { latitude: number; longitude: number } | null = null;
-      try {
-        const { status } = await Location.getForegroundPermissionsAsync();
-        if (status === 'granted') {
-          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-        }
-      } catch (e) {}
+      const coords = await locationTracking.getFreshCoordsForEta();
 
       const response = await api.post(`/api/jobs/${nextJob.id}/on-my-way`, {
         latitude: coords?.latitude,
@@ -5247,19 +5262,9 @@ export default function JobDetailScreen() {
     
     setIsSendingOnMyWay(true);
     try {
-      // Get current GPS location for real ETA calculation
-      let coords: { latitude: number; longitude: number } | null = null;
-      try {
-        const { status } = await Location.getForegroundPermissionsAsync();
-        if (status === 'granted') {
-          const loc = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-        }
-      } catch (locErr) {
-        if (__DEV__) console.log('[OnMyWay] Could not get GPS location:', locErr);
-      }
+      // Get a fresh GPS fix (requesting permission if needed) so the server can
+      // compute a REAL road ETA instead of falling back to the static default.
+      const coords = await locationTracking.getFreshCoordsForEta();
 
       type OnMyWayResp = { notConfigured?: boolean; estimatedMinutes?: number; distanceKm?: number; etaSource?: string };
       const response = await api.post<OnMyWayResp>(`/api/jobs/${job.id}/on-my-way`, {
