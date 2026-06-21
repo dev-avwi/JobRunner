@@ -46259,21 +46259,30 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         const assignment = assignments.find(a => a.jobId === job.id);
         const membership = memberships.find(m => m.businessOwnerId === job.userId);
 
-        const hourlyRate = parseFloat(assignment?.hourlyRateOverride || membership?.hourlyRate || '0');
-        
+        const fallbackRate = parseFloat(assignment?.hourlyRateOverride || membership?.hourlyRate || '0');
+
         let totalHours = 0;
+        let labourAmount = 0;
+        let effectiveRate = fallbackRate;
         const timeEntryDetails = jobTimeEntries.map(te => {
           if (!te.endTime) return null;
           const durationMinutes = te.duration || Math.round((new Date(te.endTime).getTime() - new Date(te.startTime).getTime()) / 60000);
           const hours = Math.round(durationMinutes / 60 * 100) / 100;
           totalHours += hours;
+          // Prefer the rate captured on the entry itself (what the worker already
+          // sees as "earned" in Time Tracking); fall back to their assignment/
+          // membership rate only when the entry has no rate of its own.
+          const entryRate = parseFloat(te.hourlyRate || '0') || fallbackRate;
+          if (entryRate > 0) effectiveRate = entryRate;
+          const amount = Math.round(hours * entryRate * 100) / 100;
+          labourAmount += amount;
           return {
             id: te.id,
             startTime: te.startTime,
             endTime: te.endTime,
             hours,
-            rate: hourlyRate,
-            amount: Math.round(hours * hourlyRate * 100) / 100,
+            rate: entryRate,
+            amount,
           };
         }).filter(Boolean);
 
@@ -46285,7 +46294,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         if (timeEntryDetails.length === 0 && invoicedJobIds.has(job.id) && materialsCost === 0) return null;
         if (timeEntryDetails.length === 0 && totalHours === 0 && materialsCost === 0) return null;
 
-        const labourAmount = Math.round(totalHours * hourlyRate * 100) / 100;
+        totalHours = Math.round(totalHours * 100) / 100;
+        labourAmount = Math.round(labourAmount * 100) / 100;
 
         return {
           jobId: job.id,
@@ -46295,7 +46305,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           businessName: bizMap[job.userId] || 'Unknown',
           completedAt: job.completedAt,
           totalHours,
-          hourlyRate,
+          hourlyRate: effectiveRate,
           materialsCost: Math.round(materialsCost * 100) / 100,
           totalAmount: Math.round((labourAmount + materialsCost) * 100) / 100,
           timeEntries: timeEntryDetails,
