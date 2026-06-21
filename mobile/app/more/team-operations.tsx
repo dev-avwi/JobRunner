@@ -11,7 +11,7 @@ import {
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -221,7 +221,10 @@ export default function TeamOperationsScreen() {
     }
   };
 
+  const isFetchingRef = useRef(false);
   const fetchData = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       const [membersRes, presenceRes, activityRes, jobsRes, timeOffRes, workerStatesRes] = await Promise.all([
         api.get<TeamMemberData[]>('/api/team/members'),
@@ -242,6 +245,7 @@ export default function TeamOperationsScreen() {
     } catch (error) {
       console.error('Error fetching team data:', error);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
@@ -260,7 +264,16 @@ export default function TeamOperationsScreen() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Keep the Live Ops board current: refetch on screen focus and poll while
+  // open, so worker availability/status changes (e.g. a subbie going Busy)
+  // appear without the owner manually pulling to refresh.
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+      const poll = setInterval(() => { fetchData(); }, 20000);
+      return () => clearInterval(poll);
+    }, [fetchData])
+  );
 
   useEffect(() => {
     if (selectedMemberId) fetchAvailability(selectedMemberId);

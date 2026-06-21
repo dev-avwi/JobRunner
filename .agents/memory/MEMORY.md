@@ -95,3 +95,4 @@
 - [Worker presence state blast radius](worker-state-blast-radius.md) — adding/removing a worker state must touch server validStates, shared WORKER_STATES/_CONFIG, mobile MY STATUS pills+display colors, AND team-operations pill/subtitle chain (defaults to "Available" otherwise).
 - [Job completed status vocab](job-completed-status-vocab.md) — finished job is status 'done' (+ 'invoiced'), NEVER 'completed'; filtering on 'completed' silently returns 0/empty (bit the subbie dashboard jobs-completed stat).
 - [Worker status: three stores](worker-status-three-stores.md) — availabilityStatus (subbie pill) vs worker_states (owner board reads THIS) vs team_presence don't auto-sync; mirror availability into worker_states + broadcast.
+- [Mobile has no general WS event bus](mobile-no-ws-event-bus.md) — only map.tsx has a (location) socket; server broadcasts reach no listener. Live-updating screens must useFocusEffect refetch + poll, not rely on WS.
