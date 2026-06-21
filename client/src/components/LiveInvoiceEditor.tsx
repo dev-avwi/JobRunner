@@ -194,6 +194,94 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
     setAutoLoaded(true);
   }, [isEditMode, editInvoiceData, editLoaded]);
 
+  // Build labour + materials line items from a job's tracked time and materials.
+  // Mirrors the Job Detail "Labour cost" calc: team-wide entries (teamView=true),
+  // per-worker tracked rates, breaks excluded. Also pulls in job materials.
+  const buildJobChargeItems = async (jobId: string, jobTitle?: string) => {
+    const items: { description: string; quantity: string; unitPrice: string }[] = [];
+    const token = getSessionToken();
+    const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : undefined;
+
+    // Labour from tracked time — same source/scope the job card totals from
+    try {
+      const timeRes = await fetch(`/api/time-entries?jobId=${jobId}&teamView=true`, { credentials: 'include', headers: authHeaders });
+      if (timeRes.ok) {
+        const timeEntries = await timeRes.json();
+        const workEntries = Array.isArray(timeEntries)
+          ? timeEntries.filter((e: any) => e.endTime && !e.isBreak)
+          : [];
+        // hourlyRate is a decimal column and arrives as a string (e.g. "85.00"),
+        // so always coerce to a finite number before any arithmetic.
+        const toRate = (v: any) => {
+          const n = parseFloat(v);
+          return Number.isFinite(n) && n > 0 ? n : 0;
+        };
+        // Minutes per entry — mirrors Job Detail getEntryMinutes: prefer stored
+        // duration, else floor((end-start)/60000).
+        const entryMinutes = (e: any) => {
+          const dur = parseFloat(e.duration);
+          if (Number.isFinite(dur) && dur > 0) return dur;
+          return Math.floor((new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 60000);
+        };
+        // Overall average tracked rate (rated entries only), matching the card's
+        // avgHourlyRate; fall back to the business hourly rate only if nothing is set.
+        const allRated = workEntries.map((e: any) => toRate(e.hourlyRate)).filter((r: number) => r > 0);
+        const overallAvgRate = allRated.length > 0
+          ? allRated.reduce((s: number, r: number) => s + r, 0) / allRated.length
+          : toRate(businessSettings?.hourlyRate);
+        const byWorker = new Map<string, any[]>();
+        for (const e of workEntries) {
+          const key = e.userId || 'unknown';
+          if (!byWorker.has(key)) byWorker.set(key, []);
+          byWorker.get(key)!.push(e);
+        }
+        for (const entries of Array.from(byWorker.values())) {
+          const totalMinutes = entries.reduce((sum: number, e: any) => sum + entryMinutes(e), 0);
+          const hours = Math.round((totalMinutes / 60) * 100) / 100;
+          if (!Number.isFinite(hours) || hours <= 0) continue;
+          const rated = entries.map((e: any) => toRate(e.hourlyRate)).filter((r: number) => r > 0);
+          const rate = rated.length > 0
+            ? rated.reduce((s: number, r: number) => s + r, 0) / rated.length
+            : overallAvgRate;
+          const safeRate = Number.isFinite(rate) ? Math.round(rate * 100) / 100 : 0;
+          const workerName = entries[0]?.userName;
+          items.push({
+            description: workerName ? `Labour - ${workerName} (${hours}h)` : `${jobTitle || 'Labour'} - ${hours} hours`,
+            quantity: String(hours),
+            unitPrice: String(safeRate),
+          });
+        }
+      }
+    } catch (err) {
+      // Silently skip labour on failure
+    }
+
+    // Materials charged to the client
+    try {
+      const matRes = await fetch(`/api/jobs/${jobId}/materials`, { credentials: 'include', headers: authHeaders });
+      if (matRes.ok) {
+        const materials = await matRes.json();
+        if (Array.isArray(materials)) {
+          for (const m of materials) {
+            const qty = parseFloat(m.quantity ?? '1') || 0;
+            const price = parseFloat(m.unitPrice ?? '0') || parseFloat(m.unitCost ?? '0') || 0;
+            if (qty <= 0 || price <= 0) continue;
+            const unitLabel = m.unit && m.unit !== 'each' ? ` (${m.unit})` : '';
+            items.push({
+              description: `${m.name}${unitLabel}`,
+              quantity: String(qty),
+              unitPrice: String(price),
+            });
+          }
+        }
+      }
+    } catch (err) {
+      // Silently skip materials on failure
+    }
+
+    return items;
+  };
+
   // Auto-fill form when job or quote is loaded from URL parameter
   useEffect(() => {
     if (autoLoaded || (clients as any[]).length === 0) return;
@@ -311,33 +399,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
                 : `Invoice prefilled from "${job.title}" with quote line items`,
             });
           } else {
-            let timeBasedItems: any[] = [];
-            try {
-              const teToken = getSessionToken();
-              const timeRes = await fetch(`/api/time-entries?jobId=${job.id}`, { credentials: 'include', headers: teToken ? { 'Authorization': `Bearer ${teToken}` } : undefined });
-              if (timeRes.ok) {
-                const timeEntries = await timeRes.json();
-                const completedEntries = Array.isArray(timeEntries) ? timeEntries.filter((e: any) => e.endTime) : [];
-                if (completedEntries.length > 0) {
-                  const totalMs = completedEntries.reduce((sum: number, e: any) => {
-                    const start = new Date(e.startTime).getTime();
-                    const end = new Date(e.endTime).getTime();
-                    return sum + (end - start);
-                  }, 0);
-                  const totalHours = Math.round((totalMs / (1000 * 60 * 60)) * 100) / 100;
-                  
-                  if (totalHours > 0) {
-                    const hourlyRate = businessSettings?.hourlyRate || 0;
-                    timeBasedItems = [{
-                      description: `${job.title || 'Labour'} - ${totalHours} hours`,
-                      quantity: String(totalHours),
-                      unitPrice: String(hourlyRate),
-                    }];
-                  }
-                }
-              }
-            } catch (err) {
-            }
+            const timeBasedItems = await buildJobChargeItems(job.id, job.title);
             
             const { items: varOnlyItems, count: varCount } = await fetchVariationsForAutoLoad(job.id, timeBasedItems);
             form.setValue("lineItems", varOnlyItems);
@@ -345,38 +407,14 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
             toast({
               title: "Job loaded", 
               description: varCount > 0
-                ? `Invoice prefilled from "${job.title}" with ${varCount} variation${varCount > 1 ? 's' : ''}`
-                : `Invoice prefilled from "${job.title}". Add line items for your charges.`,
+                ? `Invoice prefilled from "${job.title}" with labour, materials & ${varCount} variation${varCount > 1 ? 's' : ''}`
+                : varOnlyItems.length > 0
+                  ? `Invoice prefilled from "${job.title}" with labour & materials`
+                  : `Invoice prefilled from "${job.title}". Add line items for your charges.`,
             });
           }
         } catch {
-          let timeBasedItems: any[] = [];
-          try {
-            const teToken2 = getSessionToken();
-            const timeRes = await fetch(`/api/time-entries?jobId=${job.id}`, { credentials: 'include', headers: teToken2 ? { 'Authorization': `Bearer ${teToken2}` } : undefined });
-            if (timeRes.ok) {
-              const timeEntries = await timeRes.json();
-              const completedEntries = Array.isArray(timeEntries) ? timeEntries.filter((e: any) => e.endTime) : [];
-              if (completedEntries.length > 0) {
-                const totalMs = completedEntries.reduce((sum: number, e: any) => {
-                  const start = new Date(e.startTime).getTime();
-                  const end = new Date(e.endTime).getTime();
-                  return sum + (end - start);
-                }, 0);
-                const totalHours = Math.round((totalMs / (1000 * 60 * 60)) * 100) / 100;
-                
-                if (totalHours > 0) {
-                  const hourlyRate = businessSettings?.hourlyRate || 0;
-                  timeBasedItems = [{
-                    description: `${job.title || 'Labour'} - ${totalHours} hours`,
-                    quantity: String(totalHours),
-                    unitPrice: String(hourlyRate),
-                  }];
-                }
-              }
-            }
-          } catch (err) {
-          }
+          const timeBasedItems = await buildJobChargeItems(job.id, job.title);
           
           const { items: varOnlyItems, count: varCount } = await fetchVariationsForAutoLoad(job.id, timeBasedItems);
           form.setValue("lineItems", varOnlyItems);
@@ -384,8 +422,10 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
           toast({
             title: "Job loaded",
             description: varCount > 0
-              ? `Invoice prefilled from "${job.title}" with ${varCount} variation${varCount > 1 ? 's' : ''}`
-              : `Invoice prefilled from "${job.title}". Add line items for your charges.`,
+              ? `Invoice prefilled from "${job.title}" with labour, materials & ${varCount} variation${varCount > 1 ? 's' : ''}`
+              : varOnlyItems.length > 0
+                ? `Invoice prefilled from "${job.title}" with labour & materials`
+                : `Invoice prefilled from "${job.title}". Add line items for your charges.`,
           });
         }
       })();
@@ -557,33 +597,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
         console.error("Error fetching linked documents:", err);
       }
       
-      let timeBasedItems: any[] = [];
-      try {
-        const teToken3 = getSessionToken();
-        const timeRes = await fetch(`/api/time-entries?jobId=${job.id}`, { credentials: 'include', headers: teToken3 ? { 'Authorization': `Bearer ${teToken3}` } : undefined });
-        if (timeRes.ok) {
-          const timeEntries = await timeRes.json();
-          const completedEntries = Array.isArray(timeEntries) ? timeEntries.filter((e: any) => e.endTime) : [];
-          if (completedEntries.length > 0) {
-            const totalMs = completedEntries.reduce((sum: number, e: any) => {
-              const start = new Date(e.startTime).getTime();
-              const end = new Date(e.endTime).getTime();
-              return sum + (end - start);
-            }, 0);
-            const totalHours = Math.round((totalMs / (1000 * 60 * 60)) * 100) / 100;
-            
-            if (totalHours > 0) {
-              const hourlyRate = businessSettings?.hourlyRate || 0;
-              timeBasedItems = [{
-                description: `${job.title || 'Labour'} - ${totalHours} hours`,
-                quantity: String(totalHours),
-                unitPrice: String(hourlyRate),
-              }];
-            }
-          }
-        }
-      } catch (err) {
-      }
+      const timeBasedItems = await buildJobChargeItems(job.id, job.title);
 
       const { items: varOnlyItems, count: varCount } = await fetchApprovedVariations(job.id, timeBasedItems);
       form.setValue("lineItems", varOnlyItems);
@@ -593,8 +607,10 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
       toast({
         title: "Job loaded",
         description: varCount > 0
-          ? `Invoice prefilled from "${job.title}" with ${varCount} variation${varCount > 1 ? 's' : ''}`
-          : `Invoice prefilled from "${job.title}". Add line items for your charges.`,
+          ? `Invoice prefilled from "${job.title}" with labour, materials & ${varCount} variation${varCount > 1 ? 's' : ''}`
+          : varOnlyItems.length > 0
+            ? `Invoice prefilled from "${job.title}" with labour & materials`
+            : `Invoice prefilled from "${job.title}". Add line items for your charges.`,
       });
     }
   };
