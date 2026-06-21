@@ -9856,16 +9856,28 @@ export default function JobDetailScreen() {
         title="Post Site Update"
         showCloseButton
         footer={(
-          <Button
-            size="lg"
-            variant="brand"
-            fullWidth
-            loading={isSendingSiteUpdate}
+          <TouchableOpacity
+            activeOpacity={0.85}
             disabled={isSendingSiteUpdate}
             onPress={handleSubmitSiteUpdate}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.primary,
+              paddingVertical: spacing.md,
+              borderRadius: radius.lg,
+              minHeight: 48,
+              width: '100%',
+              opacity: isSendingSiteUpdate ? 0.6 : 1,
+            }}
           >
-            Post Update
-          </Button>
+            {isSendingSiteUpdate ? (
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
+            ) : (
+              <Text style={{ color: colors.primaryForeground, fontSize: 16, fontWeight: '600' }}>Post Update</Text>
+            )}
+          </TouchableOpacity>
         )}>
         <View>
               <View>
