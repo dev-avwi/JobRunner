@@ -278,17 +278,24 @@ function JobCard({
 
         {job.status === 'done' && canCreateInvoices && (
           <Pressable
-            style={{ alignSelf: 'flex-start', marginTop: spacing.sm }}
-            onPress={(e) => e.stopPropagation()}
+            onPress={(e) => {
+              e.stopPropagation();
+              router.push(`/more/invoice/new?jobId=${job.id}`);
+            }}
+            style={({ pressed }) => ({
+              alignSelf: 'flex-start',
+              marginTop: spacing.sm,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: pressed ? '#1D4ED8' : '#2563EB',
+              borderRadius: 6,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+            })}
           >
-            <Button
-              size="sm"
-              variant="brand"
-              icon={<Feather name="file-text" size={iconSizes.sm} color="#FFFFFF" />}
-              onPress={() => router.push(`/more/invoice/new?jobId=${job.id}`)}
-            >
-              Invoice
-            </Button>
+            <Feather name="file-text" size={iconSizes.sm} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>Invoice</Text>
           </Pressable>
         )}
       </View>
