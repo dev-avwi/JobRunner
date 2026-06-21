@@ -277,26 +277,17 @@ function JobCard({
         </View>
 
         {job.status === 'done' && canCreateInvoices && (
-          <Pressable
+          <TouchableOpacity
+            activeOpacity={0.8}
             onPress={(e) => {
               e.stopPropagation();
               router.push(`/more/invoice/new?jobId=${job.id}`);
             }}
-            style={({ pressed }) => ({
-              alignSelf: 'flex-start',
-              marginTop: spacing.sm,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-              backgroundColor: pressed ? '#1D4ED8' : '#2563EB',
-              borderRadius: 6,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-            })}
+            style={styles.invoiceBtn}
           >
             <Feather name="file-text" size={iconSizes.sm} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>Invoice</Text>
-          </Pressable>
+            <Text style={styles.invoiceBtnText}>Invoice</Text>
+          </TouchableOpacity>
         )}
       </View>
     </AnimatedCardPressable>
@@ -2154,21 +2145,21 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     flex: 1,
   },
   invoiceBtn: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: radius.md,
     alignSelf: 'flex-start',
     marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 6,
     minHeight: 32,
   },
   invoiceBtnText: {
     ...typography.captionSmall,
     fontWeight: '600',
-    color: colors.primaryForeground,
+    color: '#FFFFFF',
   },
 
   urgencyBadge: {
