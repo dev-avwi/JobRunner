@@ -116,7 +116,7 @@ const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: num
   actionBanner: { backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.md, marginTop: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
   actionBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   actionBannerIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  actionBannerTitle: { fontSize: 14, fontWeight: '700', color: colors.foreground },
+  actionBannerTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.foreground },
   actionItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 7, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   actionItemText: { flex: 1, fontSize: 13, color: colors.foreground },
   actionMoreText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
