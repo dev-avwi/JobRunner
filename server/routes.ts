@@ -32866,6 +32866,12 @@ Respond with JSON in this format:
         
         const recentLocation = await storage.getLatestLocationForUser(member.memberId);
         const tradieStatusData = await storage.getTradieStatus(member.memberId);
+        // The availability the worker explicitly set (Available/Busy/Unavailable),
+        // same source Team Operations reads. An explicit Busy/Unavailable must win
+        // over the location-derived activity so the map matches Team Operations.
+        const workerStateRow = await storage.getWorkerState(member.memberId, effectiveUserId);
+        const explicitState = (workerStateRow?.state || '').toLowerCase();
+        const overrideStatus = (explicitState === 'busy' || explicitState === 'unavailable') ? explicitState : null;
         
         const activeTimeEntry = await storage.getActiveTimeEntry(member.memberId);
         
@@ -32960,7 +32966,8 @@ Respond with JSON in this format:
           lastUpdated,
           currentJobId: currentJob?.id || null,
           currentJobTitle: currentJob?.title || null,
-          activityStatus: tradieStatusData?.activityStatus || 'online',
+          activityStatus: overrideStatus || tradieStatusData?.activityStatus || 'online',
+          workerState: workerStateRow?.state || null,
           speed,
           batteryLevel,
           heading,
@@ -33181,6 +33188,10 @@ Respond with JSON in this format:
           const status = await storage.getTradieStatus(member.memberId);
           const location = await storage.getLatestLocationForUser(member.memberId);
           const user = await storage.getUser(member.memberId);
+          // The availability the worker explicitly set (Available/Busy/Unavailable),
+          // same source Team Operations reads. The map must reflect this, not just
+          // the location-derived activity (online/working/offline).
+          const workerStateRow = await storage.getWorkerState(member.memberId, userContext.effectiveUserId);
           
           let currentJobTitle = undefined;
           let currentJobId = status?.currentJobId || location?.jobId;
@@ -33239,6 +33250,7 @@ Respond with JSON in this format:
             longitude: lng,
             lastSeenAt: status?.lastSeenAt || location?.timestamp,
             activityStatus: activityStatus,
+            workerState: workerStateRow?.state || null,
             isActive: isActive,
             isDriving: isDriving,
             speed: speed,

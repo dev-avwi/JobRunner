@@ -103,3 +103,4 @@
 - [Job completed status vocab](job-completed-status-vocab.md) — finished job is status 'done' (+ 'invoiced'), NEVER 'completed'; filtering on 'completed' silently returns 0/empty (bit the subbie dashboard jobs-completed stat).
 - [Worker status: three stores](worker-status-three-stores.md) — availabilityStatus (subbie pill) vs worker_states (owner board reads THIS) vs team_presence don't auto-sync; mirror availability into worker_states + broadcast.
 - [Mobile has no general WS event bus](mobile-no-ws-event-bus.md) — only map.tsx has a (location) socket; server broadcasts reach no listener. Live-updating screens must useFocusEffect refetch + poll, not rely on WS.
+- [Mobile team map status source + endpoint decoy](map-team-locations-endpoint.md) — map reads location-derived activityStatus, NOT chosen Busy (worker_states); fix /api/team/locations (NOT decoy /api/map/team-locations) + override + priority dedup.

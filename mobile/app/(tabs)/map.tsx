@@ -146,7 +146,7 @@ interface TeamMember {
     speed?: number;
     battery?: number;
   };
-  activityStatus?: 'online' | 'driving' | 'working' | 'offline';
+  activityStatus?: 'online' | 'driving' | 'working' | 'offline' | 'busy' | 'unavailable';
   isSubcontractor?: boolean;
   activeJobName?: string;
 }
@@ -180,6 +180,8 @@ const createStyles = (colors: ThemeColors) => {
     working: { label: 'Working', color: colors.primary, icon: 'tool' },
     driving: { label: 'Driving', color: colors.info, icon: 'truck' },
     online: { label: 'Online', color: colors.success, icon: 'check-circle' },
+    busy: { label: 'Busy', color: colors.warning, icon: 'clock' },
+    unavailable: { label: 'Unavailable', color: colors.mutedForeground, icon: 'x-circle' },
     idle: { label: 'Idle', color: colors.warning, icon: 'clock' },
     offline: { label: 'Offline', color: colors.mutedForeground, icon: 'moon' },
   };
@@ -810,7 +812,7 @@ export default function MapScreen() {
       // Transform API response to match TeamMember interface
       // API returns: { id, name, email, latitude, longitude, lastUpdated, currentJobId, currentJobTitle }
       // We need: { id, userId, role, user: { firstName, lastName }, lastLocation: { latitude, longitude, timestamp }, activityStatus }
-      type RawTeamMember = { id: string; name?: string; latitude?: number | string; longitude?: number | string; isSubcontractor?: boolean; currentJobId?: string; currentJobTitle?: string; userId?: string; role?: string; themeColor?: string | null; lastUpdated?: string; speed?: number | null; batteryLevel?: number | null; activityStatus?: string | null; activeJobName?: string | null };
+      type RawTeamMember = { id: string; name?: string; latitude?: number | string; longitude?: number | string; isSubcontractor?: boolean; currentJobId?: string; currentJobTitle?: string; userId?: string; role?: string; themeColor?: string | null; lastUpdated?: string; speed?: number | null; batteryLevel?: number | null; activityStatus?: string | null; workerState?: string | null; activeJobName?: string | null };
       const transformedMembers: TeamMember[] = (data as RawTeamMember[])
         .map((m): TeamMember | null => {
           const nameParts = (m.name || '').trim().split(' ');
@@ -884,7 +886,13 @@ export default function MapScreen() {
               speed: m.speed != null ? Number(m.speed) : undefined,
               battery: m.batteryLevel != null ? Number(m.batteryLevel) : undefined,
             },
-            activityStatus: ((m.activityStatus as TeamMember['activityStatus']) || (m.currentJobId ? 'working' : 'online')),
+            activityStatus: (() => {
+              // The worker's explicitly-set availability (Busy/Unavailable) always wins
+              // over the location-derived activity, so the map matches Team Operations.
+              const ws = (m.workerState || '').toLowerCase();
+              if (ws === 'busy' || ws === 'unavailable') return ws as TeamMember['activityStatus'];
+              return ((m.activityStatus as TeamMember['activityStatus']) || (m.currentJobId ? 'working' : 'online'));
+            })(),
             isSubcontractor: m.isSubcontractor || false,
             activeJobName: m.activeJobName || m.currentJobTitle || undefined,
           };
@@ -892,14 +900,22 @@ export default function MapScreen() {
         .filter((m: TeamMember | null): m is TeamMember => m !== null);
       
       // Deduplicate by name to prevent multiple markers for the same person
+      // (e.g. an owner who also has a self-membership row). When the same person
+      // appears twice, keep the most meaningful status so an explicit Busy/On Job
+      // wins over a generic Online — matching what Team Operations shows.
+      const STATUS_PRIORITY: Record<string, number> = {
+        on_job: 6, working: 6, busy: 5, unavailable: 5, driving: 4, online: 2, idle: 2, offline: 1,
+      };
+      const statusRank = (s?: string) => STATUS_PRIORITY[s || 'offline'] ?? 0;
       const uniqueMembers = transformedMembers.reduce((acc, member) => {
         const name = `${member.user?.firstName} ${member.user?.lastName}`.trim();
-        const existing = acc.find(m => 
+        const idx = acc.findIndex(m => 
           `${m.user?.firstName} ${m.user?.lastName}`.trim() === name
         );
-        // Keep the one with most recent data or first occurrence
-        if (!existing) {
+        if (idx === -1) {
           acc.push(member);
+        } else if (statusRank(member.activityStatus) > statusRank(acc[idx].activityStatus)) {
+          acc[idx] = member;
         }
         return acc;
       }, [] as TeamMember[]);
