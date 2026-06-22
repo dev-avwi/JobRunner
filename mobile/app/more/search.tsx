@@ -31,6 +31,23 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  backRow: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.sm,
+    paddingRight: spacing.sm,
+  },
+  backText: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.foreground,
+    marginLeft: spacing.xs,
+  },
   searchContainer: {
     padding: spacing.md,
   },
@@ -225,14 +242,14 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: 'Search',
-          headerShown: true,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.foreground,
-        }} 
-      />
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <View style={styles.backRow}>
+        <PressableRow style={styles.backButton} onPress={() => router.back()}>
+          <Feather name="chevron-left" size={iconSizes.lg} color={colors.foreground} />
+          <Text style={styles.backText}>Back</Text>
+        </PressableRow>
+      </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
