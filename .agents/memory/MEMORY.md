@@ -105,3 +105,4 @@
 - [Mobile has no general WS event bus](mobile-no-ws-event-bus.md) — only map.tsx has a (location) socket; server broadcasts reach no listener. Live-updating screens must useFocusEffect refetch + poll, not rely on WS.
 - [Mobile team map status source + endpoint decoy](map-team-locations-endpoint.md) — map reads location-derived activityStatus, NOT chosen Busy (worker_states); fix /api/team/locations (NOT decoy /api/map/team-locations) + override + priority dedup.
 - [Autopilot/automations engine is real](automations-engine-real.md) — not a stub; event triggers fire inline + 30min time-based poller (reminderScheduler), executeAutomationActions runs real sends; custom builds execute same as templates.
+- [drizzle-zod timestamps reject ISO strings](drizzle-zod-timestamp-string-dates.md) — createInsertSchema maps timestamp→z.date(); JSON clients send strings → generic "Invalid X data" 400 on create. Fix: z.coerce.date() override.

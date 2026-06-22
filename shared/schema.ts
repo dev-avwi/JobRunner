@@ -2680,7 +2680,9 @@ export const insertExpenseCategorySchema = createInsertSchema(expenseCategories)
   createdAt: true,
 });
 
-export const insertExpenseSchema = createInsertSchema(expenses).omit({
+export const insertExpenseSchema = createInsertSchema(expenses, {
+  expenseDate: z.coerce.date(),
+}).omit({
   id: true,
   userId: true,
   createdAt: true,
