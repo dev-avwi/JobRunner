@@ -41,6 +41,7 @@
       }
     },
     "production": {
+      "autoIncrement": true,
       "channel": "production",
       "node": "20.19.4",
       "env": {
