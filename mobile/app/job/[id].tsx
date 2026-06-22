@@ -402,6 +402,38 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.primary,
     fontWeight: '600',
   },
+  errorPrimaryBtn: {
+    backgroundColor: '#2563EB',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 40,
+  },
+  errorPrimaryBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  errorSecondaryBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.buttonOutline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 40,
+  },
+  errorSecondaryBtnText: {
+    color: colors.foreground,
+    fontWeight: '600',
+    fontSize: 14,
+  },
   header: {
     marginBottom: spacing.xl,
   },
@@ -6019,22 +6051,19 @@ export default function JobDetailScreen() {
         </Text>
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
           {sessionExpired ? (
-            <Button
-              variant="brand"
-              onPress={() => { logout(); }}
-              icon={<Feather name="log-in" size={16} color="#FFFFFF" />}
-            >Sign in</Button>
+            <TouchableOpacity activeOpacity={0.8} onPress={() => { logout(); }} style={styles.errorPrimaryBtn}>
+              <Feather name="log-in" size={16} color="#FFFFFF" />
+              <Text style={styles.errorPrimaryBtnText}>Sign in</Text>
+            </TouchableOpacity>
           ) : (
-            <Button
-              variant="brand"
-              onPress={loadJob}
-              icon={<Feather name="refresh-cw" size={16} color="#FFFFFF" />}
-            >Retry</Button>
+            <TouchableOpacity activeOpacity={0.8} onPress={loadJob} style={styles.errorPrimaryBtn}>
+              <Feather name="refresh-cw" size={16} color="#FFFFFF" />
+              <Text style={styles.errorPrimaryBtnText}>Retry</Text>
+            </TouchableOpacity>
           )}
-          <Button
-            variant="outline"
-            onPress={() => router.back()}
-          >Go back</Button>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => router.back()} style={styles.errorSecondaryBtn}>
+            <Text style={styles.errorSecondaryBtnText}>Go back</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
