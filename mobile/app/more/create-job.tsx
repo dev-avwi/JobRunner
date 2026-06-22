@@ -24,6 +24,7 @@ import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import api from '../../src/lib/api';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
+import { useUserRole } from '../../src/hooks/use-user-role';
 
 type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
 
@@ -519,6 +520,8 @@ export default function CreateJobScreen() {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
+  const { isOwner, isManager, isStandaloneSubcontractor, isLoading: isRoleLoading } = useUserRole();
+  const canCreateJob = isOwner || isManager || isStandaloneSubcontractor;
 
   const isFromEnquiry = !!(params.enquiryName || params.enquiryPhone);
   const [title, setTitle] = useState('');
@@ -940,6 +943,43 @@ export default function CreateJobScreen() {
       setIsAddingClient(false);
     }
   };
+
+  if (!canCreateJob) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <PressableRow style={styles.backButton} onPress={() => router.back()}>
+              <Feather name="chevron-left" size={24} color={colors.foreground} />
+            </PressableRow>
+            <Text style={styles.headerTitle}>Create Job</Text>
+            <View style={styles.headerRight} />
+          </View>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+            {isRoleLoading ? (
+              <ActivityIndicator size="large" color={colors.primary} />
+            ) : (
+              <>
+                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  <Feather name="lock" size={28} color={colors.mutedForeground} />
+                </View>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: colors.foreground, marginBottom: 8, textAlign: 'center' }}>
+                  Not available
+                </Text>
+                <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center', marginBottom: 24 }}>
+                  You don't have permission to create jobs. Ask your business owner if you need access.
+                </Text>
+                <PressableRow style={{ paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10, backgroundColor: colors.primary }} onPress={() => router.back()}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.primaryForeground }}>Go Back</Text>
+                </PressableRow>
+              </>
+            )}
+          </View>
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
