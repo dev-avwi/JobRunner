@@ -35,6 +35,15 @@ reason. Quick triage: temporarily set key restrictions to None; confirm app heal
 running iOS (Apple Maps, no key — see provider line: iOS=undefined, Android=PROVIDER_GOOGLE).
 **iOS is immune** to all of this because it uses Apple Maps, not Google.
 
+**Confirmed cause for this app (billing ON / SDK enabled, still blank): SHA-1 lock.**
+The single key (`AIzaSy…IleHeU`, project jobrunner-8fe9d, in BOTH app.json and
+google-services.json) has Application restrictions = Android apps, locked to package
+`com.jobrunner.app` + ONE release SHA-1 fingerprint. A debug/emulator build (`expo run:android`,
+signed with `~/.android/debug.keystore`) has a DIFFERENT SHA-1 → Google rejects → blank tiles.
+Fix: add BOTH the debug-keystore SHA-1 (keytool on the user's Mac) AND the EAS/Play release SHA-1
+(`eas credentials` or Play App Signing) to the key's Android restrictions; wait ~5 min. Pay-as-you-go
+billing and an enabled Maps SDK do NOT override this lock.
+
 ## User's local mobile build workflow (Ayden, MacBook)
 Managed Expo, no committed `mobile/android/`. Builds locally via:
 `cd mobile && npx expo run:android` (NOT eas). Needed one-time env setup on his Mac:
