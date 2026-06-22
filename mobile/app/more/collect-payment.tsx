@@ -37,6 +37,18 @@ import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
 import { showToast } from '../../src/lib/toast';
 
+// Keep money inputs clean: digits only, a single decimal point, max 2 decimals.
+const sanitizeAmountInput = (text: string): string => {
+  let cleaned = (text || '').replace(/[^0-9.]/g, '');
+  const firstDot = cleaned.indexOf('.');
+  if (firstDot !== -1) {
+    const intPart = cleaned.slice(0, firstDot);
+    const decPart = cleaned.slice(firstDot + 1).replace(/\./g, '').slice(0, 2);
+    cleaned = intPart + '.' + decPart;
+  }
+  return cleaned;
+};
+
 const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
     flex: 1,
@@ -2638,7 +2650,7 @@ export default function CollectScreen() {
                       placeholder="0.00"
                       placeholderTextColor={colors.mutedForeground}
                       value={recordAmount}
-                      onChangeText={setRecordAmount}
+                      onChangeText={(t) => setRecordAmount(sanitizeAmountInput(t))}
                       keyboardType="decimal-pad"
                     />
                   </View>
@@ -3191,7 +3203,7 @@ export default function CollectScreen() {
                     paddingVertical: 0,
                   }}
                   value={customAmountValue}
-                  onChangeText={setCustomAmountValue}
+                  onChangeText={(t) => setCustomAmountValue(sanitizeAmountInput(t))}
                   placeholder="0.00"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="decimal-pad"

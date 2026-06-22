@@ -592,7 +592,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
+    minHeight: 48,
     borderRadius: radius.xl,
   },
   footerButtonText: {
@@ -1208,7 +1209,7 @@ export default function AutopilotScreen() {
                 )}
               </ScrollView>
 
-              <View style={[styles.modalFooter, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+              <View style={[styles.modalFooter, { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: insets.bottom + spacing.md }]}>
                 {currentStepIndex > 0 ? (
                   <PressableRow style={[styles.footerButton, { backgroundColor: colors.border + '40' }]} onPress={goBack} >
                     <Feather name="arrow-left" size={iconSizes.md} color={colors.foreground} />
