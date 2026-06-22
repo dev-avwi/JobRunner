@@ -25,6 +25,16 @@ managed app the key lives at `app.json` → `expo.android.config.googleMaps.apiK
 **How to apply:** if maps fail on Android — confirm (1) key in app.json, (2) Maps SDK for Android
 enabled on the *key's* project, (3) a fresh prebuild+rebuild, (4) Play-enabled emulator/device.
 
+## Blank tiles + only the "Google" watermark (key NOT authorized)
+Different from "API key not found" (which throws). Here the MapView mounts, the Google
+logo shows, but tiles never paint. Means the key is wired but Google is rejecting auth at
+runtime. Worked-before-now-blank on Android = one of: (1) billing disabled / free credit
+expired on the key's GCP project, (2) Maps SDK for Android disabled, (3) key application
+restrictions (SHA-1/package) don't match a freshly-signed build. Logcat prints the exact
+reason. Quick triage: temporarily set key restrictions to None; confirm app health by
+running iOS (Apple Maps, no key — see provider line: iOS=undefined, Android=PROVIDER_GOOGLE).
+**iOS is immune** to all of this because it uses Apple Maps, not Google.
+
 ## User's local mobile build workflow (Ayden, MacBook)
 Managed Expo, no committed `mobile/android/`. Builds locally via:
 `cd mobile && npx expo run:android` (NOT eas). Needed one-time env setup on his Mac:
