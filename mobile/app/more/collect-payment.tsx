@@ -3198,9 +3198,11 @@ export default function CollectScreen() {
                     flex: 1,
                     marginLeft: spacing.xs,
                     fontSize: 28,
+                    lineHeight: 36,
                     fontWeight: '700',
                     color: colors.foreground,
-                    paddingVertical: 0,
+                    paddingVertical: spacing.sm,
+                    textAlignVertical: 'center',
                   }}
                   value={customAmountValue}
                   onChangeText={(t) => setCustomAmountValue(sanitizeAmountInput(t))}

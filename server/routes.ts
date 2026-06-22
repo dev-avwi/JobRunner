@@ -32850,7 +32850,24 @@ Respond with JSON in this format:
       const activeMembers = allTeamMembers.filter(m => m.inviteStatus === 'accepted' && m.isActive);
       
       console.log('[TeamLocations] Found', allTeamMembers.length, 'total team members,', activeMembers.length, 'active');
-      
+
+      // Read worker-chosen availability the SAME way Team Operations does:
+      // resolve the business owner via team membership (NOT getUserContext's
+      // effectiveUserId, which can differ for self-membership/owner accounts) and
+      // pull every worker_state for the business in one query, keyed by userId.
+      // This guarantees the map's Busy/Unavailable matches the Team Operations screen.
+      const wsMembership = await storage.getTeamMembershipByMemberId(req.userId);
+      const wsBusinessOwnerId = wsMembership?.businessOwnerId || req.userId;
+      const workerStateByUserId = new Map<string, string>();
+      try {
+        const allWorkerStates = await storage.getWorkerStatesByBusiness(wsBusinessOwnerId);
+        for (const ws of allWorkerStates) {
+          if (ws.userId) workerStateByUserId.set(ws.userId, ws.state);
+        }
+      } catch (wsErr) {
+        console.warn('[TeamLocations] Failed to load worker states:', wsErr);
+      }
+
       const locations = [];
       
       for (const member of activeMembers) {
@@ -32869,8 +32886,8 @@ Respond with JSON in this format:
         // The availability the worker explicitly set (Available/Busy/Unavailable),
         // same source Team Operations reads. An explicit Busy/Unavailable must win
         // over the location-derived activity so the map matches Team Operations.
-        const workerStateRow = await storage.getWorkerState(member.memberId, effectiveUserId);
-        const explicitState = (workerStateRow?.state || '').toLowerCase();
+        const memberWorkerState = workerStateByUserId.get(member.memberId) || null;
+        const explicitState = (memberWorkerState || '').toLowerCase();
         const overrideStatus = (explicitState === 'busy' || explicitState === 'unavailable') ? explicitState : null;
         
         const activeTimeEntry = await storage.getActiveTimeEntry(member.memberId);
@@ -32967,7 +32984,7 @@ Respond with JSON in this format:
           currentJobId: currentJob?.id || null,
           currentJobTitle: currentJob?.title || null,
           activityStatus: overrideStatus || tradieStatusData?.activityStatus || 'online',
-          workerState: workerStateRow?.state || null,
+          workerState: memberWorkerState,
           speed,
           batteryLevel,
           heading,

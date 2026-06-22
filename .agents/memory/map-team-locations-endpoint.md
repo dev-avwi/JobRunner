@@ -24,3 +24,19 @@ Busy beats a duplicate Online self-membership row).
 
 **Why:** owner self-membership creates duplicate rows for one person (one Available, one
 Busy); first-occurrence dedup kept the wrong one. Priority-rank dedup fixes it.
+
+**Deeper root cause (the override alone wasn't enough):** the map resolved the business
+owner differently than the write/read of worker_states, so it queried the WRONG owner key
+and found no busy row. Worker-state WRITE (`POST /api/worker/state`) and Team Operations
+READ (`GET /api/team/worker-states`) both use
+`getTeamMembershipByMemberId(req.userId).businessOwnerId || req.userId`. The map was using
+`getUserContext().effectiveUserId`. For self-membership/owner accounts those two DIFFER, so
+`getWorkerState(memberId, effectiveUserId)` missed the row and the worker stayed green.
+**Fix:** in `/api/team/locations` resolve `wsBusinessOwnerId` the IDENTICAL way, then
+prefetch `getWorkerStatesByBusiness(wsBusinessOwnerId)` once into a `Map` keyed by userId
+(also kills the per-member N+1 getWorkerState). Lesson: any two endpoints that must agree on
+a worker's status MUST resolve businessOwnerId the same way — prefer one shared helper.
+
+**Deploy note:** this is a SERVER change; the user's device hits the published backend, so
+the map won't update until the app is REPUBLISHED (the mobile-side override/config was
+already shipped). Classic stale-prod symptom — see mobile-prod-stale-deploy.md.
