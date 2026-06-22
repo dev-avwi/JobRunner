@@ -446,6 +446,12 @@ class LocationTrackingService {
    */
   async getCurrentLocation(): Promise<LocationUpdate | null> {
     try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        if (__DEV__) console.log('[Location] Skipping getCurrentLocation — permission not granted');
+        return null;
+      }
+
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
@@ -463,7 +469,7 @@ class LocationTrackingService {
       this.currentLocation = update;
       return update;
     } catch (error) {
-      if (__DEV__) console.error('[Location] Failed to get current location:', error);
+      if (__DEV__) console.warn('[Location] Failed to get current location:', error);
       return null;
     }
   }
