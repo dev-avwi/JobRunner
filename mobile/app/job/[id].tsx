@@ -6020,15 +6020,15 @@ export default function JobDetailScreen() {
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
           {sessionExpired ? (
             <Button
-              variant="default"
+              variant="brand"
               onPress={() => { logout(); }}
-              icon={<Feather name="log-in" size={16} color={colors.primaryForeground} />}
+              icon={<Feather name="log-in" size={16} color="#FFFFFF" />}
             >Sign in</Button>
           ) : (
             <Button
-              variant="default"
+              variant="brand"
               onPress={loadJob}
-              icon={<Feather name="refresh-cw" size={16} color={colors.primaryForeground} />}
+              icon={<Feather name="refresh-cw" size={16} color="#FFFFFF" />}
             >Retry</Button>
           )}
           <Button
