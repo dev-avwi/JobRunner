@@ -564,6 +564,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   cancelButton: {
     flex: 1,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.md,
@@ -578,6 +579,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   saveButton: {
     flex: 2,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.md,
@@ -1228,7 +1230,7 @@ export default function ComplianceScreen() {
             <View style={{ height: 20 }} />
           </ScrollView>
 
-          <View style={styles.modalFooter}>
+          <View style={[styles.modalFooter, { paddingBottom: spacing.md + insets.bottom }]}>
             <PressableRow style={styles.cancelButton} onPress={closeModal} >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </PressableRow>
