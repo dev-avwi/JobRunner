@@ -4231,8 +4231,34 @@ export default function JobDetailScreen() {
     setIsLoadingProfitability(true);
     try {
       const res = await api.get<ProfitabilityData>(`/api/jobs/${id}/profitability`);
-      if (res.data) {
-        setProfitabilityData(res.data);
+      // On a non-2xx the api client returns the ERROR body as res.data (e.g.
+      // { error: "Job not found" } for a 404/403 — owner-only financials a
+      // worker can't read). That object is truthy but has no revenue/costs, so
+      // storing it would crash the render. Only accept a well-formed payload and
+      // normalize once into a fully-formed shape with numeric defaults so no
+      // render site can ever hit an undefined leaf.
+      const raw = res.data as any;
+      if (raw && !res.error && raw.revenue && raw.costs && raw.profit && raw.hours) {
+        const n = (v: any) => (typeof v === 'number' && isFinite(v) ? v : 0);
+        setProfitabilityData({
+          jobId: raw.jobId,
+          jobTitle: raw.jobTitle,
+          jobStatus: raw.jobStatus,
+          clientName: raw.clientName,
+          quoted: raw.quoted ?? null,
+          revenue: { invoiced: n(raw.revenue.invoiced), pending: n(raw.revenue.pending), received: n(raw.revenue.received) },
+          costs: {
+            labour: n(raw.costs.labour), subcontractor: n(raw.costs.subcontractor),
+            materials: n(raw.costs.materials), otherExpenses: n(raw.costs.otherExpenses),
+            expenses: n(raw.costs.expenses), total: n(raw.costs.total),
+          },
+          profit: { amount: n(raw.profit.amount), margin: n(raw.profit.margin), vsQuote: raw.profit.vsQuote ?? null },
+          hours: { total: n(raw.hours.total), billable: n(raw.hours.billable), nonBillable: n(raw.hours.nonBillable) },
+          status: raw.status === 'profitable' || raw.status === 'tight' || raw.status === 'loss' ? raw.status : 'loss',
+          materials: Array.isArray(raw.materials) ? raw.materials : [],
+        });
+      } else {
+        setProfitabilityData(null);
       }
     } catch (e) {
       if (__DEV__) console.log('Profitability data not available:', e);
