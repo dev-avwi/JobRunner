@@ -711,6 +711,7 @@ export interface IStorage {
   getJobAssignment(assignmentId: string): Promise<JobAssignment | undefined>;
   getJobAssignmentForUser(jobId: string, userId: string): Promise<JobAssignment | undefined>;
   getEnRouteAssignmentsForUser(userId: string): Promise<JobAssignment[]>;
+  getAssignedJobIdsForUser(userId: string, teamMemberId?: string | null): Promise<string[]>;
   createJobAssignment(assignment: InsertJobAssignment): Promise<JobAssignment>;
   updateJobAssignment(assignmentId: string, data: Partial<InsertJobAssignment & { lastSmsSentAt: Date; travelStartedAt: Date; arrivedAt: Date; etaMinutes: number; etaUpdatedAt: Date; assignmentStatus: string }>): Promise<JobAssignment | undefined>;
   getTeamMemberByOwnerAndMemberId(businessOwnerId: string, memberId: string): Promise<TeamMember | undefined>;
@@ -8215,6 +8216,15 @@ Thank you for your prompt attention to this matter.`,
   async getEnRouteAssignmentsForUser(userId: string): Promise<JobAssignment[]> {
     return await db.select().from(jobAssignments)
       .where(and(eq(jobAssignments.userId, userId), eq(jobAssignments.isActive, true), eq(jobAssignments.assignmentStatus, 'en_route')));
+  }
+
+  async getAssignedJobIdsForUser(userId: string, teamMemberId?: string | null): Promise<string[]> {
+    const matchers = [eq(jobAssignments.userId, userId)];
+    if (teamMemberId) matchers.push(eq(jobAssignments.teamMemberId, teamMemberId));
+    const rows = await db.select({ jobId: jobAssignments.jobId })
+      .from(jobAssignments)
+      .where(and(eq(jobAssignments.isActive, true), or(...matchers)));
+    return Array.from(new Set(rows.map(r => r.jobId)));
   }
 
   async updateJobAssignment(assignmentId: string, data: any): Promise<JobAssignment | undefined> {

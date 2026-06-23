@@ -1125,6 +1125,21 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
+  // Returns the set of job ids a worker is actively assigned to via the
+  // job_assignments table. The legacy jobs.assignedTo column only holds ONE
+  // assignee (the lead), so on multi-worker jobs every other assigned worker
+  // would otherwise be hidden from their own lists. Match by user id or team
+  // member id and fail open to an empty set on error.
+  const getWorkerAssignedJobIds = async (userContext: any): Promise<Set<string>> => {
+    try {
+      const ids = await storage.getAssignedJobIdsForUser(userContext.userId, userContext.teamMemberId);
+      return new Set(ids);
+    } catch (e) {
+      console.error('Error loading worker job assignments:', e);
+      return new Set<string>();
+    }
+  };
+
   app.get("/api/jobs", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
@@ -1134,9 +1149,11 @@ import { logSystemEvent } from "../systemEventService";
       // Staff tradies and subcontractors (team members without VIEW_ALL permission) only see their assigned jobs
       const hasViewAll = userContext.permissions.includes('view_all') || userContext.isOwner;
       if (!hasViewAll && userContext.teamMemberId) {
+        const assignedIds = await getWorkerAssignedJobIds(userContext);
         jobs = jobs.filter(job => 
           job.assignedTo === userContext.teamMemberId || 
-          job.assignedTo === userContext.userId
+          job.assignedTo === userContext.userId ||
+          assignedIds.has(job.id)
         );
       }
       
@@ -1239,9 +1256,11 @@ import { logSystemEvent } from "../systemEventService";
         const hasViewAll = userContext.permissions.includes('view_all' as any);
         const hasManageTeam = userContext.permissions.includes('manage_team' as any);
         if (!hasViewAll && !hasManageTeam) {
+          const assignedIds = await getWorkerAssignedJobIds(userContext);
           jobs = jobs.filter((j: any) => {
             return j.assignedTo === req.userId || 
                    j.assignedTo === userContext.teamMemberId ||
+                   assignedIds.has(j.id) ||
                    (j.assignedTeamMembers && Array.isArray(j.assignedTeamMembers) && 
                     (j.assignedTeamMembers.includes(req.userId) || j.assignedTeamMembers.includes(userContext.teamMemberId)));
           });
@@ -1387,11 +1406,13 @@ import { logSystemEvent } from "../systemEventService";
       const clients = await storage.getClients(userContext.effectiveUserId);
       const canSeeSensitiveData = userContext.isOwner || hasPermission(userContext, PERMISSIONS.READ_CLIENTS_SENSITIVE);
       
-      // Filter to only jobs assigned to this user (check both teamMemberId and userId)
+      // Filter to only jobs assigned to this user (check teamMemberId, userId, and job_assignments)
+      const assignedIds = await getWorkerAssignedJobIds(userContext);
       const myJobs = jobs
         .filter(job => 
           job.assignedTo === userContext.teamMemberId || 
-          job.assignedTo === userContext.userId
+          job.assignedTo === userContext.userId ||
+          assignedIds.has(job.id)
         )
         .map(job => {
           const client = clients.find((c: any) => c.id === job.clientId);
@@ -1575,9 +1596,11 @@ import { logSystemEvent } from "../systemEventService";
       // Staff tradies and subcontractors only see their assigned jobs
       const hasViewAll = userContext.permissions.includes('view_all') || userContext.isOwner;
       if (!hasViewAll && userContext.teamMemberId) {
+        const assignedIds = await getWorkerAssignedJobIds(userContext);
         jobs = jobs.filter(job => 
           job.assignedTo === userContext.teamMemberId || 
-          job.assignedTo === userContext.userId
+          job.assignedTo === userContext.userId ||
+          assignedIds.has(job.id)
         );
       }
       
@@ -1641,12 +1664,13 @@ import { logSystemEvent } from "../systemEventService";
       dayEnd.setDate(dayEnd.getDate() + 1);
 
       const allJobs = await storage.getJobs(uid);
+      const reorderAssignedIds = await getWorkerAssignedJobIds(userContext);
       const inScopeToday = allJobs.filter((j: any) => {
         if (!j.scheduledAt) return false;
         const t = new Date(j.scheduledAt);
         if (t < dayStart || t >= dayEnd) return false;
         if (userContext.isOwner || userContext.permissions.includes('view_all')) return true;
-        return j.assignedTo === userContext.teamMemberId || j.assignedTo === userContext.userId;
+        return j.assignedTo === userContext.teamMemberId || j.assignedTo === userContext.userId || reorderAssignedIds.has(j.id);
       });
       const allowed = new Set(inScopeToday.map((j: any) => j.id));
       for (const id of jobIds) {
@@ -1683,9 +1707,11 @@ import { logSystemEvent } from "../systemEventService";
         // Even when teamMemberId is missing, restrict to jobs explicitly
         // assigned to this user — never fall through to business-wide
         // route metrics for non-view_all users.
+        const assignedIds = await getWorkerAssignedJobIds(userContext);
         jobs = jobs.filter((j: any) =>
           (userContext.teamMemberId && j.assignedTo === userContext.teamMemberId) ||
-          j.assignedTo === userContext.userId
+          j.assignedTo === userContext.userId ||
+          assignedIds.has(j.id)
         );
       }
       const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -1887,8 +1913,14 @@ import { logSystemEvent } from "../systemEventService";
         // Assignment can be stored either as the team member id or the member's
         // underlying user id depending on how the job was assigned, so match both.
         const assignIds = [userContext.teamMemberId, req.userId].filter(Boolean);
-        const isAssigned = assignIds.includes(job.assignedTo) ||
+        let isAssigned = assignIds.includes(job.assignedTo) ||
                           assignIds.includes((job as any).assignedTeamMemberId);
+        if (!isAssigned) {
+          // Multi-worker jobs: this worker may be assigned via job_assignments
+          // even when they aren't the one stored in the legacy assignedTo column.
+          const ja = await storage.getJobAssignmentForUser(job.id, req.userId);
+          isAssigned = !!ja;
+        }
         if (!isAssigned) {
           return res.status(403).json({ error: "You can only view your assigned jobs" });
         }
@@ -7466,9 +7498,11 @@ import { logSystemEvent } from "../systemEventService";
       const clients = await storage.getClients(effectiveUserId);
       
       if (userContext.isSubcontractor) {
+        const assignedIds = await getWorkerAssignedJobIds(userContext);
         jobs = jobs.filter(job => 
           job.assignedTo === userContext.userId || 
-          (userContext.teamMemberId && job.assignedTo === userContext.teamMemberId)
+          (userContext.teamMemberId && job.assignedTo === userContext.teamMemberId) ||
+          assignedIds.has(job.id)
         );
       }
       
