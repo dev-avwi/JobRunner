@@ -45894,12 +45894,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       // Pending requests (jobs with assignment_status = 'assigned' or 'invited' - not yet accepted)
       const pendingRequests = enrichedJobs.filter(j => pendingStatuses.includes(j.assignmentStatus));
 
-      // Active job — what the subcontractor is CURRENTLY clocked into. The running
-      // time entry (no endTime) is the source of truth, mirroring the owner's
-      // "who's on the clock" view. Falls back to any in_progress assigned job, and
-      // also covers the subcontractor's own solo jobs (not in the assigned list).
       type EnrichedJob = (typeof enrichedJobs)[number];
-      let activeJob: EnrichedJob | null = enrichedJobs.find(j => j.status === 'in_progress') || null;
+      // Active job = what the subcontractor is CURRENTLY clocked into. ONLY a
+      // running time entry (no endTime) counts. We deliberately do NOT fall back
+      // to "any in_progress job": a job stays in_progress after the worker clocks
+      // out, and surfacing it here made the dashboard tick a phantom timer (driven
+      // by job.startedAt — hours old) while the job's own time tracking was stopped.
+      let activeJob: EnrichedJob | null = null;
 
       const [runningEntry] = await db
         .select()
