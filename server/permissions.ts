@@ -660,6 +660,42 @@ export function ownerOrManagerOnly() {
   };
 }
 
+/**
+ * Blocks non-owner team members when the BUSINESS OWNER's subscription has
+ * lapsed (canceled / no active plan / lost team access). Owners always pass —
+ * their own tier is enforced separately by requirePaidTier on write routes.
+ *
+ * This preserves the lapse behavior that ownerOrManagerOnly() used to provide.
+ * Chain it BEFORE requirePermission(...) on routes that previously relied on
+ * ownerOrManagerOnly() for that enforcement (e.g. AI receptionist reads); it
+ * sets req.userContext so the following requirePermission reuses it.
+ */
+export function requireOwnerSubscriptionActive() {
+  return async (req: any, res: any, next: any) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const userContext = req.userContext || await getUserContext(req.userId);
+      req.userContext = userContext;
+      req.effectiveUserId = userContext.effectiveUserId;
+
+      if (!userContext.isOwner && userContext.ownerSubscriptionValid === false) {
+        return res.status(403).json({
+          error: 'subscription_lapsed',
+          message: userContext.ownerSubscriptionError || 'Business subscription is not active',
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('Owner subscription check error:', error);
+      return res.status(500).json({ error: 'Permission check failed' });
+    }
+  };
+}
+
 export function requirePermission(permission: string) {
   return async (req: any, res: any, next: any) => {
     try {

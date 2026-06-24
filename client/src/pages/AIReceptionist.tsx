@@ -267,11 +267,12 @@ function MyAvailabilityToggle() {
 export default function AIReceptionist() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { isOwner, isManager, isTeam, isOfficeAdmin } = useAppMode();
+  const { isOwner, isManager, isTeam, isOfficeAdmin, hasPermission } = useAppMode();
+  const canManageAiReceptionist = hasPermission('manage_ai_receptionist');
 
   const { canPurchaseAddons, isLoading: subscriptionLoading } = useFeatureAccess();
-  const canManageConfig = isOwner || isManager || isOfficeAdmin;
-  const canToggleEnabled = isOwner || isOfficeAdmin;
+  const canManageConfig = isOwner || isManager || isOfficeAdmin || canManageAiReceptionist;
+  const canToggleEnabled = isOwner || isOfficeAdmin || canManageAiReceptionist;
 
   const [checkoutReturn, setCheckoutReturn] = useState(() => {
     const params = new URLSearchParams(window.location.search);

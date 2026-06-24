@@ -58,7 +58,7 @@ import { loginSchema, insertUserSchema, type SafeUser, requestLoginCodeSchema, v
 import { sendEmailVerificationEmail, sendLoginCodeEmail, sendJobConfirmationEmail, sendPasswordResetEmail, sendTeamInviteEmail, sendJobAssignmentEmail, sendJobCompletionNotificationEmail, sendWelcomeEmail } from "./emailService";
 import { FreemiumService } from "./freemiumService";
 import { DEMO_USER, VISITOR_USER } from "./demoData";
-import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, WORKER_PROFILE_PLACEHOLDER_NAME } from "./permissions";
+import { ownerOnly, ownerOrManagerOnly, requirePermission, requireOwnerSubscriptionActive, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, WORKER_PROFILE_PLACEHOLDER_NAME } from "./permissions";
 import { logTeamActivity } from "./activityService";
 import {
   insertBusinessSettingsSchema,
@@ -5512,7 +5512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/subscription/ai-receptionist-checkout - Creates Stripe checkout for AI Receptionist add-on
-  app.post("/api/subscription/ai-receptionist-checkout", requireAuth, async (req: any, res) => {
+  app.post("/api/subscription/ai-receptionist-checkout", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { IS_BETA } = await import('./freemiumService');
       const userId = req.userId!;
@@ -34527,7 +34527,8 @@ Respond with JSON in this format:
     try {
       const userId = req.userId!;
       const user = await storage.getUser(userId);
-      if (!user || user.email !== 'admin@avwebinnovation.com') {
+      const isAdmin = user?.isPlatformAdmin === true || (user as any)?.is_platform_admin === true;
+      if (!user || !isAdmin) {
         return res.status(403).json({ error: 'Admin only' });
       }
 
@@ -44271,7 +44272,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // ============================================================
 
 
-  app.get("/api/ai-receptionist/config", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.get("/api/ai-receptionist/config", requireAuth, requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const config = await storage.getAiReceptionistConfig(userId);
@@ -44342,7 +44343,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/ai-receptionist/configs", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.get("/api/ai-receptionist/configs", requireAuth, requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const configs = await storage.getAiReceptionistConfigsByUser(userId);
@@ -44354,7 +44355,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/ai-receptionist/configs/:configId", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.get("/api/ai-receptionist/configs/:configId", requireAuth, requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const config = await storage.getAiReceptionistConfigById(req.params.configId);
@@ -44369,7 +44370,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.patch("/api/ai-receptionist/configs/:configId/label", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.patch("/api/ai-receptionist/configs/:configId/label", requireAuth, requirePaidTier(), requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const config = await storage.getAiReceptionistConfigById(req.params.configId);
@@ -44520,7 +44521,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.patch("/api/ai-receptionist/config", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.patch("/api/ai-receptionist/config", requireAuth, requirePaidTier(), requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const parsed = aiReceptionistConfigSchema.safeParse(req.body);
@@ -44607,7 +44608,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.post("/api/ai-receptionist/resync", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.post("/api/ai-receptionist/resync", requireAuth, requirePaidTier(), requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const config = await storage.getAiReceptionistConfig(userId);
@@ -44657,7 +44658,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.post("/api/ai-receptionist/measure-latency", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.post("/api/ai-receptionist/measure-latency", requireAuth, requirePaidTier(), requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const { refreshLatencyEstimate } = await import('./vapiService');
@@ -44677,7 +44678,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.patch("/api/ai-receptionist/configs/:configId", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.patch("/api/ai-receptionist/configs/:configId", requireAuth, requirePaidTier(), requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const config = await storage.getAiReceptionistConfigById(req.params.configId);
@@ -44747,7 +44748,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.post("/api/ai-receptionist/enable", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.post("/api/ai-receptionist/enable", requireAuth, requirePaidTier(), requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
 
@@ -44783,7 +44784,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.post("/api/ai-receptionist/disable", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.post("/api/ai-receptionist/disable", requireAuth, requirePaidTier(), requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const { disableAiReceptionist } = await import('./vapiService');
@@ -44804,7 +44805,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/ai-receptionist/calls", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.get("/api/ai-receptionist/calls", requireAuth, requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const limit = parseInt(req.query.limit as string) || 50;
@@ -44829,7 +44830,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/ai-receptionist/calls/:id", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.get("/api/ai-receptionist/calls/:id", requireAuth, requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const call = await storage.getAiReceptionistCall(req.params.id, userId);
@@ -44843,7 +44844,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.patch("/api/ai-receptionist/team/:memberId/availability", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.patch("/api/ai-receptionist/team/:memberId/availability", requireAuth, requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const { memberId } = req.params;
@@ -44922,7 +44923,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/ai-receptionist/team/availability", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.get("/api/ai-receptionist/team/availability", requireAuth, requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const teamMembers = await storage.getTeamMembers(userId);
@@ -44975,7 +44976,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   const testCallRateLimit = new Map<string, number>();
-  app.post("/api/ai-receptionist/test-call", requireAuth, requirePaidTier(), ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.post("/api/ai-receptionist/test-call", requireAuth, requirePaidTier(), requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const lastCall = testCallRateLimit.get(userId);
@@ -45000,7 +45001,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/ai-receptionist/analytics", requireAuth, ownerOrManagerOnly(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
+  app.get("/api/ai-receptionist/analytics", requireAuth, requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId || req.session?.userId;
       const phoneNumberId = req.query.phoneNumberId as string | undefined;
@@ -45675,7 +45676,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.get("/api/ai-receptionist/voice-requests", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.get("/api/ai-receptionist/voice-requests", requireAuth, requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId;
       const requests = await storage.getVoiceChangeRequests(userId);
@@ -45686,7 +45687,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  app.post("/api/ai-receptionist/voice-requests", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
+  app.post("/api/ai-receptionist/voice-requests", requireAuth, requirePaidTier(), requireOwnerSubscriptionActive(), requirePermission(PERMISSIONS.MANAGE_AI_RECEPTIONIST), async (req: any, res) => {
     try {
       const userId = req.effectiveUserId || req.userId;
       const schema = z.object({ requestedDescription: z.string().min(5).max(500) });

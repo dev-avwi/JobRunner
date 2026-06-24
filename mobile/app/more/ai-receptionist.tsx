@@ -218,10 +218,11 @@ export default function AIReceptionistScreen() {
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
   const { user, businessSettings, fetchBusinessSettings } = useAuthStore();
-  // Only owners and managers can set up the AI Receptionist. Workers and
-  // joined-business subcontractors get a read-only "managed by owner" screen.
-  const { isOwner, isManager, isLoading: roleLoading } = useUserRole();
-  const canManageReceptionist = isOwner || isManager;
+  // Owners, managers, and any role granted the "Manage AI Receptionist"
+  // permission can set up the AI Receptionist. Workers and joined-business
+  // subcontractors get a read-only "managed by owner" screen.
+  const { isOwner, isManager, hasPermission, isLoading: roleLoading } = useUserRole();
+  const canManageReceptionist = isOwner || isManager || hasPermission('manage_ai_receptionist');
   const { configId: urlConfigId } = useLocalSearchParams<{ configId?: string }>();
   const hasDedicatedNumber = !!businessSettings?.dedicatedPhoneNumber;
   const userTier = user?.subscriptionTier || 'free';
