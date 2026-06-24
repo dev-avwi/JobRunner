@@ -24,6 +24,10 @@ export interface NavItem {
   locked?: boolean;
   lockReason?: string;
   allowedRoles?: UserRole[];
+  // Additive unlock: a team member whose role grants this permission sees the
+  // item even if their role is not in `allowedRoles` (and bypasses the
+  // role-based hide flags). Subscription/plan gates still apply.
+  requiredPermission?: string;
   showInBottomNav?: boolean;
   showInMore?: boolean;
   showBadge?: boolean;
@@ -316,6 +320,7 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "addons",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: 'manage_ai_receptionist',
   },
   {
     title: "Custom Website",
@@ -506,6 +511,18 @@ export interface FilterOptions {
   hasProSubscription?: boolean;
   hasTeamSubscription?: boolean;
   isSimpleMode?: boolean;
+  // Granted permission keys for the current user. Used by `requiredPermission`
+  // to additively unlock items for custom roles that aren't in `allowedRoles`.
+  permissions?: string[];
+}
+
+// True when the item declares a `requiredPermission` the user has been granted
+// (or holds the `*` wildcard). Used to additively bypass role-based gates.
+function userHasItemPermission(item: NavItem, options: FilterOptions): boolean {
+  if (!item.requiredPermission) return false;
+  const perms = options.permissions;
+  if (!Array.isArray(perms)) return false;
+  return perms.includes('*') || perms.includes(item.requiredPermission);
 }
 
 export function filterNavItems(items: NavItem[], options: FilterOptions): NavItem[] {
@@ -516,22 +533,28 @@ export function filterNavItems(items: NavItem[], options: FilterOptions): NavIte
   
   for (const rawItem of items) {
     const item = { ...rawItem };
+
+    // Additive permission unlock: a custom role granted the item's
+    // `requiredPermission` bypasses the role-based gates below (allowedRoles,
+    // hideForStaff, hideForTradie, requiresOwnerOrManager). Subscription/plan
+    // gates still apply (they lock rather than hide via showLockedIfNoAccess).
+    const permissionUnlock = userHasItemPermission(item, options);
     
     if (item.requiresPlatformAdmin && !options.isPlatformAdmin) {
       continue;
     }
     
-    if (item.allowedRoles && options.userRole) {
+    if (item.allowedRoles && options.userRole && !permissionUnlock) {
       if (!item.allowedRoles.includes(options.userRole)) {
         continue;
       }
     }
     
-    if (item.hideForStandaloneSubcontractor && options.isStandaloneSubcontractor) {
+    if (item.hideForStandaloneSubcontractor && options.isStandaloneSubcontractor && !permissionUnlock) {
       continue;
     }
     
-    if (item.hideForStaff && isStaffTradie) {
+    if (item.hideForStaff && isStaffTradie && !permissionUnlock) {
       continue;
     }
 
@@ -588,10 +611,10 @@ export function filterNavItems(items: NavItem[], options: FilterOptions): NavIte
         continue;
       }
     }
-    if (item.requiresOwnerOrManager && !isOwnerOrManager) {
+    if (item.requiresOwnerOrManager && !isOwnerOrManager && !permissionUnlock) {
       continue;
     }
-    if (item.hideForTradie && isStaffTradie) {
+    if (item.hideForTradie && isStaffTradie && !permissionUnlock) {
       continue;
     }
     

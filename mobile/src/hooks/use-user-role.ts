@@ -65,6 +65,7 @@ export const PERMISSION_KEYS = {
   VIEW_DISPATCH: 'view_dispatch',
   MANAGE_TEMPLATES: 'manage_templates',
   MANAGE_CATALOG: 'manage_catalog',
+  MANAGE_AI_RECEPTIONIST: 'manage_ai_receptionist',
 } as const;
 
 interface CachedRoleData {

@@ -460,6 +460,7 @@ export default function MoreScreen() {
     isOwner,
     isManager,
     canAccessBilling,
+    permissions,
   } = useUserRole();
 
   // A subcontractor in their OWN Personal profile has full owner powers
@@ -481,7 +482,8 @@ export default function MoreScreen() {
     hasProSubscription,
     hasTeamSubscription,
     isSimpleMode: businessSettings?.simpleMode || false,
-  }), [canAccessTeamPages, isSolo, isStaff, isSubcontractor, isStandaloneSubcontractor, isOwner, isManager, role, user?.isPlatformAdmin, hasProSubscription, hasTeamSubscription, businessSettings?.simpleMode]);
+    permissions,
+  }), [canAccessTeamPages, isSolo, isStaff, isSubcontractor, isStandaloneSubcontractor, isOwner, isManager, role, user?.isPlatformAdmin, hasProSubscription, hasTeamSubscription, businessSettings?.simpleMode, permissions]);
 
   const categorizedItems = useMemo(() => 
     getMorePageItemsByCategory(filterOptions), 
