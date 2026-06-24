@@ -183,14 +183,22 @@ function getContrastRatio(hex1: string, hex2: string): number {
 }
 
 function getSafeForegroundColor(bgHex: string): string {
+  // Prefer white text on brand-coloured surfaces — that's the conventional,
+  // expected look for solid buttons. A pure "max contrast" pick flips to dark
+  // text on bright/light brand colours (e.g. a vivid blue, where black scores
+  // marginally higher than white), which looks broken. Only fall back to dark
+  // text when white genuinely fails readable contrast for bold/large UI text
+  // (~3:1, WCAG AA for large text & UI components) — e.g. light yellows/cyans.
   const whiteContrast = getContrastRatio(bgHex, '#ffffff');
-  const blackContrast = getContrastRatio(bgHex, '#000000');
-  return whiteContrast > blackContrast ? '#ffffff' : '#1f2733';
+  return whiteContrast >= 3.0 ? '#ffffff' : '#1f2733';
 }
 
-// Minimum contrast ratio for button visibility (WCAG AA large text / UI components)
+// Minimum contrast ratio for button visibility (WCAG AA large text / UI components).
+// Button labels are bold/large, so 3.0 is the correct bar — keeping this at 4.5
+// made vivid brand blues fall back to a generic blue instead of using the user's
+// own brand colour with white text.
 const MIN_BG_CONTRAST = 3.0;
-const MIN_TEXT_CONTRAST = 4.5;
+const MIN_TEXT_CONTRAST = 3.0;
 
 // Guaranteed visible fallback - vibrant blue works on any background
 const FALLBACK_BUTTON = {
