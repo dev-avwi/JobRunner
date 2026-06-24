@@ -2105,7 +2105,7 @@ Keep descriptions practical and focused on what matters for the job documentatio
 
   try {
     const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       messages: [
         { role: "system", content: systemPrompt },
         {
@@ -2116,7 +2116,7 @@ Keep descriptions practical and focused on what matters for the job documentatio
           ]
         }
       ],
-      max_tokens: 1500,
+      max_completion_tokens: 1500,
       stream: true
     });
 
@@ -2378,7 +2378,7 @@ export async function detectHazards(imageBuffers: Buffer[], jobContext: string):
 
   try {
     const response = await visionQueue.run(() => openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       messages: [
         {
           role: "user",
@@ -2418,8 +2418,7 @@ Be conservative — only flag clear, visible hazards. Maximum 8 hazards.`
         }
       ],
       response_format: { type: "json_object" },
-      max_tokens: 2000,
-      temperature: 0.2
+      max_completion_tokens: 2000
     }));
 
     const content = response.choices[0]?.message?.content || '{"hazards":[]}';
@@ -2467,7 +2466,7 @@ export async function analyzeReceipt(imageBuffer: Buffer): Promise<ReceiptAnalys
 
   try {
     const response = await visionQueue.run(() => openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       messages: [
         {
           role: "user",
@@ -2499,8 +2498,7 @@ Return ONLY a JSON object in this exact format:
         }
       ],
       response_format: { type: "json_object" },
-      max_tokens: 1500,
-      temperature: 0.1
+      max_completion_tokens: 1500
     }));
 
     const content = response.choices[0]?.message?.content || '{}';
@@ -2535,7 +2533,7 @@ export async function categorizePhoto(imageBuffer: Buffer, jobContext: string): 
     const mimeType = 'image/jpeg';
 
     const response = await visionQueue.run(() => openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       messages: [
         {
           role: "user",
@@ -2555,8 +2553,7 @@ export async function categorizePhoto(imageBuffer: Buffer, jobContext: string): 
         }
       ],
       response_format: { type: "json_object" },
-      max_tokens: 50,
-      temperature: 0.1
+      max_completion_tokens: 2000
     }));
 
     const content = response.choices[0]?.message?.content || '{}';
