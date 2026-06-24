@@ -46324,7 +46324,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       // Build unbilled work (including materials)
       const unbilledWork = await Promise.all(completedJobs.map(async job => {
-        const jobTimeEntries = allTimeEntries.filter(te => te.jobId === job.id && !invoicedTimeEntryIds.has(te.id));
+        // Exclude break entries — breaks are unpaid and must never be billed.
+        const jobTimeEntries = allTimeEntries.filter(te => te.jobId === job.id && !te.isBreak && !invoicedTimeEntryIds.has(te.id));
         const assignment = assignments.find(a => a.jobId === job.id);
         const membership = memberships.find(m => m.businessOwnerId === job.userId);
 
@@ -46470,6 +46471,10 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           ));
         if (entries.length !== timeEntryIds.length) {
           return res.status(400).json({ error: `Some time entries are invalid or do not belong to you for job "${jobRecord[0].title}"` });
+        }
+        // Breaks are unpaid and must never be billed.
+        if (entries.some(te => te.isBreak)) {
+          return res.status(400).json({ error: `Break time can't be invoiced for job "${jobRecord[0].title}". Breaks are unpaid.` });
         }
         for (const te of entries) {
           const durationMinutes = te.duration || Math.round((new Date(te.endTime!).getTime() - new Date(te.startTime).getTime()) / 60000);
@@ -46938,7 +46943,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const result = await Promise.all(completedJobs.map(async job => {
         const assignment = assignments.find(a => a.jobId === job.id);
         const fallbackRate = parseFloat(assignment?.hourlyRateOverride || membershipRate || '0');
-        const jobTimeEntries = allTimeEntries.filter(te => te.jobId === job.id);
+        // Exclude break entries — breaks are unpaid and must never be billed.
+        const jobTimeEntries = allTimeEntries.filter(te => te.jobId === job.id && !te.isBreak);
         let totalHours = 0;
         let labourAmount = 0;
         let effectiveRate = fallbackRate;
