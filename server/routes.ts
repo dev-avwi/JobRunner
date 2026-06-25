@@ -8263,7 +8263,7 @@ Be specific about materials, colors, and features that would be included.`
     'detectedColors', 'primaryColor', 'secondaryColor', 'accentColor',
     'customThemeEnabled', 'brandColor', 'themeMode',
     'gstEnabled', 'defaultHourlyRate', 'timeRoundingMinutes', 'minimumCalloutHours',
-    'includeLocationProofOnInvoices', 'calloutFee', 'quoteValidityDays',
+    'includeLocationProofOnInvoices', 'billBreaks', 'calloutFee', 'quoteValidityDays',
     'invoicePrefix', 'quotePrefix', 'paymentInstructions',
     'teamSize', 'numberOfEmployees', 'licenseNumber', 'regulatorRegistration',
     'warrantyPeriod', 'lateFeeRate', 'quoteTerms', 'invoiceTerms', 'defaultPaymentTermsDays',

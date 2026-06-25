@@ -469,6 +469,10 @@ export const businessSettings = pgTable("business_settings", {
   timeRoundingMinutes: integer("time_rounding_minutes").default(5),
   minimumCalloutHours: decimal("minimum_callout_hours", { precision: 10, scale: 2 }).default('0'),
   includeLocationProofOnInvoices: boolean("include_location_proof_on_invoices").default(true),
+  // When true, break time entries are counted as billable on client invoices.
+  // Default false = breaks are not billed (current behaviour). Billing-only; does
+  // not change what workers are paid.
+  billBreaks: boolean("bill_breaks").default(false),
   calloutFee: decimal("callout_fee", { precision: 10, scale: 2 }).default('80.00'),
   quoteValidityDays: integer("quote_validity_days").default(30),
   invoicePrefix: text("invoice_prefix").default('TT-'),

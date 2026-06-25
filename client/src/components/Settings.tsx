@@ -314,6 +314,7 @@ export default function Settings({
     includeSignatureOnQuotes: false,
     includeSignatureOnInvoices: false,
     includeLocationProofOnInvoices: true,
+    billBreaks: false,
   });
 
   // Document template settings
@@ -585,6 +586,7 @@ export default function Settings({
         includeSignatureOnQuotes: (businessSettings as any).includeSignatureOnQuotes || false,
         includeSignatureOnInvoices: (businessSettings as any).includeSignatureOnInvoices || false,
         includeLocationProofOnInvoices: (businessSettings as any).includeLocationProofOnInvoices !== false,
+        billBreaks: (businessSettings as any).billBreaks === true,
       });
       
       // Load document template setting
@@ -740,6 +742,7 @@ export default function Settings({
       includeSignatureOnQuotes: signatureData.includeSignatureOnQuotes,
       includeSignatureOnInvoices: signatureData.includeSignatureOnInvoices,
       includeLocationProofOnInvoices: signatureData.includeLocationProofOnInvoices,
+      billBreaks: signatureData.billBreaks,
       // Document template
       documentTemplate: documentTemplate,
       documentTemplateSettings: templateCustomization,
@@ -2493,6 +2496,31 @@ export default function Settings({
                     setSignatureData(prev => ({ ...prev, includeLocationProofOnInvoices: checked }))
                   }
                   data-testid="switch-location-proof-invoices"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Break Time</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Choose whether tracked break time is charged to clients on invoices
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="space-y-0.5">
+                  <Label htmlFor="bill-breaks" className="font-medium">Bill for breaks</Label>
+                  <p className="text-xs text-muted-foreground">When on, break time is included as billable labour on invoices. This does not change what workers are paid. Default is off.</p>
+                </div>
+                <Switch
+                  id="bill-breaks"
+                  checked={signatureData.billBreaks}
+                  onCheckedChange={(checked) =>
+                    setSignatureData(prev => ({ ...prev, billBreaks: checked }))
+                  }
+                  data-testid="switch-bill-breaks"
                 />
               </div>
             </CardContent>

@@ -890,7 +890,9 @@ export default function NewInvoiceScreen() {
           try {
             const timeResponse = await api.get(`/api/time-entries?jobId=${jId}&teamView=true`);
             if (timeResponse.data && Array.isArray(timeResponse.data)) {
-              const completed = timeResponse.data.filter((e: any) => e.endTime);
+              // Breaks are only billed when the business has opted in via "Bill for breaks".
+              const billBreaks = !!(businessSettings as any)?.billBreaks;
+              const completed = timeResponse.data.filter((e: any) => e.endTime && (billBreaks || !e.isBreak));
               if (completed.length > 0) {
                 const byWorker: Record<string, { name: string; totalMs: number; rate: number; entries: number }> = {};
                 completed.forEach((e: any) => {

@@ -207,8 +207,10 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
       const timeRes = await fetch(`/api/time-entries?jobId=${jobId}&teamView=true`, { credentials: 'include', headers: authHeaders });
       if (timeRes.ok) {
         const timeEntries = await timeRes.json();
+        // Breaks are only billed when the business has opted in via "Bill for breaks".
+        const billBreaks = !!(businessSettings as any)?.billBreaks;
         const workEntries = Array.isArray(timeEntries)
-          ? timeEntries.filter((e: any) => e.endTime && !e.isBreak)
+          ? timeEntries.filter((e: any) => e.endTime && (billBreaks || !e.isBreak))
           : [];
         // hourlyRate is a decimal column and arrives as a string (e.g. "85.00"),
         // so always coerce to a finite number before any arithmetic.

@@ -95,7 +95,13 @@ export async function generateLabourSummary(
   const companyDefaultRate = parseFloat(String(business?.defaultHourlyRate ?? '100'));
   const minimumCalloutHours = parseFloat(String(business?.minimumCalloutHours ?? '0'));
   
-  const billableEntries = timeEntriesAll.filter(e => e.isBillable !== false && !e.isBreak);
+  // Breaks are only billed when the business opts in via the "Bill for breaks"
+  // setting; otherwise they are excluded from billable labour.
+  const billBreaks = !!business?.billBreaks;
+  const billableEntries = timeEntriesAll.filter(e => {
+    if (e.isBreak) return billBreaks;
+    return e.isBillable !== false;
+  });
   
   const byWorker = new Map<string, TimeEntry[]>();
   for (const entry of billableEntries) {

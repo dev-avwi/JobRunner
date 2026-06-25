@@ -114,3 +114,4 @@
 - [Image picker base64:true crashes Android](mobile-imagepicker-base64-android-crash.md) — expo-image-picker base64:true → ANR/BadParcelableException; pick to URI then FileSystem.readAsStringAsync Base64 instead.
 - [expo-av single-recording orphan](expo-av-single-recording-orphan.md) — one prepared Recording per process; orphan across remount blocks next record. Module-level globalRecording, clear only after successful unload.
 - [Lead-worker job completion gate](lead-worker-completion-gate.md) — only lead/owner may mark job done (server NOT_LEAD_WORKER); mobile lead test must wait for assignmentsLoaded; sync drops NOT_LEAD_WORKER job updates.
+- [Bill-for-breaks setting](bill-breaks-setting.md) — owner billBreaks toggle bills break time on invoices; any worker-read setting must ALSO be added to WORKER_VISIBLE_SETTINGS_KEYS, not just the write schema, or worker sessions resolve it to default.

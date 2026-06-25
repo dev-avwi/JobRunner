@@ -2147,6 +2147,27 @@ export default function SettingsScreen() {
                   />
                 </View>
 
+                <View style={[styles.featureRow, { justifyContent: 'space-between' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.featureText}>Bill for breaks</Text>
+                      <Text style={[styles.planDescription, { marginTop: 2 }]}>Include break time as billable labour on invoices. Does not change worker pay.</Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={businessSettings?.billBreaks || false}
+                    onValueChange={async (value) => {
+                      try {
+                        await api.patch('/api/business-settings', { billBreaks: value });
+                        setBusinessSettings((prev: any) => prev ? { ...prev, billBreaks: value } : prev);
+                        showToast({ type: 'success', message: `Breaks ${value ? 'will' : 'will not'} be billed on invoices` });
+                      } catch (e) {
+                        showToast({ type: 'error', message: 'Failed to update break billing setting' });
+                      }
+                    }}
+                  />
+                </View>
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Quote Validity (days)</Text>
                   <TextInput
