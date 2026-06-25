@@ -23,3 +23,24 @@ with `code: 'NOT_LEAD_WORKER'` (body carried in `response.data`) is permanent �
 retrying just spams `console.error` and re-fails. Treat it as a drop: scope it
 to `type==='job' && action==='update'`, log a warn, and `return true` so the
 queue removes it; local cached status reconciles on the next job fetch.
+
+**Per-worker completion + lead reassignment (multi-worker jobs):**
+- `job_assignments.completedAt` (nullable timestamp) records each worker's own
+  part. Worker hits `POST /api/jobs/:id/complete-my-part` (membership-scoped via
+  getJobAssignmentForUser, NOT a business gate): sets completedAt idempotently
+  AND stops that worker's running non-break time entry (clock off). Job STAYS
+  open after all parts done — it does NOT auto-transition to `done`.
+- **Notify-the-lead-once contract:** the "all workers done, ready to finish"
+  notification must be gated on THREE conditions together — `allComplete &&
+  totalCount > 1 && justCompleted`, where `justCompleted` is true only on the
+  call that actually flipped this worker incomplete→complete. Without
+  justCompleted, repeat calls re-notify (spam); without totalCount>1 a solo
+  assignee triggers it. Recipients = lead (isPrimary OR jobs.assignedTo) + owner
+  + managers/admins (resolve via getTeamMembers→getUserRole, member id is
+  `teamMembers.memberId`, NOT `userId` — that column doesn't exist).
+- **make-lead authz (`POST /api/jobs/:jobId/assignments/:assignmentId/make-lead`):**
+  do NOT gate with `createPermissionMiddleware(ASSIGN_JOBS)` alone — that skips
+  business-ownership scoping (cross-business IDOR: getJobPublic returns any
+  job). Verify `getUserContext(req.userId).effectiveUserId === job.userId`
+  first, THEN allow if owner OR hasPermission(ASSIGN_JOBS) OR current lead.
+  Requirement is owner/manager/lead may reassign the lead.

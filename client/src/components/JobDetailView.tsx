@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical } from "lucide-react";
+import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -349,6 +349,9 @@ export default function JobDetailView({
     acceptanceSignatureData?: string;
     confidentialityAgreed?: boolean;
     isActive?: boolean;
+    isPrimary?: boolean;
+    completedAt?: string | null;
+    workerDisplayNameSnapshot?: string;
   }
   const { data: jobAssignments = [] } = useQuery<JobAssignmentData[]>({
     queryKey: ['/api/jobs', jobId, 'assignments'],
@@ -781,6 +784,19 @@ export default function JobDetailView({
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to remove worker", variant: "destructive" });
+    },
+  });
+
+  const makeLeadMutation = useMutation({
+    mutationFn: async (assignmentId: string) => {
+      return await apiRequest("POST", `/api/jobs/${jobId}/assignments/${assignmentId}/make-lead`, {});
+    },
+    onSuccess: () => {
+      invalidateAssignmentQueries();
+      toast({ title: "Lead Updated", description: "Lead worker has been changed" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to set lead worker", variant: "destructive" });
     },
   });
 
@@ -2418,6 +2434,60 @@ export default function JobDetailView({
                       </Command>
                     </PopoverContent>
                   </Popover>
+                  {activeAssignments.length > 0 && (
+                    <div className="mt-3">
+                      {activeAssignments.length > 1 && (() => {
+                        const done = activeAssignments.filter(a => a.completedAt).length;
+                        const total = activeAssignments.length;
+                        const allDone = done === total;
+                        return (
+                          <div className={`flex items-center gap-2 mb-2 text-sm font-medium ${allDone ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span>{done}/{total} workers completed</span>
+                          </div>
+                        );
+                      })()}
+                      <div className="space-y-1">
+                        {activeAssignments.map((assignment) => {
+                          const member = teamMembers.find(m => m.memberId === assignment.userId);
+                          const name = assignment.workerDisplayNameSnapshot || (member ? getWorkerDisplayName(member) : (assignment.displayName || 'Worker'));
+                          return (
+                            <div key={`assigned-${assignment.id}`} className="flex items-center gap-2 py-1.5 px-2 rounded-md border" data-testid={`row-assignment-${assignment.userId}`}>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-sm font-medium truncate">{name}</span>
+                                  {assignment.isPrimary && (
+                                    <Badge variant="outline" className="text-xs no-default-hover-elevate no-default-active-elevate">Lead</Badge>
+                                  )}
+                                </div>
+                                {assignment.completedAt ? (
+                                  <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Part done · {new Date(assignment.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} {new Date(assignment.completedAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">In progress</span>
+                                )}
+                              </div>
+                              {!assignment.isPrimary && activeAssignments.length > 1 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8"
+                                  disabled={makeLeadMutation.isPending}
+                                  onClick={() => makeLeadMutation.mutate(assignment.id)}
+                                  data-testid={`button-make-lead-${assignment.userId}`}
+                                >
+                                  <Star className="h-3.5 w-3.5 mr-1" />
+                                  Make lead
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   {jobAssignments.filter(a => a.isActive && a.acceptanceSignatureData).length > 0 && (
                     <div className="mt-3 space-y-2">
                       {jobAssignments.filter(a => a.isActive && a.acceptanceSignatureData).map((assignment) => (

@@ -3325,6 +3325,23 @@ export default function JobDetailScreen() {
     }
   };
 
+  const handleMakeLead = async (assignmentId: string, workerName: string) => {
+    if (!id) return;
+    const ok = await confirm({
+      title: 'Set Lead Worker',
+      message: `Make ${workerName} the lead worker for this job? The lead can finish the job once everyone's part is done.`,
+      confirmText: 'Make Lead',
+    });
+    if (!ok) return;
+    const res = await api.post(`/api/jobs/${id}/assignments/${assignmentId}/make-lead`, {});
+    if (res.error) {
+      showToast({ type: 'error', message: 'Error', description: res.error || 'Failed to set lead worker.' });
+      return;
+    }
+    await Promise.all([loadJob(), loadJobAssignments()]);
+    showToast({ type: 'success', message: 'Lead updated', description: `${workerName} is now the lead worker.` });
+  };
+
   const handleAssignWorker = async (memberId: string | null) => {
     if (!id) return;
     setIsAssigning(true);
@@ -5015,6 +5032,46 @@ export default function JobDetailScreen() {
     });
   };
 
+  const handleCompleteMyPart = async () => {
+    if (!job) return;
+    const ok = await confirm({
+      title: 'Mark My Part Complete',
+      message: isTimerForThisJob
+        ? "This will stop your timer and mark your part of this job done. The job stays open until the lead finishes it."
+        : "This marks your part of this job done. The job stays open until the lead finishes it.",
+      confirmText: 'Mark Complete',
+    });
+    if (!ok) return;
+
+    // Clock off first via the store so the Live Activity / local timer end cleanly.
+    if (isTimerForThisJob) {
+      const stopped = await stopTimer();
+      if (!stopped) {
+        showToast({ type: 'error', message: 'Error', description: 'Failed to stop your timer. Please try again.' });
+        return;
+      }
+    }
+
+    const res = await api.post(`/api/jobs/${job.id}/complete-my-part`, {});
+    if (res.error) {
+      showToast({ type: 'error', message: 'Error', description: res.error || 'Failed to mark your part complete.' });
+      return;
+    }
+
+    await loadTimeEntries();
+    await loadTeamTimers();
+    await loadJobAssignments();
+
+    const data: any = res.data || {};
+    if (data.allComplete) {
+      showToast({ type: 'success', message: 'Your part is done', description: 'All workers have finished. The lead can now finish the job.' });
+    } else {
+      const done = data.completedCount ?? 0;
+      const total = data.totalCount ?? 0;
+      showToast({ type: 'success', message: 'Your part is done', description: total ? `${done}/${total} workers complete.` : 'Marked complete.' });
+    }
+  };
+
   const handleTakeBreak = async () => {
     const success = await pauseTimer();
     if (!success) {
@@ -6118,17 +6175,34 @@ export default function JobDetailScreen() {
     (assignmentsLoaded && !hasPrimaryAssignment && job.assignedTo === user?.id);
   const isLeadWorker = isOwnerOrManager || isSoloOwner || isPrimaryAssignee;
 
+  // Per-worker completion progress (X/Y) for the lead/owner view.
+  const completedWorkerCount = jobAssignments.filter((a: any) => a.completedAt).length;
+  const totalWorkerCount = jobAssignments.length;
+  const allWorkersComplete = totalWorkerCount > 1 && completedWorkerCount === totalWorkerCount;
+
   let action: { next: string; label: string; icon: keyof typeof Feather.glyphMap; iconSize: number } | null =
     (!canCreateInvoices && rawAction?.next === 'invoiced') ? null : (rawAction as any);
+  const myPartComplete = myAssignment?.completedAt != null;
   if (action && action.next === 'done' && !isLeadWorker) {
-    // Non-lead workers can't complete the job; they clock off their own timer.
-    action = isTimerForThisJob
-      ? { next: 'clock_off', label: "Clock Off / I'm Done", icon: 'check-circle', iconSize: 20 }
-      : null;
+    // Non-lead assigned workers finish their OWN part: this marks their
+    // assignment complete AND clocks them off. The lead/owner closes the job.
+    if (myAssignment && !myPartComplete) {
+      action = { next: 'complete_my_part', label: 'Mark My Part Complete', icon: 'check-circle', iconSize: 20 };
+    } else if (myAssignment && myPartComplete) {
+      // Already done their part — nothing left for them to do on the CTA.
+      action = null;
+    } else {
+      // No assignment row (legacy/edge): fall back to a plain clock-off.
+      action = isTimerForThisJob
+        ? { next: 'clock_off', label: "Clock Off / I'm Done", icon: 'check-circle', iconSize: 20 }
+        : null;
+    }
   }
 
   const handleMainAction = () => {
-    if (action && action.next === 'clock_off') {
+    if (action && action.next === 'complete_my_part') {
+      handleCompleteMyPart();
+    } else if (action && action.next === 'clock_off') {
       handleStopTimer();
     } else {
       handleStatusChange();
@@ -6208,6 +6282,22 @@ export default function JobDetailScreen() {
 
       {/* Main Action Button - Hero zone, first thing after status */}
       <View style={styles.actionButtonContainer}>
+        {allWorkersComplete && isLeadWorker && job.status !== 'done' && job.status !== 'invoiced' && (
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            backgroundColor: '#10B98115',
+            borderRadius: radius.lg,
+            padding: spacing.md,
+            marginBottom: spacing.sm,
+          }}>
+            <Feather name="check-circle" size={18} color="#10B981" />
+            <Text style={{ ...typography.caption, color: colors.foreground, flex: 1 }}>
+              All {totalWorkerCount} workers have completed their part. You can finish the job.
+            </Text>
+          </View>
+        )}
         {action ? (
           job.status === 'scheduled' && job.clientId ? (
             <View style={{ gap: spacing.sm }}>
@@ -6852,8 +6942,12 @@ export default function JobDetailScreen() {
               </View>
               <View>
                 <Text style={styles.cardLabel}>Assigned Team</Text>
-                <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
-                  {jobAssignments.length > 0 ? `${jobAssignments.length} worker${jobAssignments.length !== 1 ? 's' : ''}` : 'No workers assigned'}
+                <Text style={{ ...typography.caption, color: allWorkersComplete ? '#10B981' : colors.mutedForeground }}>
+                  {jobAssignments.length > 0
+                    ? (totalWorkerCount > 1
+                        ? `${completedWorkerCount}/${totalWorkerCount} workers complete`
+                        : `${jobAssignments.length} worker`)
+                    : 'No workers assigned'}
                 </Text>
               </View>
             </View>
@@ -6926,14 +7020,38 @@ export default function JobDetailScreen() {
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={{ ...typography.body, color: colors.foreground, fontWeight: '600' }}>{displayName}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusColor }} />
-                    <Text style={{ ...typography.caption, color: statusColor }}>{statusLabel}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                    {assignment.completedAt ? (
+                      <>
+                        <Feather name="check-circle" size={12} color="#10B981" />
+                        <Text style={{ ...typography.caption, color: '#10B981' }}>
+                          Part done{assignment.completedAt ? ` · ${new Date(assignment.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} ${new Date(assignment.completedAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}` : ''}
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusColor }} />
+                        <Text style={{ ...typography.caption, color: statusColor }}>{statusLabel}</Text>
+                      </>
+                    )}
                     {assignment.isPrimary && (
                       <Text style={{ ...typography.caption, color: colors.mutedForeground }}> · Lead</Text>
                     )}
                   </View>
                 </View>
+                {!assignment.isPrimary && jobAssignments.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => handleMakeLead(assignment.id, displayName)}
+                    style={{
+                      padding: spacing.xs,
+                      borderRadius: radius.md,
+                      backgroundColor: `${colors.primary}10`,
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="star" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   onPress={() => handleNudgeWorker(assignment.userId)}
                   disabled={isNudging === assignment.userId}

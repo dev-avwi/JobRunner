@@ -1966,13 +1966,14 @@ export const jobAssignments = pgTable("job_assignments", {
   acceptanceIpAddress: text("acceptance_ip_address"),
   acceptanceUserAgent: text("acceptance_user_agent"),
   isPrimary: boolean("is_primary").default(false),
+  completedAt: timestamp("completed_at"),
 }, (table) => [
   index("idx_job_assignments_job_id").on(table.jobId),
   index("idx_job_assignments_user_id").on(table.userId),
   index("idx_job_assignments_team_member_id").on(table.teamMemberId),
 ]);
 
-export const insertJobAssignmentSchema = createInsertSchema(jobAssignments).omit({ id: true, createdAt: true, lastSmsSentAt: true, travelStartedAt: true, arrivedAt: true, etaUpdatedAt: true, acceptedAt: true, acceptanceSignatureData: true, acceptanceIpAddress: true, acceptanceUserAgent: true });
+export const insertJobAssignmentSchema = createInsertSchema(jobAssignments).omit({ id: true, createdAt: true, lastSmsSentAt: true, travelStartedAt: true, arrivedAt: true, etaUpdatedAt: true, acceptedAt: true, acceptanceSignatureData: true, acceptanceIpAddress: true, acceptanceUserAgent: true, completedAt: true });
 export type InsertJobAssignment = z.infer<typeof insertJobAssignmentSchema>;
 export type JobAssignment = typeof jobAssignments.$inferSelect;
 

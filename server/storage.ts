@@ -713,7 +713,7 @@ export interface IStorage {
   getEnRouteAssignmentsForUser(userId: string): Promise<JobAssignment[]>;
   getAssignedJobIdsForUser(userId: string, teamMemberId?: string | null): Promise<string[]>;
   createJobAssignment(assignment: InsertJobAssignment): Promise<JobAssignment>;
-  updateJobAssignment(assignmentId: string, data: Partial<InsertJobAssignment & { lastSmsSentAt: Date; travelStartedAt: Date; arrivedAt: Date; etaMinutes: number; etaUpdatedAt: Date; assignmentStatus: string }>): Promise<JobAssignment | undefined>;
+  updateJobAssignment(assignmentId: string, data: Partial<InsertJobAssignment & { lastSmsSentAt: Date; travelStartedAt: Date; arrivedAt: Date; etaMinutes: number; etaUpdatedAt: Date; assignmentStatus: string; completedAt: Date | null; isPrimary: boolean }>): Promise<JobAssignment | undefined>;
   getTeamMemberByOwnerAndMemberId(businessOwnerId: string, memberId: string): Promise<TeamMember | undefined>;
 
   // Assignment Events & SMS Log

@@ -4349,6 +4349,193 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
+  // A worker marks THEIR OWN part of a multi-worker job complete. This records
+  // their per-assignment completion AND clocks them off (stops their running
+  // timer for this job). The whole job stays open — only the lead/owner closes
+  // it. When the last worker completes, the lead + owner are notified.
+  app.post("/api/jobs/:id/complete-my-part", requireAuth, async (req: any, res) => {
+    try {
+      const jobId = req.params.id;
+      const job = await storage.getJobPublic(jobId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      const assignment = await storage.getJobAssignmentForUser(jobId, req.userId);
+      if (!assignment) {
+        return res.status(403).json({ error: "You're not assigned to this job.", code: "NOT_ASSIGNED" });
+      }
+
+      // Mark this worker's part complete (idempotent). justCompleted is true only
+      // on the call that actually transitions this worker from incomplete -> complete,
+      // so the "all done" notification fires exactly once.
+      let justCompleted = false;
+      if (!assignment.completedAt) {
+        await storage.updateJobAssignment(assignment.id, { completedAt: new Date() });
+        justCompleted = true;
+        try {
+          await storage.createAssignmentEvent({
+            assignmentId: assignment.id,
+            jobId,
+            actorUserId: req.userId,
+            eventType: 'part_completed',
+          });
+        } catch {}
+      }
+
+      // Clock off: stop this worker's running (non-break) timer for this job.
+      let stoppedTimer = false;
+      try {
+        const activeForJob = await storage.getActiveTimeEntriesForJob(jobId);
+        const mine = activeForJob.find((e: any) => e.userId === req.userId && !e.isBreak && !e.endTime);
+        if (mine) {
+          await storage.stopTimeEntry(mine.id, req.userId);
+          stoppedTimer = true;
+        }
+      } catch (timerErr) {
+        console.error("complete-my-part: failed to stop timer", timerErr);
+      }
+
+      // Recompute progress across active assignments.
+      const assignments = await storage.getJobAssignments(jobId);
+      const active = assignments.filter((a: any) => a.isActive !== false);
+      const completed = active.filter((a: any) => a.completedAt);
+      const completedCount = completed.length;
+      const totalCount = active.length;
+      const allComplete = totalCount > 0 && completedCount === totalCount;
+
+      const ownerId = job.userId;
+
+      // Notify lead + owner + managers once everyone has finished their part.
+      // Gated on totalCount > 1 (this flow is for multi-worker jobs) and on
+      // justCompleted so the notification is sent exactly once.
+      if (allComplete && totalCount > 1 && justCompleted) {
+        const primary = active.find((a: any) => a.isPrimary);
+        const leadUserId = primary?.userId || job.assignedTo || null;
+        const recipients = new Set<string>();
+        if (leadUserId) recipients.add(leadUserId);
+        if (ownerId) recipients.add(ownerId);
+        // Include managers/admins of the business.
+        try {
+          const members = await storage.getTeamMembers(ownerId);
+          for (const m of members) {
+            if (!m.memberId || !m.isActive || !m.roleId) continue;
+            const role = await storage.getUserRole(m.roleId);
+            const rn = role?.name?.toLowerCase() || '';
+            if (rn.includes('manager') || rn.includes('admin')) recipients.add(m.memberId);
+          }
+        } catch (mgrErr) {
+          console.error("complete-my-part: failed to resolve managers", mgrErr);
+        }
+        for (const uid of Array.from(recipients)) {
+          try {
+            await storage.createNotification({
+              userId: uid,
+              type: 'general',
+              title: 'Job ready to finish',
+              message: `All workers have completed their part of "${job.title}". Review and finish the job.`,
+              relatedId: jobId,
+              relatedType: 'job',
+            });
+          } catch (notifyErr) {
+            console.error("complete-my-part: failed to notify", notifyErr);
+          }
+        }
+      }
+
+      // Broadcast so the lead/owner's job view refreshes the X/Y progress.
+      try {
+        const { broadcastJobFieldUpdate } = await import('../websocket');
+        const actor = await storage.getUser(req.userId);
+        broadcastJobFieldUpdate(ownerId, {
+          jobId,
+          updatedFields: ['assignmentCompletion'],
+          updatedBy: req.userId,
+          updatedByName: actor?.firstName || 'Worker',
+          version: (job as any).version || 0,
+          serverData: { completedCount, totalCount, allComplete },
+        });
+      } catch (wsErr) {
+        console.error("complete-my-part: broadcast failed", wsErr);
+      }
+
+      res.json({ success: true, completedCount, totalCount, allComplete, stoppedTimer });
+    } catch (error: any) {
+      console.error("Error in complete-my-part:", error);
+      res.status(500).json({ error: error.message || "Failed to mark your part complete" });
+    }
+  });
+
+  // Owner, manager (assign permission), or the current lead worker sets which
+  // assigned worker is the lead (primary). Clears the flag on the others and
+  // syncs jobs.assignedTo.
+  app.post("/api/jobs/:jobId/assignments/:assignmentId/make-lead", requireAuth, async (req: any, res) => {
+    try {
+      const { jobId, assignmentId } = req.params;
+      const job = await storage.getJobPublic(jobId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      // Authorize: caller must belong to this job's business (prevents cross-business IDOR)
+      // AND be the owner, a manager (assign permission), or the current lead worker.
+      const userContext = await getUserContext(req.userId);
+      if (userContext.effectiveUserId !== job.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const assignments = await storage.getJobAssignments(jobId);
+      const target = assignments.find((a: any) => a.id === assignmentId);
+      if (!target) return res.status(404).json({ error: "Assignment not found" });
+
+      const isOwner = req.userId === job.userId;
+      const canAssign = hasPermission(userContext, PERMISSIONS.ASSIGN_JOBS);
+      const isCurrentLead = job.assignedTo === req.userId
+        || assignments.some((a: any) => a.isPrimary && a.userId === req.userId);
+      if (!isOwner && !canAssign && !isCurrentLead) {
+        return res.status(403).json({ error: "Only the owner, a manager, or the lead worker can change the lead." });
+      }
+
+      for (const a of assignments) {
+        if (a.id === assignmentId && !a.isPrimary) {
+          await storage.updateJobAssignment(a.id, { isPrimary: true });
+        } else if (a.id !== assignmentId && a.isPrimary) {
+          await storage.updateJobAssignment(a.id, { isPrimary: false });
+        }
+      }
+
+      // Keep the legacy lead pointer (jobs.assignedTo) in sync.
+      if (job.assignedTo !== target.userId) {
+        await storage.updateJob(jobId, job.userId, { assignedTo: target.userId });
+      }
+
+      try {
+        await storage.createAssignmentEvent({
+          assignmentId,
+          jobId,
+          actorUserId: req.userId,
+          eventType: 'made_lead',
+        });
+      } catch {}
+
+      try {
+        const { broadcastJobFieldUpdate } = await import('../websocket');
+        const actor = await storage.getUser(req.userId);
+        broadcastJobFieldUpdate(job.userId, {
+          jobId,
+          updatedFields: ['leadWorker', 'assignedTo'],
+          updatedBy: req.userId,
+          updatedByName: actor?.firstName || 'Manager',
+          version: (job as any).version || 0,
+          serverData: { leadUserId: target.userId },
+        });
+      } catch (wsErr) {
+        console.error("make-lead: broadcast failed", wsErr);
+      }
+
+      res.json({ success: true, leadUserId: target.userId, leadAssignmentId: assignmentId });
+    } catch (error: any) {
+      console.error("Error in make-lead:", error);
+      res.status(500).json({ error: error.message || "Failed to set lead worker" });
+    }
+  });
+
   app.get("/api/jobs/:jobId/assignments", requireAuth, async (req: any, res) => {
     try {
       const job = await storage.getJobPublic(req.params.jobId);
