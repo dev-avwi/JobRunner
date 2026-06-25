@@ -317,6 +317,86 @@ export async function backfillSignupDayActivity(): Promise<void> {
   `);
 }
 
+/**
+ * One-time idempotent backfill: grant the Leads / Communications / Action Centre
+ * permission keys (view_leads, view_communications, view_action_center) to
+ * existing manager / admin / supervisor / office-admin role rows that predate
+ * those keys being added to the role presets.
+ *
+ * WHY: the mobile menu shows Leads, Communications and the Action Centre to any
+ * role that normalises to "manager" (name contains manager/admin/supervisor) or
+ * "office_admin" via the `allowedRoles` gate — independently of whether the role
+ * actually carries the new permission keys. Now that the underlying API routes
+ * (/api/leads*, /api/bi/action-center and the communications reads) are gated by
+ * createPermissionMiddleware, a manager/office-admin whose stored role row was
+ * created BEFORE the keys were added to the presets would keep seeing the menu
+ * but get a 403 from the API — i.e. lose access (violating the "no removal"
+ * rule). This backfill closes that gap so enforcement is additive.
+ *
+ * It is purely ADDITIVE and idempotent:
+ *  - only rows whose name maps to a role the menu already exposes are touched;
+ *  - plain worker / staff / subcontractor rows are left untouched, so they
+ *    correctly start receiving 403s (the intended enforcement);
+ *  - the granular keys are appended without removing any existing permission,
+ *    and rows that already carry all three (or the "*" wildcard) are skipped.
+ *
+ * Granular keys (view_*) are stored rather than the coarse read_* the route
+ * middleware checks because (a) the presets store the granular vocabulary and
+ * (b) expandPermissions() bridges granular -> coarse at request time, while the
+ * mobile UI reads the raw granular strings off /api/team/my-role.
+ */
+export async function backfillFeaturePermissions(): Promise<void> {
+  // user_roles: grant to manager / admin / supervisor / office-admin role rows.
+  await db.execute(sql`
+    UPDATE user_roles
+    SET permissions = (
+      SELECT to_jsonb(array_agg(DISTINCT elem))
+      FROM (
+        SELECT jsonb_array_elements_text(COALESCE(permissions::jsonb, '[]'::jsonb)) AS elem
+        UNION
+        SELECT unnest(ARRAY['view_leads', 'view_communications', 'view_action_center']) AS elem
+      ) AS merged
+    )::json
+    WHERE (
+      LOWER(name) LIKE '%manager%'
+      OR LOWER(name) LIKE '%admin%'
+      OR LOWER(name) LIKE '%supervisor%'
+      OR LOWER(name) LIKE '%office%'
+    )
+    AND NOT COALESCE(permissions::jsonb, '[]'::jsonb) @> '"*"'::jsonb
+    AND NOT COALESCE(permissions::jsonb, '[]'::jsonb)
+      @> '["view_leads","view_communications","view_action_center"]'::jsonb
+  `);
+
+  // team_members: members with a custom permission override whose ROLE name maps
+  // to manager/office-admin level. The menu still exposes the items to these
+  // members by role name, so their custom set must carry the keys too.
+  await db.execute(sql`
+    UPDATE team_members tm
+    SET custom_permissions = (
+      SELECT to_jsonb(array_agg(DISTINCT elem))
+      FROM (
+        SELECT jsonb_array_elements_text(COALESCE(tm.custom_permissions::jsonb, '[]'::jsonb)) AS elem
+        UNION
+        SELECT unnest(ARRAY['view_leads', 'view_communications', 'view_action_center']) AS elem
+      ) AS merged
+    )::json
+    FROM user_roles ur
+    WHERE tm.role_id = ur.id
+    AND tm.use_custom_permissions = true
+    AND tm.custom_permissions IS NOT NULL
+    AND (
+      LOWER(ur.name) LIKE '%manager%'
+      OR LOWER(ur.name) LIKE '%admin%'
+      OR LOWER(ur.name) LIKE '%supervisor%'
+      OR LOWER(ur.name) LIKE '%office%'
+    )
+    AND NOT COALESCE(tm.custom_permissions::jsonb, '[]'::jsonb) @> '"*"'::jsonb
+    AND NOT COALESCE(tm.custom_permissions::jsonb, '[]'::jsonb)
+      @> '["view_leads","view_communications","view_action_center"]'::jsonb
+  `);
+}
+
 export const requireAuth = async (req: any, res: any, next: any) => {
   let userId = req.session?.userId;
   let isDemoSession = req.session?.isDemo === true;

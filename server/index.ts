@@ -13,7 +13,7 @@ import { WebhookHandlers } from "./webhookHandlers";
 import { storage, pool as sharedPgPool } from "./storage";
 import { setupWebSocket } from "./websocket";
 import { metricsMiddleware } from "./metrics";
-import { activityTrackingMiddleware, backfillSignupDayActivity } from "./routes/middleware";
+import { activityTrackingMiddleware, backfillSignupDayActivity, backfillFeaturePermissions } from "./routes/middleware";
 import { getErrorMessage } from "./lib/errors";
 
 process.on('uncaughtException', (error: Error) => {
@@ -593,6 +593,14 @@ if (process.env.DATABASE_URL) {
   // cohorts aren't empty. Idempotent + fire-and-forget; never blocks startup.
   backfillSignupDayActivity().catch((err) => {
     console.error('[ActivityBackfill] failed:', err?.message || err);
+  });
+
+  // Grant the Leads / Communications / Action Centre permission keys to existing
+  // manager/office-admin role rows that predate the keys, so the newly-enforced
+  // API routes don't 403 roles that still see the menu. Idempotent + additive;
+  // fire-and-forget so it never blocks startup.
+  backfillFeaturePermissions().catch((err) => {
+    console.error('[FeaturePermissionBackfill] failed:', err?.message || err);
   });
 
   // Validate dedicated phone numbers against Twilio on startup
