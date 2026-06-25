@@ -1902,14 +1902,29 @@ import { logSystemEvent } from "../systemEventService";
       const effectiveUserId = req.effectiveUserId || req.userId;
       const userContext = req.userContext;
       
-      const job = await storage.getJob(req.params.id, effectiveUserId);
+      let job = await storage.getJob(req.params.id, effectiveUserId);
+      // Cross-business subcontractor: the job belongs to a different business
+      // than the requester's active workspace, so the scoped lookup misses it.
+      // If they hold an active assignment to this job they're legitimately
+      // working on it (e.g. assigned as a worker on another business's job),
+      // so serve it via the unscoped lookup. Without this they get a spurious
+      // "Job not found" even though they appear on the assigned team.
+      let crossBusinessAssigned = false;
+      if (!job) {
+        const ja = await storage.getJobAssignmentForUser(req.params.id, req.userId);
+        if (ja) {
+          job = await storage.getJobPublic(req.params.id);
+          crossBusinessAssigned = !!job;
+        }
+      }
       if (!job) {
         return res.status(404).json({ error: "Job not found" });
       }
       
-      // Staff tradies can only view their assigned jobs
+      // Staff tradies can only view their assigned jobs. Skip when we already
+      // proved a cross-business assignment above.
       const hasViewAll = userContext?.permissions?.includes('view_all') || userContext?.isOwner;
-      if (!hasViewAll && userContext?.teamMemberId) {
+      if (!crossBusinessAssigned && !hasViewAll && userContext?.teamMemberId) {
         // Assignment can be stored either as the team member id or the member's
         // underlying user id depending on how the job was assigned, so match both.
         const assignIds = [userContext.teamMemberId, req.userId].filter(Boolean);

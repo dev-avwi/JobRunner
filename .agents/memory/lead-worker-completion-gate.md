@@ -53,6 +53,18 @@ queue removes it; local cached status reconciles on the next job fetch.
   (`/job not found/i`), never a bare `/not found/` substring, or you risk
   dropping legitimately-retryable items.
 
+**Cross-business assigned sub can't LOAD the job ("Failed to load job / Job
+not found").** GET /api/jobs/:id scopes `storage.getJob(id, effectiveUserId)` to
+the requester's ACTIVE workspace, so a subcontractor assigned to a job owned by
+ANOTHER business 404s before the staff-tradie assignment check ever runs (they
+show on the assigned team but can't open it). Fix pattern: on a null scoped
+lookup, fall back to `getJobAssignmentForUser(id, req.userId)` (real logged-in
+user, NOT effectiveUserId) → if active assignment, serve via `getJobPublic(id)`
+(unscoped) and set a `crossBusinessAssigned` flag that SKIPS the later
+teamMemberId-gated narrowing (assignment already proven). `getJobPublic` must
+only ever be called behind an explicit assignment/ownership check. This is the
+read-side twin of the offline "Job not found" drop above.
+
 **Per-worker completion + lead reassignment (multi-worker jobs):**
 - `job_assignments.completedAt` (nullable timestamp) records each worker's own
   part. Worker hits `POST /api/jobs/:id/complete-my-part` (membership-scoped via
