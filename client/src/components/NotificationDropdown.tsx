@@ -131,6 +131,9 @@ export default function NotificationDropdown() {
         case 'receipt':
           setLocation(`/receipts/${notification.relatedId}`);
           break;
+        case 'subcontractor_invoice':
+          setLocation('/subcontractor-invoices');
+          break;
         default:
           break;
       }

@@ -46732,7 +46732,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       // Server-side recalculation of amounts from assignments/memberships
       let subtotal = 0;
-      const resolvedItems: Array<{ description: string; hours: string; rate: string; amount: string; jobId: string | null; timeEntryIds: string[] }> = [];
+      const resolvedItems: Array<{ description: string; hours: string; rate: string; amount: string; jobId: string | null; timeEntryIds: string[]; fallbackRate: number }> = [];
 
       for (const item of items) {
         const jobId = item.jobId;
@@ -46760,7 +46760,11 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         if (assignment.length === 0) {
           return res.status(400).json({ error: `You are not assigned to job "${jobRecord[0].title}"` });
         }
-        const hourlyRate = parseFloat(assignment[0]?.hourlyRateOverride || membership[0]?.hourlyRate || '0');
+        // Prefer the rate captured on each time entry (what the worker already
+        // sees earned in Time Tracking); fall back to the assignment/membership
+        // rate only when an entry has no rate of its own. Using only the
+        // membership rate produced $0.00 invoices whenever it was unset.
+        const fallbackRate = parseFloat(assignment[0]?.hourlyRateOverride || membership[0]?.hourlyRate || '0');
 
         // Require time entry IDs for labour line items
         const timeEntryIds: string[] = item.timeEntryIds || (item.timeEntryId ? [item.timeEntryId] : []);
@@ -46798,10 +46802,17 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         if (entries.some(te => te.isBreak)) {
           return res.status(400).json({ error: `Break time can't be invoiced for job "${jobRecord[0].title}". Breaks are unpaid.` });
         }
+        let labourAmount = 0;
+        let effectiveRate = fallbackRate;
         for (const te of entries) {
           const durationMinutes = te.duration || Math.round((new Date(te.endTime!).getTime() - new Date(te.startTime).getTime()) / 60000);
-          totalHours += Math.round(durationMinutes / 60 * 100) / 100;
+          const hours = Math.round(durationMinutes / 60 * 100) / 100;
+          totalHours += hours;
+          const entryRate = parseFloat(te.hourlyRate || '0') || fallbackRate;
+          if (entryRate > 0) effectiveRate = entryRate;
+          labourAmount += Math.round(hours * entryRate * 100) / 100;
         }
+        labourAmount = Math.round(labourAmount * 100) / 100;
 
         // Include job materials cost (with dedup check)
         const existingMaterialItems = await db.select({ id: subcontractorInvoiceItems.id })
@@ -46827,20 +46838,22 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
               amount: materialsCost.toFixed(2),
               jobId,
               timeEntryIds: [],
+              fallbackRate: 0,
             });
             subtotal += materialsCost;
           }
         }
 
-        const lineAmount = Math.round(totalHours * hourlyRate * 100) / 100;
+        const lineAmount = labourAmount;
         subtotal += lineAmount;
         resolvedItems.push({
           description: item.description || 'Service',
           hours: totalHours.toFixed(2),
-          rate: hourlyRate.toFixed(2),
+          rate: effectiveRate.toFixed(2),
           amount: lineAmount.toFixed(2),
           jobId,
           timeEntryIds,
+          fallbackRate,
         });
       }
 
@@ -46871,12 +46884,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
               .limit(1);
             const teDuration = te[0]?.duration || (te[0]?.endTime ? Math.round((new Date(te[0].endTime).getTime() - new Date(te[0].startTime).getTime()) / 60000) : 0);
             const teHours = Math.round(teDuration / 60 * 100) / 100;
-            const teAmount = Math.round(teHours * parseFloat(rItem.rate) * 100) / 100;
+            const teRate = parseFloat(te[0]?.hourlyRate || '0') || rItem.fallbackRate;
+            const teAmount = Math.round(teHours * teRate * 100) / 100;
             await storage.createSubcontractorInvoiceItem({
               invoiceId: invoice.id,
               description: rItem.description,
               hours: teHours.toFixed(2),
-              rate: rItem.rate,
+              rate: teRate.toFixed(2),
               amount: teAmount.toFixed(2),
               jobId: rItem.jobId,
               timeEntryId: teId,
