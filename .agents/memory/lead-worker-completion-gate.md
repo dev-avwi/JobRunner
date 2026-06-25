@@ -43,6 +43,15 @@ with `code: 'NOT_LEAD_WORKER'` (body carried in `response.data`) is permanent �
 retrying just spams `console.error` and re-fails. Treat it as a drop: scope it
 to `type==='job' && action==='update'`, log a warn, and `return true` so the
 queue removes it; local cached status reconciles on the next job fetch.
+- **A job-missing 404 is ALSO a permanent drop.** A standalone subcontractor's
+  effectiveUserId is their OWN business, but generic job PATCH/DELETE scope the
+  row to the job owner's id, so a queued update/delete for another business's job
+  404s "Job not found" forever → endless error spam + a stuck "tap to sync"
+  badge. Drop it (subs complete their part via `/complete-my-part`, never the
+  generic scoped PATCH, so nothing legitimate is lost). The mobile api client
+  surfaces only the error MESSAGE, not the HTTP status — match the EXACT message
+  (`/job not found/i`), never a bare `/not found/` substring, or you risk
+  dropping legitimately-retryable items.
 
 **Per-worker completion + lead reassignment (multi-worker jobs):**
 - `job_assignments.completedAt` (nullable timestamp) records each worker's own

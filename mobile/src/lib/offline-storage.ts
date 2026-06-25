@@ -2736,10 +2736,19 @@ class OfflineStorageService {
         // do). Drop these from the queue instead of retrying + spamming errors;
         // the next job fetch reconciles local state with the server.
         const code = (response.data as any)?.code;
+        // A 404 "Job not found" is permanent for this client: the job either no
+        // longer exists or isn't reachable under this user's business scope
+        // (e.g. a subcontractor queued a generic update for another business's
+        // job). Retrying just re-404s forever and the "tap to sync" badge never
+        // clears. Drop it; the next job fetch reconciles local state.
+        const isMissingRecord =
+          (type === 'job' && (action === 'update' || action === 'delete')) &&
+          /job not found/i.test(response.error);
         const isPermanentReject =
-          type === 'job' && action === 'update' &&
-          (code === 'NOT_LEAD_WORKER' ||
-            /lead worker or owner|use clock off/i.test(response.error));
+          (type === 'job' && action === 'update' &&
+            (code === 'NOT_LEAD_WORKER' ||
+              /lead worker or owner|use clock off/i.test(response.error))) ||
+          isMissingRecord;
         if (isPermanentReject) {
           if (__DEV__) console.warn(`[OfflineStorage] Dropping non-retryable ${type} ${action}: ${response.error}`);
           return true;
