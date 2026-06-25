@@ -580,10 +580,9 @@ export const handleInvoiceSend = async (req: any, res: any, storage: any) => {
       // Generate payment token if not already present (12 chars alphanumeric for shorter URLs)
       if (!invoiceWithItems.paymentToken) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-        const bytes = crypto.randomBytes(12);
         let paymentToken = '';
         for (let i = 0; i < 12; i++) {
-          paymentToken += chars[bytes[i] % chars.length];
+          paymentToken += chars[crypto.randomInt(chars.length)];
         }
         await storage.updateInvoice(req.params.id, req.userId, { paymentToken });
         invoiceWithItems = { ...invoiceWithItems, paymentToken };

@@ -2599,7 +2599,7 @@ async function handleToolCalls(event: any): Promise<any> {
           calledNumber,
         });
       } catch (createErr: unknown) {
-        console.error(`[Vapi Webhook] Failed to create AI receptionist call record for ${call.id}:`, getErrorMessage(createErr) || createErr);
+        console.error('[Vapi Webhook] Failed to create AI receptionist call record for %s:', call.id, getErrorMessage(createErr) || createErr);
       }
     }
 
@@ -2614,7 +2614,7 @@ async function handleToolCalls(event: any): Promise<any> {
           ? (typeof toolCall.function.arguments === 'string' ? JSON.parse(toolCall.function.arguments) : toolCall.function.arguments)
           : toolCall.arguments || {};
       } catch (parseErr) {
-        console.error(`[Vapi Webhook] Failed to parse tool args for ${toolName}:`, parseErr);
+        console.error('[Vapi Webhook] Failed to parse tool args for %s:', toolName, parseErr);
       }
 
       let result: any;
@@ -2627,7 +2627,7 @@ async function handleToolCalls(event: any): Promise<any> {
           callerPhone,
         );
       } catch (toolErr: unknown) {
-        console.error(`[Vapi Webhook] Tool "${toolName}" threw — returning soft-success to caller:`, getErrorMessage(toolErr) || toolErr);
+        console.error('[Vapi Webhook] Tool "%s" threw — returning soft-success to caller:', toolName, getErrorMessage(toolErr) || toolErr);
         result = { result: "I've noted that down. Someone from the team will be in touch." };
       }
 

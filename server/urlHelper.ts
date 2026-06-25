@@ -26,20 +26,27 @@ export function getProductionBaseUrl(req?: { protocol: string; get: (header: str
     if (process.env.REPLIT_DEV_DOMAIN) {
       return `https://${process.env.REPLIT_DEV_DOMAIN}`;
     }
-    
-    if (process.env.REPLIT_DOMAINS) {
-      const customDomain = getCustomDomainFromReplitDomains();
-      if (customDomain) {
-        return `https://${customDomain}`;
-      }
-      const domains = process.env.REPLIT_DOMAINS.split(',');
-      return `https://${domains[0]}`;
-    }
-    
+
+    const allowedDomains = process.env.REPLIT_DOMAINS
+      ? process.env.REPLIT_DOMAINS.split(',').map((d) => d.trim()).filter(Boolean)
+      : [];
+
+    // Only trust the request Host header when it matches a known, env-configured
+    // Replit domain (allowlist barrier). This keeps email/link generation safe
+    // from host-header poisoning while still resolving multi-domain dev requests
+    // to the host the request actually arrived on.
     if (req) {
-      return `${req.protocol}://${req.get('host')}`;
+      const host = req.get('host');
+      if (host && allowedDomains.includes(host)) {
+        return `${req.protocol}://${host}`;
+      }
     }
-    
+
+    if (allowedDomains.length > 0) {
+      const customDomain = getCustomDomainFromReplitDomains();
+      return `https://${customDomain || allowedDomains[0]}`;
+    }
+
     return 'http://localhost:5000';
   }
   

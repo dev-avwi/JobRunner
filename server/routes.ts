@@ -18747,10 +18747,9 @@ Be specific about materials, colors, and features that would be included.`
       // Generate payment token if allowOnlinePayment is true
       if (data.allowOnlinePayment && !data.paymentToken) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-        const bytes = randomBytes(12);
         let paymentToken = '';
         for (let i = 0; i < 12; i++) {
-          paymentToken += chars[bytes[i] % chars.length];
+          paymentToken += chars[randomInt(chars.length)];
         }
         data.paymentToken = paymentToken;
       }
@@ -19002,7 +19001,7 @@ Be specific about materials, colors, and features that would be included.`
               json: (data: any) => {
                 if (code >= 400) {
                   const errMsg = data.error || data.message || data.title || 'Send failed';
-                  console.error(`[BatchSendInvoices] Invoice ${invoiceId} failed (${code}):`, errMsg);
+                  console.error('[BatchSendInvoices] Invoice %s failed (%s):', invoiceId, code, errMsg);
                   results.push({ invoiceId, success: false, error: errMsg });
                 } else {
                   results.push({ invoiceId, success: true });
@@ -19071,7 +19070,7 @@ Be specific about materials, colors, and features that would be included.`
               json: (data: any) => {
                 if (code >= 400) {
                   const errMsg = data.error || data.message || data.title || 'Send failed';
-                  console.error(`[BatchSendQuotes] Quote ${quoteId} failed (${code}):`, errMsg);
+                  console.error('[BatchSendQuotes] Quote %s failed (%s):', quoteId, code, errMsg);
                   results.push({ quoteId, success: false, error: errMsg });
                 } else {
                   results.push({ quoteId, success: true });
@@ -19318,11 +19317,10 @@ Be specific about materials, colors, and features that would be included.`
       // Ensure invoice has payment token for public link
       let paymentToken = invoice.paymentToken;
       if (!paymentToken) {
-        const bytes = randomBytes(16);
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         paymentToken = '';
         for (let i = 0; i < 16; i++) {
-          paymentToken += chars[bytes[i] % chars.length];
+          paymentToken += chars[randomInt(chars.length)];
         }
         await storage.updateInvoice(req.params.id, userContext.effectiveUserId, { 
           paymentToken,
@@ -19886,10 +19884,9 @@ Be specific about materials, colors, and features that would be included.`
       let paymentToken = invoice.paymentToken;
       if (allowOnlinePayment && !paymentToken) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-        const bytes = randomBytes(12);
         paymentToken = '';
         for (let i = 0; i < 12; i++) {
-          paymentToken += chars[bytes[i] % chars.length];
+          paymentToken += chars[randomInt(chars.length)];
         }
       }
       
@@ -19942,7 +19939,7 @@ Be specific about materials, colors, and features that would be included.`
         job = invoiceWithItems.jobId ? await storage.getJob(invoiceWithItems.jobId, userContext.effectiveUserId) : undefined;
         timeEntries = invoiceWithItems.jobId ? await storage.getTimeEntries(userContext.effectiveUserId, invoiceWithItems.jobId) : [];
       } catch (jobError) {
-        console.warn(`[Invoice PDF] Could not fetch job/time entries for invoice ${invoiceId}:`, jobError);
+        console.warn('[Invoice PDF] Could not fetch job/time entries for invoice %s:', invoiceId, jobError);
       }
       
       let labourSummary: any = null;
@@ -19960,7 +19957,7 @@ Be specific about materials, colors, and features that would be included.`
             }
           }
         } catch (labourError) {
-          console.warn(`[Invoice PDF] Could not generate labour summary for invoice ${invoiceId}:`, labourError);
+          console.warn('[Invoice PDF] Could not generate labour summary for invoice %s:', invoiceId, labourError);
         }
       }
       
@@ -20014,7 +20011,7 @@ Be specific about materials, colors, and features that would be included.`
         termsTemplate = termsTemplateResult[0]?.content;
         warrantyTemplate = warrantyTemplateResult[0]?.content;
       } catch (templateError) {
-        console.warn(`[Invoice PDF] Could not fetch templates for invoice ${invoiceId}:`, templateError);
+        console.warn('[Invoice PDF] Could not fetch templates for invoice %s:', invoiceId, templateError);
       }
       
       let beforePhotos: Array<{ url: string; caption?: string; category: string }> | undefined;
@@ -20059,7 +20056,7 @@ Be specific about materials, colors, and features that would be included.`
           assignments,
         });
       } catch (htmlError: any) {
-        console.error(`[Invoice PDF] HTML generation failed for invoice ${invoiceId}:`, htmlError);
+        console.error('[Invoice PDF] HTML generation failed for invoice %s:', invoiceId, htmlError);
         return res.status(500).json({ 
           error: "Failed to generate invoice document", 
           details: htmlError?.message || "Error creating invoice HTML content"
@@ -20070,7 +20067,7 @@ Be specific about materials, colors, and features that would be included.`
       try {
         pdfBuffer = await generatePDFBuffer(html);
       } catch (pdfError: any) {
-        console.error(`[Invoice PDF] PDF buffer generation failed for invoice ${invoiceId}:`, pdfError);
+        console.error('[Invoice PDF] PDF buffer generation failed for invoice %s:', invoiceId, pdfError);
         return res.status(500).json({ 
           error: "Failed to create PDF file", 
           details: pdfError?.message || "Error converting invoice to PDF"
@@ -20082,7 +20079,7 @@ Be specific about materials, colors, and features that would be included.`
       res.send(pdfBuffer);
     } catch (error: any) {
       if (isBackpressure(error)) return send429(res, error);
-      console.error(`[Invoice PDF] Unexpected error generating PDF for invoice ${invoiceId}:`, error);
+      console.error('[Invoice PDF] Unexpected error generating PDF for invoice %s:', invoiceId, error);
       res.status(500).json({ 
         error: "Failed to generate invoice PDF", 
         details: error?.message || "An unexpected error occurred while generating the PDF"
@@ -20277,10 +20274,9 @@ Be specific about materials, colors, and features that would be included.`
       let paymentToken = invoice.paymentToken;
       if (!paymentToken) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-        const bytes = randomBytes(12);
         paymentToken = '';
         for (let i = 0; i < 12; i++) {
-          paymentToken += chars[bytes[i] % chars.length];
+          paymentToken += chars[randomInt(chars.length)];
         }
       }
       
@@ -20364,10 +20360,9 @@ Be specific about materials, colors, and features that would be included.`
       let paymentToken = invoice.paymentToken;
       if (!paymentToken) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-        const bytes = randomBytes(12);
         paymentToken = '';
         for (let i = 0; i < 12; i++) {
-          paymentToken += chars[bytes[i] % chars.length];
+          paymentToken += chars[randomInt(chars.length)];
         }
       }
       
@@ -23461,10 +23456,9 @@ Be specific about materials, colors, and features that would be included.`
           let viewToken = receipt.viewToken;
           if (!viewToken) {
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-            const bytes = crypto.randomBytes(12);
             viewToken = '';
             for (let i = 0; i < 12; i++) {
-              viewToken += chars[bytes[i] % chars.length];
+              viewToken += chars[crypto.randomInt(chars.length)];
             }
             await storage.updateReceipt(receipt.id, userId, { viewToken });
           }
@@ -24146,10 +24140,9 @@ Be specific about materials, colors, and features that would be included.`
       let viewToken = receipt.viewToken;
       if (!viewToken) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-        const bytes = crypto.randomBytes(12);
         viewToken = '';
         for (let i = 0; i < 12; i++) {
-          viewToken += chars[bytes[i] % chars.length];
+          viewToken += chars[crypto.randomInt(chars.length)];
         }
         await storage.updateReceipt(receipt.id, effectiveUserId, { viewToken });
         receipt = { ...receipt, viewToken };
@@ -31005,10 +30998,9 @@ Respond with JSON in this format:
       let paymentToken = invoice.paymentToken;
       if (!paymentToken) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-        const bytes = randomBytes(12);
         paymentToken = '';
         for (let i = 0; i < 12; i++) {
-          paymentToken += chars[bytes[i] % chars.length];
+          paymentToken += chars[randomInt(chars.length)];
         }
         await storage.updateInvoice(invoiceId, userId, { 
           paymentToken,
@@ -41847,8 +41839,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // Address search - Google Places API (when key available) with Nominatim fallback
   app.get("/api/address-search", requireAuth, async (req, res) => {
     try {
-      const query = req.query.q as string;
-      if (!query || query.length < 3) {
+      const query = req.query.q;
+      if (typeof query !== 'string' || query.length < 3) {
         return res.json([]);
       }
 
@@ -44830,7 +44822,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
             endCallMessage, backgroundSound, aiModel, aiMaxTokens, aiTemperature, customInstructions,
           });
         } catch (vapiErr: any) {
-          console.error(`[AI Config] VAPI update failed for config ${req.params.configId}:`, vapiErr.message);
+          console.error('[AI Config] VAPI update failed for config %s:', req.params.configId, vapiErr.message);
         }
       }
 

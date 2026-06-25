@@ -2718,10 +2718,9 @@ export class PostgresStorage implements IStorage {
     // 54^12 = ~2.3e20 possibilities - still very secure
     // Excludes ambiguous chars: 0/O, 1/I/l to avoid confusion
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    const bytes = crypto.randomBytes(12);
     let token = '';
     for (let i = 0; i < 12; i++) {
-      token += chars[bytes[i] % chars.length];
+      token += chars[crypto.randomInt(chars.length)];
     }
     
     const result = await db

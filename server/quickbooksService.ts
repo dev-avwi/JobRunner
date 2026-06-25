@@ -141,8 +141,12 @@ export async function handleCallback(code: string, realmId: string, userId: stri
 
 async function getCompanyInfo(accessToken: string, realmId: string): Promise<any> {
   try {
+    if (!/^\d+$/.test(realmId)) {
+      throw new Error('Invalid QuickBooks realmId');
+    }
+    const safeRealmId = encodeURIComponent(realmId);
     const response = await fetch(
-      `${QUICKBOOKS_API_BASE_URL}/${realmId}/companyinfo/${realmId}?minorversion=65`,
+      `${QUICKBOOKS_API_BASE_URL}/${safeRealmId}/companyinfo/${safeRealmId}?minorversion=65`,
       {
         headers: {
           'Accept': 'application/json',
@@ -600,8 +604,13 @@ export async function syncPaymentsFromQuickbooks(userId: string): Promise<{ upda
 }
 
 async function getQuickbooksInvoice(accessToken: string, realmId: string, invoiceId: string): Promise<any> {
+  if (!/^\d+$/.test(realmId) || !/^\d+$/.test(invoiceId)) {
+    throw new Error('Invalid QuickBooks realmId or invoiceId');
+  }
+  const safeRealmId = encodeURIComponent(realmId);
+  const safeInvoiceId = encodeURIComponent(invoiceId);
   const response = await fetch(
-    `${QUICKBOOKS_API_BASE_URL}/${realmId}/invoice/${invoiceId}?minorversion=65`,
+    `${QUICKBOOKS_API_BASE_URL}/${safeRealmId}/invoice/${safeInvoiceId}?minorversion=65`,
     {
       headers: {
         'Accept': 'application/json',
