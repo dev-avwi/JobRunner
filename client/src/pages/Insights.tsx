@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -417,7 +418,7 @@ export default function Insights({ onNavigate }: InsightsProps) {
   const { data: revenueData } = useQuery<MonthlyRevenue>({
     queryKey: ['/api/reports/revenue', new Date().getFullYear().toString()],
     queryFn: async () => {
-      const res = await fetch(`/api/reports/revenue?year=${new Date().getFullYear()}`, { credentials: 'include' });
+      const res = await fetch(`/api/reports/revenue?year=${new Date().getFullYear()}`, { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to fetch revenue');
       return res.json();
     },

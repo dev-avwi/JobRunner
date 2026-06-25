@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +61,7 @@ export default function CompletedJobPicker({ onSelectJob, selectedJobId }: Compl
   const { data: allJobs = [], isLoading } = useQuery<CompletedJob[]>({
     queryKey: ["/api/jobs/contextual", "done"],
     queryFn: async () => {
-      const res = await fetch("/api/jobs/contextual?status=done", { credentials: "include" });
+      const res = await fetch("/api/jobs/contextual?status=done", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to fetch completed jobs");
       return res.json();
     },

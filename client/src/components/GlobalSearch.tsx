@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -54,6 +55,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
     queryFn: async () => {
       const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`, {
         credentials: 'include',
+        headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error('Search failed');
       return res.json();

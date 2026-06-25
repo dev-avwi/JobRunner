@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getAuthHeaders} from "@/lib/queryClient";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatComposer } from "@/components/ChatComposer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -459,7 +459,7 @@ export default function ChatHub() {
   const { data: jobPhotosMap = {} } = useQuery<Record<string, string>>({
     queryKey: ['/api/jobs/site-photos'],
     queryFn: async () => {
-      const res = await fetch('/api/jobs/site-photos', { credentials: 'include' });
+      const res = await fetch('/api/jobs/site-photos', { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) return {};
       return res.json();
     },
@@ -473,7 +473,7 @@ export default function ChatHub() {
   const { data: userSmsTemplates = [] } = useQuery<MessageTemplate[]>({
     queryKey: ['/api/message-templates', 'sms'],
     queryFn: async () => {
-      const res = await fetch('/api/message-templates?channel=sms', { credentials: 'include' });
+      const res = await fetch('/api/message-templates?channel=sms', { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to fetch templates');
       return res.json();
     },

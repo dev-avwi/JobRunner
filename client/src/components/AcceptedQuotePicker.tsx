@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +73,7 @@ export default function AcceptedQuotePicker({ onSelectQuote, selectedQuoteId }: 
   const { data: allQuotes = [], isLoading } = useQuery<AcceptedQuote[]>({
     queryKey: ["/api/quotes/accepted"],
     queryFn: async () => {
-      const res = await fetch("/api/quotes/accepted", { credentials: "include" });
+      const res = await fetch("/api/quotes/accepted", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to fetch accepted quotes");
       return res.json();
     },

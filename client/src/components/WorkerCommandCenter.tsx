@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getAuthHeaders} from "@/lib/queryClient";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   MapPin,
@@ -178,6 +178,7 @@ export default function WorkerCommandCenter({ memberId, open, onOpenChange }: Wo
     queryFn: async () => {
       const response = await fetch(`/api/team/members/${memberId}/command-center`, {
         credentials: 'include',
+        headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch worker details');
       return response.json();

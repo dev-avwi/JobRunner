@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { safeInvalidateQueries } from "@/lib/queryClient";
+import { safeInvalidateQueries, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface TimeEntry {
@@ -39,7 +39,8 @@ export function useTimeTracking(jobId: string): UseTimeTrackingReturn {
     queryKey: ['/api/time-entries', jobId],
     queryFn: async () => {
       const response = await fetch(`/api/time-entries?jobId=${jobId}`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
       });
       if (!response.ok) throw new Error('Failed to fetch time entries');
       return response.json();

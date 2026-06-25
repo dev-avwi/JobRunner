@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ export function useIsBrandNewOwner() {
   const { data: activities } = useQuery<any[]>({
     queryKey: ["/api/activity-feed", { limit: 1 }],
     queryFn: async () => {
-      const res = await fetch("/api/activity-feed?limit=1", { credentials: "include" });
+      const res = await fetch("/api/activity-feed?limit=1", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) return [];
       return res.json();
     },

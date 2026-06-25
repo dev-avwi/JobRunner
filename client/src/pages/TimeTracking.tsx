@@ -30,7 +30,7 @@ import {
   Timer,
   User
 } from "lucide-react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfWeek, endOfWeek, subWeeks } from "date-fns";
 import { 
@@ -59,7 +59,7 @@ function PayrollReporting() {
         format: reportType,
         period: period,
       });
-      const res = await fetch(`/api/time-tracking/reports/payroll?${params}`, { credentials: 'include' });
+      const res = await fetch(`/api/time-tracking/reports/payroll?${params}`, { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to fetch payroll data');
       return res.json();
     },
@@ -229,7 +229,7 @@ function TimeTrackingAnalytics() {
   const { data: timesheets, isLoading } = useQuery<any[]>({
     queryKey: ['/api/timesheets', 'includeEntries'],
     queryFn: async () => {
-      const res = await fetch('/api/timesheets?includeEntries=true', { credentials: 'include' });
+      const res = await fetch('/api/timesheets?includeEntries=true', { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to fetch timesheets');
       return res.json();
     },
@@ -238,7 +238,7 @@ function TimeTrackingAnalytics() {
   const { data: timeEntries } = useQuery<any[]>({
     queryKey: ['/api/time-entries'],
     queryFn: async () => {
-      const res = await fetch('/api/time-entries', { credentials: 'include' });
+      const res = await fetch('/api/time-entries', { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to fetch time entries');
       return res.json();
     },
@@ -564,7 +564,7 @@ function GeofenceGpsAlerts() {
   const { data: geofenceAlerts = [], isLoading: geoLoading } = useQuery<any[]>({
     queryKey: ['/api/geofence-alerts', { type: 'departure', limit: 10 }],
     queryFn: async () => {
-      const res = await fetch('/api/geofence-alerts?type=departure&limit=10', { credentials: 'include' });
+      const res = await fetch('/api/geofence-alerts?type=departure&limit=10', { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) return [];
       return res.json();
     },
@@ -573,7 +573,7 @@ function GeofenceGpsAlerts() {
   const { data: gpsLogs = [], isLoading: gpsLoading } = useQuery<any[]>({
     queryKey: ['/api/gps-signal-logs'],
     queryFn: async () => {
-      const res = await fetch('/api/gps-signal-logs?limit=10', { credentials: 'include' });
+      const res = await fetch('/api/gps-signal-logs?limit=10', { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) return [];
       return res.json();
     },

@@ -16,7 +16,7 @@ import { useUpdateJob } from "@/hooks/use-jobs";
 import { useAppMode } from "@/hooks/use-app-mode";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getAuthHeaders} from "@/lib/queryClient";
 import { useState, useRef, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -175,7 +175,7 @@ export default function TeamOwnerDashboard({
   const { data: unassignedJobs = [] } = useQuery<Job[]>({
     queryKey: ["/api/jobs", { filter: "unassigned" }],
     queryFn: async () => {
-      const response = await fetch('/api/jobs?unassigned=true', { credentials: 'include' });
+      const response = await fetch('/api/jobs?unassigned=true', { credentials: 'include', headers: getAuthHeaders() });
       if (!response.ok) throw new Error('Failed to fetch unassigned jobs');
       return response.json();
     },

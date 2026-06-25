@@ -71,7 +71,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
-import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
+import { apiRequest, queryClient, getSessionToken, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { formatHistoryDate } from "@shared/dateUtils";
@@ -704,7 +704,7 @@ export default function JobDetailView({
       const params = new URLSearchParams();
       if (userTradeType) params.append('tradeType', userTradeType);
       const url = `/api/custom-forms${params.toString() ? `?${params.toString()}` : ''}`;
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(url, { credentials: 'include', headers: getAuthHeaders() });
       if (!response.ok) throw new Error('Failed to fetch forms');
       return response.json();
     },

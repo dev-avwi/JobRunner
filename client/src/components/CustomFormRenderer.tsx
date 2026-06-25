@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -542,7 +542,7 @@ export function FormSubmissionList({ jobId, onFillForm }: FormSubmissionListProp
       const params = new URLSearchParams();
       if (tradeType) params.append('tradeType', tradeType);
       const url = `/api/custom-forms${params.toString() ? `?${params.toString()}` : ''}`;
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(url, { credentials: 'include', headers: getAuthHeaders() });
       if (!response.ok) throw new Error('Failed to fetch forms');
       return response.json();
     },

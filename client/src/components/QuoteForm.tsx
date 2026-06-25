@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -93,7 +94,7 @@ export default function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
   const { data: userCheck } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
-      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      const res = await fetch('/api/auth/me', { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Not authenticated');
       return res.json();
     },

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getAuthHeaders} from "@/lib/queryClient";
 import { PageShell, PageHeader, SectionTitle } from "@/components/ui/page-shell";
 import {
   FileText,
@@ -202,7 +202,7 @@ function AutomationActivityLog({ field, color }: { field: AutomationField; color
   const { data: logs, isLoading, refetch } = useQuery<ActivityLogEntry[]>({
     queryKey: ["/api/autopilot/activity-log", apiType, limit],
     queryFn: async () => {
-      const res = await fetch(`/api/autopilot/activity-log?type=${apiType}&limit=${limit}`, { credentials: "include" });
+      const res = await fetch(`/api/autopilot/activity-log?type=${apiType}&limit=${limit}`, { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) return [];
       return res.json();
     },
@@ -850,7 +850,7 @@ function GlobalActivityFeed() {
   const { data: logs, isLoading } = useQuery<ActivityLogEntry[]>({
     queryKey: ["/api/autopilot/activity-log", "global", limit],
     queryFn: async () => {
-      const res = await fetch(`/api/autopilot/activity-log?limit=${limit}`, { credentials: "include" });
+      const res = await fetch(`/api/autopilot/activity-log?limit=${limit}`, { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) return [];
       return res.json();
     },

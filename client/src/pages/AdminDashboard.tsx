@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -1025,7 +1025,7 @@ function AdminTeamPanel({ userId }: { userId: string }) {
   const { data: teamData, isLoading } = useQuery<TeamData>({
     queryKey: ['/api/admin/users', userId, 'team'],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/users/${userId}/team`, { credentials: 'include' });
+      const res = await fetch(`/api/admin/users/${userId}/team`, { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to load team');
       return res.json();
     },
@@ -1931,7 +1931,7 @@ function CallMonitoringView() {
   const { data: calls = [], isLoading } = useQuery<AdminCallLog[]>({
     queryKey: ['/api/admin/ai-calls', sentimentFilter, sortBy],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/ai-calls?${queryParams.toString()}`, { credentials: 'include' });
+      const res = await fetch(`/api/admin/ai-calls?${queryParams.toString()}`, { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to fetch calls');
       return res.json();
     },

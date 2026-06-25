@@ -21,7 +21,7 @@ import { useBusinessSettings } from "@/hooks/use-business-settings";
 import { useFeatureAccess } from "@/hooks/use-subscription";
 import { useDocumentTemplates, type DocumentTemplate } from "@/hooks/use-templates";
 import { useQuery } from "@tanstack/react-query";
-import { queryClient, getSessionToken } from "@/lib/queryClient";
+import { queryClient, getSessionToken, getAuthHeaders} from "@/lib/queryClient";
 import LiveDocumentPreview from "./LiveDocumentPreview";
 import type { StylePreset } from "@shared/schema";
 import { TemplateCustomization, DOCUMENT_TEMPLATES, TemplateId } from "@/lib/document-templates";
@@ -120,7 +120,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
   const { data: userCheck } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
-      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      const res = await fetch('/api/auth/me', { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Not authenticated');
       return res.json();
     },

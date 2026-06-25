@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -130,6 +131,7 @@ export default function TimeEntryEditBadge({ timeEntryId }: TimeEntryEditBadgePr
     queryFn: async () => {
       const res = await fetch(`/api/time-entries/${timeEntryId}/has-edits`, {
         credentials: "include",
+        headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error("Failed to check edits");
       return res.json();
@@ -142,6 +144,7 @@ export default function TimeEntryEditBadge({ timeEntryId }: TimeEntryEditBadgePr
     queryFn: async () => {
       const res = await fetch(`/api/time-entries/${timeEntryId}/edit-history`, {
         credentials: "include",
+        headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error("Failed to fetch edit history");
       return res.json();

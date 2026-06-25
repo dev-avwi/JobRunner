@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { PageShell, PageHeader, SectionTitle } from "@/components/ui/page-shell";
@@ -301,7 +302,8 @@ export default function Reports() {
     queryFn: async () => {
       const range = getDateRange();
       const res = await fetch(`/api/reports/summary?startDate=${range.startDate}&endDate=${range.endDate}`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
       });
       if (!res.ok) throw new Error('Failed to fetch summary');
       return res.json();
@@ -313,7 +315,8 @@ export default function Reports() {
     queryKey: ['/api/reports/revenue', selectedYear],
     queryFn: async () => {
       const res = await fetch(`/api/reports/revenue?year=${selectedYear}`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
       });
       if (!res.ok) throw new Error('Failed to fetch revenue');
       return res.json();
@@ -325,7 +328,8 @@ export default function Reports() {
     queryKey: ['/api/reports/clients'],
     queryFn: async () => {
       const res = await fetch('/api/reports/clients?limit=10', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
       });
       if (!res.ok) throw new Error('Failed to fetch clients');
       return res.json();
@@ -338,7 +342,8 @@ export default function Reports() {
     queryFn: async () => {
       const range = getDateRange();
       const res = await fetch(`/api/reports/stripe-payments?startDate=${range.startDate}&endDate=${range.endDate}`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
       });
       if (!res.ok) throw new Error('Failed to fetch Stripe payments');
       return res.json();
@@ -351,7 +356,8 @@ export default function Reports() {
     queryFn: async () => {
       const range = getDateRange();
       const res = await fetch(`/api/reports/team?startDate=${range.startDate}&endDate=${range.endDate}`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
       });
       if (!res.ok) {
         if (res.status === 403) return null;

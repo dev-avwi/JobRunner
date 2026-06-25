@@ -118,6 +118,19 @@ export function clearSessionToken(): void {
   }
 }
 
+// Auth-only headers (Bearer token) for custom queryFn/fetch calls.
+// The web app authenticates via a Bearer token in localStorage; cookie-only
+// requests (credentials: 'include' with no Authorization header) can silently
+// return empty data or 401 in some sessions. Use this on any hand-rolled fetch.
+export function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = {};
+  const token = getSessionToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 // Build headers with session token for iOS/Safari fallback
 function buildHeaders(hasData: boolean): HeadersInit {
   const headers: HeadersInit = {};

@@ -57,7 +57,7 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
 } from "lucide-react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 
@@ -155,7 +155,7 @@ export default function PhotoLibraryTab() {
   const { data: photos = [], isLoading: photosLoading } = useQuery<PhotoItem[]>({
     queryKey: ["/api/photos", categoryFilter, jobFilter, clientFilter, sortBy, sortOrder],
     queryFn: async () => {
-      const res = await fetch(`/api/photos?${queryParams.toString()}`, { credentials: "include" });
+      const res = await fetch(`/api/photos?${queryParams.toString()}`, { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to load photos");
       return res.json();
     },
@@ -164,7 +164,7 @@ export default function PhotoLibraryTab() {
   const { data: stats } = useQuery<PhotoStats>({
     queryKey: ["/api/photos/stats"],
     queryFn: async () => {
-      const res = await fetch("/api/photos/stats", { credentials: "include" });
+      const res = await fetch("/api/photos/stats", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to load stats");
       return res.json();
     },
@@ -181,7 +181,7 @@ export default function PhotoLibraryTab() {
   const { data: existingTags = [] } = useQuery<string[]>({
     queryKey: ["/api/photos/tags"],
     queryFn: async () => {
-      const res = await fetch("/api/photos/tags", { credentials: "include" });
+      const res = await fetch("/api/photos/tags", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) return [];
       return res.json();
     },

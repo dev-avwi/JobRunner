@@ -57,7 +57,7 @@ import {
 } from "lucide-react";
 import { PageShell, PageHeader } from "@/components/ui/page-shell";
 import { EmptyState } from "@/components/ui/compact-card";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type {
@@ -514,7 +514,7 @@ function EquipmentSection() {
     queryKey: ["/api/equipment", selectedItem?.id, "maintenance"],
     enabled: !!selectedItem,
     queryFn: async () => {
-      const res = await fetch(`/api/equipment/${selectedItem!.id}/maintenance`, { credentials: "include" });
+      const res = await fetch(`/api/equipment/${selectedItem!.id}/maintenance`, { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
@@ -524,7 +524,7 @@ function EquipmentSection() {
     queryKey: ["/api/equipment", selectedItem?.id, "assignments"],
     enabled: !!selectedItem,
     queryFn: async () => {
-      const res = await fetch(`/api/equipment/${selectedItem!.id}/assignments`, { credentials: "include" });
+      const res = await fetch(`/api/equipment/${selectedItem!.id}/assignments`, { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) return [];
       return res.json();
     },
@@ -1497,7 +1497,7 @@ function EquipmentUtilisation() {
   const { data, isLoading } = useQuery<any>({
     queryKey: ["/api/reports/equipment-utilisation"],
     queryFn: async () => {
-      const res = await fetch("/api/reports/equipment-utilisation", { credentials: "include" });
+      const res = await fetch("/api/reports/equipment-utilisation", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },

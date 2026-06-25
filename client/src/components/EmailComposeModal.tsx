@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, getAuthHeaders} from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import type { MessageTemplate } from "@shared/schema";
 import { useFeatureAccess } from "@/hooks/use-subscription";
@@ -80,7 +80,7 @@ export default function EmailComposeModal({
   const { data: templates = [] } = useQuery<MessageTemplate[]>({
     queryKey: ['/api/message-templates', 'email'],
     queryFn: async () => {
-      const res = await fetch('/api/message-templates?channel=email', { credentials: 'include' });
+      const res = await fetch('/api/message-templates?channel=email', { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to fetch templates');
       return res.json();
     },
