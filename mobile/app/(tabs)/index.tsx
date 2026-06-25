@@ -35,7 +35,6 @@ import { spacing, radius, shadows, typography, iconSizes, sizes, pageShell, useP
 import { NotificationBell, NotificationsPanel } from '../../src/components/NotificationsPanel';
 import { getAvatarColor } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
-import { TrustBanner } from '../../src/components/ui/TrustBanner';
 import { OnboardingReminderBanner } from '../../src/components/ui/OnboardingReminderBanner';
 import { OnboardingSetupFailedBanner } from '../../src/components/ui/OnboardingSetupFailedBanner';
 import { useScrollToTop } from '../../src/contexts/ScrollContext';
@@ -3415,9 +3414,6 @@ function OwnerDashboardScreen() {
 
       {/* Background setup failure - retryable if the magic-screen seed/complete failed */}
       <OnboardingSetupFailedBanner />
-
-      {/* Trust Banner - Dismissible */}
-      <TrustBanner />
 
       {/* Usage Limit Warning - Free Plan Users */}
       <UsageLimitBanner />
