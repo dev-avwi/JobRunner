@@ -181,40 +181,23 @@ export default function PayrollReports() {
     }
   }, [utilisationPeriod]);
 
-  const { data: payrollData, isLoading: payrollLoading } = useQuery({
-    queryKey: ['/api/payroll/summary', payrollDates.start.toISOString(), payrollDates.end.toISOString()],
-    queryFn: async () => {
-      const res = await fetch(`/api/payroll/summary?start=${payrollDates.start.toISOString()}&end=${payrollDates.end.toISOString()}`, { credentials: 'include' });
-      return res.json();
-    },
+  const { data: payrollData, isLoading: payrollLoading } = useQuery<any>({
+    queryKey: ['/api/payroll/summary', { start: payrollDates.start.toISOString(), end: payrollDates.end.toISOString() }],
     staleTime: 2 * 60 * 1000,
   });
 
-  const { data: receivablesData, isLoading: receivablesLoading } = useQuery({
+  const { data: receivablesData, isLoading: receivablesLoading } = useQuery<any>({
     queryKey: ['/api/reports/receivables'],
-    queryFn: async () => {
-      const res = await fetch('/api/reports/receivables', { credentials: 'include' });
-      return res.json();
-    },
     staleTime: 2 * 60 * 1000,
   });
 
-  const { data: utilisationData, isLoading: utilisationLoading } = useQuery({
-    queryKey: ['/api/reports/utilisation', utilisationDates.start.toISOString(), utilisationDates.end.toISOString()],
-    queryFn: async () => {
-      const res = await fetch(`/api/reports/utilisation?start=${utilisationDates.start.toISOString()}&end=${utilisationDates.end.toISOString()}`, { credentials: 'include' });
-      return res.json();
-    },
+  const { data: utilisationData, isLoading: utilisationLoading } = useQuery<any>({
+    queryKey: ['/api/reports/utilisation', { start: utilisationDates.start.toISOString(), end: utilisationDates.end.toISOString() }],
     staleTime: 2 * 60 * 1000,
   });
 
   const { data: disputedEntries, isLoading: disputesLoading } = useQuery<DisputedTimeEntry[]>({
     queryKey: ['/api/time-entries/disputed'],
-    queryFn: async () => {
-      const res = await fetch('/api/time-entries/disputed', { credentials: 'include' });
-      if (!res.ok) return [];
-      return res.json();
-    },
     staleTime: 30 * 1000,
   });
 
