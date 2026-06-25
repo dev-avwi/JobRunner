@@ -2731,6 +2731,19 @@ class OfflineStorageService {
       }
       
       if (response.error) {
+        // Permanent permission rejections won't succeed on retry (e.g. a
+        // secondary worker queued a job "Complete" that only the lead/owner may
+        // do). Drop these from the queue instead of retrying + spamming errors;
+        // the next job fetch reconciles local state with the server.
+        const code = (response.data as any)?.code;
+        const isPermanentReject =
+          type === 'job' && action === 'update' &&
+          (code === 'NOT_LEAD_WORKER' ||
+            /lead worker or owner|use clock off/i.test(response.error));
+        if (isPermanentReject) {
+          if (__DEV__) console.warn(`[OfflineStorage] Dropping non-retryable ${type} ${action}: ${response.error}`);
+          return true;
+        }
         if (__DEV__) console.error(`[OfflineStorage] API error for ${type} ${action}:`, response.error);
         return false;
       }

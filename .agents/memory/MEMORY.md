@@ -111,3 +111,6 @@
 - [Simulator default GPS = California](simulator-default-gps.md) — worker "missing" from AU map but fresh pings = simulator reporting 37.4219983,-122.084 (Mountain View); pin is off-map, not a code bug. Check lat/lng before debugging.
 - [Autopilot/automations engine is real](automations-engine-real.md) — not a stub; event triggers fire inline + 30min time-based poller (reminderScheduler), executeAutomationActions runs real sends; custom builds execute same as templates.
 - [drizzle-zod timestamps reject ISO strings](drizzle-zod-timestamp-string-dates.md) — createInsertSchema maps timestamp→z.date(); JSON clients send strings → generic "Invalid X data" 400 on create. Fix: z.coerce.date() override.
+- [Image picker base64:true crashes Android](mobile-imagepicker-base64-android-crash.md) — expo-image-picker base64:true → ANR/BadParcelableException; pick to URI then FileSystem.readAsStringAsync Base64 instead.
+- [expo-av single-recording orphan](expo-av-single-recording-orphan.md) — one prepared Recording per process; orphan across remount blocks next record. Module-level globalRecording, clear only after successful unload.
+- [Lead-worker job completion gate](lead-worker-completion-gate.md) — only lead/owner may mark job done (server NOT_LEAD_WORKER); mobile lead test must wait for assignmentsLoaded; sync drops NOT_LEAD_WORKER job updates.

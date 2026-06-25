@@ -17,6 +17,13 @@ import { api } from '../lib/api';
 let Audio: any = null;
 let isAudioAvailable = false;
 
+// Module-level handle to the most recently created Recording. expo-av only
+// allows ONE prepared Recording per process; if the component unmounts
+// mid-record (or a prior stop failed) the native recording is orphaned and the
+// next createAsync throws "Only one Recording object can be prepared at a given
+// time". Tracking it here lets us force-unload it even without a live ref.
+let globalRecording: any = null;
+
 try {
   const expoAv = require('expo-av');
   Audio = expoAv.Audio;
@@ -60,6 +67,20 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
         recordingRef.current.stopAndUnloadAsync().catch((e: any) => {
           if (__DEV__) console.warn('[VoiceRecorder] Error stopping recording on cleanup:', e);
         });
+      }
+      // Only drop the module-level handle once the native recording has actually
+      // been unloaded. If the unload fails, KEEP the handle so the next mount can
+      // still force-unload the orphan (otherwise we hit the expo-av single-
+      // recording limit again with no way to recover).
+      if (globalRecording && isAudioAvailable) {
+        const orphan = globalRecording;
+        orphan.stopAndUnloadAsync()
+          .then(() => { if (globalRecording === orphan) globalRecording = null; })
+          .catch((e: any) => {
+            if (__DEV__) console.warn('[VoiceRecorder] Orphan recording unload failed on cleanup (handle retained):', e);
+          });
+      } else {
+        globalRecording = null;
       }
       if (isAudioAvailable && Audio) {
         Audio.setAudioModeAsync({
@@ -151,6 +172,18 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
       setRecording(null);
     }
 
+    // Force-unload any orphaned recording left over from a previous mount/session
+    // that recordingRef can no longer reach. Without this, expo-av still considers
+    // a Recording "prepared" and the next createAsync throws "Only one Recording...".
+    if (globalRecording) {
+      try {
+        await globalRecording.stopAndUnloadAsync();
+      } catch (e) {
+        if (__DEV__) console.warn('[VoiceRecorder] Error unloading orphaned recording:', e);
+      }
+      globalRecording = null;
+    }
+
     try {
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
@@ -188,6 +221,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
       
       setRecording(newRecording);
       recordingRef.current = newRecording;
+      globalRecording = newRecording;
       setIsRecording(true);
       setIsPaused(false);
       setRecordingDuration(0);
@@ -219,13 +253,23 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
           'Please enable microphone access in your device settings to record voice notes.',
           [{ text: 'OK' }]
         );
-      } else if (msg.includes('already recording') || msg.includes('Cannot record') || msg.includes('another recording')) {
+      } else if (
+        msg.includes('already recording') ||
+        msg.includes('Cannot record') ||
+        msg.includes('another recording') ||
+        msg.toLowerCase().includes('only one recording') ||
+        msg.includes('prepared at a given time')
+      ) {
         if (__DEV__) console.log('[VoiceRecorder] Stale recording detected, performing deep cleanup and retry...');
         try {
           if (recordingRef.current) {
             await recordingRef.current.stopAndUnloadAsync().catch(() => {});
             recordingRef.current = null;
             setRecording(null);
+          }
+          if (globalRecording) {
+            await globalRecording.stopAndUnloadAsync().catch(() => {});
+            globalRecording = null;
           }
           await Audio.setAudioModeAsync({
             allowsRecordingIOS: false,
@@ -244,6 +288,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
           );
           setRecording(retryRecording);
           recordingRef.current = retryRecording;
+          globalRecording = retryRecording;
           setIsRecording(true);
           setIsPaused(false);
           setRecordingDuration(0);
@@ -325,6 +370,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
       
       setRecording(null);
       recordingRef.current = null;
+      globalRecording = null;
       setIsRecording(false);
       setIsPaused(false);
       
@@ -332,6 +378,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
       if (__DEV__) console.error('[VoiceRecorder] Error stopping recording:', error);
       setRecording(null);
       recordingRef.current = null;
+      globalRecording = null;
       setIsRecording(false);
       setIsPaused(false);
     }

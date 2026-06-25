@@ -2132,6 +2132,7 @@ export default function JobDetailScreen() {
   const [magicLinkRate, setMagicLinkRate] = useState('');
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [jobAssignments, setJobAssignments] = useState<any[]>([]);
+  const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<Set<string>>(new Set());
   const [teamAvailability, setTeamAvailability] = useState<Map<string, any>>(new Map());
   const [isNudging, setIsNudging] = useState<string | null>(null);
@@ -2587,6 +2588,7 @@ export default function JobDetailScreen() {
 
   useEffect(() => {
     if (id) {
+      setAssignmentsLoaded(false);
       loadMaterials();
       loadTeamMembers();
       loadJobAssignments();
@@ -3257,6 +3259,11 @@ export default function JobDetailScreen() {
       setJobAssignments(assignments.filter((a: any) => a.isActive));
     } catch (e) {
       setJobAssignments([]);
+    } finally {
+      // Mark loaded even on failure: the server is the source of truth and
+      // safely rejects non-lead completion, so we must not permanently block a
+      // legitimate legacy single-assignee from completing when the fetch fails.
+      setAssignmentsLoaded(true);
     }
   };
 
@@ -6102,7 +6109,13 @@ export default function JobDetailScreen() {
   // whole job Done. Other assigned workers finish by clocking off their own timer.
   const myAssignment = jobAssignments.find((a: any) => a.userId === user?.id);
   const hasPrimaryAssignment = jobAssignments.some((a: any) => a.isPrimary);
-  const isPrimaryAssignee = myAssignment?.isPrimary === true || (!hasPrimaryAssignment && job.assignedTo === user?.id);
+  // The legacy assignedTo fallback may only grant lead status once assignments
+  // have actually loaded. Before that, jobAssignments is empty and a secondary
+  // worker whose assignedTo matches would be wrongly treated as lead, letting
+  // them queue a "Complete" the server then rejects (NOT_LEAD_WORKER).
+  const isPrimaryAssignee =
+    myAssignment?.isPrimary === true ||
+    (assignmentsLoaded && !hasPrimaryAssignment && job.assignedTo === user?.id);
   const isLeadWorker = isOwnerOrManager || isSoloOwner || isPrimaryAssignee;
 
   let action: { next: string; label: string; icon: keyof typeof Feather.glyphMap; iconSize: number } | null =

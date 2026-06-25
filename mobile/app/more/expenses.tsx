@@ -18,6 +18,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -226,14 +227,14 @@ export default function ExpensesScreen() {
           Alert.alert('Permission Required', 'Camera access is needed to scan receipts.');
           return;
         }
-        result = await ImagePicker.launchCameraAsync({ quality: 0.8, base64: true });
+        result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
           Alert.alert('Permission Required', 'Photo library access is needed to scan receipts.');
           return;
         }
-        result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, base64: true });
+        result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
       }
 
       if (result.canceled || !result.assets?.[0]) return;
@@ -244,7 +245,14 @@ export default function ExpensesScreen() {
       setShowExpenseModal(true);
 
       try {
-        const base64Image = `data:image/jpeg;base64,${asset.base64}`;
+        // Read base64 from the file URI rather than asking the picker to return
+        // it inline (base64:true). On Android the inline payload bloats the
+        // Activity-result Intent and holds the whole image in memory, which can
+        // get the app killed mid-pick and crash with BadParcelableException.
+        const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const base64Image = `data:image/jpeg;base64,${base64}`;
         const scanRes = await api.post<any>('/api/expenses/scan-receipt', { image: base64Image });
 
         if (scanRes.data) {

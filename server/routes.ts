@@ -46278,15 +46278,22 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         .where(and(eq(jobAssignments.userId, userId), eq(jobAssignments.isActive, true)));
 
       const assignedJobIds = assignments.map(a => a.jobId);
-      if (assignedJobIds.length === 0) return res.json([]);
 
-      // Get completed jobs
+      // Get completed jobs. A job counts as "this worker's" if they have a
+      // job_assignments row OR they are the legacy single assignee
+      // (jobs.assignedTo) — older jobs only have the latter, so relying on
+      // job_assignments alone silently drops them from billing.
+      const assignedToCond = or(
+        ...(assignedJobIds.length ? [inArray(jobs.id, assignedJobIds)] : []),
+        eq(jobs.assignedTo, userId)
+      );
       const completedJobs = await db.select().from(jobs)
         .where(and(
-          inArray(jobs.id, assignedJobIds),
           inArray(jobs.userId, ownerIds),
-          or(eq(jobs.status, 'done'), eq(jobs.status, 'invoiced'))
+          or(eq(jobs.status, 'done'), eq(jobs.status, 'invoiced')),
+          assignedToCond!
         ));
+      if (completedJobs.length === 0) return res.json([]);
 
       // Get time entries for these jobs
       const allTimeEntries = await db.select().from(timeEntries)
@@ -46911,14 +46918,19 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const assignments = await db.select().from(jobAssignments)
         .where(and(eq(jobAssignments.userId, userId), eq(jobAssignments.isActive, true)));
       const assignedJobIds = assignments.map(a => a.jobId);
-      if (assignedJobIds.length === 0) return res.json([]);
 
-      // Completed jobs for this business
+      // Completed jobs for this business. Include both job_assignments-based and
+      // legacy single-assignee (jobs.assignedTo) jobs — older jobs only have the
+      // latter, so keying off job_assignments alone drops them from the builder.
+      const assignedToCond = or(
+        ...(assignedJobIds.length ? [inArray(jobs.id, assignedJobIds)] : []),
+        eq(jobs.assignedTo, userId)
+      );
       const completedJobs = await db.select().from(jobs)
         .where(and(
-          inArray(jobs.id, assignedJobIds),
           eq(jobs.userId, businessOwnerId),
-          or(eq(jobs.status, 'done'), eq(jobs.status, 'invoiced'))
+          or(eq(jobs.status, 'done'), eq(jobs.status, 'invoiced')),
+          assignedToCond!
         ));
       if (completedJobs.length === 0) return res.json([]);
 
