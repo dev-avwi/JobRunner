@@ -6187,6 +6187,14 @@ export default function JobDetailScreen() {
   const totalWorkerCount = jobAssignments.length;
   const allWorkersComplete = totalWorkerCount > 1 && completedWorkerCount === totalWorkerCount;
 
+  // When a worker is completing their own part, the completion sheet must only
+  // ever show THEIR own tracked time — showing other workers' parts makes it
+  // look like they're signing off on someone else's work. The owner summary
+  // keeps the full per-worker breakdown.
+  const completionTimeEntries = completionMode === 'worker' && user?.id
+    ? timeEntries.filter((e: any) => e.userId === user.id)
+    : timeEntries;
+
   let action: { next: string; label: string; icon: keyof typeof Feather.glyphMap; iconSize: number } | null =
     (!canCreateInvoices && rawAction?.next === 'invoiced') ? null : (rawAction as any);
   const myPartComplete = myAssignment?.completedAt != null;
@@ -10491,20 +10499,20 @@ export default function JobDetailScreen() {
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <TouchableOpacity 
-              style={[styles.completionButton, styles.completionButtonSecondary, { flex: 1 }]} 
+              style={[styles.completionButton, styles.completionButtonSecondary, { flex: 0.7 }]} 
               onPress={() => setShowCompletionModal(false)}
             >
-              <Text style={[styles.completionButtonText, styles.completionButtonTextSecondary]}>Go Back</Text>
+              <Text style={[styles.completionButtonText, styles.completionButtonTextSecondary]} numberOfLines={1}>Go Back</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.completionButton, styles.completionButtonPrimary, { flex: 1 }]} 
+              style={[styles.completionButton, styles.completionButtonPrimary, { flex: 1.3 }]} 
               onPress={completionMode === 'worker' ? handleCompleteMyPart : handleConfirmComplete}
               disabled={isCompletingJob}
             >
               {isCompletingJob ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={styles.completionButtonText}>{completionMode === 'worker' ? 'Mark My Part Complete' : 'Complete Job'}</Text>
+                <Text style={styles.completionButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{completionMode === 'worker' ? 'Mark My Part Complete' : 'Complete Job'}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -10582,19 +10590,19 @@ export default function JobDetailScreen() {
               {/* Time Tracked Section - per worker breakdown */}
               <View style={styles.completionSection}>
                 <View style={styles.completionSectionHeader}>
-                  <View style={[styles.completionSectionIcon, { backgroundColor: timeEntries.length > 0 ? colors.success + '15' : colors.destructive + '15' }]}>
-                    <Feather name="clock" size={18} color={timeEntries.length > 0 ? colors.success : colors.destructive} />
+                  <View style={[styles.completionSectionIcon, { backgroundColor: completionTimeEntries.length > 0 ? colors.success + '15' : colors.destructive + '15' }]}>
+                    <Feather name="clock" size={18} color={completionTimeEntries.length > 0 ? colors.success : colors.destructive} />
                   </View>
                   <Text style={styles.completionSectionTitle}>Time Tracked</Text>
                   <View style={styles.completionSectionStatus}>
                     <Feather 
-                      name={timeEntries.length > 0 ? 'check-circle' : 'x-circle'} 
+                      name={completionTimeEntries.length > 0 ? 'check-circle' : 'x-circle'} 
                       size={18} 
-                      color={timeEntries.length > 0 ? colors.success : colors.destructive} 
+                      color={completionTimeEntries.length > 0 ? colors.success : colors.destructive} 
                     />
-                    <Text style={[styles.completionStatusText, { color: timeEntries.length > 0 ? colors.success : colors.destructive }]}>
-                      {timeEntries.length > 0 ? (() => {
-                        const totalMs = timeEntries.reduce((sum, entry) => {
+                    <Text style={[styles.completionStatusText, { color: completionTimeEntries.length > 0 ? colors.success : colors.destructive }]}>
+                      {completionTimeEntries.length > 0 ? (() => {
+                        const totalMs = completionTimeEntries.reduce((sum, entry) => {
                           if (!entry.startTime || !entry.endTime) return sum;
                           return sum + (new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime());
                         }, 0);
@@ -10605,8 +10613,8 @@ export default function JobDetailScreen() {
                     </Text>
                   </View>
                 </View>
-                {timeEntries.length > 0 && (() => {
-                  const byWorker = timeEntries.reduce((acc: Record<string, { name: string; totalMs: number; rate: string; entries: number }>, entry) => {
+                {completionTimeEntries.length > 0 && (() => {
+                  const byWorker = completionTimeEntries.reduce((acc: Record<string, { name: string; totalMs: number; rate: string; entries: number }>, entry) => {
                     const key = entry.userId || 'unknown';
                     if (!acc[key]) {
                       acc[key] = { name: entry.userName || 'You', totalMs: 0, rate: entry.hourlyRate || '85.00', entries: 0 };
@@ -10638,8 +10646,10 @@ export default function JobDetailScreen() {
                 })()}
               </View>
 
-              {/* Team Section - who did what (multi-worker jobs) */}
-              {totalWorkerCount > 1 && (
+              {/* Team Section - who did what (multi-worker jobs). Owner summary
+                  only — a worker completing their own part should not see other
+                  workers' progress. */}
+              {completionMode === 'owner' && totalWorkerCount > 1 && (
                 <View style={styles.completionSection}>
                   <View style={styles.completionSectionHeader}>
                     <View style={[styles.completionSectionIcon, { backgroundColor: allWorkersComplete ? colors.success + '15' : colors.warning + '15' }]}>
