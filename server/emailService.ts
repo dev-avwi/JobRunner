@@ -472,6 +472,122 @@ const renderEmailShell = (title: string, innerRows: string, footerNote?: string)
 </body>
 </html>`;
 
+// Subcontractor invoice/quote notification to the business owner. Branded with the
+// subcontractor's OWN business (logo + brand colour) so it reads like a real tax
+// invoice/quote from them, with a CTA into the owner's JobRunner dashboard to review/pay.
+export const createSubcontractorInvoiceEmail = (opts: {
+  invoiceNumber: string;
+  docLabel: string;
+  ownerName?: string | null;
+  subtotal: number;
+  gstAmount: number;
+  totalAmount: number;
+  gstApplied: boolean;
+  dueDate?: Date | string | null;
+  notes?: string | null;
+  items: Array<{ description: string; quantity: number; unitPrice: number; total: number }>;
+  subcontractor: { businessName?: string | null; abn?: string | null; logoUrl?: string | null; brandColor?: string | null };
+  ctaUrl?: string;
+}): string => {
+  const rawBrand = (opts.subcontractor.brandColor || '').trim();
+  const brandColor = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(rawBrand) ? rawBrand : '#2563EB';
+  const esc = (s: string | null | undefined): string =>
+    String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const baseUrl = getBaseUrl();
+  const ctaUrl = opts.ctaUrl || `${baseUrl}/subcontractor-invoices`;
+  // Logo lands in an <img src> — only allow http(s)/data, else fall back to the JobRunner logo.
+  const rawLogo = opts.subcontractor.logoUrl || '';
+  let logoUrl = `${baseUrl}/logo.png`;
+  if (/^https?:\/\//i.test(rawLogo) || /^data:image\//i.test(rawLogo)) {
+    logoUrl = rawLogo;
+  } else if (rawLogo.startsWith('/')) {
+    logoUrl = `${baseUrl}${rawLogo}`;
+  }
+  const subName = esc(opts.subcontractor.businessName || 'A subcontractor');
+  const ownerName = esc(opts.ownerName || 'there');
+  const dueStr = opts.dueDate ? new Date(opts.dueDate).toLocaleDateString('en-AU') : null;
+  const isQuote = opts.docLabel.toLowerCase().includes('quote');
+
+  const totalsHtml = opts.gstApplied ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-size: 14px;">Subtotal</td>
+                <td style="padding: 6px 0; color: #1e293b; font-size: 14px; text-align: right;">$${opts.subtotal.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-size: 14px;">GST (10%)</td>
+                <td style="padding: 6px 0; color: #1e293b; font-size: 14px; text-align: right;">$${opts.gstAmount.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 14px 0 0 0; color: #0f172a; font-size: 17px; font-weight: 700; border-top: 2px solid #e2e8f0;">Total</td>
+                <td style="padding: 14px 0 0 0; color: ${brandColor}; font-size: 17px; font-weight: 700; text-align: right; border-top: 2px solid #e2e8f0;">$${opts.totalAmount.toFixed(2)}</td>
+              </tr>` : `
+              <tr>
+                <td style="padding: 0; color: #0f172a; font-size: 17px; font-weight: 700;">Total</td>
+                <td style="padding: 0; color: ${brandColor}; font-size: 22px; font-weight: 700; text-align: right;">$${opts.totalAmount.toFixed(2)}</td>
+              </tr>`;
+
+  const itemRows = (opts.items || []).map(it => `
+      <tr>
+        <td style="padding: 14px 12px 14px 0; color: #1e293b; font-size: 14px; border-bottom: 1px solid #f1f5f9;">${esc(it.description)}</td>
+        <td style="padding: 14px 12px; color: #64748b; font-size: 14px; text-align: center; border-bottom: 1px solid #f1f5f9;">${Number(it.quantity).toFixed(2)}</td>
+        <td style="padding: 14px 12px; color: #64748b; font-size: 14px; text-align: right; border-bottom: 1px solid #f1f5f9;">$${Number(it.unitPrice).toFixed(2)}</td>
+        <td style="padding: 14px 0 14px 12px; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right; border-bottom: 1px solid #f1f5f9;">$${Number(it.total).toFixed(2)}</td>
+      </tr>`).join('');
+
+  const innerRows = `
+    ${emailHeaderBand({ brandColor, logoUrl, businessName: esc(opts.subcontractor.businessName), abn: esc(opts.subcontractor.abn), docLabel: esc(opts.docLabel), docRef: `No. ${esc(opts.invoiceNumber)}` })}
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <p style="margin: 0; color: #0f172a; font-size: 17px; font-weight: 600;">Hi ${ownerName},</p>
+        <p style="margin: 12px 0 0 0; color: #475569; font-size: 15px; line-height: 1.65;">${subName} has sent you a ${isQuote ? 'quote' : 'tax invoice'} for <strong style="color: #0f172a;">$${opts.totalAmount.toFixed(2)}</strong>${opts.gstApplied ? ' (inc. GST)' : ''}.${dueStr && !isQuote ? ` Payment is due by <strong style="color: #0f172a;">${dueStr}</strong>.` : ''}</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        ${emailCtaButton(isQuote ? 'Review Quote' : `Review &amp; Pay &mdash; $${opts.totalAmount.toFixed(2)}`, ctaUrl, brandColor)}
+        <p style="margin: 14px 0 0 0; color: #64748b; font-size: 13px; text-align: center;">Approve or mark as paid in your JobRunner dashboard</p>
+        <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6;">Or paste this link into your browser:<br><a href="${ctaUrl}" style="color: ${brandColor}; word-break: break-all;">${ctaUrl}</a></p>
+      </td>
+    </tr>
+    ${itemRows ? `
+    <tr>
+      <td class="content" style="padding: 28px 32px 0 32px;">
+        <table role="presentation" class="line-items" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td style="padding: 0 12px 10px 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; border-bottom: 2px solid #e2e8f0;">Description</td>
+            <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: center; border-bottom: 2px solid #e2e8f0;">${isQuote ? 'Qty' : 'Qty / Hrs'}</td>
+            <td style="padding: 0 12px 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0;">${isQuote ? 'Unit' : 'Rate'}</td>
+            <td style="padding: 0 0 10px 12px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0;">Amount</td>
+          </tr>
+          ${itemRows}
+        </table>
+      </td>
+    </tr>` : ''}
+    <tr>
+      <td class="content" style="padding: 20px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr><td><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 260px; margin-left: auto;">
+            ${totalsHtml}
+          </table></td></tr>
+        </table>
+      </td>
+    </tr>
+    ${opts.notes ? `
+    <tr>
+      <td class="content" style="padding: 24px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <tr><td style="padding: 16px 20px;">
+            <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">Notes</p>
+            <p style="margin: 8px 0 0 0; color: #475569; font-size: 14px; line-height: 1.6;">${esc(opts.notes)}</p>
+          </td></tr>
+        </table>
+      </td>
+    </tr>` : ''}
+    <tr><td class="content" style="padding: 28px 32px 8px 32px;">&nbsp;</td></tr>`;
+
+  return renderEmailShell(`${opts.docLabel} ${opts.invoiceNumber}`, innerRows, 'You can review, approve and pay this from your JobRunner dashboard.');
+};
+
 // Email template for quotes
 const createQuoteEmail = (quote: any, client: any, business: any, acceptanceUrl?: string | null) => {
   // Use persisted totals from the database instead of recalculating

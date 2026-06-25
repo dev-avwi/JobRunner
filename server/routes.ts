@@ -46969,6 +46969,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
               name: subName || 'Subcontractor',
               email: subUser?.email || '',
               abn: subBizSettings?.abn || null,
+              logoUrl: subBizSettings?.logoUrl || null,
+              brandColor: subBizSettings?.brandColor || null,
             },
             business: {
               name: bizSettings?.businessName || 'Unknown',
@@ -46979,16 +46981,36 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
             },
           });
 
+          const { createSubcontractorInvoiceEmail } = await import('./emailService');
+          const gstApplied = (invoice as any).gstEnabled !== false;
+          const html = createSubcontractorInvoiceEmail({
+            invoiceNumber,
+            docLabel: (invoice as any).docType === 'quote' ? 'Quote' : 'Tax Invoice',
+            ownerName: bizSettings?.businessName || ownerUser.firstName || null,
+            subtotal,
+            gstAmount,
+            totalAmount,
+            gstApplied,
+            dueDate: invoice.dueDate || null,
+            notes: notes || null,
+            items: resolvedItems.map(ri => ({
+              description: ri.description,
+              quantity: parseFloat(ri.hours || '0'),
+              unitPrice: parseFloat(ri.rate || '0'),
+              total: parseFloat(ri.amount || '0'),
+            })),
+            subcontractor: {
+              businessName: subBizSettings?.businessName || subName || 'Subcontractor',
+              abn: subBizSettings?.abn || null,
+              logoUrl: subBizSettings?.logoUrl || null,
+              brandColor: subBizSettings?.brandColor || null,
+            },
+          });
+
           const emailData: Record<string, unknown> = {
             to: ownerUser.email,
             subject: `New Invoice from ${subName} — $${totalAmount.toFixed(2)}`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2>New Subcontractor Invoice</h2>
-                <p>${subName} has submitted invoice <strong>${invoiceNumber}</strong> for <strong>$${totalAmount.toFixed(2)}</strong> (inc. GST).</p>
-                <p>The invoice PDF is attached. Log in to JobRunner to approve or mark as paid.</p>
-              </div>
-            `,
+            html,
             attachments: [{
               content: pdfBuffer.toString('base64'),
               filename: `${invoiceNumber}.pdf`,

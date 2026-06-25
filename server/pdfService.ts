@@ -4654,6 +4654,8 @@ interface SubcontractorInvoicePdfData {
     name: string;
     email: string;
     abn: string | null;
+    logoUrl?: string | null;
+    brandColor?: string | null;
   };
   business: {
     name: string;
@@ -4671,6 +4673,10 @@ function escapeHtml(str: string | null | undefined): string {
 
 export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoicePdfData): Promise<Buffer> {
   const { invoice, items, subcontractor, business } = data;
+
+  const rawBrand = (subcontractor.brandColor || '').trim();
+  const brandColor = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(rawBrand) ? rawBrand : '#1e3a5f';
+  const logoUrl = await resolveLogoUrl(subcontractor.logoUrl);
 
   const subtotal = parseFloat(invoice.subtotalAmount);
   const gst = parseFloat(invoice.gstAmount);
@@ -4717,12 +4723,18 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
           justify-content: space-between;
           margin-bottom: 40px;
           padding-bottom: 20px;
-          border-bottom: 3px solid #1e3a5f;
+          border-bottom: 3px solid ${brandColor};
+        }
+        .header-left .logo {
+          max-height: 56px;
+          max-width: 200px;
+          display: block;
+          margin-bottom: 12px;
         }
         .header-left h1 {
           margin: 0;
           font-size: 22px;
-          color: #1e3a5f;
+          color: ${brandColor};
           font-weight: 700;
         }
         .header-left p {
@@ -4736,7 +4748,7 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
         .header-right .invoice-label {
           font-size: 28px;
           font-weight: 700;
-          color: #1e3a5f;
+          color: ${brandColor};
           margin: 0;
         }
         .header-right .invoice-number {
@@ -4795,7 +4807,7 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
           margin-bottom: 24px;
         }
         th {
-          background: #1e3a5f;
+          background: ${brandColor};
           color: white;
           padding: 10px 12px;
           text-align: left;
@@ -4823,12 +4835,12 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
           font-size: 12px;
         }
         .totals-row.total {
-          border-top: 2px solid #1e3a5f;
+          border-top: 2px solid ${brandColor};
           margin-top: 8px;
           padding-top: 10px;
           font-size: 16px;
           font-weight: 700;
-          color: #1e3a5f;
+          color: ${brandColor};
         }
         .notes {
           padding: 12px 16px;
@@ -4859,6 +4871,7 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
     <body>
       <div class="header">
         <div class="header-left">
+          ${logoUrl ? `<img class="logo" src="${logoUrl}" alt="${escapeHtml(subcontractor.name)}" />` : ''}
           <h1>${escapeHtml(ensureDisplayName(subcontractor.name, 'Subcontractor'))}</h1>
           ${subcontractor.abn ? `<p>ABN: ${escapeHtml(subcontractor.abn)}</p>` : ''}
           ${subcontractor.email ? `<p>${escapeHtml(subcontractor.email)}</p>` : ''}
