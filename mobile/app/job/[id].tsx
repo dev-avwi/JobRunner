@@ -79,6 +79,7 @@ import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 
 interface Job {
   id: string;
+  userId?: string;
   title: string;
   description?: string;
   address?: string;
@@ -2157,6 +2158,7 @@ export default function JobDetailScreen() {
   }>>([]);
   
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completionMode, setCompletionMode] = useState<'owner' | 'worker'>('owner');
   const [showNextJobModal, setShowNextJobModal] = useState(false);
   const [nextJob, setNextJob] = useState<any>(null);
   const [nextJobDriveInfo, setNextJobDriveInfo] = useState<{ distanceKm: number; driveMinutes: number } | null>(null);
@@ -5034,41 +5036,38 @@ export default function JobDetailScreen() {
 
   const handleCompleteMyPart = async () => {
     if (!job) return;
-    const ok = await confirm({
-      title: 'Mark My Part Complete',
-      message: isTimerForThisJob
-        ? "This will stop your timer and mark your part of this job done. The job stays open until the lead finishes it."
-        : "This marks your part of this job done. The job stays open until the lead finishes it.",
-      confirmText: 'Mark Complete',
-    });
-    if (!ok) return;
+    setIsCompletingJob(true);
+    try {
+      // Clock off first via the store so the Live Activity / local timer end cleanly.
+      if (isTimerForThisJob) {
+        const stopped = await stopTimer();
+        if (!stopped) {
+          showToast({ type: 'error', message: 'Error', description: 'Failed to stop your timer. Please try again.' });
+          return;
+        }
+      }
 
-    // Clock off first via the store so the Live Activity / local timer end cleanly.
-    if (isTimerForThisJob) {
-      const stopped = await stopTimer();
-      if (!stopped) {
-        showToast({ type: 'error', message: 'Error', description: 'Failed to stop your timer. Please try again.' });
+      const res = await api.post(`/api/jobs/${job.id}/complete-my-part`, {});
+      if (res.error) {
+        showToast({ type: 'error', message: 'Error', description: res.error || 'Failed to mark your part complete.' });
         return;
       }
-    }
 
-    const res = await api.post(`/api/jobs/${job.id}/complete-my-part`, {});
-    if (res.error) {
-      showToast({ type: 'error', message: 'Error', description: res.error || 'Failed to mark your part complete.' });
-      return;
-    }
+      await loadTimeEntries();
+      await loadTeamTimers();
+      await loadJobAssignments();
+      setShowCompletionModal(false);
 
-    await loadTimeEntries();
-    await loadTeamTimers();
-    await loadJobAssignments();
-
-    const data: any = res.data || {};
-    if (data.allComplete) {
-      showToast({ type: 'success', message: 'Your part is done', description: 'All workers have finished. The lead can now finish the job.' });
-    } else {
-      const done = data.completedCount ?? 0;
-      const total = data.totalCount ?? 0;
-      showToast({ type: 'success', message: 'Your part is done', description: total ? `${done}/${total} workers complete.` : 'Marked complete.' });
+      const data: any = res.data || {};
+      if (data.allComplete) {
+        showToast({ type: 'success', message: 'Your part is done', description: 'All workers have finished. The owner can now finish the job.' });
+      } else {
+        const done = data.completedCount ?? 0;
+        const total = data.totalCount ?? 0;
+        showToast({ type: 'success', message: 'Your part is done', description: total ? `${done}/${total} workers complete.` : 'Marked complete.' });
+      }
+    } finally {
+      setIsCompletingJob(false);
     }
   };
 
@@ -5127,6 +5126,7 @@ export default function JobDetailScreen() {
       api.get<SiteAttendance>(`/api/jobs/${job.id}/site-attendance`).then(res => {
         if (res.data && !res.error) setSiteAttendance(res.data);
       }).catch(() => {});
+      setCompletionMode('owner');
       setShowCompletionModal(true);
       return;
     }
@@ -6162,18 +6162,25 @@ export default function JobDetailScreen() {
   const rawAction = STATUS_ACTIONS[job.status];
   const canCreateInvoices = isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_invoices'));
 
-  // Lead-worker gate: only the primary assignee (or owner/manager) may mark the
-  // whole job Done. Other assigned workers finish by clocking off their own timer.
+  // Job-completion gate. Only the business owner / manager of THIS job gets the
+  // overall "Complete Job" flow. Every assigned worker — including the primary
+  // (lead) assignee and a standalone subcontractor assigned to someone else's
+  // job — marks their OWN part instead. The owner closes the job once everyone
+  // is done.
   const myAssignment = jobAssignments.find((a: any) => a.userId === user?.id);
-  const hasPrimaryAssignment = jobAssignments.some((a: any) => a.isPrimary);
-  // The legacy assignedTo fallback may only grant lead status once assignments
-  // have actually loaded. Before that, jobAssignments is empty and a secondary
-  // worker whose assignedTo matches would be wrongly treated as lead, letting
-  // them queue a "Complete" the server then rejects (NOT_LEAD_WORKER).
-  const isPrimaryAssignee =
-    myAssignment?.isPrimary === true ||
-    (assignmentsLoaded && !hasPrimaryAssignment && job.assignedTo === user?.id);
-  const isLeadWorker = isOwnerOrManager || isSoloOwner || isPrimaryAssignee;
+  const hasMyActiveAssignment = !!myAssignment && myAssignment.isActive !== false;
+  // True owner of this job (the business that owns the job record). A standalone
+  // subcontractor whose own global role is "owner" is NOT the owner of a job that
+  // belongs to a different business, so we key off the job's userId when present.
+  const ownsThisJob = !!user && !!job.userId && job.userId === user.id;
+  // The true job owner always gets the manager flow immediately. The role-based
+  // fallback (owner/manager with no assignment of their own) is gated on
+  // assignmentsLoaded so an owner-role standalone subcontractor assigned to this
+  // job isn't briefly shown the owner "Complete Job" flow before their own
+  // assignment row has loaded.
+  const isJobManager =
+    ownsThisJob ||
+    ((isOwnerOrManager || isSoloOwner) && assignmentsLoaded && !hasMyActiveAssignment);
 
   // Per-worker completion progress (X/Y) for the lead/owner view.
   const completedWorkerCount = jobAssignments.filter((a: any) => a.completedAt).length;
@@ -6183,12 +6190,12 @@ export default function JobDetailScreen() {
   let action: { next: string; label: string; icon: keyof typeof Feather.glyphMap; iconSize: number } | null =
     (!canCreateInvoices && rawAction?.next === 'invoiced') ? null : (rawAction as any);
   const myPartComplete = myAssignment?.completedAt != null;
-  if (action && action.next === 'done' && !isLeadWorker) {
-    // Non-lead assigned workers finish their OWN part: this marks their
-    // assignment complete AND clocks them off. The lead/owner closes the job.
-    if (myAssignment && !myPartComplete) {
+  if (action && action.next === 'done' && !isJobManager) {
+    // Assigned workers (incl. the lead) finish their OWN part: this marks their
+    // assignment complete AND clocks them off. The owner closes the job.
+    if (hasMyActiveAssignment && !myPartComplete) {
       action = { next: 'complete_my_part', label: 'Mark My Part Complete', icon: 'check-circle', iconSize: 20 };
-    } else if (myAssignment && myPartComplete) {
+    } else if (hasMyActiveAssignment && myPartComplete) {
       // Already done their part — nothing left for them to do on the CTA.
       action = null;
     } else {
@@ -6201,7 +6208,14 @@ export default function JobDetailScreen() {
 
   const handleMainAction = () => {
     if (action && action.next === 'complete_my_part') {
-      handleCompleteMyPart();
+      // Open the same rich completion modal the owner sees, in worker mode.
+      setCompletionMode('worker');
+      if (job) {
+        api.get<SiteAttendance>(`/api/jobs/${job.id}/site-attendance`).then(res => {
+          if (res.data && !res.error) setSiteAttendance(res.data);
+        }).catch(() => {});
+      }
+      setShowCompletionModal(true);
     } else if (action && action.next === 'clock_off') {
       handleStopTimer();
     } else {
@@ -6282,7 +6296,7 @@ export default function JobDetailScreen() {
 
       {/* Main Action Button - Hero zone, first thing after status */}
       <View style={styles.actionButtonContainer}>
-        {allWorkersComplete && isLeadWorker && job.status !== 'done' && job.status !== 'invoiced' && (
+        {allWorkersComplete && isJobManager && job.status !== 'done' && job.status !== 'invoiced' && (
           <View style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -6783,7 +6797,7 @@ export default function JobDetailScreen() {
         onSchedule={handleStatusChange}
         onStartJob={handleStatusChange}
         onCompleteJob={handleStatusChange}
-        canCompleteJob={isLeadWorker}
+        canCompleteJob={isJobManager}
         onSendInvoice={async () => {
           if (invoice?.id && client?.email) {
             try {
@@ -10471,7 +10485,7 @@ export default function JobDetailScreen() {
         <AppBottomSheet
         visible={showCompletionModal}
         onDismiss={() => setShowCompletionModal(false)}
-        title="Complete Job"
+        title={completionMode === 'worker' ? 'Mark My Part Complete' : 'Complete Job'}
         showCloseButton
         snapPoints={['88%']}
         footer={(
@@ -10484,13 +10498,13 @@ export default function JobDetailScreen() {
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.completionButton, styles.completionButtonPrimary, { flex: 1 }]} 
-              onPress={handleConfirmComplete}
+              onPress={completionMode === 'worker' ? handleCompleteMyPart : handleConfirmComplete}
               disabled={isCompletingJob}
             >
               {isCompletingJob ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={styles.completionButtonText}>Complete Job</Text>
+                <Text style={styles.completionButtonText}>{completionMode === 'worker' ? 'Mark My Part Complete' : 'Complete Job'}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -10623,6 +10637,54 @@ export default function JobDetailScreen() {
                   );
                 })()}
               </View>
+
+              {/* Team Section - who did what (multi-worker jobs) */}
+              {totalWorkerCount > 1 && (
+                <View style={styles.completionSection}>
+                  <View style={styles.completionSectionHeader}>
+                    <View style={[styles.completionSectionIcon, { backgroundColor: allWorkersComplete ? colors.success + '15' : colors.warning + '15' }]}>
+                      <Feather name="users" size={18} color={allWorkersComplete ? colors.success : colors.warning} />
+                    </View>
+                    <Text style={styles.completionSectionTitle}>Team</Text>
+                    <View style={styles.completionSectionStatus}>
+                      <Feather
+                        name={allWorkersComplete ? 'check-circle' : 'clock'}
+                        size={18}
+                        color={allWorkersComplete ? colors.success : colors.warning}
+                      />
+                      <Text style={[styles.completionStatusText, { color: allWorkersComplete ? colors.success : colors.warning }]}>
+                        {completedWorkerCount}/{totalWorkerCount} done
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ marginTop: spacing.xs, gap: spacing.xs }}>
+                    {jobAssignments.map((a: any) => {
+                      const member = teamMembers.find(m =>
+                        m.userId === a.userId || m.memberId === a.userId || m.id === a.userId
+                      );
+                      const name = a.workerDisplayNameSnapshot || member?.name || 'Worker';
+                      const done = !!a.completedAt;
+                      const ms = timeEntries
+                        .filter(e => e.userId === a.userId && e.startTime && e.endTime && !e.isBreak)
+                        .reduce((s, e) => s + (new Date(e.endTime!).getTime() - new Date(e.startTime).getTime()), 0);
+                      const hrs = Math.floor(ms / (1000 * 60 * 60));
+                      const mins = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+                      const timeLabel = ms > 0 ? (hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`) : null;
+                      return (
+                        <View key={a.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: 36 }}>
+                          <Feather name={done ? 'check-circle' : 'circle'} size={14} color={done ? colors.success : colors.mutedForeground} />
+                          <Text style={{ flex: 1, fontSize: 13, color: colors.foreground }} numberOfLines={1} ellipsizeMode="tail">
+                            {name}{a.isPrimary ? ' · Lead' : ''}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: done ? colors.success : colors.mutedForeground }} numberOfLines={1}>
+                            {done ? 'Part done' : 'Pending'}{timeLabel ? ` · ${timeLabel}` : ''}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
 
               {/* Signatures Section */}
               <View style={styles.completionSection}>

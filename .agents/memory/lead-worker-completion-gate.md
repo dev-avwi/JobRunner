@@ -18,6 +18,26 @@ This is correct behaviour, not a bug.
   single-assignee; the server still safely rejects bad completions). Reset it to
   `false` when the job `id` changes.
 
+**Mobile completion-CTA classification (job/[id].tsx) — owner vs worker:**
+The mobile UX no longer treats the lead/primary assignee as a job-closer. Only
+the real business OWNER closes the whole job; EVERY assigned worker — including
+the lead AND a standalone subcontractor (whose own global role may be "owner")
+assigned to someone else's job — gets the "Mark My Part Complete" worker flow.
+- `ownsThisJob = user && job.userId === user.id` is the highest-priority,
+  immediate manager signal (server scopes the job GET to the owner's id, so
+  `job.userId` is the owner's id; it equals `user.id` ONLY for the true owner).
+- Role fallback `(isOwnerOrManager || isSoloOwner) && assignmentsLoaded &&
+  !hasMyActiveAssignment` MUST be gated on `assignmentsLoaded`, else an
+  owner-role standalone sub is briefly shown the owner "Complete Job" flow before
+  their assignment row loads (same race class as the legacy lead fallback).
+- Don't gate `ownsThisJob` on assignmentsLoaded — that regresses owner UX
+  (owner would wait for assignments to load before seeing Complete Job).
+- Worker "Mark My Part Complete" opens the SAME rich completion modal as the
+  owner (a `completionMode: 'owner'|'worker'` flag switches title + footer
+  button + handler); the modal is the confirmation, so handleCompleteMyPart has
+  NO separate confirm() dialog. Owner modal adds a multi-worker "Team" section
+  (per-assignment name, lead tag, done/pending, non-break time).
+
 **Offline sync (offline-storage.ts syncItem):** a queued job update rejected
 with `code: 'NOT_LEAD_WORKER'` (body carried in `response.data`) is permanent —
 retrying just spams `console.error` and re-fails. Treat it as a drop: scope it
