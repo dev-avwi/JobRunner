@@ -27,7 +27,11 @@ export interface NavItem {
   // Additive unlock: a team member whose role grants this permission sees the
   // item even if their role is not in `allowedRoles` (and bypasses the
   // role-based hide flags). Subscription/plan gates still apply.
-  requiredPermission?: string;
+  // Accepts a single permission string or a list — the item unlocks if the
+  // user holds ANY of them. A list is used where the same feature is stored in
+  // more than one permission vocabulary (e.g. reports: granular `view_reports`
+  // from the role editor vs coarse `read_reports` from the Admin/Manager presets).
+  requiredPermission?: string | string[];
   showInBottomNav?: boolean;
   showInMore?: boolean;
   showBadge?: boolean;
@@ -234,6 +238,7 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "work",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: ['view_reports', 'read_reports'],
   },
   {
     title: "Templates",
@@ -246,6 +251,7 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "work",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: 'manage_templates',
   },
   {
     title: "Inventory & Equipment",
@@ -258,6 +264,7 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "work",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: 'manage_catalog',
   },
   {
     title: "Files",
@@ -522,7 +529,11 @@ function userHasItemPermission(item: NavItem, options: FilterOptions): boolean {
   if (!item.requiredPermission) return false;
   const perms = options.permissions;
   if (!Array.isArray(perms)) return false;
-  return perms.includes('*') || perms.includes(item.requiredPermission);
+  if (perms.includes('*')) return true;
+  const required = Array.isArray(item.requiredPermission)
+    ? item.requiredPermission
+    : [item.requiredPermission];
+  return required.some((p) => perms.includes(p));
 }
 
 export function filterNavItems(items: NavItem[], options: FilterOptions): NavItem[] {
