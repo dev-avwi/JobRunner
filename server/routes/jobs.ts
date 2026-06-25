@@ -1145,11 +1145,30 @@ import { logSystemEvent } from "../systemEventService";
       const userContext = await getUserContext(req.userId);
       const includeArchived = req.query.archived === 'true';
       let jobs = await storage.getJobs(userContext.effectiveUserId, includeArchived);
+
+      // Cross-business subcontractor: pull in jobs this user is assigned to that
+      // live in ANOTHER business. getJobs() is scoped to the active workspace, so
+      // a job owned by a different business never appears even though the user is
+      // on its assigned team. getAssignedJobIdsForUser spans all businesses, so
+      // fetch any assigned ids missing from the workspace set via the unscoped
+      // lookup and merge them in (respecting the archived/active toggle).
+      const assignedIds = await getWorkerAssignedJobIds(userContext);
+      if (assignedIds.size > 0) {
+        const presentIds = new Set(jobs.map(j => j.id));
+        const missingIds = [...assignedIds].filter(id => !presentIds.has(id));
+        if (missingIds.length > 0) {
+          const extraJobs = (await Promise.all(
+            missingIds.map(id => storage.getJobPublic(id).catch(() => undefined))
+          )).filter((j): j is NonNullable<typeof j> =>
+            !!j && (includeArchived ? !!j.archivedAt : !j.archivedAt)
+          );
+          if (extraJobs.length > 0) jobs = [...jobs, ...extraJobs];
+        }
+      }
       
       // Staff tradies and subcontractors (team members without VIEW_ALL permission) only see their assigned jobs
       const hasViewAll = userContext.permissions.includes('view_all') || userContext.isOwner;
       if (!hasViewAll && userContext.teamMemberId) {
-        const assignedIds = await getWorkerAssignedJobIds(userContext);
         jobs = jobs.filter(job => 
           job.assignedTo === userContext.teamMemberId || 
           job.assignedTo === userContext.userId ||
