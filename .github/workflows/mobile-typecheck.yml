@@ -11,6 +11,9 @@ on:
       - 'mobile/**'
       - '.github/workflows/mobile-typecheck.yml'
 
+permissions:
+  contents: read
+
 jobs:
   typecheck:
     name: tsc --noEmit (baseline-gated)
