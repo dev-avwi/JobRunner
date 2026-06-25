@@ -100,6 +100,7 @@ const RebatesPage = lazyWithReload(() => import("@/pages/Rebates"));
 const Leads = lazyWithReload(() => import("@/pages/Leads"));
 const AIVisualizationPage = lazyWithReload(() => import("@/pages/AIVisualization"));
 const PayrollReports = lazyWithReload(() => import("@/pages/PayrollReports"));
+const SubcontractorInvoices = lazyWithReload(() => import("@/pages/SubcontractorInvoices"));
 const ClientPortal = lazyWithReload(() => import("@/pages/ClientPortal"));
 const ClientPortalHub = lazyWithReload(() => import("@/pages/ClientPortalHub"));
 const JobPortal = lazyWithReload(() => import("@/pages/JobPortal"));
@@ -848,6 +849,12 @@ function Router({
       <Route path="/reports/payroll" component={() => (
         <FeatureGate requiredTier="pro" featureName="Payroll Reports" description="Track team hours and payroll. Available on paid plans.">
           <PayrollReports />
+        </FeatureGate>
+      )} />
+
+      <Route path="/subcontractor-invoices" component={() => (
+        <FeatureGate requiredTier="pro" featureName="Subcontractor Invoices" description="Review, approve, pay, and push subcontractor invoices. Available on paid plans.">
+          <SubcontractorInvoices />
         </FeatureGate>
       )} />
 

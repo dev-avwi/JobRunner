@@ -8,13 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
 import {
   DollarSign, Clock, Users, HardHat, Download, FileText, BarChart3,
   ChevronDown, ChevronRight, TrendingUp, TrendingDown, AlertTriangle,
-  CheckCircle2, XCircle, Briefcase, Award, Flag, MessageSquare
+  CheckCircle2, XCircle, Briefcase, Award, Flag, MessageSquare, Loader2, Wallet
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import WorkerPerformanceSection from "@/components/WorkerPerformanceCard";
@@ -98,6 +103,12 @@ export default function PayrollReports() {
   const [expandedBuckets, setExpandedBuckets] = useState<Set<string>>(new Set());
   const [expandedDisputes, setExpandedDisputes] = useState<Set<string>>(new Set());
   const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({});
+  const [payWorker, setPayWorker] = useState<any | null>(null);
+  const [payMethod, setPayMethod] = useState('bank_transfer');
+  const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [payReference, setPayReference] = useState('');
+  const [payNotes, setPayNotes] = useState('');
+  const [payslipBusyId, setPayslipBusyId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const payrollDates = useMemo(() => {
@@ -215,6 +226,60 @@ export default function PayrollReports() {
       toast({ title: 'Error', description: 'Failed to resolve dispute.', variant: 'destructive' });
     },
   });
+
+  const payMutation = useMutation({
+    mutationFn: async () => {
+      if (!payWorker) return;
+      const res = await apiRequest('POST', '/api/payroll/pay', {
+        workerUserId: payWorker.memberId,
+        periodStart: payrollDates.start.toISOString(),
+        periodEnd: payrollDates.end.toISOString(),
+        method: payMethod,
+        paidAt: payDate ? new Date(payDate).toISOString() : new Date().toISOString(),
+        reference: payReference.trim() || undefined,
+        notes: payNotes.trim() || undefined,
+        sendPayslip: true,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/payroll/summary'] });
+      toast({ title: 'Payment recorded', description: data?.payslipSent ? 'Payslip emailed to the worker.' : 'Payroll payment recorded.' });
+      setPayWorker(null);
+    },
+    onError: (e: any) => toast({ title: 'Payment failed', description: String(e?.message || e).replace(/^\d+:\s*/, ''), variant: 'destructive' }),
+  });
+
+  const openPay = (w: any) => {
+    setPayWorker(w);
+    setPayMethod('bank_transfer');
+    setPayDate(new Date().toISOString().slice(0, 10));
+    setPayReference('');
+    setPayNotes('');
+  };
+
+  const downloadPayslip = async (paymentId: string) => {
+    setPayslipBusyId(paymentId);
+    try {
+      const token = getSessionToken();
+      const res = await fetch(`/api/payroll/payslip/${paymentId}`, {
+        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Payslip-${paymentId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: 'Download failed', description: 'Could not download the payslip.', variant: 'destructive' });
+    } finally {
+      setPayslipBusyId(null);
+    }
+  };
 
   const pendingDisputeCount = useMemo(() => {
     if (!disputedEntries) return 0;
@@ -389,18 +454,18 @@ export default function PayrollReports() {
           </div>
 
           {payrollLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-24" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground font-medium">Total Hours</span>
                   </div>
-                  <p className="text-2xl font-bold">{(payrollData?.summary?.totalHours || 0).toFixed(1)}h</p>
+                  <p className="text-2xl font-bold">{(payrollData?.totals?.totalHours || 0).toFixed(1)}h</p>
                 </CardContent>
               </Card>
               <Card>
@@ -409,7 +474,27 @@ export default function PayrollReports() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground font-medium">Total Pay</span>
                   </div>
-                  <p className="text-2xl font-bold">{fmtAud(payrollData?.summary?.totalGrossPay || 0)}</p>
+                  <p className="text-2xl font-bold">{fmtAud(payrollData?.totals?.totalPay || 0)}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <span className="text-xs text-muted-foreground font-medium">Paid</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{fmtAud(payrollData?.totals?.totalPaid || 0)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{payrollData?.totals?.paidCount || 0} worker{(payrollData?.totals?.paidCount || 0) === 1 ? '' : 's'}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wallet className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs text-muted-foreground font-medium">Outstanding</span>
+                  </div>
+                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{fmtAud(payrollData?.totals?.totalOutstanding || 0)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{payrollData?.totals?.outstandingCount || 0} worker{(payrollData?.totals?.outstandingCount || 0) === 1 ? '' : 's'}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -455,6 +540,7 @@ export default function PayrollReports() {
                         <th className="text-right font-medium text-muted-foreground px-3 py-2">Gross Pay</th>
                         <th className="text-right font-medium text-muted-foreground px-3 py-2 hidden lg:table-cell">Billable</th>
                         <th className="text-right font-medium text-muted-foreground px-4 py-2 hidden md:table-cell">Status</th>
+                        <th className="text-right font-medium text-muted-foreground px-3 py-2">Pay run</th>
                         <th className="w-8 px-2"></th>
                       </tr>
                     </thead>
@@ -524,6 +610,42 @@ export default function PayrollReports() {
                                   )}
                                 </div>
                               </td>
+                              <td className="px-3 py-2.5 text-right">
+                                <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                  {w.paid ? (
+                                    <>
+                                      <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400 border-green-300 dark:border-green-700">Paid</Badge>
+                                      {w.payrollPaymentId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => downloadPayslip(w.payrollPaymentId)}
+                                          disabled={payslipBusyId === w.payrollPaymentId}
+                                          data-testid={`button-payslip-${w.memberId}`}
+                                        >
+                                          {payslipBusyId === w.payrollPaymentId ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                          ) : (
+                                            <Download className="h-3.5 w-3.5" />
+                                          )}
+                                          <span className="ml-1 hidden lg:inline">Payslip</span>
+                                        </Button>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openPay(w)}
+                                      disabled={!w.memberId || (w.grossPay || 0) <= 0}
+                                      data-testid={`button-pay-${w.memberId}`}
+                                    >
+                                      <Wallet className="h-3.5 w-3.5" />
+                                      <span className="ml-1 hidden lg:inline">Mark paid</span>
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
                               <td className="px-2 py-2.5">
                                 <Button
                                   variant="ghost"
@@ -542,7 +664,7 @@ export default function PayrollReports() {
                         })}
                       {(!payrollData?.workers || payrollData.workers.length === 0) && (
                         <tr>
-                          <td colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <td colSpan={9} className="text-center py-8 text-muted-foreground">
                             <Users className="h-8 w-8 mx-auto mb-2 opacity-25" />
                             <p className="text-sm">No worker data for this period</p>
                           </td>
@@ -1113,6 +1235,52 @@ export default function PayrollReports() {
           <WorkerPerformanceSection />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!payWorker} onOpenChange={(o) => { if (!o) setPayWorker(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Record payment</DialogTitle>
+            <DialogDescription>
+              {payWorker ? `${`${payWorker.firstName || ''} ${payWorker.lastName || ''}`.trim() || 'Worker'} · ${fmtAud(payWorker.grossPay || 0)} for this period` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Payment method</Label>
+              <Select value={payMethod} onValueChange={setPayMethod}>
+                <SelectTrigger data-testid="select-pay-method"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">Bank transfer</SelectItem>
+                  <SelectItem value="payid">PayID</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pay-date">Payment date</Label>
+              <Input id="pay-date" type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} data-testid="input-pay-date" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pay-reference">Reference (optional)</Label>
+              <Input id="pay-reference" value={payReference} onChange={(e) => setPayReference(e.target.value)} placeholder="e.g. transfer ref" data-testid="input-pay-reference" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pay-notes">Notes (optional)</Label>
+              <Textarea id="pay-notes" value={payNotes} onChange={(e) => setPayNotes(e.target.value)} rows={2} data-testid="input-pay-notes" />
+            </div>
+            <p className="text-xs text-muted-foreground">A payslip will be emailed to the worker.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayWorker(null)} disabled={payMutation.isPending}>Cancel</Button>
+            <Button onClick={() => payMutation.mutate()} disabled={payMutation.isPending} data-testid="button-confirm-pay">
+              {payMutation.isPending ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin" />Recording...</>) : 'Record payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
