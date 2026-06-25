@@ -5,6 +5,7 @@ import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../lib/theme';
 import { useAuthStore } from '../lib/store';
+import { useUserRole } from '../hooks/use-user-role';
 import { 
   getFilteredSidebarMainItems, 
   getFilteredSidebarSettingsItems, 
@@ -59,6 +60,7 @@ export function SidebarNav() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { user, businessSettings, isInitialized, roleInfo } = useAuthStore();
+  const { permissions } = useUserRole();
   const themedStyles = useMemo(() => createStyles(colors), [colors]);
 
   const handlePress = (item: SidebarNavItem) => {
@@ -123,7 +125,8 @@ export function SidebarNav() {
     userRole: userRole,
     hasProSubscription,
     hasTeamSubscription,
-  }), [userRole, isOwner, isManager, isStaffTradie, businessSettings, hasProSubscription, hasTeamSubscription, isStandaloneSub]);
+    permissions,
+  }), [userRole, isOwner, isManager, isStaffTradie, businessSettings, hasProSubscription, hasTeamSubscription, isStandaloneSub, permissions]);
 
   // User is ready ONLY once the authoritative role is known. Gating on role
   // (not just user.id) prevents the full owner menu from flashing before

@@ -579,7 +579,10 @@ export interface FilterOptions {
 
 // True when the item declares a `requiredPermission` the user has been granted
 // (or holds the `*` wildcard). Used to additively bypass role-based gates.
-function userHasItemPermission(item: NavItem, options: FilterOptions): boolean {
+function userHasItemPermission(
+  item: { requiredPermission?: string | string[] },
+  options: FilterOptions,
+): boolean {
   if (!item.requiredPermission) return false;
   const perms = options.permissions;
   if (!Array.isArray(perms)) return false;
@@ -765,6 +768,7 @@ export interface SidebarNavItem {
   requiresProPlan?: boolean;
   requiresTeam?: boolean;
   allowedRoles?: UserRole[];
+  requiredPermission?: string | string[];
 }
 
 export const sidebarMainItems: SidebarNavItem[] = [
@@ -787,6 +791,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    requiredPermission: ['view_action_center'],
   },
   { 
     id: 'work',
@@ -806,6 +811,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    requiredPermission: ['edit_clients', 'create_clients', 'write_clients'],
   },
   { 
     id: 'documents',
@@ -816,6 +822,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    requiredPermission: ['view_quotes', 'view_invoices', 'read_quotes', 'read_invoices'],
   },
   { 
     id: 'payment-hub',
@@ -826,6 +833,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    requiredPermission: ['collect_payments', 'manage_payments'],
   },
   { 
     id: 'expenses',
@@ -836,6 +844,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: ['read_expenses', 'write_expenses'],
   },
   { 
     id: 'calendar',
@@ -866,6 +875,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     requiresTeam: true,
     requiresOwnerOrManager: true,
     allowedRoles: ['owner', 'manager'],
+    requiredPermission: ['view_dispatch', 'assign_jobs', 'manage_team'],
   },
   { 
     id: 'chat',
@@ -888,6 +898,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     requiresOwnerOrManager: true,
     requiresProPlan: true,
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: ['view_reports', 'read_reports'],
   },
   { 
     id: 'autopilot',
@@ -901,6 +912,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     requiresOwnerOrManager: true,
     requiresProPlan: true,
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: ['manage_settings'],
   },
   { 
     id: 'reports',
@@ -914,6 +926,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     requiresOwnerOrManager: true,
     requiresProPlan: true,
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: ['view_reports', 'read_reports'],
   },
   { 
     id: 'collect-payment',
@@ -924,6 +937,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    requiredPermission: ['collect_payments', 'manage_payments'],
   },
   { 
     id: 'templates',
@@ -934,6 +948,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: 'manage_templates',
   },
   { 
     id: 'inventory',
@@ -944,6 +959,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    requiredPermission: 'manage_catalog',
   },
   { 
     id: 'files',
@@ -964,6 +980,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    requiredPermission: ['view_communications', 'read_communications'],
   },
   { 
     id: 'whs-hub',
@@ -983,6 +1000,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    requiredPermission: ['view_leads', 'read_leads'],
   },
 ];
 
@@ -997,6 +1015,7 @@ export const sidebarSettingsItems: SidebarNavItem[] = [
     hideForStaff: true,
     requiresOwnerOrManager: true,
     allowedRoles: ['owner', 'solo_owner'],
+    requiredPermission: ['manage_settings'],
   },
   { 
     id: 'settings',
@@ -1014,17 +1033,24 @@ export function filterSidebarItems(items: SidebarNavItem[], options: FilterOptio
   const isStaffTradie = (options.isTradie || options.isSubcontractor) && !isOwnerOrManager;
   
   return items.filter(item => {
-    if (item.allowedRoles && options.userRole) {
+    // Additive permission unlock: a custom role granted the item's
+    // `requiredPermission` bypasses the role-based gates below (allowedRoles,
+    // hideForStandaloneSubcontractor, hideForStaff, requiresOwnerOrManager),
+    // matching filterNavItems so tablet/foldable sidebars unlock the same pages
+    // as the phone More menu. Subscription/plan gates still apply.
+    const permissionUnlock = userHasItemPermission(item, options);
+
+    if (item.allowedRoles && options.userRole && !permissionUnlock) {
       if (!item.allowedRoles.includes(options.userRole)) {
         return false;
       }
     }
     
-    if (item.hideForStandaloneSubcontractor && options.isStandaloneSubcontractor) {
+    if (item.hideForStandaloneSubcontractor && options.isStandaloneSubcontractor && !permissionUnlock) {
       return false;
     }
     
-    if (item.hideForStaff && isStaffTradie) {
+    if (item.hideForStaff && isStaffTradie && !permissionUnlock) {
       return false;
     }
 
@@ -1036,7 +1062,7 @@ export function filterSidebarItems(items: SidebarNavItem[], options: FilterOptio
       return false;
     }
     
-    if (item.requiresOwnerOrManager && !isOwnerOrManager) {
+    if (item.requiresOwnerOrManager && !isOwnerOrManager && !permissionUnlock) {
       return false;
     }
     
