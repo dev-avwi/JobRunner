@@ -109,6 +109,10 @@ export default function PayrollReports() {
   const [payReference, setPayReference] = useState('');
   const [payNotes, setPayNotes] = useState('');
   const [payslipBusyId, setPayslipBusyId] = useState<string | null>(null);
+  const [payAllOpen, setPayAllOpen] = useState(false);
+  const [payAllMethod, setPayAllMethod] = useState('bank_transfer');
+  const [payAllDate, setPayAllDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [payAllProgress, setPayAllProgress] = useState<{ done: number; total: number } | null>(null);
   const { toast } = useToast();
 
   const payrollDates = useMemo(() => {
@@ -256,6 +260,67 @@ export default function PayrollReports() {
     setPayDate(new Date().toISOString().slice(0, 10));
     setPayReference('');
     setPayNotes('');
+  };
+
+  const outstandingWorkers = useMemo(() => {
+    return (payrollData?.workers || []).filter((w: any) => !w.paid && w.memberId && (w.grossPay || 0) > 0);
+  }, [payrollData]);
+
+  const outstandingTotal = useMemo(() => {
+    return outstandingWorkers.reduce((sum: number, w: any) => sum + (w.grossPay || 0), 0);
+  }, [outstandingWorkers]);
+
+  const payAllMutation = useMutation({
+    mutationFn: async () => {
+      const workers = outstandingWorkers;
+      setPayAllProgress({ done: 0, total: workers.length });
+      const paidAt = payAllDate ? new Date(payAllDate).toISOString() : new Date().toISOString();
+      let succeeded = 0;
+      const failed: string[] = [];
+      for (const w of workers) {
+        try {
+          const res = await apiRequest('POST', '/api/payroll/pay', {
+            workerUserId: w.memberId,
+            periodStart: payrollDates.start.toISOString(),
+            periodEnd: payrollDates.end.toISOString(),
+            method: payAllMethod,
+            paidAt,
+            sendPayslip: true,
+          });
+          await res.json();
+          succeeded += 1;
+        } catch (e: any) {
+          const name = `${w.firstName || ''} ${w.lastName || ''}`.trim() || 'Worker';
+          failed.push(name);
+        }
+        setPayAllProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
+      }
+      return { succeeded, failed };
+    },
+    onSuccess: ({ succeeded, failed }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/payroll/summary'] });
+      setPayAllOpen(false);
+      setPayAllProgress(null);
+      if (failed.length === 0) {
+        toast({ title: 'Pay run complete', description: `${succeeded} worker${succeeded === 1 ? '' : 's'} paid. Payslips emailed.` });
+      } else {
+        toast({
+          title: succeeded > 0 ? 'Pay run partially complete' : 'Pay run failed',
+          description: `${succeeded} paid, ${failed.length} failed: ${failed.join(', ')}`,
+          variant: 'destructive',
+        });
+      }
+    },
+    onError: (e: any) => {
+      setPayAllProgress(null);
+      toast({ title: 'Pay run failed', description: String(e?.message || e).replace(/^\d+:\s*/, ''), variant: 'destructive' });
+    },
+  });
+
+  const openPayAll = () => {
+    setPayAllMethod('bank_transfer');
+    setPayAllDate(new Date().toISOString().slice(0, 10));
+    setPayAllOpen(true);
   };
 
   const downloadPayslip = async (paymentId: string) => {
@@ -450,6 +515,12 @@ export default function PayrollReports() {
                 <Download className="h-4 w-4 mr-1.5" />
                 Export CSV
               </Button>
+              {outstandingWorkers.length > 0 && (
+                <Button size="sm" onClick={openPayAll} data-testid="button-pay-all">
+                  <Wallet className="h-4 w-4 mr-1.5" />
+                  Pay all outstanding
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1277,6 +1348,49 @@ export default function PayrollReports() {
             <Button variant="outline" onClick={() => setPayWorker(null)} disabled={payMutation.isPending}>Cancel</Button>
             <Button onClick={() => payMutation.mutate()} disabled={payMutation.isPending} data-testid="button-confirm-pay">
               {payMutation.isPending ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin" />Recording...</>) : 'Record payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={payAllOpen} onOpenChange={(o) => { if (!o && !payAllMutation.isPending) setPayAllOpen(false); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pay all outstanding</DialogTitle>
+            <DialogDescription>
+              Record payment for {outstandingWorkers.length} worker{outstandingWorkers.length === 1 ? '' : 's'} totalling {fmtAud(outstandingTotal)} for this period.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Payment method</Label>
+              <Select value={payAllMethod} onValueChange={setPayAllMethod}>
+                <SelectTrigger data-testid="select-pay-all-method"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">Bank transfer</SelectItem>
+                  <SelectItem value="payid">PayID</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pay-all-date">Payment date</Label>
+              <Input id="pay-all-date" type="date" value={payAllDate} onChange={(e) => setPayAllDate(e.target.value)} data-testid="input-pay-all-date" />
+            </div>
+            <p className="text-xs text-muted-foreground">A payslip will be emailed to each worker.</p>
+            {payAllProgress && (
+              <p className="text-xs text-muted-foreground" data-testid="text-pay-all-progress">
+                Paying {payAllProgress.done} of {payAllProgress.total}…
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayAllOpen(false)} disabled={payAllMutation.isPending}>Cancel</Button>
+            <Button onClick={() => payAllMutation.mutate()} disabled={payAllMutation.isPending || outstandingWorkers.length === 0} data-testid="button-confirm-pay-all">
+              {payAllMutation.isPending ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin" />Paying…</>) : `Pay ${fmtAud(outstandingTotal)}`}
             </Button>
           </DialogFooter>
         </DialogContent>
