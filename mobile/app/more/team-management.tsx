@@ -186,6 +186,18 @@ const PERMISSION_CATEGORY_META: Record<string, { icon: string; description: stri
     icon: 'camera',
     description: 'Photos, notes and files on jobs',
   },
+  'Leads': {
+    icon: 'user-plus',
+    description: 'Track and convert potential customers',
+  },
+  'Communications': {
+    icon: 'send',
+    description: 'View sent emails and SMS messages',
+  },
+  'Workflow': {
+    icon: 'crosshair',
+    description: 'Daily action centre and priorities',
+  },
   'Other': {
     icon: 'more-horizontal',
     description: 'Additional permissions',

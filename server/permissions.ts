@@ -33,6 +33,10 @@ export const PERMISSIONS = {
   WRITE_JOB_NOTES: 'write_job_notes',
   WRITE_JOB_MEDIA: 'write_job_media',
   MANAGE_AI_RECEPTIONIST: 'manage_ai_receptionist',
+  READ_LEADS: 'read_leads',
+  READ_COMMUNICATIONS: 'read_communications',
+  VIEW_ACTION_CENTER: 'view_action_center',
+  VIEW_DISPATCH: 'view_dispatch',
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
@@ -87,6 +91,16 @@ const PERMISSION_ALIASES: Record<string, string[]> = {
   collect_payments: [PERMISSIONS.MANAGE_PAYMENTS],
   // Reports
   view_reports: [PERMISSIONS.READ_REPORTS],
+  // Leads
+  view_leads: [PERMISSIONS.READ_LEADS],
+  manage_leads: [PERMISSIONS.READ_LEADS],
+  // Communications
+  view_communications: [PERMISSIONS.READ_COMMUNICATIONS],
+  manage_communications: [PERMISSIONS.READ_COMMUNICATIONS],
+  // Action Centre / Workflow
+  view_action_center: [PERMISSIONS.VIEW_ACTION_CENTER],
+  // Dispatch / live crew board
+  view_dispatch: [PERMISSIONS.VIEW_DISPATCH],
   // Team
   manage_roles: [PERMISSIONS.MANAGE_TEAM],
   // Time tracking
@@ -143,6 +157,10 @@ export const ROLE_TEMPLATES = {
       PERMISSIONS.MANAGE_CATALOG,
       PERMISSIONS.VIEW_ALL,
       PERMISSIONS.MANAGE_AI_RECEPTIONIST,
+      PERMISSIONS.READ_LEADS,
+      PERMISSIONS.READ_COMMUNICATIONS,
+      PERMISSIONS.VIEW_ACTION_CENTER,
+      PERMISSIONS.VIEW_DISPATCH,
     ],
     description: 'Almost full access, except payment management',
   },
@@ -162,6 +180,10 @@ export const ROLE_TEMPLATES = {
       PERMISSIONS.WRITE_JOB_NOTES,
       PERMISSIONS.WRITE_JOB_MEDIA,
       PERMISSIONS.MANAGE_AI_RECEPTIONIST,
+      PERMISSIONS.READ_LEADS,
+      PERMISSIONS.READ_COMMUNICATIONS,
+      PERMISSIONS.VIEW_ACTION_CENTER,
+      PERMISSIONS.VIEW_DISPATCH,
     ],
     description: 'Manages jobs, quotes, invoices, team members - assigns to workers only',
   },

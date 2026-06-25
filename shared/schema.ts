@@ -143,7 +143,15 @@ export const WORKER_PERMISSIONS = {
   // Communication
   TEAM_CHAT: 'team_chat',                    // Access team chat
   CLIENT_SMS: 'client_sms',                  // Send SMS to clients
-  
+  VIEW_COMMUNICATIONS: 'view_communications', // View the Communications hub (sent emails + SMS history)
+
+  // Sales & Pipeline
+  VIEW_LEADS: 'view_leads',                  // View and manage the Leads pipeline
+
+  // Operations / Workflow
+  VIEW_ACTION_CENTER: 'view_action_center',  // View the Action Centre (operational action queue)
+  VIEW_DISPATCH: 'view_dispatch',            // View the Dispatch Board / live crew operations
+
   // AI Receptionist
   MANAGE_AI_RECEPTIONIST: 'manage_ai_receptionist',  // Manage AI receptionist settings
 } as const;
@@ -176,6 +184,9 @@ export const OFFICE_ADMIN_PERMISSIONS: WorkerPermission[] = [
   WORKER_PERMISSIONS.VIEW_ALL_JOBS,
   WORKER_PERMISSIONS.TEAM_CHAT,
   WORKER_PERMISSIONS.CLIENT_SMS,
+  WORKER_PERMISSIONS.VIEW_LEADS,
+  WORKER_PERMISSIONS.VIEW_COMMUNICATIONS,
+  WORKER_PERMISSIONS.VIEW_ACTION_CENTER,
 ];
 
 // All available permissions (for owner UI)
@@ -296,6 +307,10 @@ export const PERMISSION_LABELS: Record<WorkerPermission, string> = {
   [WORKER_PERMISSIONS.GPS_CHECKIN]: 'GPS Check-in',
   [WORKER_PERMISSIONS.TEAM_CHAT]: 'Team Chat',
   [WORKER_PERMISSIONS.CLIENT_SMS]: 'Send SMS to Clients',
+  [WORKER_PERMISSIONS.VIEW_COMMUNICATIONS]: 'View Communications Hub',
+  [WORKER_PERMISSIONS.VIEW_LEADS]: 'View Leads',
+  [WORKER_PERMISSIONS.VIEW_ACTION_CENTER]: 'View Action Centre',
+  [WORKER_PERMISSIONS.VIEW_DISPATCH]: 'View Dispatch Board',
   [WORKER_PERMISSIONS.MANAGE_AI_RECEPTIONIST]: 'Manage AI Receptionist',
 };
 

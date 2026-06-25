@@ -435,8 +435,8 @@ export default function CommunicationsScreen() {
   const fetchData = useCallback(async () => {
     try {
       const [activityRes, smsRes] = await Promise.all([
-        api.get<ActivityLog[]>('/api/activity/recent/100'),
-        api.get<SmsConversation[]>('/api/sms/conversations'),
+        api.get<ActivityLog[]>('/api/communications/activity/100'),
+        api.get<SmsConversation[]>('/api/communications/conversations'),
       ]);
       
       const items: CommunicationItem[] = [];

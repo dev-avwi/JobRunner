@@ -1106,10 +1106,16 @@ export async function handleIncomingSms(
 export async function getSmsConversationsForUser(
   userId: string,
   businessOwnerId: string,
-  userRole: string
+  userRole: string,
+  // Permission-based override: custom roles granted read_communications /
+  // view_all get the full business-wide view, not just their assigned-job
+  // conversations. Additive — never removes access from anyone. The caller
+  // resolves this from the user's permission set so visibility is driven by
+  // granted permissions, not hard-coded role names.
+  hasFullAccess: boolean = false
 ): Promise<SmsConversation[]> {
   let conversations: SmsConversation[];
-  if (['owner', 'admin', 'manager'].includes(userRole.toLowerCase())) {
+  if (hasFullAccess || ['owner', 'admin', 'manager'].includes(userRole.toLowerCase())) {
     conversations = await storage.getSmsConversationsByBusiness(businessOwnerId);
   } else {
     const assignedJobs = await storage.getJobsByAssignee(userId);

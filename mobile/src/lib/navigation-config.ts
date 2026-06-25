@@ -52,6 +52,9 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "featured",
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    // Custom roles granted the (new) action-centre permission can reach this
+    // page. Not a DEFAULT worker permission, so default workers are unchanged.
+    requiredPermission: ['view_action_center'],
   },
   {
     title: "Autopilot",
@@ -68,6 +71,10 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "featured",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    // Automations live under business settings; a role granted manage_settings
+    // can reach Autopilot. Pro-plan lock below still applies. Not a DEFAULT
+    // worker permission, so default workers are unchanged.
+    requiredPermission: ['manage_settings'],
   },
   {
     title: "Clients",
@@ -80,6 +87,10 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "work",
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    // Client-management grants unlock this page. Deliberately excludes the
+    // read-only `view_clients` (a DEFAULT worker permission) so default workers
+    // are unchanged; only create/edit/write_clients holders gain access.
+    requiredPermission: ['edit_clients', 'create_clients', 'write_clients'],
   },
   {
     title: "Documents",
@@ -92,6 +103,10 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "work",
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    // Quote/invoice read grants unlock Documents. Coarse read_quotes/read_invoices
+    // are what the role editor stores; granular view_* covers older roles. None
+    // are DEFAULT worker permissions, so default workers are unchanged.
+    requiredPermission: ['view_quotes', 'view_invoices', 'read_quotes', 'read_invoices'],
   },
   {
     title: "Payment Hub",
@@ -176,6 +191,9 @@ export const mainMenuItems: NavItem[] = [
     category: "team",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
     showLockedIfNoAccess: true,
+    // Dispatch/team-manage grants unlock the live crew view. Team-plan lock
+    // below still applies. None is a DEFAULT worker permission.
+    requiredPermission: ['view_dispatch', 'assign_jobs', 'manage_team'],
   },
   {
     title: "Team Management",
@@ -191,6 +209,9 @@ export const mainMenuItems: NavItem[] = [
     category: "team",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
     showLockedIfNoAccess: true,
+    // Team-management grants unlock this page. Team-plan lock below still
+    // applies. Not a DEFAULT worker permission.
+    requiredPermission: ['manage_team', 'manage_roles'],
   },
   {
     title: "Dispatch Board",
@@ -206,6 +227,9 @@ export const mainMenuItems: NavItem[] = [
     category: "team",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
     showLockedIfNoAccess: true,
+    // Dispatch-view or job-assignment grant unlocks dispatch. Team-plan lock
+    // below still applies. Neither is a DEFAULT worker permission.
+    requiredPermission: ['view_dispatch', 'assign_jobs'],
   },
   {
     title: "Chat",
@@ -233,6 +257,9 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "work",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    // Reports-read grant unlocks Insights (same data family). Pro-plan lock
+    // below still applies. Not a DEFAULT worker permission.
+    requiredPermission: ['view_reports', 'read_reports'],
   },
   {
     title: "Reports",
@@ -300,6 +327,9 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "communication",
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    // Custom roles granted the (new) communications permission can reach this
+    // page. Not a DEFAULT worker permission, so default workers are unchanged.
+    requiredPermission: ['view_communications', 'read_communications'],
   },
   {
     title: "WHS Safety",
@@ -323,6 +353,9 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "work",
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    // Custom roles granted the (new) leads permission can reach this page.
+    // Not a DEFAULT worker permission, so default workers are unchanged.
+    requiredPermission: ['view_leads', 'read_leads'],
   },
   {
     title: "AI Receptionist",
@@ -354,6 +387,10 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "addons",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    // The website builder lives under business settings; a role granted
+    // manage_settings can reach it. Pro-plan lock above still applies. Not a
+    // DEFAULT worker permission.
+    requiredPermission: ['manage_settings'],
   },
 ];
 
@@ -380,6 +417,9 @@ export const settingsMenuItems: NavItem[] = [
     showInMore: true,
     category: "settings",
     allowedRoles: ['owner', 'solo_owner'],
+    // A role granted manage_settings can reach Integrations. Not a DEFAULT
+    // worker permission, so default workers are unchanged.
+    requiredPermission: ['manage_settings'],
   },
   {
     title: "Notifications",
@@ -406,6 +446,9 @@ export const settingsMenuItems: NavItem[] = [
     showInMore: true,
     category: "settings",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    // A role granted manage_settings can reach Branding. Pro-plan lock above
+    // still applies. Not a DEFAULT worker permission.
+    requiredPermission: ['manage_settings'],
   },
   {
     title: "App Settings",

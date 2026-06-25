@@ -58,7 +58,7 @@ import { loginSchema, insertUserSchema, type SafeUser, requestLoginCodeSchema, v
 import { sendEmailVerificationEmail, sendLoginCodeEmail, sendJobConfirmationEmail, sendPasswordResetEmail, sendTeamInviteEmail, sendJobAssignmentEmail, sendJobCompletionNotificationEmail, sendWelcomeEmail } from "./emailService";
 import { FreemiumService } from "./freemiumService";
 import { DEMO_USER, VISITOR_USER } from "./demoData";
-import { ownerOnly, ownerOrManagerOnly, requirePermission, requireOwnerSubscriptionActive, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, WORKER_PROFILE_PLACEHOLDER_NAME } from "./permissions";
+import { ownerOnly, ownerOrManagerOnly, requirePermission, requireOwnerSubscriptionActive, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, hasAnyPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, WORKER_PROFILE_PLACEHOLDER_NAME } from "./permissions";
 import { logTeamActivity } from "./activityService";
 import {
   insertBusinessSettingsSchema,
@@ -13561,6 +13561,80 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  // ── Communications hub (dedicated, permission-gated) ──────────────────────
+  // These power the mobile Communications page. Unlike the shared
+  // /api/activity/recent and /api/sms/conversations routes (which also feed the
+  // dashboard activity feed and per-job / Chat Hub messaging for plain workers),
+  // these are authoritatively gated by READ_COMMUNICATIONS / VIEW_ALL so a role
+  // without the grant gets a 403. Owners bypass via the middleware; Admin,
+  // Manager and Office Admin presets (and any custom role granted
+  // view_communications) resolve READ_COMMUNICATIONS and succeed. This keeps the
+  // gating additive — no existing chat flow loses access.
+  app.get(
+    "/api/communications/activity/:limit?",
+    requireAuth,
+    createPermissionMiddleware([PERMISSIONS.READ_COMMUNICATIONS, PERMISSIONS.VIEW_ALL]),
+    async (req: any, res) => {
+      try {
+        const limit = Math.min(parseInt(req.params.limit) || 100, 200);
+        const userContext = await getUserContext(req.userId);
+        const activityLogs = await storage.getActivityLogs(userContext.effectiveUserId, limit);
+        const activities = activityLogs.map((log: any) => {
+          let navigationPath: string | null = null;
+          if (log.entityType && log.entityId) {
+            switch (log.entityType) {
+              case 'job': navigationPath = `/jobs/${log.entityId}`; break;
+              case 'quote': navigationPath = `/quotes/${log.entityId}`; break;
+              case 'invoice': navigationPath = `/invoices/${log.entityId}`; break;
+            }
+          }
+          return {
+            id: log.id,
+            type: log.type,
+            title: log.title || 'Activity',
+            description: log.description || '',
+            timestamp: log.createdAt,
+            createdAt: log.createdAt,
+            status: 'success' as const,
+            entityType: log.entityType,
+            entityId: log.entityId,
+            navigationPath,
+            metadata: log.metadata,
+          };
+        });
+        res.json(activities);
+      } catch (error) {
+        console.error("Error fetching communications activity:", error);
+        res.json([]);
+      }
+    }
+  );
+
+  app.get(
+    "/api/communications/conversations",
+    requireAuth,
+    createPermissionMiddleware([PERMISSIONS.READ_COMMUNICATIONS, PERMISSIONS.VIEW_ALL]),
+    async (req: any, res) => {
+      try {
+        const userId = req.userId!;
+        const userContext = await getUserContext(userId);
+        const businessOwnerId = userContext.effectiveUserId;
+        // The permission middleware already authorized full-business visibility,
+        // so request the full business-wide conversation list explicitly.
+        const { getSmsConversationsForUser } = await import('./services/smsService');
+        const conversations = await getSmsConversationsForUser(userId, businessOwnerId, 'owner', true);
+        const enriched = await Promise.all(conversations.map(async (conv: any) => {
+          const messages = await storage.getSmsMessages(conv.id);
+          return { ...conv, messages };
+        }));
+        res.json(enriched);
+      } catch (error: any) {
+        console.error('Error fetching communications conversations:', error);
+        res.status(500).json({ error: error.message });
+      }
+    }
+  );
+
   // Email Integration Routes - Allows tradies to connect their own email
   app.get("/api/email-integration", requireAuth, async (req: any, res) => {
     try {
@@ -22509,7 +22583,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.get("/api/bi/action-center", requireAuth, async (req: any, res) => {
+  app.get("/api/bi/action-center", requireAuth, createPermissionMiddleware([PERMISSIONS.VIEW_ACTION_CENTER, PERMISSIONS.VIEW_ALL]), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
@@ -29755,6 +29829,10 @@ Respond with JSON in this format:
     if (permission.includes('catalog')) return 'Catalog';
     if (permission.includes('setting')) return 'Settings';
     if (permission.includes('payment')) return 'Payments';
+    if (permission.includes('lead')) return 'Leads';
+    if (permission.includes('communication')) return 'Communications';
+    if (permission.includes('action')) return 'Workflow';
+    if (permission.includes('dispatch')) return 'Workflow';
     return 'Other';
   }
 
@@ -34665,8 +34743,20 @@ Respond with JSON in this format:
         userRole = role?.name || 'staff';
       }
       
+      // Permission-based visibility: a custom role granted read_communications /
+      // view_all gets the full business-wide conversation list, not just its
+      // assigned-job threads. Driven by the granted permission set (not role
+      // names), so custom Communications roles behave correctly. Additive —
+      // plain workers keep their existing assigned-job-only scope, so the shared
+      // consumers of this route (Chat Hub, per-job chat) are unaffected.
+      const userContext = await getUserContext(userId);
+      const hasFullCommsAccess = hasAnyPermission(userContext, [
+        PERMISSIONS.READ_COMMUNICATIONS,
+        PERMISSIONS.VIEW_ALL,
+      ]);
+      
       const { getSmsConversationsForUser } = await import('./services/smsService');
-      const conversations = await getSmsConversationsForUser(userId, businessOwnerId, userRole);
+      const conversations = await getSmsConversationsForUser(userId, businessOwnerId, userRole, hasFullCommsAccess);
       
       const enriched = await Promise.all(conversations.map(async (conv: any) => {
         const messages = await storage.getSmsMessages(conv.id);
@@ -34690,7 +34780,11 @@ Respond with JSON in this format:
   ): Promise<boolean> => {
     if (userContext?.isOwner) return true;
     const perms = userContext?.permissions || [];
-    if (perms.includes(PERMISSIONS.VIEW_ALL) || perms.includes(PERMISSIONS.MANAGE_TEAM)) {
+    if (
+      perms.includes(PERMISSIONS.VIEW_ALL) ||
+      perms.includes(PERMISSIONS.MANAGE_TEAM) ||
+      perms.includes(PERMISSIONS.READ_COMMUNICATIONS)
+    ) {
       return true;
     }
     if (!conversation?.jobId) return false;
@@ -41143,7 +41237,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // ========================
 
   // Get all leads for user
-  app.get("/api/leads", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.get("/api/leads", requireAuth, requirePaidTier(), createPermissionMiddleware([PERMISSIONS.READ_LEADS, PERMISSIONS.VIEW_ALL]), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const leads = await storage.getLeads(userId);
@@ -41155,7 +41249,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create a new lead
-  app.post("/api/leads", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/leads", requireAuth, requirePaidTier(), createPermissionMiddleware([PERMISSIONS.READ_LEADS, PERMISSIONS.VIEW_ALL]), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const validated = insertLeadSchema.omit({ userId: true }).parse(req.body);
@@ -41173,7 +41267,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Get a single lead
-  app.get("/api/leads/:id", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.get("/api/leads/:id", requireAuth, requirePaidTier(), createPermissionMiddleware([PERMISSIONS.READ_LEADS, PERMISSIONS.VIEW_ALL]), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
@@ -41191,7 +41285,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Update a lead
-  app.put("/api/leads/:id", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.put("/api/leads/:id", requireAuth, requirePaidTier(), createPermissionMiddleware([PERMISSIONS.READ_LEADS, PERMISSIONS.VIEW_ALL]), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
@@ -41209,7 +41303,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Delete a lead
-  app.delete("/api/leads/:id", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.delete("/api/leads/:id", requireAuth, requirePaidTier(), createPermissionMiddleware([PERMISSIONS.READ_LEADS, PERMISSIONS.VIEW_ALL]), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
@@ -41223,7 +41317,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Convert lead to client (and optionally create job/quote)
-  app.post("/api/leads/:id/convert", requireAuth, requirePaidTier(), async (req: any, res) => {
+  app.post("/api/leads/:id/convert", requireAuth, requirePaidTier(), createPermissionMiddleware([PERMISSIONS.READ_LEADS, PERMISSIONS.VIEW_ALL]), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
