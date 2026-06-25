@@ -32,6 +32,14 @@ export interface NavItem {
   // more than one permission vocabulary (e.g. reports: granular `view_reports`
   // from the role editor vs coarse `read_reports` from the Admin/Manager presets).
   requiredPermission?: string | string[];
+  // When true, `requiredPermission` is a HARD gate, not just an additive unlock:
+  // the item is shown ONLY to users who hold one of the permissions (or the `*`
+  // wildcard). Being in `allowedRoles` by role name is NOT enough on its own.
+  // Owners/solo owners hold `*`, so they always pass. Used for Leads,
+  // Communications and the Action Centre so a manager who has had the matching
+  // permission removed via custom permissions stops seeing a menu item that
+  // would only 403 — matching the server-side API gate.
+  strictPermission?: boolean;
   showInBottomNav?: boolean;
   showInMore?: boolean;
   showBadge?: boolean;
@@ -55,6 +63,10 @@ export const mainMenuItems: NavItem[] = [
     // Custom roles granted the (new) action-centre permission can reach this
     // page. Not a DEFAULT worker permission, so default workers are unchanged.
     requiredPermission: ['view_action_center'],
+    // Gate strictly on the permission, not role name: a manager/office_admin
+    // who had view_action_center removed via custom permissions should not see
+    // an item that only 403s. Owners hold `*` so they always pass.
+    strictPermission: true,
   },
   {
     title: "Autopilot",
@@ -330,6 +342,8 @@ export const mainMenuItems: NavItem[] = [
     // Custom roles granted the (new) communications permission can reach this
     // page. Not a DEFAULT worker permission, so default workers are unchanged.
     requiredPermission: ['view_communications', 'read_communications'],
+    // Gate strictly on the permission, not role name (see Action Centre).
+    strictPermission: true,
   },
   {
     title: "WHS Safety",
@@ -356,6 +370,8 @@ export const mainMenuItems: NavItem[] = [
     // Custom roles granted the (new) leads permission can reach this page.
     // Not a DEFAULT worker permission, so default workers are unchanged.
     requiredPermission: ['view_leads', 'read_leads'],
+    // Gate strictly on the permission, not role name (see Action Centre).
+    strictPermission: true,
   },
   {
     title: "AI Receptionist",
@@ -611,6 +627,16 @@ export function filterNavItems(items: NavItem[], options: FilterOptions): NavIte
     if (item.requiresPlatformAdmin && !options.isPlatformAdmin) {
       continue;
     }
+
+    // Hard permission gate: role name alone is never enough. Owners always pass
+    // (explicit bypass — their cached permission set isn't always the `*`
+    // wildcard, e.g. the /api/team/my-role 404 fallback stores an explicit key
+    // list); a manager/office_admin who had the permission removed via custom
+    // permissions is hidden, matching the server API gate instead of showing an
+    // item that only 403s.
+    if (item.strictPermission && !permissionUnlock && !options.isOwner) {
+      continue;
+    }
     
     if (item.allowedRoles && options.userRole && !permissionUnlock) {
       if (!item.allowedRoles.includes(options.userRole)) {
@@ -769,6 +795,8 @@ export interface SidebarNavItem {
   requiresTeam?: boolean;
   allowedRoles?: UserRole[];
   requiredPermission?: string | string[];
+  // Hard permission gate — see NavItem.strictPermission.
+  strictPermission?: boolean;
 }
 
 export const sidebarMainItems: SidebarNavItem[] = [
@@ -792,6 +820,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
     requiredPermission: ['view_action_center'],
+    strictPermission: true,
   },
   { 
     id: 'work',
@@ -981,6 +1010,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
     requiredPermission: ['view_communications', 'read_communications'],
+    strictPermission: true,
   },
   { 
     id: 'whs-hub',
@@ -1001,6 +1031,7 @@ export const sidebarMainItems: SidebarNavItem[] = [
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
     requiredPermission: ['view_leads', 'read_leads'],
+    strictPermission: true,
   },
 ];
 
@@ -1039,6 +1070,13 @@ export function filterSidebarItems(items: SidebarNavItem[], options: FilterOptio
     // matching filterNavItems so tablet/foldable sidebars unlock the same pages
     // as the phone More menu. Subscription/plan gates still apply.
     const permissionUnlock = userHasItemPermission(item, options);
+
+    // Hard permission gate (see filterNavItems): role name alone is never
+    // enough. Owners always pass (explicit bypass — their cached permission set
+    // isn't always the `*` wildcard).
+    if (item.strictPermission && !permissionUnlock && !options.isOwner) {
+      return false;
+    }
 
     if (item.allowedRoles && options.userRole && !permissionUnlock) {
       if (!item.allowedRoles.includes(options.userRole)) {
