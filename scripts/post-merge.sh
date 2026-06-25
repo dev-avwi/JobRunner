@@ -103,14 +103,9 @@ psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS user_activity (
 psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_user_activity_user ON user_activity (user_id);" 2>/dev/null || true
 psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_user_activity_date ON user_activity (activity_date);" 2>/dev/null || true
 
-# Drift guard rail (Task #108): refuse to deploy if schema.ts and the live DB
-# disagree after the ALTERs above. Logs the diff and exits non-zero.
-echo "Verifying schema is in sync with shared/schema.ts..."
-node scripts/check-schema-drift.mjs
-
-echo "Schema changes applied."
-
-# Task #271 (Subcontractor & payroll payments): money-side tables + columns
+# Task #271 (Subcontractor & payroll payments): money-side tables + columns.
+# MUST run BEFORE the drift guard below, or the guard exits non-zero on a
+# fresh DB before these columns/tables are created.
 psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS paid_reference text;" 2>/dev/null || true
 psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS paid_notes text;" 2>/dev/null || true
 psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS remittance_sent_at timestamp;" 2>/dev/null || true
@@ -153,3 +148,10 @@ psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_payroll_payments_busines
 psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_payroll_payments_worker ON payroll_payments (worker_user_id);" 2>/dev/null || true
 psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_payroll_payments_period ON payroll_payments (period_start, period_end);" 2>/dev/null || true
 psql "$DATABASE_URL" -c "CREATE UNIQUE INDEX IF NOT EXISTS uq_payroll_payments_worker_period ON payroll_payments (business_owner_id, worker_user_id, period_start, period_end);" 2>/dev/null || true
+
+# Drift guard rail (Task #108): refuse to deploy if schema.ts and the live DB
+# disagree after the ALTERs above. Logs the diff and exits non-zero.
+echo "Verifying schema is in sync with shared/schema.ts..."
+node scripts/check-schema-drift.mjs
+
+echo "Schema changes applied."
