@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -119,6 +119,34 @@ export default function ProfileEditScreen() {
     phone: user?.phone || '',
     tradeType: user?.tradeType || '',
   });
+  const [payment, setPayment] = useState({
+    bankBsb: '',
+    bankAccountNumber: '',
+    bankAccountName: '',
+    abn: '',
+    payId: '',
+  });
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await api.get<any>('/api/worker/payment-details');
+        if (active && res.data && !res.error) {
+          setPayment({
+            bankBsb: res.data.bankBsb || '',
+            bankAccountNumber: res.data.bankAccountNumber || '',
+            bankAccountName: res.data.bankAccountName || '',
+            abn: res.data.abn || '',
+            payId: res.data.payId || '',
+          });
+        }
+      } catch {
+        // non-blocking — payment details are optional
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   const handleSave = async () => {
     if (!form.firstName.trim() || !form.lastName.trim()) {
@@ -140,6 +168,18 @@ export default function ProfileEditScreen() {
       const response = await api.patch('/api/auth/profile', payload);
 
       if (!response.error) {
+        // Save payment details (non-blocking for profile success).
+        try {
+          await api.put('/api/worker/payment-details', {
+            bankBsb: payment.bankBsb.trim() || null,
+            bankAccountNumber: payment.bankAccountNumber.trim() || null,
+            bankAccountName: payment.bankAccountName.trim() || null,
+            abn: payment.abn.trim() || null,
+            payId: payment.payId.trim() || null,
+          });
+        } catch {
+          // ignore — payment details failure shouldn't block profile save
+        }
         await checkAuth();
         Alert.alert('Success', 'Profile updated successfully', [
           { text: 'OK', onPress: () => router.back() }
@@ -264,6 +304,87 @@ export default function ProfileEditScreen() {
               value={form.tradeType}
               onChange={(value) => setForm({ ...form, tradeType: value })}
               label="Trade Type"
+            />
+          </View>
+
+          <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Payment Details</Text>
+          <Text style={[styles.inputNote, { marginLeft: 4, marginBottom: 16 }]}>
+            Used when you get paid for jobs. Only shared with businesses you work for.
+          </Text>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.inputLabel}>
+              <Feather name="user" size={18} color={colors.primary} />
+              <Text style={styles.inputLabelText}>Account Name</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={payment.bankAccountName}
+              onChangeText={(text) => setPayment({ ...payment, bankAccountName: text })}
+              placeholder="Name on the account"
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="words"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.inputLabel}>
+              <Feather name="hash" size={18} color={colors.primary} />
+              <Text style={styles.inputLabelText}>BSB</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={payment.bankBsb}
+              onChangeText={(text) => setPayment({ ...payment, bankBsb: text })}
+              placeholder="000-000"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="number-pad"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.inputLabel}>
+              <Feather name="credit-card" size={18} color={colors.primary} />
+              <Text style={styles.inputLabelText}>Account Number</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={payment.bankAccountNumber}
+              onChangeText={(text) => setPayment({ ...payment, bankAccountNumber: text })}
+              placeholder="Account number"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="number-pad"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.inputLabel}>
+              <Feather name="smartphone" size={18} color={colors.mutedForeground} />
+              <Text style={styles.inputLabelText}>PayID (optional)</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={payment.payId}
+              onChangeText={(text) => setPayment({ ...payment, payId: text })}
+              placeholder="Email or mobile linked to PayID"
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.inputLabel}>
+              <Feather name="briefcase" size={18} color={colors.mutedForeground} />
+              <Text style={styles.inputLabelText}>ABN (optional)</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={payment.abn}
+              onChangeText={(text) => setPayment({ ...payment, abn: text })}
+              placeholder="11 digit ABN"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="number-pad"
             />
           </View>
 

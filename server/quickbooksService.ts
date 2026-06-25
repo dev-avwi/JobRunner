@@ -559,6 +559,122 @@ async function createQuickbooksInvoice(accessToken: string, realmId: string, inv
   return data.Invoice;
 }
 
+async function findVendorByName(accessToken: string, realmId: string, name: string): Promise<any> {
+  try {
+    const safe = name.replace(/'/g, "\\'");
+    const query = encodeURIComponent(`SELECT * FROM Vendor WHERE DisplayName = '${safe}'`);
+    const response = await fetch(
+      `${QUICKBOOKS_API_BASE_URL}/${realmId}/query?query=${query}&minorversion=65`,
+      { headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${accessToken}` } }
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.QueryResponse?.Vendor?.[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+async function createVendor(accessToken: string, realmId: string, vendorData: any): Promise<any> {
+  const response = await fetch(
+    `${QUICKBOOKS_API_BASE_URL}/${realmId}/vendor?minorversion=65`,
+    {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+      body: JSON.stringify(vendorData),
+    }
+  );
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to create vendor: ${error}`);
+  }
+  const data = await response.json();
+  return data.Vendor;
+}
+
+async function createQuickbooksBill(accessToken: string, realmId: string, billData: any): Promise<any> {
+  const response = await fetch(
+    `${QUICKBOOKS_API_BASE_URL}/${realmId}/bill?minorversion=65`,
+    {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+      body: JSON.stringify(billData),
+    }
+  );
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to create bill: ${error}`);
+  }
+  const data = await response.json();
+  return data.Bill;
+}
+
+// Task #271: push an approved subcontractor invoice to QuickBooks as a Bill (AP).
+export async function pushSubcontractorBillToQuickbooks(
+  userId: string,
+  subInvoiceId: string,
+): Promise<{ success: boolean; billId?: string; error?: string }> {
+  try {
+    const connection = await storage.getQuickbooksConnection(userId);
+    if (!connection || connection.status !== "active") {
+      return { success: false, error: "QuickBooks is not connected" };
+    }
+
+    const invoice = await storage.getSubcontractorInvoiceWithItems(subInvoiceId);
+    if (!invoice) {
+      return { success: false, error: "Subcontractor invoice not found" };
+    }
+
+    const refreshedConnection = await refreshTokenIfNeeded(connection);
+    const tokens = decryptTokens(refreshedConnection);
+
+    const subcontractor = await storage.getUser(invoice.subcontractorUserId);
+    const full = subcontractor ? [subcontractor.firstName, subcontractor.lastName].filter(Boolean).join(" ").trim() : "";
+    const vendorName = full || subcontractor?.email || "Subcontractor";
+
+    let vendor = await findVendorByName(tokens.accessToken, refreshedConnection.realmId, vendorName);
+    if (!vendor) {
+      vendor = await createVendor(tokens.accessToken, refreshedConnection.realmId, {
+        DisplayName: vendorName,
+        PrimaryEmailAddr: subcontractor?.email ? { Address: subcontractor.email } : undefined,
+      });
+    }
+
+    const settings: any = await storage.getBusinessSettings(userId);
+    const expenseAccountId = settings?.qboExpenseAccountId || settings?.qboSalesAccountId;
+    if (!expenseAccountId) {
+      return { success: false, error: "No QuickBooks expense account configured. Set one in accounting mapping." };
+    }
+
+    const qbBill: any = {
+      VendorRef: { value: vendor.Id },
+      Line: invoice.items.map(item => {
+        const qty = item.quantity != null ? parseFloat(item.quantity) : (item.hours != null ? parseFloat(item.hours) : 1);
+        const priceVal = item.unitPrice != null ? item.unitPrice : item.rate;
+        const unit = priceVal != null && priceVal !== '' ? parseFloat(priceVal) : parseFloat(item.amount || "0");
+        const amount = parseFloat(item.amount || "0") || (qty * unit);
+        return {
+          DetailType: "AccountBasedExpenseLineDetail",
+          Amount: amount,
+          Description: item.description,
+          AccountBasedExpenseLineDetail: { AccountRef: { value: expenseAccountId } },
+        };
+      }),
+      DueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : undefined,
+      DocNumber: invoice.invoiceNumber || undefined,
+    };
+
+    const createdBill = await createQuickbooksBill(tokens.accessToken, refreshedConnection.realmId, qbBill);
+    if (createdBill?.Id) {
+      return { success: true, billId: createdBill.Id };
+    }
+    return { success: false, error: "QuickBooks did not return a bill id" };
+  } catch (error: unknown) {
+    console.error('[QuickBooks] Failed to push subcontractor bill:', error);
+    return { success: false, error: getErrorMessage(error) || "Failed to push bill" };
+  }
+}
+
 export async function syncPaymentsFromQuickbooks(userId: string): Promise<{ updated: number; errors: string[] }> {
   const connection = await storage.getQuickbooksConnection(userId);
   if (!connection || connection.status !== "active") {

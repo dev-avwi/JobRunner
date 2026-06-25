@@ -2569,10 +2569,19 @@ interface PayrollReport {
     entryCount: number;
     approved: number;
     unapproved: number;
+    paid: boolean;
+    paidAt: string | null;
+    payrollPaymentId: string | null;
+    paidMethod: string | null;
+    paidReference: string | null;
   }[];
   totals: {
     totalHours: number;
     totalPay: number;
+    totalPaid: number;
+    totalOutstanding: number;
+    paidCount: number;
+    outstandingCount: number;
     workerCount: number;
     subcontractorCount: number;
   };

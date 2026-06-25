@@ -21,8 +21,11 @@ import { asHref } from '../../src/lib/nav';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
+import { SheetButton } from '../../src/components/ui/SheetButton';
 import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
-import { api } from '../../src/lib/api';
+import { api, API_URL } from '../../src/lib/api';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { useAuthStore } from '../../src/lib/store';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { showToast } from '../../src/lib/toast';
@@ -258,10 +261,41 @@ interface MobileSubInvoice {
   businessName: string;
 }
 
+const PAY_METHODS: { value: string; label: string }[] = [
+  { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'payid', label: 'PayID' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'cheque', label: 'Cheque' },
+  { value: 'card', label: 'Card' },
+  { value: 'other', label: 'Other' },
+];
+
+interface WorkerPaymentDetails {
+  bankBsb?: string | null;
+  bankAccountNumber?: string | null;
+  bankAccountName?: string | null;
+  abn?: string | null;
+  payId?: string | null;
+}
+
 function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
   const [invoices, setInvoices] = useState<MobileSubInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [connectedProvider, setConnectedProvider] = useState<string | null>(null);
+
+  // Pay sheet state
+  const [payInvoice, setPayInvoice] = useState<MobileSubInvoice | null>(null);
+  const [payMethod, setPayMethod] = useState('bank_transfer');
+  const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [payReference, setPayReference] = useState('');
+  const [payNotes, setPayNotes] = useState('');
+  const [paySubmitting, setPaySubmitting] = useState(false);
+
+  // Payment details sheet state
+  const [detailsInvoice, setDetailsInvoice] = useState<MobileSubInvoice | null>(null);
+  const [detailsData, setDetailsData] = useState<WorkerPaymentDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   const loadInvoices = useCallback(async () => {
     try {
@@ -274,25 +308,129 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
     }
   }, []);
 
-  useEffect(() => { loadInvoices(); }, [loadInvoices]);
+  const loadConnectedProvider = useCallback(async () => {
+    try {
+      const res = await api.get<{ provider?: string | null }>('/api/business/accounting/connected');
+      if (!res.error && res.data) setConnectedProvider(res.data.provider || null);
+    } catch {
+      // non-blocking — push-bill simply stays hidden
+    }
+  }, []);
 
-  const updateStatus = useCallback(async (invoiceId: string, status: string) => {
+  useEffect(() => { loadInvoices(); loadConnectedProvider(); }, [loadInvoices, loadConnectedProvider]);
+
+  const approveInvoice = useCallback(async (invoiceId: string) => {
     setUpdatingId(invoiceId);
     try {
-      await api.patch(`/api/business/subcontractor-invoices/${invoiceId}/status`, {
-        status,
-        paidMethod: status === 'paid' ? 'bank_transfer' : undefined,
-        paidAt: status === 'paid' ? new Date().toISOString() : undefined,
-      });
-      showToast({ type: 'success', message: `Invoice marked as ${status}` });
+      await api.patch(`/api/business/subcontractor-invoices/${invoiceId}/status`, { status: 'approved' });
+      showToast({ type: 'success', message: 'Invoice approved' });
       loadInvoices();
     } catch (error: unknown) {
-      const errMsg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to update invoice';
+      const errMsg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to approve invoice';
       showToast({ type: 'error', message: errMsg });
     } finally {
       setUpdatingId(null);
     }
   }, [loadInvoices]);
+
+  const openPaySheet = useCallback((inv: MobileSubInvoice) => {
+    setPayInvoice(inv);
+    setPayMethod('bank_transfer');
+    setPayDate(new Date().toISOString().slice(0, 10));
+    setPayReference('');
+    setPayNotes('');
+  }, []);
+
+  const submitPayment = useCallback(async () => {
+    if (!payInvoice) return;
+    setPaySubmitting(true);
+    try {
+      const res = await api.post(`/api/business/subcontractor-invoices/${payInvoice.id}/pay`, {
+        method: payMethod,
+        paidAt: payDate ? new Date(payDate).toISOString() : new Date().toISOString(),
+        reference: payReference.trim() || undefined,
+        notes: payNotes.trim() || undefined,
+        sendRemittance: true,
+      });
+      if (res.error) {
+        showToast({ type: 'error', message: res.error });
+      } else {
+        showToast({ type: 'success', message: 'Payment recorded. Remittance sent.' });
+        setPayInvoice(null);
+        loadInvoices();
+      }
+    } catch (error: unknown) {
+      const errMsg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to record payment';
+      showToast({ type: 'error', message: errMsg });
+    } finally {
+      setPaySubmitting(false);
+    }
+  }, [payInvoice, payMethod, payDate, payReference, payNotes, loadInvoices]);
+
+  const openPaymentDetails = useCallback(async (inv: MobileSubInvoice) => {
+    setDetailsInvoice(inv);
+    setDetailsData(null);
+    setDetailsLoading(true);
+    try {
+      const res = await api.get<WorkerPaymentDetails>(`/api/business/subcontractor-invoices/${inv.id}/payment-details`);
+      if (!res.error && res.data) setDetailsData(res.data);
+    } catch {
+      // leave detailsData null → shows empty state
+    } finally {
+      setDetailsLoading(false);
+    }
+  }, []);
+
+  const downloadRemittance = useCallback(async (inv: MobileSubInvoice) => {
+    setUpdatingId(inv.id);
+    try {
+      const token = await api.getToken();
+      const url = `${API_URL}/api/business/subcontractor-invoices/${inv.id}/remittance`;
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}`, 'x-mobile-app': 'true' },
+      });
+      if (!response.ok) throw new Error('Failed to download remittance');
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64 = (reader.result as string).split(',')[1];
+          const fileUri = `${FileSystem.cacheDirectory}remittance_${inv.id}.pdf`;
+          await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri, { mimeType: 'application/pdf', dialogTitle: 'Remittance Advice', UTI: 'com.adobe.pdf' });
+          } else {
+            showToast({ type: 'success', message: 'Remittance saved to device' });
+          }
+        } catch {
+          showToast({ type: 'error', message: 'Failed to save remittance' });
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch {
+      showToast({ type: 'error', message: 'Could not download remittance' });
+    } finally {
+      setUpdatingId(null);
+    }
+  }, []);
+
+  const pushBill = useCallback(async (inv: MobileSubInvoice) => {
+    setUpdatingId(inv.id);
+    try {
+      const res = await api.post(`/api/business/subcontractor-invoices/${inv.id}/push-bill`, {});
+      if (res.error) {
+        showToast({ type: 'error', message: res.error });
+      } else {
+        showToast({ type: 'success', message: `Pushed to ${providerLabel(connectedProvider)}` });
+        loadInvoices();
+      }
+    } catch (error: unknown) {
+      const errMsg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to push bill';
+      showToast({ type: 'error', message: errMsg });
+    } finally {
+      setUpdatingId(null);
+    }
+  }, [connectedProvider, loadInvoices]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -316,7 +454,10 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
       <Text style={{ fontSize: 17, fontWeight: '700', color: colors.foreground, marginBottom: spacing.sm }}>
         Subcontractor Invoices
       </Text>
-      {invoices.map((inv) => (
+      {invoices.map((inv) => {
+        const busy = updatingId === inv.id;
+        const synced = !!(inv as any).accountingBillId;
+        return (
         <View
           key={inv.id}
           style={{
@@ -352,22 +493,37 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
               {formatCurrency(inv.totalAmount)}
             </Text>
           </View>
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.muted,
+                borderRadius: radius.md,
+                paddingVertical: spacing.sm,
+                paddingHorizontal: spacing.md,
+                alignItems: 'center',
+              }}
+              onPress={() => openPaymentDetails(inv)}
+              disabled={busy}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>Pay Details</Text>
+            </TouchableOpacity>
             {inv.status === 'submitted' && (
               <TouchableOpacity
                 style={{
                   flex: 1,
+                  minWidth: 100,
                   backgroundColor: colors.info + '15',
                   borderRadius: radius.md,
                   paddingVertical: spacing.sm,
                   alignItems: 'center',
                 }}
-                onPress={() => updateStatus(inv.id, 'approved')}
-                disabled={updatingId === inv.id}
+                onPress={() => approveInvoice(inv.id)}
+                disabled={busy}
                 activeOpacity={0.7}
               >
                 <Text style={{ fontSize: 13, fontWeight: '600', color: colors.info }}>
-                  {updatingId === inv.id ? 'Updating...' : 'Approve'}
+                  {busy ? 'Updating...' : 'Approve'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -375,23 +531,199 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
               <TouchableOpacity
                 style={{
                   flex: 1,
+                  minWidth: 100,
                   backgroundColor: colors.success + '15',
                   borderRadius: radius.md,
                   paddingVertical: spacing.sm,
                   alignItems: 'center',
                 }}
-                onPress={() => updateStatus(inv.id, 'paid')}
-                disabled={updatingId === inv.id}
+                onPress={() => openPaySheet(inv)}
+                disabled={busy}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.success }}>
-                  {updatingId === inv.id ? 'Updating...' : 'Mark Paid'}
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.success }}>Pay</Text>
+              </TouchableOpacity>
+            )}
+            {inv.status === 'paid' && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: colors.muted,
+                  borderRadius: radius.md,
+                  paddingVertical: spacing.sm,
+                  paddingHorizontal: spacing.md,
+                  alignItems: 'center',
+                }}
+                onPress={() => downloadRemittance(inv)}
+                disabled={busy}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+                  {busy ? '...' : 'Remittance'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {(inv.status === 'approved' || inv.status === 'paid') && connectedProvider && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: synced ? colors.muted : colors.primary + '15',
+                  borderRadius: radius.md,
+                  paddingVertical: spacing.sm,
+                  paddingHorizontal: spacing.md,
+                  alignItems: 'center',
+                }}
+                onPress={() => pushBill(inv)}
+                disabled={busy || synced}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: synced ? colors.mutedForeground : colors.primary }}>
+                  {synced ? `Synced to ${providerLabel(connectedProvider)}` : busy ? '...' : `Push to ${providerLabel(connectedProvider)}`}
                 </Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
-      ))}
+        );
+      })}
+
+      {/* Pay sheet */}
+      <AppBottomSheet
+        visible={!!payInvoice}
+        onDismiss={() => setPayInvoice(null)}
+        snapPoints={['80%']}
+        scrollable
+      >
+        <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, marginBottom: spacing.xs }}>
+            Record Payment
+          </Text>
+          {payInvoice && (
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md }}>
+              {payInvoice.invoiceNumber} · {formatCurrency(payInvoice.totalAmount)} to {payInvoice.subcontractorName || 'Subcontractor'}
+            </Text>
+          )}
+
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Method</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md }}>
+            {PAY_METHODS.map((m) => (
+              <TouchableOpacity
+                key={m.value}
+                onPress={() => setPayMethod(m.value)}
+                activeOpacity={0.7}
+                style={{
+                  paddingVertical: spacing.sm,
+                  paddingHorizontal: spacing.md,
+                  borderRadius: radius.pill,
+                  borderWidth: 1,
+                  borderColor: payMethod === m.value ? colors.primary : colors.border,
+                  backgroundColor: payMethod === m.value ? colors.primary + '15' : 'transparent',
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: payMethod === m.value ? colors.primary : colors.mutedForeground }}>
+                  {m.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Payment Date</Text>
+          <TextInput
+            style={{
+              borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+              paddingHorizontal: spacing.md, paddingVertical: spacing.sm, color: colors.foreground,
+              marginBottom: spacing.md, backgroundColor: colors.background,
+            }}
+            value={payDate}
+            onChangeText={setPayDate}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={colors.mutedForeground}
+            autoCapitalize="none"
+          />
+
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Reference</Text>
+          <TextInput
+            style={{
+              borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+              paddingHorizontal: spacing.md, paddingVertical: spacing.sm, color: colors.foreground,
+              marginBottom: spacing.md, backgroundColor: colors.background,
+            }}
+            value={payReference}
+            onChangeText={setPayReference}
+            placeholder="e.g. bank transfer ref"
+            placeholderTextColor={colors.mutedForeground}
+          />
+
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Notes</Text>
+          <TextInput
+            style={{
+              borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+              paddingHorizontal: spacing.md, paddingVertical: spacing.sm, color: colors.foreground,
+              marginBottom: spacing.lg, backgroundColor: colors.background, minHeight: 70, textAlignVertical: 'top',
+            }}
+            value={payNotes}
+            onChangeText={setPayNotes}
+            placeholder="Optional notes"
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+          />
+
+          <SheetButton
+            label="Record Payment & Send Remittance"
+            onPress={submitPayment}
+            loading={paySubmitting}
+            fullWidth
+          />
+          <View style={{ height: spacing.md }} />
+          <SheetButton label="Cancel" variant="outline" onPress={() => setPayInvoice(null)} fullWidth />
+        </KeyboardAvoidingView>
+      </AppBottomSheet>
+
+      {/* Payment details sheet */}
+      <AppBottomSheet
+        visible={!!detailsInvoice}
+        onDismiss={() => setDetailsInvoice(null)}
+        snapPoints={['55%']}
+        scrollable
+      >
+        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, marginBottom: spacing.md }}>
+          Payment Details
+        </Text>
+        {detailsLoading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : detailsData && (detailsData.bankAccountNumber || detailsData.payId) ? (
+          <View style={{ gap: spacing.sm }}>
+            <DetailRow label="Account Name" value={detailsData.bankAccountName} colors={colors} />
+            <DetailRow label="BSB" value={detailsData.bankBsb} colors={colors} />
+            <DetailRow label="Account Number" value={detailsData.bankAccountNumber} colors={colors} />
+            <DetailRow label="PayID" value={detailsData.payId} colors={colors} />
+            <DetailRow label="ABN" value={detailsData.abn} colors={colors} />
+          </View>
+        ) : (
+          <Text style={{ fontSize: 14, color: colors.mutedForeground }}>
+            This subcontractor hasn't added payment details yet.
+          </Text>
+        )}
+        <View style={{ height: spacing.lg }} />
+        <SheetButton label="Close" variant="outline" onPress={() => setDetailsInvoice(null)} fullWidth />
+      </AppBottomSheet>
+    </View>
+  );
+}
+
+function providerLabel(provider: string | null | undefined): string {
+  switch (provider) {
+    case 'xero': return 'Xero';
+    case 'quickbooks': return 'QuickBooks';
+    case 'qbo': return 'QuickBooks';
+    case 'myob': return 'MYOB';
+    default: return 'Accounting';
+  }
+}
+
+function DetailRow({ label, value, colors }: { label: string; value?: string | null; colors: ThemeColors }) {
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Text style={{ fontSize: 13, color: colors.mutedForeground }}>{label}</Text>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>{value || '—'}</Text>
     </View>
   );
 }

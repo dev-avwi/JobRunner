@@ -15979,9 +15979,18 @@ Be specific about materials, colors, and features that would be included.`
         ? members.filter(m => m.id === teamMemberId)
         : members;
 
+      // Task #271: existing payroll payments for this exact period (paid vs outstanding).
+      const periodPayments = await storage.getPayrollPayments(ownerId, { start: periodStart, end: periodEnd });
+      const paymentByWorker = new Map<string, typeof periodPayments[number]>();
+      for (const p of periodPayments) {
+        if (p.workerUserId) paymentByWorker.set(p.workerUserId, p);
+      }
+
       const workerSummaries = [];
       let totalPayAll = 0;
       let totalHoursAll = 0;
+      let totalPaidAll = 0;
+      let totalOutstandingAll = 0;
 
       for (const member of filteredMembers) {
         if (!member.memberId) continue;
@@ -16030,6 +16039,11 @@ Be specific about materials, colors, and features that would be included.`
         totalPayAll += grossPay;
         totalHoursAll += totalHrs;
 
+        const roundedGross = Math.round(grossPay * 100) / 100;
+        const payment = paymentByWorker.get(member.memberId);
+        if (payment) totalPaidAll += roundedGross;
+        else totalOutstandingAll += roundedGross;
+
         workerSummaries.push({
           teamMemberId: member.id,
           memberId: member.memberId,
@@ -16044,13 +16058,18 @@ Be specific about materials, colors, and features that would be included.`
           totalHours: Math.round(totalHrs * 100) / 100,
           billableHours: Math.round(billableMins / 60 * 100) / 100,
           nonBillableHours: Math.round(nonBillableMins / 60 * 100) / 100,
-          grossPay: Math.round(grossPay * 100) / 100,
+          grossPay: roundedGross,
           overtimePay: Math.round(overtimeHrs * rate * 1.5 * 100) / 100,
           jobCount: jobIdSet.size,
           timeCategories: Object.fromEntries(Object.entries(categories).map(([k, v]) => [k, Math.round(v / 60 * 100) / 100])),
           entryCount: entries.filter(e => !e.isBreak).length,
           approved: entries.filter(e => e.approved).length,
           unapproved: entries.filter(e => !e.approved).length,
+          paid: !!payment,
+          paidAt: payment?.paidAt ? new Date(payment.paidAt).toISOString() : null,
+          payrollPaymentId: payment?.id || null,
+          paidMethod: payment?.method || null,
+          paidReference: payment?.reference || null,
         });
       }
 
@@ -16060,6 +16079,10 @@ Be specific about materials, colors, and features that would be included.`
         totals: {
           totalHours: Math.round(totalHoursAll * 100) / 100,
           totalPay: Math.round(totalPayAll * 100) / 100,
+          totalPaid: Math.round(totalPaidAll * 100) / 100,
+          totalOutstanding: Math.round(totalOutstandingAll * 100) / 100,
+          paidCount: workerSummaries.filter(w => w.paid).length,
+          outstandingCount: workerSummaries.filter(w => !w.paid).length,
           workerCount: workerSummaries.length,
           subcontractorCount: workerSummaries.filter(w => w.isSubcontractor).length,
         }
@@ -16067,6 +16090,212 @@ Be specific about materials, colors, and features that would be included.`
     } catch (error: any) {
       console.error('[Payroll] Error:', error);
       res.status(500).json({ error: "Failed to generate payroll summary" });
+    }
+  });
+
+  // Task #271: record a payroll payment for one worker for a period + email payslip.
+  app.post("/api/payroll/pay", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const ownerId = userContext.effectiveUserId;
+      const {
+        workerUserId, periodStart, periodEnd,
+        regularHours, overtimeHours, totalHours, grossPay,
+        method, reference, notes, paidAt, sendPayslip,
+      } = req.body || {};
+
+      if (!workerUserId || !periodStart || !periodEnd) {
+        return res.status(400).json({ error: 'workerUserId, periodStart and periodEnd are required' });
+      }
+
+      const pStart = new Date(periodStart);
+      const pEnd = new Date(periodEnd);
+
+      // The worker must be an active member of this business.
+      const membership = await db.select().from(teamMembers)
+        .where(and(eq(teamMembers.memberId, workerUserId), eq(teamMembers.businessOwnerId, ownerId), eq(teamMembers.isActive, true)))
+        .limit(1);
+      if (membership.length === 0) {
+        return res.status(403).json({ error: 'Worker is not a member of this business' });
+      }
+
+      // Recompute gross server-side from time entries so the client can't dictate the amount.
+      const member = membership[0];
+      const rate = parseFloat(member.hourlyRate || '0') || 0;
+      const entries = await db.select().from(timeEntries)
+        .where(and(
+          eq(timeEntries.userId, workerUserId),
+          gte(timeEntries.startTime, pStart),
+          lte(timeEntries.startTime, pEnd),
+          isNotNull(timeEntries.endTime)
+        ));
+      let regMins = 0, otMins = 0;
+      for (const e of entries) {
+        if (e.isBreak) continue;
+        if (e.isOvertime) otMins += (e.duration || 0);
+        else regMins += (e.duration || 0);
+      }
+      const regHrs = regMins / 60;
+      const otHrs = otMins / 60;
+      const computedGross = Math.round(((regHrs * rate) + (otHrs * rate * 1.5)) * 100) / 100;
+
+      // Prevent double-paying the same worker for the same period.
+      const existing = await storage.getPayrollPayments(ownerId, { start: pStart, end: pEnd, workerUserId });
+      if (existing.length > 0) {
+        return res.status(409).json({ error: 'This worker has already been paid for this period', payment: existing[0] });
+      }
+
+      let payment;
+      try {
+        payment = await storage.createPayrollPayment({
+          businessOwnerId: ownerId,
+          workerUserId,
+          periodStart: pStart,
+          periodEnd: pEnd,
+          regularHours: (Math.round(regHrs * 100) / 100).toFixed(2),
+          overtimeHours: (Math.round(otHrs * 100) / 100).toFixed(2),
+          totalHours: (Math.round((regHrs + otHrs) * 100) / 100).toFixed(2),
+          grossPay: computedGross.toFixed(2),
+          method: typeof method === 'string' && method ? method : 'bank_transfer',
+          reference: typeof reference === 'string' && reference.trim() ? reference.trim() : null,
+          notes: typeof notes === 'string' && notes.trim() ? notes.trim() : null,
+          paidAt: paidAt ? new Date(paidAt) : new Date(),
+        });
+      } catch (insertErr: any) {
+        // Unique guard (uq_payroll_payments_worker_period) — concurrent double-pay race.
+        if (insertErr?.code === '23505') {
+          const dup = await storage.getPayrollPayments(ownerId, { start: pStart, end: pEnd, workerUserId });
+          return res.status(409).json({ error: 'This worker has already been paid for this period', payment: dup[0] });
+        }
+        throw insertErr;
+      }
+
+      let payslipSent = false;
+      if (sendPayslip !== false) {
+        try {
+          const worker = await storage.getUser(workerUserId);
+          if (worker?.email) {
+            const { sendSystemEmail } = await import('./emailService');
+            const { generateRemittancePdf } = await import('./pdfService');
+            const bizSettings = await storage.getBusinessSettings(ownerId);
+            const workerName = `${worker.firstName || ''} ${worker.lastName || ''}`.trim() || worker.email;
+            const pdfBuffer = await generateRemittancePdf({
+              type: 'payslip',
+              business: {
+                name: bizSettings?.businessName || 'Business',
+                abn: bizSettings?.abn || null,
+                address: bizSettings?.address || null,
+                email: bizSettings?.email || null,
+                phone: bizSettings?.phone || null,
+              },
+              payee: { name: workerName, abn: null, email: worker.email },
+              paymentDate: payment.paidAt,
+              method: payment.method,
+              reference: payment.reference,
+              notes: payment.notes,
+              periodStart: pStart,
+              periodEnd: pEnd,
+              lines: [
+                { label: `Regular (${(Math.round(regHrs * 100) / 100).toFixed(2)} hrs @ $${rate.toFixed(2)})`, value: (Math.round(regHrs * rate * 100) / 100).toFixed(2), isMoney: true },
+                ...(otHrs > 0 ? [{ label: `Overtime (${(Math.round(otHrs * 100) / 100).toFixed(2)} hrs @ $${(rate * 1.5).toFixed(2)})`, value: (Math.round(otHrs * rate * 1.5 * 100) / 100).toFixed(2), isMoney: true }] : []),
+              ],
+              total: computedGross.toFixed(2),
+            });
+            await sendSystemEmail({
+              to: worker.email,
+              subject: `Payslip — ${pStart.toLocaleDateString('en-AU')} to ${pEnd.toLocaleDateString('en-AU')}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2>You've been paid</h2>
+                  <p>Your pay of <strong>$${computedGross.toFixed(2)}</strong> for the period ${pStart.toLocaleDateString('en-AU')} – ${pEnd.toLocaleDateString('en-AU')} has been processed.</p>
+                  <p>Your payslip is attached.</p>
+                </div>
+              `,
+              attachments: [{
+                content: pdfBuffer.toString('base64'),
+                filename: `Payslip-${pStart.toISOString().split('T')[0]}.pdf`,
+                type: 'application/pdf',
+                disposition: 'attachment',
+              }],
+            });
+            payslipSent = true;
+            await storage.updatePayrollPayment(payment.id, { remittanceSentAt: new Date() });
+          }
+        } catch (e) {
+          console.warn('[Payroll Pay] Payslip email error:', e);
+        }
+      }
+
+      try {
+        await storage.createNotification({
+          userId: workerUserId,
+          type: 'payroll_paid',
+          title: 'You have been paid',
+          message: `Pay of $${computedGross.toFixed(2)} has been processed`,
+          relatedType: 'payroll_payment',
+          relatedId: payment.id,
+          priority: 'important',
+        });
+      } catch (e) {
+        console.warn('[Payroll Pay] Notification error:', e);
+      }
+
+      res.json({ ...payment, payslipSent });
+    } catch (error) {
+      console.error('[Payroll Pay] Error:', error);
+      res.status(500).json({ error: 'Failed to record payroll payment' });
+    }
+  });
+
+  // GET /api/payroll/payslip/:id — payslip PDF for a recorded payroll payment.
+  app.get("/api/payroll/payslip/:id", requireAuth, async (req: any, res) => {
+    try {
+      const ctx = await getUserContext(req.userId);
+      const payment = await storage.getPayrollPayment(req.params.id);
+      if (!payment) return res.status(404).json({ error: 'Payment not found' });
+      if (payment.businessOwnerId !== ctx.effectiveUserId && payment.workerUserId !== req.userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const worker = await storage.getUser(payment.workerUserId);
+      const bizSettings = await storage.getBusinessSettings(payment.businessOwnerId);
+      const workerName = worker ? (`${worker.firstName || ''} ${worker.lastName || ''}`.trim() || worker.email || 'Worker') : 'Worker';
+      const rate = parseFloat(payment.regularHours) > 0
+        ? Math.round((parseFloat(payment.grossPay) / ((parseFloat(payment.regularHours)) + (parseFloat(payment.overtimeHours) * 1.5))) * 100) / 100
+        : 0;
+      const regHrs = parseFloat(payment.regularHours);
+      const otHrs = parseFloat(payment.overtimeHours);
+
+      const { generateRemittancePdf } = await import('./pdfService');
+      const pdfBuffer = await generateRemittancePdf({
+        type: 'payslip',
+        business: {
+          name: bizSettings?.businessName || 'Business',
+          abn: bizSettings?.abn || null,
+          address: bizSettings?.address || null,
+          email: bizSettings?.email || null,
+          phone: bizSettings?.phone || null,
+        },
+        payee: { name: workerName, abn: null, email: worker?.email || null },
+        paymentDate: payment.paidAt,
+        method: payment.method,
+        reference: payment.reference,
+        notes: payment.notes,
+        periodStart: payment.periodStart,
+        periodEnd: payment.periodEnd,
+        lines: [
+          { label: `Regular (${regHrs.toFixed(2)} hrs @ $${rate.toFixed(2)})`, value: (Math.round(regHrs * rate * 100) / 100).toFixed(2), isMoney: true },
+          ...(otHrs > 0 ? [{ label: `Overtime (${otHrs.toFixed(2)} hrs @ $${(rate * 1.5).toFixed(2)})`, value: (Math.round(otHrs * rate * 1.5 * 100) / 100).toFixed(2), isMoney: true }] : []),
+        ],
+        total: payment.grossPay,
+      });
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Payslip-${new Date(payment.periodStart).toISOString().split('T')[0]}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('[Payroll Payslip] Error:', error);
+      res.status(500).json({ error: 'Failed to generate payslip' });
     }
   });
 
@@ -46939,6 +47168,306 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     } catch (error) {
       console.error('[Business Update Subcontractor Invoice] Error:', error);
       res.status(500).json({ error: 'Failed to update invoice status' });
+    }
+  });
+
+  // ===== Task #271: Worker/Subcontractor payment details =====
+  // Each worker owns one payment-details row keyed by their user id (follows them
+  // across every business). A worker reads/writes only their OWN details.
+  app.get("/api/worker/payment-details", requireAuth, async (req: any, res) => {
+    try {
+      const details = await storage.getWorkerPaymentDetails(req.userId);
+      res.json(details || null);
+    } catch (error) {
+      console.error('[WorkerPaymentDetails] Get error:', error);
+      res.status(500).json({ error: 'Failed to load payment details' });
+    }
+  });
+
+  app.put("/api/worker/payment-details", requireAuth, async (req: any, res) => {
+    try {
+      // Allowlist — never trust the raw body (avoids mass-assignment of id/userId).
+      const { bankBsb, bankAccountNumber, bankAccountName, abn, payId } = req.body || {};
+      const data = {
+        bankBsb: typeof bankBsb === 'string' ? bankBsb.trim() : null,
+        bankAccountNumber: typeof bankAccountNumber === 'string' ? bankAccountNumber.trim() : null,
+        bankAccountName: typeof bankAccountName === 'string' ? bankAccountName.trim() : null,
+        abn: typeof abn === 'string' ? abn.trim() : null,
+        payId: typeof payId === 'string' ? payId.trim() : null,
+      };
+      const saved = await storage.upsertWorkerPaymentDetails(req.userId, data);
+      res.json(saved);
+    } catch (error) {
+      console.error('[WorkerPaymentDetails] Save error:', error);
+      res.status(500).json({ error: 'Failed to save payment details' });
+    }
+  });
+
+  // Owner/manager views a subcontractor's payment details to actually pay an invoice.
+  app.get("/api/business/subcontractor-invoices/:id/payment-details", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const ctx = await getUserContext(req.userId);
+      const invoice = await storage.getSubcontractorInvoice(req.params.id);
+      if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+      if (invoice.businessOwnerId !== ctx.effectiveUserId) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+      const details = await storage.getWorkerPaymentDetails(invoice.subcontractorUserId);
+      res.json(details || null);
+    } catch (error) {
+      console.error('[SubInvoice PaymentDetails] Error:', error);
+      res.status(500).json({ error: 'Failed to load payment details' });
+    }
+  });
+
+  // POST .../subcontractor-invoices/:id/pay — record a real payment + email remittance.
+  app.post("/api/business/subcontractor-invoices/:id/pay", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const ctx = await getUserContext(req.userId);
+      const ownerId = ctx.effectiveUserId;
+      const { method, paidAt, reference, notes, sendRemittance } = req.body || {};
+
+      const invoice = await storage.getSubcontractorInvoiceWithItems(req.params.id);
+      if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+      if (invoice.businessOwnerId !== ownerId) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+      if (invoice.docType === 'quote') {
+        return res.status(400).json({ error: 'Quotes cannot be marked paid' });
+      }
+      if (invoice.status === 'paid') {
+        return res.status(400).json({ error: 'Invoice is already paid' });
+      }
+      if (invoice.status !== 'approved') {
+        return res.status(400).json({ error: 'Only approved invoices can be paid' });
+      }
+
+      const updates: Record<string, unknown> = {
+        status: 'paid',
+        paidAt: paidAt ? new Date(paidAt) : new Date(),
+        paidMethod: typeof method === 'string' && method ? method : 'bank_transfer',
+        paidReference: typeof reference === 'string' && reference.trim() ? reference.trim() : null,
+        paidNotes: typeof notes === 'string' && notes.trim() ? notes.trim() : null,
+      };
+
+      // Best-effort remittance email (default on). Failures don't roll back the payment.
+      let remittanceSent = false;
+      if (sendRemittance !== false) {
+        try {
+          const subUser = await storage.getUser(invoice.subcontractorUserId);
+          if (subUser?.email) {
+            const { sendSystemEmail } = await import('./emailService');
+            const { generateRemittancePdf } = await import('./pdfService');
+            const bizSettings = await storage.getBusinessSettings(ownerId);
+            const subPay = await storage.getWorkerPaymentDetails(invoice.subcontractorUserId);
+            const subName = `${subUser.firstName || ''} ${subUser.lastName || ''}`.trim() || subUser.email;
+
+            const pdfBuffer = await generateRemittancePdf({
+              type: 'remittance',
+              business: {
+                name: bizSettings?.businessName || 'Business',
+                abn: bizSettings?.abn || null,
+                address: bizSettings?.address || null,
+                email: bizSettings?.email || null,
+                phone: bizSettings?.phone || null,
+              },
+              payee: { name: subName, abn: subPay?.abn || null, email: subUser.email },
+              paymentDate: updates.paidAt as Date,
+              method: updates.paidMethod as string,
+              reference: updates.paidReference as string | null,
+              notes: updates.paidNotes as string | null,
+              invoiceNumber: invoice.invoiceNumber,
+              lines: invoice.items.map(it => ({ label: it.description, value: it.amount, isMoney: true })),
+              total: invoice.totalAmount,
+            });
+
+            await sendSystemEmail({
+              to: subUser.email,
+              subject: `Remittance Advice — ${invoice.invoiceNumber} paid`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2>Payment Sent</h2>
+                  <p>Your invoice <strong>${invoice.invoiceNumber}</strong> for <strong>$${parseFloat(invoice.totalAmount).toFixed(2)}</strong> has been paid.</p>
+                  <p>A remittance advice is attached for your records.</p>
+                </div>
+              `,
+              attachments: [{
+                content: pdfBuffer.toString('base64'),
+                filename: `Remittance-${invoice.invoiceNumber}.pdf`,
+                type: 'application/pdf',
+                disposition: 'attachment',
+              }],
+            });
+            remittanceSent = true;
+            updates.remittanceSentAt = new Date();
+          }
+        } catch (e) {
+          console.warn('[SubInvoice Pay] Remittance email error:', e);
+        }
+      }
+
+      const updated = await storage.updateSubcontractorInvoice(req.params.id, updates);
+
+      await storage.createNotification({
+        userId: invoice.subcontractorUserId,
+        type: 'subcontractor_invoice_update',
+        title: 'Invoice Paid',
+        message: `Your invoice ${invoice.invoiceNumber} has been marked as paid`,
+        relatedType: 'subcontractor_invoice',
+        relatedId: invoice.id,
+        priority: 'urgent',
+      });
+      try {
+        const { sendPushNotification } = await import('./pushNotifications');
+        await sendPushNotification({
+          userId: invoice.subcontractorUserId,
+          type: 'subcontractor_invoice_update',
+          title: 'Invoice Paid',
+          body: `Your invoice ${invoice.invoiceNumber} has been marked as paid`,
+          data: { invoiceId: invoice.id },
+          skipInAppNotification: true,
+        });
+      } catch (e) {
+        console.warn('[SubInvoice Pay] Push error:', e);
+      }
+
+      res.json({ ...updated, remittanceSent });
+    } catch (error) {
+      console.error('[SubInvoice Pay] Error:', error);
+      res.status(500).json({ error: 'Failed to record payment' });
+    }
+  });
+
+  // GET .../subcontractor-invoices/:id/remittance — remittance advice PDF (owner or sub).
+  app.get("/api/business/subcontractor-invoices/:id/remittance", requireAuth, async (req: any, res) => {
+    try {
+      const ctx = await getUserContext(req.userId);
+      const invoice = await storage.getSubcontractorInvoiceWithItems(req.params.id);
+      if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+      if (invoice.businessOwnerId !== ctx.effectiveUserId && invoice.subcontractorUserId !== req.userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      if (invoice.status !== 'paid') {
+        return res.status(400).json({ error: 'Remittance is only available once the invoice is paid' });
+      }
+
+      const subUser = await storage.getUser(invoice.subcontractorUserId);
+      const bizSettings = await storage.getBusinessSettings(invoice.businessOwnerId);
+      const subPay = await storage.getWorkerPaymentDetails(invoice.subcontractorUserId);
+      const subName = subUser ? (`${subUser.firstName || ''} ${subUser.lastName || ''}`.trim() || subUser.email || 'Subcontractor') : 'Subcontractor';
+
+      const { generateRemittancePdf } = await import('./pdfService');
+      const pdfBuffer = await generateRemittancePdf({
+        type: 'remittance',
+        business: {
+          name: bizSettings?.businessName || 'Business',
+          abn: bizSettings?.abn || null,
+          address: bizSettings?.address || null,
+          email: bizSettings?.email || null,
+          phone: bizSettings?.phone || null,
+        },
+        payee: { name: subName, abn: subPay?.abn || null, email: subUser?.email || null },
+        paymentDate: invoice.paidAt || new Date(),
+        method: invoice.paidMethod || 'bank_transfer',
+        reference: invoice.paidReference,
+        notes: invoice.paidNotes,
+        invoiceNumber: invoice.invoiceNumber,
+        lines: invoice.items.map(it => ({ label: it.description, value: it.amount, isMoney: true })),
+        total: invoice.totalAmount,
+      });
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Remittance-${invoice.invoiceNumber}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('[SubInvoice Remittance] Error:', error);
+      res.status(500).json({ error: 'Failed to generate remittance' });
+    }
+  });
+
+  // GET /api/business/accounting/connected — which accounting provider (if any) is connected.
+  app.get("/api/business/accounting/connected", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const ctx = await getUserContext(req.userId);
+      const ownerId = ctx.effectiveUserId;
+      const [xero, qbo, myob] = await Promise.all([
+        storage.getXeroConnection(ownerId).catch(() => null),
+        storage.getQuickbooksConnection(ownerId).catch(() => null),
+        storage.getMyobConnection(ownerId).catch(() => null),
+      ]);
+      let provider: string | null = null;
+      if (xero?.status === 'active') provider = 'xero';
+      else if (qbo?.status === 'active') provider = 'quickbooks';
+      else if (myob?.status === 'active') provider = 'myob';
+      res.json({ provider });
+    } catch (error) {
+      console.error('[Accounting Connected] Error:', error);
+      res.status(500).json({ error: 'Failed to check accounting connection' });
+    }
+  });
+
+  // POST .../subcontractor-invoices/:id/push-bill — push approved invoice to accounting as a bill.
+  app.post("/api/business/subcontractor-invoices/:id/push-bill", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const ctx = await getUserContext(req.userId);
+      const ownerId = ctx.effectiveUserId;
+      const invoice = await storage.getSubcontractorInvoice(req.params.id);
+      if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+      if (invoice.businessOwnerId !== ownerId) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+      if (invoice.docType === 'quote') {
+        return res.status(400).json({ error: 'Quotes cannot be pushed as bills' });
+      }
+      if (!['approved', 'paid'].includes(invoice.status)) {
+        return res.status(400).json({ error: 'Only approved or paid invoices can be pushed to accounting' });
+      }
+      if (invoice.accountingBillId) {
+        return res.json({ success: true, alreadyPushed: true, provider: invoice.accountingProvider, billId: invoice.accountingBillId });
+      }
+
+      const [xero, qbo, myob] = await Promise.all([
+        storage.getXeroConnection(ownerId).catch(() => null),
+        storage.getQuickbooksConnection(ownerId).catch(() => null),
+        storage.getMyobConnection(ownerId).catch(() => null),
+      ]);
+
+      let provider: string | null = null;
+      let result: { success: boolean; billId?: string; error?: string };
+      if (xero?.status === 'active') {
+        provider = 'xero';
+        const { pushSubcontractorBillToXero } = await import('./xeroService');
+        result = await pushSubcontractorBillToXero(ownerId, invoice.id);
+      } else if (qbo?.status === 'active') {
+        provider = 'quickbooks';
+        const { pushSubcontractorBillToQuickbooks } = await import('./quickbooksService');
+        result = await pushSubcontractorBillToQuickbooks(ownerId, invoice.id);
+      } else if (myob?.status === 'active') {
+        provider = 'myob';
+        const { pushSubcontractorBillToMyob } = await import('./myobService');
+        result = await pushSubcontractorBillToMyob(ownerId, invoice.id);
+      } else {
+        return res.status(400).json({ error: 'No accounting integration connected' });
+      }
+
+      if (result.success) {
+        await storage.updateSubcontractorInvoice(invoice.id, {
+          accountingProvider: provider,
+          accountingBillId: result.billId || null,
+          accountingSyncedAt: new Date(),
+          accountingSyncError: null,
+        });
+        return res.json({ success: true, provider, billId: result.billId });
+      }
+
+      await storage.updateSubcontractorInvoice(invoice.id, {
+        accountingProvider: provider,
+        accountingSyncError: result.error || 'Unknown error',
+      });
+      return res.status(502).json({ error: result.error || 'Failed to push bill', provider });
+    } catch (error) {
+      console.error('[SubInvoice PushBill] Error:', error);
+      res.status(500).json({ error: 'Failed to push bill to accounting' });
     }
   });
 

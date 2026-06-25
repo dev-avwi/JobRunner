@@ -4952,3 +4952,276 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
 
   return await generatePDFBuffer(html);
 }
+
+// Task #271: Remittance advice (subcontractor) + payslip (payroll) PDF.
+export interface RemittancePdfData {
+  type: 'remittance' | 'payslip';
+  business: {
+    name: string;
+    abn: string | null;
+    address: string | null;
+    email: string | null;
+    phone: string | null;
+  };
+  payee: {
+    name: string;
+    abn?: string | null;
+    email?: string | null;
+  };
+  paymentDate: Date | string;
+  method: string;
+  reference?: string | null;
+  notes?: string | null;
+  // Subcontractor remittance
+  invoiceNumber?: string | null;
+  // Payslip
+  periodStart?: Date | string | null;
+  periodEnd?: Date | string | null;
+  // Breakdown rows (label + value). Money rows formatted as AUD.
+  lines: Array<{ label: string; value: string | number; isMoney?: boolean }>;
+  total: string | number;
+}
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  bank_transfer: 'Bank Transfer',
+  payid: 'PayID',
+  cash: 'Cash',
+  cheque: 'Cheque',
+  card: 'Card',
+  other: 'Other',
+};
+
+export async function generateRemittancePdf(data: RemittancePdfData): Promise<Buffer> {
+  const { type, business, payee, paymentDate, method, reference, notes, invoiceNumber, periodStart, periodEnd, lines, total } = data;
+
+  const isPayslip = type === 'payslip';
+  const docLabel = isPayslip ? 'PAYSLIP' : 'REMITTANCE ADVICE';
+  const methodLabel = PAYMENT_METHOD_LABELS[method] || method;
+
+  const lineRows = lines.map(line => `
+    <tr>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(line.label)}</td>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${line.isMoney ? formatCurrency(line.value) : escapeHtml(String(line.value))}</td>
+    </tr>
+  `).join('');
+
+  const metaItems: string[] = [
+    `<div class="meta-item"><label>Payment Date</label><span>${formatDate(paymentDate)}</span></div>`,
+    `<div class="meta-item"><label>Method</label><span>${escapeHtml(methodLabel)}</span></div>`,
+  ];
+  if (reference) {
+    metaItems.push(`<div class="meta-item"><label>Reference</label><span>${escapeHtml(reference)}</span></div>`);
+  }
+  if (!isPayslip && invoiceNumber) {
+    metaItems.push(`<div class="meta-item"><label>Invoice</label><span>${escapeHtml(invoiceNumber)}</span></div>`);
+  }
+  if (isPayslip && periodStart && periodEnd) {
+    metaItems.push(`<div class="meta-item"><label>Pay Period</label><span>${formatDate(periodStart)} – ${formatDate(periodEnd)}</span></div>`);
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      ${generateGoogleFontsLink()}
+      <style>
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          color: #1a1a1a;
+          margin: 0;
+          padding: 40px;
+          font-size: 11px;
+          line-height: 1.5;
+        }
+        .header {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 40px;
+          padding-bottom: 20px;
+          border-bottom: 3px solid #1e3a5f;
+        }
+        .header-left h1 {
+          margin: 0;
+          font-size: 22px;
+          color: #1e3a5f;
+          font-weight: 700;
+        }
+        .header-left p {
+          margin: 4px 0 0;
+          color: #666;
+          font-size: 11px;
+        }
+        .header-right {
+          text-align: right;
+        }
+        .header-right .doc-label {
+          font-size: 24px;
+          font-weight: 700;
+          color: #1e3a5f;
+          margin: 0;
+        }
+        .parties {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 30px;
+        }
+        .party {
+          width: 48%;
+        }
+        .party h3 {
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #999;
+          margin: 0 0 8px;
+          font-weight: 600;
+        }
+        .party p {
+          margin: 3px 0;
+          font-size: 11px;
+        }
+        .party .name {
+          font-weight: 600;
+          font-size: 13px;
+          color: #1a1a1a;
+        }
+        .meta-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 32px;
+          margin-bottom: 24px;
+          padding: 12px 16px;
+          background: #f8f9fa;
+          border-radius: 6px;
+        }
+        .meta-item label {
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #999;
+          display: block;
+          margin-bottom: 2px;
+        }
+        .meta-item span {
+          font-weight: 600;
+          font-size: 12px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 24px;
+        }
+        th {
+          background: #1e3a5f;
+          color: white;
+          padding: 10px 12px;
+          text-align: left;
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-weight: 600;
+        }
+        th:nth-child(2) { text-align: right; }
+        .totals {
+          display: flex;
+          justify-content: flex-end;
+          margin-bottom: 30px;
+        }
+        .totals-box {
+          width: 280px;
+        }
+        .totals-row.total {
+          display: flex;
+          justify-content: space-between;
+          border-top: 2px solid #1e3a5f;
+          padding-top: 10px;
+          font-size: 16px;
+          font-weight: 700;
+          color: #1e3a5f;
+        }
+        .notes {
+          margin-top: 12px;
+          padding: 12px 16px;
+          background: #f8f9fa;
+          border-radius: 6px;
+          font-size: 11px;
+          color: #444;
+        }
+        .notes label {
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #999;
+          display: block;
+          margin-bottom: 4px;
+        }
+        .footer {
+          margin-top: 40px;
+          padding-top: 16px;
+          border-top: 1px solid #e5e7eb;
+          color: #999;
+          font-size: 10px;
+          text-align: center;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="header-left">
+          <h1>${escapeHtml(ensureDisplayName(business.name, 'Business'))}</h1>
+          ${business.abn ? `<p>ABN: ${escapeHtml(business.abn)}</p>` : ''}
+          ${business.address ? `<p>${escapeHtml(business.address)}</p>` : ''}
+          ${business.email ? `<p>${escapeHtml(business.email)}</p>` : ''}
+          ${business.phone ? `<p>${escapeHtml(business.phone)}</p>` : ''}
+        </div>
+        <div class="header-right">
+          <p class="doc-label">${docLabel}</p>
+        </div>
+      </div>
+
+      <div class="parties">
+        <div class="party">
+          <h3>${isPayslip ? 'Employee' : 'Paid To'}</h3>
+          <p class="name">${escapeHtml(ensureDisplayName(payee.name, isPayslip ? 'Worker' : 'Subcontractor'))}</p>
+          ${payee.abn ? `<p>ABN: ${escapeHtml(payee.abn)}</p>` : ''}
+          ${payee.email ? `<p>${escapeHtml(payee.email)}</p>` : ''}
+        </div>
+      </div>
+
+      <div class="meta-row">
+        ${metaItems.join('')}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lineRows}
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <div class="totals-box">
+          <div class="totals-row total">
+            <span>${isPayslip ? 'Net Pay' : 'Total Paid'}</span>
+            <span>${formatCurrency(total)}</span>
+          </div>
+        </div>
+      </div>
+
+      ${notes ? `<div class="notes"><label>Notes</label>${escapeHtml(notes)}</div>` : ''}
+
+      <div class="footer">
+        ${isPayslip ? 'This payslip confirms payment for the period shown above.' : 'This remittance advice confirms payment of the invoice shown above.'}
+      </div>
+    </body>
+    </html>
+  `;
+
+  return await generatePDFBuffer(html);
+}

@@ -396,6 +396,12 @@ import {
   type InsertSubcontractorInvoice,
   type SubcontractorInvoiceItem,
   type InsertSubcontractorInvoiceItem,
+  workerPaymentDetails,
+  type WorkerPaymentDetails,
+  type InsertWorkerPaymentDetails,
+  payrollPayments,
+  type PayrollPayment,
+  type InsertPayrollPayment,
   workerStates,
   type WorkerState,
   type InsertWorkerState,
@@ -1282,6 +1288,16 @@ export interface IStorage {
   createSubcontractorInvoiceItem(item: InsertSubcontractorInvoiceItem): Promise<SubcontractorInvoiceItem>;
   deleteSubcontractorInvoiceItems(invoiceId: string): Promise<boolean>;
 
+  // Worker payment details (Task #271)
+  getWorkerPaymentDetails(userId: string): Promise<WorkerPaymentDetails | undefined>;
+  upsertWorkerPaymentDetails(userId: string, data: Partial<InsertWorkerPaymentDetails>): Promise<WorkerPaymentDetails>;
+
+  // Payroll pay runs (Task #271)
+  getPayrollPayments(businessOwnerId: string, filters?: { start?: Date; end?: Date; workerUserId?: string }): Promise<PayrollPayment[]>;
+  getPayrollPayment(id: string): Promise<PayrollPayment | undefined>;
+  createPayrollPayment(payment: InsertPayrollPayment): Promise<PayrollPayment>;
+  updatePayrollPayment(id: string, updates: Partial<InsertPayrollPayment>): Promise<PayrollPayment | undefined>;
+
   // Worker States
   getWorkerState(userId: string, businessOwnerId?: string): Promise<WorkerState | undefined>;
   getWorkerStatesByBusiness(businessOwnerId: string): Promise<WorkerState[]>;
@@ -1331,6 +1347,57 @@ pool
   `)
   .catch((err) => {
     console.error('[Schema] Failed to ensure terms_acceptance table:', err.message);
+  });
+
+// Task #271 (Subcontractor & payroll payments): new money-side tables + columns.
+// Created idempotently with raw SQL at startup (we do NOT use drizzle-kit push).
+pool
+  .query(`
+    ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS paid_reference text;
+    ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS paid_notes text;
+    ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS remittance_sent_at timestamp;
+    ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS accounting_provider text;
+    ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS accounting_bill_id text;
+    ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS accounting_synced_at timestamp;
+    ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS accounting_sync_error text;
+    CREATE TABLE IF NOT EXISTS worker_payment_details (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      bank_bsb text,
+      bank_account_number text,
+      bank_account_name text,
+      abn text,
+      pay_id text,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_worker_payment_details_user ON worker_payment_details (user_id);
+    CREATE TABLE IF NOT EXISTS payroll_payments (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      business_owner_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      worker_user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      team_member_id varchar REFERENCES team_members(id) ON DELETE SET NULL,
+      period_start timestamp NOT NULL,
+      period_end timestamp NOT NULL,
+      regular_hours decimal(10,2) NOT NULL DEFAULT '0',
+      overtime_hours decimal(10,2) NOT NULL DEFAULT '0',
+      total_hours decimal(10,2) NOT NULL DEFAULT '0',
+      gross_pay decimal(10,2) NOT NULL DEFAULT '0',
+      method text NOT NULL DEFAULT 'bank_transfer',
+      reference text,
+      notes text,
+      paid_at timestamp NOT NULL DEFAULT now(),
+      remittance_sent_at timestamp,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_payroll_payments_business ON payroll_payments (business_owner_id);
+    CREATE INDEX IF NOT EXISTS idx_payroll_payments_worker ON payroll_payments (worker_user_id);
+    CREATE INDEX IF NOT EXISTS idx_payroll_payments_period ON payroll_payments (period_start, period_end);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_payroll_payments_worker_period ON payroll_payments (business_owner_id, worker_user_id, period_start, period_end);
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure subcontractor/payroll payment tables:', err.message);
   });
 
 export class PostgresStorage implements IStorage {
@@ -8936,6 +9003,60 @@ Thank you for your prompt attention to this matter.`,
   async deleteSubcontractorInvoiceItems(invoiceId: string): Promise<boolean> {
     const result = await db.delete(subcontractorInvoiceItems).where(eq(subcontractorInvoiceItems.invoiceId, invoiceId)).returning();
     return result.length > 0;
+  }
+
+  // Worker payment details (Task #271)
+  async getWorkerPaymentDetails(userId: string): Promise<WorkerPaymentDetails | undefined> {
+    const [result] = await db.select().from(workerPaymentDetails).where(eq(workerPaymentDetails.userId, userId)).limit(1);
+    return result;
+  }
+
+  async upsertWorkerPaymentDetails(userId: string, data: Partial<InsertWorkerPaymentDetails>): Promise<WorkerPaymentDetails> {
+    const existing = await this.getWorkerPaymentDetails(userId);
+    if (existing) {
+      const [result] = await db.update(workerPaymentDetails)
+        .set({ ...data, userId, updatedAt: new Date() })
+        .where(eq(workerPaymentDetails.userId, userId))
+        .returning();
+      return result;
+    }
+    const [result] = await db.insert(workerPaymentDetails)
+      .values({ ...data, userId })
+      .returning();
+    return result;
+  }
+
+  // Payroll pay runs (Task #271)
+  async getPayrollPayments(businessOwnerId: string, filters?: { start?: Date; end?: Date; workerUserId?: string }): Promise<PayrollPayment[]> {
+    const conditions = [eq(payrollPayments.businessOwnerId, businessOwnerId)];
+    if (filters?.workerUserId) {
+      conditions.push(eq(payrollPayments.workerUserId, filters.workerUserId));
+    }
+    // Exact-period identity (NOT containment): a payment matches only when its
+    // period boundaries equal the requested period. Using range comparisons here
+    // would falsely treat a nested sub-period payment as covering a larger period.
+    if (filters?.start) {
+      conditions.push(eq(payrollPayments.periodStart, filters.start));
+    }
+    if (filters?.end) {
+      conditions.push(eq(payrollPayments.periodEnd, filters.end));
+    }
+    return await db.select().from(payrollPayments).where(and(...conditions)).orderBy(desc(payrollPayments.paidAt));
+  }
+
+  async getPayrollPayment(id: string): Promise<PayrollPayment | undefined> {
+    const [result] = await db.select().from(payrollPayments).where(eq(payrollPayments.id, id)).limit(1);
+    return result;
+  }
+
+  async createPayrollPayment(payment: InsertPayrollPayment): Promise<PayrollPayment> {
+    const [result] = await db.insert(payrollPayments).values(payment).returning();
+    return result;
+  }
+
+  async updatePayrollPayment(id: string, updates: Partial<InsertPayrollPayment>): Promise<PayrollPayment | undefined> {
+    const [result] = await db.update(payrollPayments).set({ ...updates, updatedAt: new Date() }).where(eq(payrollPayments.id, id)).returning();
+    return result;
   }
 
   // Worker States

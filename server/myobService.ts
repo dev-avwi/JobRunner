@@ -540,6 +540,67 @@ export async function syncSingleInvoiceToMyob(userId: string, invoiceId: string)
   }
 }
 
+// Task #271: push an approved subcontractor invoice to MYOB as a supplier bill
+// (Purchase / accounts-payable entry).
+export async function pushSubcontractorBillToMyob(
+  userId: string,
+  subInvoiceId: string,
+): Promise<{ success: boolean; billId?: string; error?: string }> {
+  try {
+    const connection = await storage.getMyobConnection(userId);
+    if (!connection || connection.status !== "active") {
+      return { success: false, error: "MYOB is not connected" };
+    }
+
+    const invoice = await storage.getSubcontractorInvoiceWithItems(subInvoiceId);
+    if (!invoice) {
+      return { success: false, error: "Subcontractor invoice not found" };
+    }
+
+    const refreshedConnection = await refreshTokenIfNeeded(connection);
+    const tokens = decryptTokens(refreshedConnection);
+    const cfToken = getCfToken(refreshedConnection);
+    if (!cfToken) {
+      return { success: false, error: "Company file credentials not configured" };
+    }
+
+    const subcontractor = await storage.getUser(invoice.subcontractorUserId);
+    const full = subcontractor ? [subcontractor.firstName, subcontractor.lastName].filter(Boolean).join(" ").trim() : "";
+    const supplierName = full || subcontractor?.email || "Subcontractor";
+
+    const settings: any = await storage.getBusinessSettings(userId);
+    const expenseAcct = settings?.myobExpenseAccountId || settings?.myobIncomeAccountId;
+    const taxCode = settings?.myobTaxCodeId;
+
+    const myobBill = {
+      Number: invoice.invoiceNumber || undefined,
+      Supplier: { Name: supplierName },
+      Lines: invoice.items.map(item => ({
+        Description: item.description,
+        Total: parseFloat(item.amount || "0"),
+        ...(expenseAcct ? { Account: { UID: expenseAcct } } : {}),
+        ...(taxCode ? { TaxCode: { UID: taxCode } } : {}),
+      })),
+      Date: (invoice.createdAt ? new Date(invoice.createdAt) : new Date()).toISOString().split('T')[0],
+    };
+
+    const headers = getApiHeaders(tokens.accessToken, cfToken);
+    headers["Content-Type"] = "application/json";
+    const response = await axios.post(
+      `${MYOB_API_BASE}/${refreshedConnection.businessId}/Purchase/Bill/Service`,
+      myobBill,
+      { headers }
+    );
+
+    const location = response.headers?.location || response.headers?.Location;
+    const billId = typeof location === 'string' ? location.split('/').pop() : undefined;
+    return { success: true, billId };
+  } catch (error: unknown) {
+    console.error('[MYOB] Failed to push subcontractor bill:', error);
+    return { success: false, error: getErrorMessage(error) || "Failed to push bill" };
+  }
+}
+
 export async function syncQuotesToMyob(userId: string): Promise<{ synced: number; skipped: number; errors: string[] }> {
   const connection = await storage.getMyobConnection(userId);
   if (!connection || connection.status !== "active") {

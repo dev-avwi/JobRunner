@@ -5414,6 +5414,13 @@ export const subcontractorInvoices = pgTable("subcontractor_invoices", {
   rejectionReason: text("rejection_reason"),
   paidAt: timestamp("paid_at"),
   paidMethod: text("paid_method"),
+  paidReference: text("paid_reference"),
+  paidNotes: text("paid_notes"),
+  remittanceSentAt: timestamp("remittance_sent_at"),
+  accountingProvider: text("accounting_provider"),
+  accountingBillId: text("accounting_bill_id"),
+  accountingSyncedAt: timestamp("accounting_synced_at"),
+  accountingSyncError: text("accounting_sync_error"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -5447,6 +5454,56 @@ export const subcontractorInvoiceItems = pgTable("subcontractor_invoice_items", 
 export const insertSubcontractorInvoiceItemSchema = createInsertSchema(subcontractorInvoiceItems).omit({ id: true, createdAt: true });
 export type InsertSubcontractorInvoiceItem = z.infer<typeof insertSubcontractorInvoiceItemSchema>;
 export type SubcontractorInvoiceItem = typeof subcontractorInvoiceItems.$inferSelect;
+
+// Worker / Subcontractor payment details — how a worker is paid. Keyed by the
+// worker's own user id so it follows them across every business they work for.
+export const workerPaymentDetails = pgTable("worker_payment_details", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  bankBsb: text("bank_bsb"),
+  bankAccountNumber: text("bank_account_number"),
+  bankAccountName: text("bank_account_name"),
+  abn: text("abn"),
+  payId: text("pay_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_worker_payment_details_user").on(table.userId),
+]);
+
+export const insertWorkerPaymentDetailsSchema = createInsertSchema(workerPaymentDetails).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWorkerPaymentDetails = z.infer<typeof insertWorkerPaymentDetailsSchema>;
+export type WorkerPaymentDetails = typeof workerPaymentDetails.$inferSelect;
+
+// Payroll pay runs — records a per-worker payment for a pay period so the payroll
+// summary can track paid vs outstanding and generate a payslip remittance.
+export const payrollPayments = pgTable("payroll_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  businessOwnerId: varchar("business_owner_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  workerUserId: varchar("worker_user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  teamMemberId: varchar("team_member_id").references(() => teamMembers.id, { onDelete: 'set null' }),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  regularHours: decimal("regular_hours", { precision: 10, scale: 2 }).notNull().default('0'),
+  overtimeHours: decimal("overtime_hours", { precision: 10, scale: 2 }).notNull().default('0'),
+  totalHours: decimal("total_hours", { precision: 10, scale: 2 }).notNull().default('0'),
+  grossPay: decimal("gross_pay", { precision: 10, scale: 2 }).notNull().default('0'),
+  method: text("method").notNull().default('bank_transfer'),
+  reference: text("reference"),
+  notes: text("notes"),
+  paidAt: timestamp("paid_at").notNull().defaultNow(),
+  remittanceSentAt: timestamp("remittance_sent_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_payroll_payments_business").on(table.businessOwnerId),
+  index("idx_payroll_payments_worker").on(table.workerUserId),
+  index("idx_payroll_payments_period").on(table.periodStart, table.periodEnd),
+]);
+
+export const insertPayrollPaymentSchema = createInsertSchema(payrollPayments).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPayrollPayment = z.infer<typeof insertPayrollPaymentSchema>;
+export type PayrollPayment = typeof payrollPayments.$inferSelect;
 
 // Worker State System
 export const WORKER_STATES = ['available', 'busy', 'unavailable', 'on_job', 'travelling', 'break', 'delayed', 'needs_help'] as const;

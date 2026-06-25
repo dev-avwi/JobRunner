@@ -885,6 +885,83 @@ export async function markInvoicePaidInXero(userId: string, invoiceId: string): 
   }
 }
 
+// Task #271: push an approved subcontractor invoice to Xero as a bill (ACCPAY /
+// accounts-payable entry). userId is the business owner. Returns the created
+// Xero bill id. Caller persists accountingBillId/error on the sub-invoice.
+export async function pushSubcontractorBillToXero(
+  userId: string,
+  subInvoiceId: string,
+): Promise<{ success: boolean; billId?: string; error?: string }> {
+  try {
+    const connection = await storage.getXeroConnection(userId);
+    if (!connection || connection.status !== "active") {
+      return { success: false, error: "Xero is not connected" };
+    }
+
+    const invoice = await storage.getSubcontractorInvoiceWithItems(subInvoiceId);
+    if (!invoice) {
+      return { success: false, error: "Subcontractor invoice not found" };
+    }
+
+    const refreshedConnection = await refreshTokenIfNeeded(connection);
+    const xero = prepareXeroClient(refreshedConnection);
+
+    const subcontractor = await storage.getUser(invoice.subcontractorUserId);
+    const paymentDetails = await storage.getWorkerPaymentDetails(invoice.subcontractorUserId);
+    const supplierName = ensureSupplierName(subcontractor);
+
+    const businessSettings = await storage.getBusinessSettings(userId);
+    const expenseAccountCode = businessSettings?.xeroExpenseAccountCode || "400";
+    const taxType = invoice.gstEnabled !== false ? "INPUT" : "NONE";
+
+    const xeroBill = {
+      type: "ACCPAY" as any,
+      contact: {
+        name: supplierName,
+        emailAddress: subcontractor?.email || undefined,
+        taxNumber: paymentDetails?.abn || undefined,
+      },
+      lineItems: invoice.items.map(item => {
+        const qty = item.quantity != null ? parseFloat(item.quantity) : (item.hours != null ? parseFloat(item.hours) : 1);
+        const priceVal = item.unitPrice != null ? item.unitPrice : item.rate;
+        const unitAmount = priceVal != null && priceVal !== '' ? parseFloat(priceVal) : parseFloat(item.amount || "0");
+        return {
+          description: item.description,
+          quantity: qty && !isNaN(qty) ? qty : 1,
+          unitAmount: !isNaN(unitAmount) ? unitAmount : 0,
+          accountCode: expenseAccountCode,
+          taxType,
+        };
+      }),
+      date: (invoice.createdAt ? new Date(invoice.createdAt) : new Date()).toISOString().split('T')[0],
+      dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : undefined,
+      reference: invoice.invoiceNumber || undefined,
+      status: "AUTHORISED" as any,
+    };
+
+    const response = await xeroApiCall(refreshedConnection, "createSubcontractorBill", () =>
+      xero.accountingApi.createInvoices(refreshedConnection.tenantId, { invoices: [xeroBill as any] })
+    );
+
+    const createdBill = response.body.invoices?.[0];
+    if (createdBill?.invoiceID) {
+      xeroLog("pushSubcontractorBill", { userId, subInvoiceId, billId: createdBill.invoiceID, status: "success" });
+      return { success: true, billId: createdBill.invoiceID };
+    }
+
+    return { success: false, error: "Xero did not return a bill id" };
+  } catch (err) {
+    xeroLog("pushSubcontractorBill", { userId, subInvoiceId, status: "error", error: String(err) });
+    return { success: false, error: getErrorMessage(err) || String(err) };
+  }
+}
+
+function ensureSupplierName(user: { firstName?: string | null; lastName?: string | null; email?: string | null } | undefined): string {
+  if (!user) return "Subcontractor";
+  const full = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  return full || user.email || "Subcontractor";
+}
+
 export async function getConnectionStatus(userId: string): Promise<{
   connected: boolean;
   tenantName?: string;

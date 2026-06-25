@@ -17,7 +17,13 @@ import { Feather } from '@expo/vector-icons';
 import Svg, { Rect, Path, Line, Text as SvgText, G } from 'react-native-svg';
 import { useReportsStore } from '../../src/lib/store';
 import { useTheme } from '../../src/lib/theme';
-import { api } from '../../src/lib/api';
+import { api, API_URL } from '../../src/lib/api';
+import { showToast } from '../../src/lib/toast';
+import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
+import { SheetButton } from '../../src/components/ui/SheetButton';
+import { TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -26,6 +32,42 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type ReportPeriod = 'week' | 'month' | 'quarter' | 'year';
 type ReportTab = 'overview' | 'revenue' | 'clients' | 'profitability' | 'aged' | 'payroll' | 'utilisation' | 'export';
+
+interface PayrollWorker {
+  teamMemberId: string;
+  memberId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  hourlyRate: number;
+  isSubcontractor: boolean;
+  regularHours: number;
+  overtimeHours: number;
+  breakHours: number;
+  totalHours: number;
+  billableHours: number;
+  nonBillableHours: number;
+  grossPay: number;
+  overtimePay: number;
+  jobCount: number;
+  entryCount: number;
+  approved: number;
+  unapproved: number;
+  paid: boolean;
+  paidAt: string | null;
+  payrollPaymentId: string | null;
+  paidMethod: string | null;
+  paidReference: string | null;
+}
+
+const PAYROLL_PAY_METHODS: { value: string; label: string }[] = [
+  { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'payid', label: 'PayID' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'cheque', label: 'Cheque' },
+  { value: 'card', label: 'Card' },
+  { value: 'other', label: 'Other' },
+];
 
 const PERIODS: { key: ReportPeriod; label: string }[] = [
   { key: 'week', label: 'This Week' },
@@ -877,6 +919,7 @@ export default function ReportsScreen() {
     period, 
     setPeriod,
     fetchAllReports, 
+    fetchPayroll,
     isLoading,
     error 
   } = useReportsStore();
@@ -918,6 +961,83 @@ export default function ReportsScreen() {
   const [activeReportTab, setActiveReportTab] = useState<ReportTab>('overview');
   const [stripeData, setStripeData] = useState<StripePaymentsReport | null>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
+
+  // Payroll pay-run state
+  const [payWorker, setPayWorker] = useState<PayrollWorker | null>(null);
+  const [payMethod, setPayMethod] = useState('bank_transfer');
+  const [payReference, setPayReference] = useState('');
+  const [payNotes, setPayNotes] = useState('');
+  const [paySubmitting, setPaySubmitting] = useState(false);
+  const [payslipBusyId, setPayslipBusyId] = useState<string | null>(null);
+
+  const openPayrollPay = useCallback((worker: PayrollWorker) => {
+    setPayWorker(worker);
+    setPayMethod('bank_transfer');
+    setPayReference('');
+    setPayNotes('');
+  }, []);
+
+  const submitPayrollPay = useCallback(async () => {
+    if (!payWorker || !payrollReport) return;
+    setPaySubmitting(true);
+    try {
+      const res = await api.post('/api/payroll/pay', {
+        workerUserId: payWorker.memberId,
+        periodStart: payrollReport.period.start,
+        periodEnd: payrollReport.period.end,
+        method: payMethod,
+        reference: payReference.trim() || undefined,
+        notes: payNotes.trim() || undefined,
+        paidAt: new Date().toISOString(),
+        sendPayslip: true,
+      });
+      if (res.error) {
+        showToast({ type: 'error', message: res.error });
+      } else {
+        showToast({ type: 'success', message: 'Worker paid. Payslip sent.' });
+        setPayWorker(null);
+        fetchPayroll();
+      }
+    } catch (error: unknown) {
+      const errMsg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to record payment';
+      showToast({ type: 'error', message: errMsg });
+    } finally {
+      setPaySubmitting(false);
+    }
+  }, [payWorker, payrollReport, payMethod, payReference, payNotes, fetchPayroll]);
+
+  const downloadPayslip = useCallback(async (paymentId: string) => {
+    setPayslipBusyId(paymentId);
+    try {
+      const token = await api.getToken();
+      const url = `${API_URL}/api/payroll/payslip/${paymentId}`;
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}`, 'x-mobile-app': 'true' },
+      });
+      if (!response.ok) throw new Error('Failed to download payslip');
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64 = (reader.result as string).split(',')[1];
+          const fileUri = `${FileSystem.cacheDirectory}payslip_${paymentId}.pdf`;
+          await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri, { mimeType: 'application/pdf', dialogTitle: 'Payslip', UTI: 'com.adobe.pdf' });
+          } else {
+            showToast({ type: 'success', message: 'Payslip saved to device' });
+          }
+        } catch {
+          showToast({ type: 'error', message: 'Failed to save payslip' });
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch {
+      showToast({ type: 'error', message: 'Could not download payslip' });
+    } finally {
+      setPayslipBusyId(null);
+    }
+  }, []);
 
   const fetchStripeData = useCallback(async () => {
     setStripeLoading(true);
@@ -1742,19 +1862,55 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                     </View>
                   </View>
 
+                  <View style={styles.statsRow}>
+                    <View style={styles.statCard}>
+                      <View style={styles.statHeader}>
+                        <View style={[styles.statIconContainer, { backgroundColor: colors.successLight }]}>
+                          <Feather name="check-circle" size={20} color={colors.success} />
+                        </View>
+                      </View>
+                      <Text style={styles.statValue}>{formatCurrency(payrollReport.totals.totalPaid)}</Text>
+                      <Text style={styles.statTitle}>PAID</Text>
+                      <Text style={styles.statSubValue}>{payrollReport.totals.paidCount} worker{payrollReport.totals.paidCount !== 1 ? 's' : ''}</Text>
+                    </View>
+                    <View style={styles.statCard}>
+                      <View style={styles.statHeader}>
+                        <View style={[styles.statIconContainer, { backgroundColor: colors.warningLight }]}>
+                          <Feather name="alert-circle" size={20} color={colors.warning} />
+                        </View>
+                      </View>
+                      <Text style={styles.statValue}>{formatCurrency(payrollReport.totals.totalOutstanding)}</Text>
+                      <Text style={styles.statTitle}>OUTSTANDING</Text>
+                      <Text style={styles.statSubValue}>{payrollReport.totals.outstandingCount} worker{payrollReport.totals.outstandingCount !== 1 ? 's' : ''}</Text>
+                    </View>
+                  </View>
+
                   <Text style={styles.sectionTitle}>WORKER BREAKDOWN</Text>
                   {payrollReport.workers.map((worker) => {
                     const billablePct = worker.totalHours > 0 ? (worker.billableHours / worker.totalHours) * 100 : 0;
+                    const payslipBusy = payslipBusyId === worker.payrollPaymentId;
                     return (
                       <View key={worker.teamMemberId} style={styles.workerCard}>
                         <View style={styles.workerHeader}>
-                          <View>
+                          <View style={{ flex: 1 }}>
                             <Text style={styles.workerName}>{worker.firstName} {worker.lastName}</Text>
                             <Text style={styles.workerSubtext}>
                               ${worker.hourlyRate}/hr{worker.isSubcontractor ? ' (Sub)' : ''}
                             </Text>
                           </View>
-                          <Text style={[styles.bucketAmount, { color: colors.success }]}>{formatCurrency(worker.grossPay)}</Text>
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={[styles.bucketAmount, { color: colors.success }]}>{formatCurrency(worker.grossPay)}</Text>
+                            {worker.paid && (
+                              <View style={{
+                                flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2,
+                                paddingHorizontal: spacing.sm, paddingVertical: 2,
+                                borderRadius: radius.pill, backgroundColor: colors.success + '20',
+                              }}>
+                                <Feather name="check" size={11} color={colors.success} />
+                                <Text style={{ fontSize: 11, fontWeight: '600', color: colors.success }}>Paid</Text>
+                              </View>
+                            )}
+                          </View>
                         </View>
                         <View style={styles.workerStatsRow}>
                           <View style={styles.workerStat}>
@@ -1773,9 +1929,112 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                         <View style={[styles.progressBarContainer, { marginTop: spacing.sm }]}>
                           <View style={[styles.progressBar, { width: `${Math.min(billablePct, 100)}%`, backgroundColor: billablePct >= 70 ? colors.success : billablePct >= 40 ? colors.warning : colors.destructive }]} />
                         </View>
+                        <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
+                          {worker.paid ? (
+                            <TouchableOpacity
+                              style={{
+                                flex: 1, backgroundColor: colors.muted, borderRadius: radius.md,
+                                paddingVertical: spacing.sm, alignItems: 'center',
+                              }}
+                              onPress={() => worker.payrollPaymentId && downloadPayslip(worker.payrollPaymentId)}
+                              disabled={payslipBusy || !worker.payrollPaymentId}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+                                {payslipBusy ? '...' : 'Payslip'}
+                              </Text>
+                            </TouchableOpacity>
+                          ) : worker.grossPay > 0 ? (
+                            <TouchableOpacity
+                              style={{
+                                flex: 1, backgroundColor: colors.success + '15', borderRadius: radius.md,
+                                paddingVertical: spacing.sm, alignItems: 'center',
+                              }}
+                              onPress={() => openPayrollPay(worker)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.success }}>Pay</Text>
+                            </TouchableOpacity>
+                          ) : null}
+                        </View>
                       </View>
                     );
                   })}
+
+                  <AppBottomSheet
+                    visible={!!payWorker}
+                    onDismiss={() => setPayWorker(null)}
+                    snapPoints={['75%']}
+                    scrollable
+                  >
+                    <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                      <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, marginBottom: spacing.xs }}>
+                        Pay Worker
+                      </Text>
+                      {payWorker && (
+                        <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md }}>
+                          {payWorker.firstName} {payWorker.lastName} · {formatCurrency(payWorker.grossPay)}
+                        </Text>
+                      )}
+
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Method</Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md }}>
+                        {PAYROLL_PAY_METHODS.map((m) => (
+                          <TouchableOpacity
+                            key={m.value}
+                            onPress={() => setPayMethod(m.value)}
+                            activeOpacity={0.7}
+                            style={{
+                              paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
+                              borderRadius: radius.pill, borderWidth: 1,
+                              borderColor: payMethod === m.value ? colors.primary : colors.border,
+                              backgroundColor: payMethod === m.value ? colors.primary + '15' : 'transparent',
+                            }}
+                          >
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: payMethod === m.value ? colors.primary : colors.mutedForeground }}>
+                              {m.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Reference</Text>
+                      <TextInput
+                        style={{
+                          borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+                          paddingHorizontal: spacing.md, paddingVertical: spacing.sm, color: colors.foreground,
+                          marginBottom: spacing.md, backgroundColor: colors.background,
+                        }}
+                        value={payReference}
+                        onChangeText={setPayReference}
+                        placeholder="e.g. bank transfer ref"
+                        placeholderTextColor={colors.mutedForeground}
+                      />
+
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Notes</Text>
+                      <TextInput
+                        style={{
+                          borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+                          paddingHorizontal: spacing.md, paddingVertical: spacing.sm, color: colors.foreground,
+                          marginBottom: spacing.lg, backgroundColor: colors.background, minHeight: 70, textAlignVertical: 'top',
+                        }}
+                        value={payNotes}
+                        onChangeText={setPayNotes}
+                        placeholder="Optional notes"
+                        placeholderTextColor={colors.mutedForeground}
+                        multiline
+                      />
+
+                      <SheetButton
+                        label="Pay & Send Payslip"
+                        onPress={submitPayrollPay}
+                        loading={paySubmitting}
+                        fullWidth
+                      />
+                      <View style={{ height: spacing.md }} />
+                      <SheetButton label="Cancel" variant="outline" onPress={() => setPayWorker(null)} fullWidth />
+                    </KeyboardAvoidingView>
+                  </AppBottomSheet>
                 </>
               ) : payrollReport && payrollReport.workers.length === 0 ? (
                 <View style={styles.emptyCard}>

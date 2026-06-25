@@ -109,3 +109,47 @@ echo "Verifying schema is in sync with shared/schema.ts..."
 node scripts/check-schema-drift.mjs
 
 echo "Schema changes applied."
+
+# Task #271 (Subcontractor & payroll payments): money-side tables + columns
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS paid_reference text;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS paid_notes text;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS remittance_sent_at timestamp;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS accounting_provider text;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS accounting_bill_id text;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS accounting_synced_at timestamp;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE subcontractor_invoices ADD COLUMN IF NOT EXISTS accounting_sync_error text;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS worker_payment_details (
+  id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id varchar NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  bank_bsb text,
+  bank_account_number text,
+  bank_account_name text,
+  abn text,
+  pay_id text,
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()
+);" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_worker_payment_details_user ON worker_payment_details (user_id);" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS payroll_payments (
+  id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_owner_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  worker_user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  team_member_id varchar REFERENCES team_members(id) ON DELETE SET NULL,
+  period_start timestamp NOT NULL,
+  period_end timestamp NOT NULL,
+  regular_hours decimal(10,2) NOT NULL DEFAULT '0',
+  overtime_hours decimal(10,2) NOT NULL DEFAULT '0',
+  total_hours decimal(10,2) NOT NULL DEFAULT '0',
+  gross_pay decimal(10,2) NOT NULL DEFAULT '0',
+  method text NOT NULL DEFAULT 'bank_transfer',
+  reference text,
+  notes text,
+  paid_at timestamp NOT NULL DEFAULT now(),
+  remittance_sent_at timestamp,
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()
+);" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_payroll_payments_business ON payroll_payments (business_owner_id);" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_payroll_payments_worker ON payroll_payments (worker_user_id);" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_payroll_payments_period ON payroll_payments (period_start, period_end);" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE UNIQUE INDEX IF NOT EXISTS uq_payroll_payments_worker_period ON payroll_payments (business_owner_id, worker_user_id, period_start, period_end);" 2>/dev/null || true
