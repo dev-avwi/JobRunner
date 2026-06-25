@@ -104,6 +104,10 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "money",
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    // Server gates payment recording via MANAGE_PAYMENTS; the role-editor worker
+    // vocab stores this as `collect_payments` (aliased → manage_payments). Neither
+    // is a DEFAULT worker permission, so default workers' menus are unchanged.
+    requiredPermission: ['collect_payments', 'manage_payments'],
   },
   {
     title: "Expenses",
@@ -116,6 +120,10 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "money",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
+    // Server gates expense writes via createPermissionMiddleware(WRITE_EXPENSES).
+    // Expenses uses the coarse read_/write_ vocabulary (no granular alias);
+    // neither is a DEFAULT worker permission.
+    requiredPermission: ['read_expenses', 'write_expenses'],
   },
   {
     title: "Collect Payment",
@@ -128,6 +136,9 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "money",
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    // Worker vocab `collect_payments` (aliased → manage_payments) is the
+    // payment-collection permission; not a DEFAULT worker permission.
+    requiredPermission: ['collect_payments', 'manage_payments'],
   },
   {
     title: "Schedule",
