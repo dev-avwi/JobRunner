@@ -6805,7 +6805,7 @@ export default function JobDetailScreen() {
         onSchedule={handleStatusChange}
         onStartJob={handleStatusChange}
         onCompleteJob={handleStatusChange}
-        canCompleteJob={isJobManager}
+        canCompleteJob={!!isJobManager}
         onSendInvoice={async () => {
           if (invoice?.id && client?.email) {
             try {
