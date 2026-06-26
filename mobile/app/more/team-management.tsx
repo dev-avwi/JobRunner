@@ -483,7 +483,7 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
   if (invoices.length === 0) return null;
 
   return (
-    <View style={{ marginBottom: spacing.lg }}>
+    <View style={{ marginHorizontal: spacing.lg, marginBottom: spacing.lg }}>
       <Text style={{ fontSize: 17, fontWeight: '700', color: colors.foreground, marginBottom: spacing.sm }}>
         Subcontractor Invoices
       </Text>
@@ -556,8 +556,11 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             <TouchableOpacity
               style={{
+                flex: 1,
+                minWidth: 100,
                 flexDirection: 'row',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: 6,
                 backgroundColor: colors.muted,
                 borderRadius: radius.md,
@@ -575,6 +578,8 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
             </TouchableOpacity>
             <TouchableOpacity
               style={{
+                flex: 1,
+                minWidth: 100,
                 backgroundColor: colors.muted,
                 borderRadius: radius.md,
                 paddingVertical: spacing.sm,
@@ -626,6 +631,8 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
             {inv.status === 'paid' && (
               <TouchableOpacity
                 style={{
+                  flex: 1,
+                  minWidth: 100,
                   backgroundColor: colors.muted,
                   borderRadius: radius.md,
                   paddingVertical: spacing.sm,
@@ -644,6 +651,8 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
             {(inv.status === 'approved' || inv.status === 'paid') && connectedProvider && (
               <TouchableOpacity
                 style={{
+                  flex: 1,
+                  minWidth: 100,
                   backgroundColor: synced ? colors.muted : colors.primary + '15',
                   borderRadius: radius.md,
                   paddingVertical: spacing.sm,
@@ -2789,23 +2798,6 @@ export default function TeamManagementScreen() {
               <Text style={styles.statValue}>{workerCount}</Text>
               <Text style={styles.statLabel}>Workers</Text>
             </View>
-          </View>
-
-          <View style={styles.rolesInfoCard}>
-            <Text style={styles.rolesInfoTitle}>Role Permissions Overview</Text>
-            {Object.entries(ROLE_CONFIG).map(([key, config]) => (
-              <View key={key} style={styles.roleInfoRow}>
-                <View style={[styles.roleInfoBadge, { backgroundColor: config.color }]}>
-                  <Feather name={config.icon as any} size={14} color={colors.white} />
-                </View>
-                <View style={styles.roleInfoContent}>
-                  <Text style={styles.roleInfoLabel}>{config.label}</Text>
-                  <Text style={styles.roleInfoDescription}>
-                    {ROLE_PERMISSION_SUMMARY[key as keyof typeof ROLE_PERMISSION_SUMMARY]?.slice(0, 2).join(' • ')}
-                  </Text>
-                </View>
-              </View>
-            ))}
           </View>
 
           {currentUserIsOwner && inviteCodes.filter(c => c.isActive).length > 0 && (
