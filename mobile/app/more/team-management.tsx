@@ -483,8 +483,8 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
   if (invoices.length === 0) return null;
 
   return (
-    <View style={{ marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.lg }}>
-      <Text style={{ fontSize: 17, fontWeight: '700', color: colors.foreground, marginBottom: spacing.md }}>
+    <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.sm }}>
+      <Text style={{ ...typography.label, color: colors.mutedForeground, marginBottom: spacing.md }}>
         Subcontractor Invoices
       </Text>
       {invoices.map((inv) => {
@@ -495,8 +495,8 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
           key={inv.id}
           style={{
             backgroundColor: colors.card,
-            borderRadius: radius.lg,
-            marginBottom: spacing.sm,
+            borderRadius: radius.xl,
+            marginBottom: spacing.md,
             borderWidth: 1,
             borderColor: colors.cardBorder,
             overflow: 'hidden',
@@ -504,7 +504,7 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
         >
           {/* Status accent strip */}
           <View style={{ height: 3, backgroundColor: getStatusColor(inv.status) }} />
-          <View style={{ padding: spacing.md }}>
+          <View style={{ padding: spacing.lg }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 }}>
                 <View style={{
