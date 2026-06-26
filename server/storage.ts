@@ -8987,7 +8987,23 @@ Thank you for your prompt attention to this matter.`,
       const match = inv.invoiceNumber.match(/(\d+)$/);
       return match ? Math.max(max, parseInt(match[1])) : max;
     }, 0);
-    return `SUB-${String(maxNum + 1).padStart(4, '0')}`;
+    // Number it like a real invoice from the subcontractor's own business:
+    // their configured invoice prefix, else initials of their business name, else INV-.
+    const settings = await this.getBusinessSettings(subcontractorUserId);
+    let prefix = (settings?.invoicePrefix || '').trim();
+    if (!prefix && settings?.businessName) {
+      const initials = settings.businessName
+        .replace(/[^A-Za-z0-9 ]/g, '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(w => w[0]!.toUpperCase())
+        .join('')
+        .slice(0, 4);
+      if (initials) prefix = `${initials}-`;
+    }
+    if (!prefix) prefix = 'INV-';
+    if (!/[-\s]$/.test(prefix)) prefix = `${prefix}-`;
+    return `${prefix}${String(maxNum + 1).padStart(4, '0')}`;
   }
 
   // Subcontractor Invoice Items
