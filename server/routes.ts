@@ -46814,6 +46814,14 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         }
         labourAmount = Math.round(labourAmount * 100) / 100;
 
+        // Refuse to silently create a $0 labour line. When neither the time
+        // entries, the assignment override, nor the membership carry a rate,
+        // labourAmount resolves to 0 and we'd otherwise persist a useless
+        // $0.00 invoice. Reject with an actionable message instead.
+        if (totalHours > 0 && labourAmount <= 0) {
+          return res.status(400).json({ error: `No hourly rate is set for your work on "${jobRecord[0].title}". Ask the business owner to set your rate before invoicing.` });
+        }
+
         // Include job materials cost (with dedup check)
         const existingMaterialItems = await db.select({ id: subcontractorInvoiceItems.id })
           .from(subcontractorInvoiceItems)

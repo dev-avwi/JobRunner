@@ -379,12 +379,17 @@ export function SubcontractorDashboard() {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 14);
 
-      await api.post('/api/subcontractor/invoices', {
+      const response = await api.post('/api/subcontractor/invoices', {
         businessOwnerId,
         items,
         notes: invoiceNotes || undefined,
         dueDate: dueDate.toISOString(),
       });
+
+      if (response.error) {
+        Alert.alert('Could not submit invoice', response.error);
+        return;
+      }
 
       Alert.alert('Invoice Submitted', 'Your invoice has been sent to the business owner for review.');
       setShowInvoiceCreate(false);
