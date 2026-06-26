@@ -483,8 +483,8 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
   if (invoices.length === 0) return null;
 
   return (
-    <View style={{ marginHorizontal: spacing.lg, marginBottom: spacing.lg }}>
-      <Text style={{ fontSize: 17, fontWeight: '700', color: colors.foreground, marginBottom: spacing.sm }}>
+    <View style={{ marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.lg }}>
+      <Text style={{ fontSize: 17, fontWeight: '700', color: colors.foreground, marginBottom: spacing.md }}>
         Subcontractor Invoices
       </Text>
       {invoices.map((inv) => {
