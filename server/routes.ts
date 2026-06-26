@@ -47529,6 +47529,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           name: subUser ? `${subUser.firstName || ''} ${subUser.lastName || ''}`.trim() || subUser.email || 'Unknown' : 'Unknown',
           email: subUser?.email || '',
           abn: subBizSettings?.abn || null,
+          logoUrl: subBizSettings?.logoUrl || null,
+          brandColor: subBizSettings?.brandColor || null,
         },
         business: {
           name: bizSettings?.businessName || 'Unknown',

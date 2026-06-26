@@ -80,6 +80,7 @@ async function computeOperationalAlerts(userId: string): Promise<OperationalAler
     checkScheduleConflicts(alerts, allJobs, allJobAssignments);
     checkIdleWorkers(alerts, allTeamMembers, activeTimers, allJobs, now);
     checkUninvoicedJobs(alerts, allJobs, allInvoices);
+    await checkSubcontractorInvoices(alerts, userId);
 
   } catch (error) {
     console.error("[OperationalAlerts] Error computing alerts:", error);
@@ -396,5 +397,61 @@ function checkUninvoicedJobs(
       jobTitle: job.title,
       timeInfo: daysSinceCompletion > 0 ? `${daysSinceCompletion}d ago` : undefined,
     });
+  }
+}
+
+async function checkSubcontractorInvoices(
+  alerts: OperationalAlert[],
+  businessOwnerId: string
+) {
+  try {
+    const invoices = await storage.getSubcontractorInvoicesByBusiness(businessOwnerId);
+    const pending = invoices.filter(
+      (inv: any) => inv.status === "submitted" || inv.status === "approved"
+    );
+
+    for (const inv of pending.slice(0, 5)) {
+      const total = parseFloat(inv.totalAmount || "0");
+      const isApproved = inv.status === "approved";
+
+      let subName = "A subcontractor";
+      try {
+        const u = await storage.getUser(inv.subcontractorUserId);
+        if (u) {
+          subName =
+            `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
+            u.email ||
+            subName;
+        }
+      } catch {
+        // name enrichment is best-effort
+      }
+
+      const amountText = `$${total.toLocaleString("en-AU", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+
+      alerts.push({
+        id: `sub-invoice-${inv.id}`,
+        type: "subcontractor_invoice",
+        severity: "important",
+        title: isApproved
+          ? "Subcontractor invoice to pay"
+          : "New subcontractor invoice",
+        message: isApproved
+          ? `${subName} — ${inv.invoiceNumber} for ${amountText} approved, awaiting payment`
+          : `${subName} sent ${inv.invoiceNumber} for ${amountText} — awaiting your review`,
+        actionType: "view",
+        actionLabel: isApproved ? "Pay Invoice" : "Review Invoice",
+        relatedInvoiceId: inv.id,
+        timeInfo: amountText,
+      });
+    }
+  } catch (error) {
+    console.error(
+      "[OperationalAlerts] Subcontractor invoice check failed:",
+      error
+    );
   }
 }

@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { HardHat, FileText, Download, CheckCircle2, XCircle, DollarSign, Building2, Loader2, Receipt } from "lucide-react";
+import { HardHat, FileText, Download, CheckCircle2, XCircle, DollarSign, Building2, Loader2, Receipt, Eye } from "lucide-react";
 import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -116,6 +116,26 @@ async function downloadPdf(url: string, filename: string): Promise<void> {
   URL.revokeObjectURL(objectUrl);
 }
 
+async function openPdf(url: string): Promise<void> {
+  const token = getSessionToken();
+  const res = await fetch(url, {
+    credentials: 'include',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error('Failed to open');
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const win = window.open(objectUrl, '_blank');
+  if (!win) {
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.click();
+  }
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+}
+
 export default function SubcontractorInvoices() {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState('all');
@@ -215,6 +235,13 @@ export default function SubcontractorInvoices() {
     onError: () => toast({ title: 'Download failed', description: 'Could not download the remittance advice.', variant: 'destructive' }),
   });
 
+  const viewPdfMutation = useMutation({
+    mutationFn: async (inv: SubInvoice) => {
+      await openPdf(`/api/subcontractor/invoices/${inv.id}/pdf`);
+    },
+    onError: () => toast({ title: 'Could not open invoice', description: 'The invoice PDF failed to load.', variant: 'destructive' }),
+  });
+
   const openPay = (inv: SubInvoice) => {
     setPayInvoice(inv);
     setPayMethod('bank_transfer');
@@ -308,6 +335,14 @@ export default function SubcontractorInvoices() {
                         </td>
                         <td className="px-4 py-2.5">
                           <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            <Button
+                              size="sm" variant="outline"
+                              disabled={viewPdfMutation.isPending}
+                              onClick={() => viewPdfMutation.mutate(inv)}
+                              data-testid={`button-view-pdf-${inv.id}`}
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1" />View PDF
+                            </Button>
                             {inv.status === 'submitted' && (
                               <Button
                                 size="sm" variant="outline"
@@ -466,6 +501,9 @@ export default function SubcontractorInvoices() {
 
           {detail && (
             <DialogFooter className="flex-wrap gap-2">
+              <Button variant="outline" disabled={viewPdfMutation.isPending} onClick={() => viewPdfMutation.mutate(detail)}>
+                <Eye className="h-4 w-4 mr-1.5" />View PDF
+              </Button>
               {detail.status === 'submitted' && (
                 <>
                   <Button variant="ghost" disabled={busy} onClick={() => { setRejectInvoice(detail); setRejectReason(''); }}>

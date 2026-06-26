@@ -414,6 +414,39 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
     }
   }, []);
 
+  const viewInvoicePdf = useCallback(async (inv: MobileSubInvoice) => {
+    setUpdatingId(inv.id);
+    try {
+      const token = await api.getToken();
+      const url = `${API_URL}/api/subcontractor/invoices/${inv.id}/pdf`;
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}`, 'x-mobile-app': 'true' },
+      });
+      if (!response.ok) throw new Error('Failed to load invoice');
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64 = (reader.result as string).split(',')[1];
+          const fileUri = `${FileSystem.cacheDirectory}invoice_${inv.id}.pdf`;
+          await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri, { mimeType: 'application/pdf', dialogTitle: inv.invoiceNumber, UTI: 'com.adobe.pdf' });
+          } else {
+            showToast({ type: 'success', message: 'Invoice saved to device' });
+          }
+        } catch {
+          showToast({ type: 'error', message: 'Failed to open invoice' });
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch {
+      showToast({ type: 'error', message: 'Could not open invoice' });
+    } finally {
+      setUpdatingId(null);
+    }
+  }, []);
+
   const pushBill = useCallback(async (inv: MobileSubInvoice) => {
     setUpdatingId(inv.id);
     try {
@@ -463,37 +496,83 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
           style={{
             backgroundColor: colors.card,
             borderRadius: radius.lg,
-            padding: spacing.md,
             marginBottom: spacing.sm,
             borderWidth: 1,
             borderColor: colors.cardBorder,
+            overflow: 'hidden',
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground }}>{inv.invoiceNumber}</Text>
+          {/* Status accent strip */}
+          <View style={{ height: 3, backgroundColor: getStatusColor(inv.status) }} />
+          <View style={{ padding: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 }}>
+                <View style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: radius.md,
+                  backgroundColor: getStatusColor(inv.status) + '18',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Feather name="file-text" size={17} color={getStatusColor(inv.status)} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }} numberOfLines={1}>{inv.invoiceNumber}</Text>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground }} numberOfLines={1}>
+                    {inv.subcontractorName || 'Subcontractor'}
+                  </Text>
+                </View>
+              </View>
+              <View style={{
+                paddingHorizontal: spacing.sm,
+                paddingVertical: 3,
+                borderRadius: radius.pill,
+                backgroundColor: getStatusColor(inv.status) + '20',
+              }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: getStatusColor(inv.status), textTransform: 'capitalize' }}>
+                  {inv.status}
+                </Text>
+              </View>
+            </View>
+
             <View style={{
-              paddingHorizontal: spacing.sm,
-              paddingVertical: 2,
-              borderRadius: radius.pill,
-              backgroundColor: getStatusColor(inv.status) + '20',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingVertical: spacing.sm,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+              marginBottom: spacing.sm,
             }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: getStatusColor(inv.status), textTransform: 'capitalize' }}>
-                {inv.status}
+              <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+              </Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>
+                {formatCurrency(inv.totalAmount)}
               </Text>
             </View>
-          </View>
-          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 2 }}>
-            From: {inv.subcontractorName || 'Subcontractor'}
-          </Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
-            <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
-              {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('en-AU') : ''}
-            </Text>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>
-              {formatCurrency(inv.totalAmount)}
-            </Text>
-          </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: colors.muted,
+                borderRadius: radius.md,
+                paddingVertical: spacing.sm,
+                paddingHorizontal: spacing.md,
+              }}
+              onPress={() => viewInvoicePdf(inv)}
+              disabled={busy}
+              activeOpacity={0.7}
+            >
+              <Feather name="eye" size={14} color={colors.foreground} />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+                {busy ? '...' : 'View PDF'}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={{
                 backgroundColor: colors.muted,
@@ -580,6 +659,7 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
                 </Text>
               </TouchableOpacity>
             )}
+            </View>
           </View>
         </View>
         );
