@@ -680,6 +680,7 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
         onDismiss={() => setPayInvoice(null)}
         snapPoints={['80%']}
         scrollable
+        contentPadding={spacing['2xl']}
       >
         <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, marginBottom: spacing.xs }}>
@@ -772,6 +773,7 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
         onDismiss={() => setDetailsInvoice(null)}
         snapPoints={['55%']}
         scrollable
+        contentPadding={spacing['2xl']}
       >
         <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, marginBottom: spacing.md }}>
           Payment Details
@@ -2843,6 +2845,7 @@ export default function TeamManagementScreen() {
               gap: 12,
               padding: spacing.lg,
               marginTop: spacing.lg,
+              marginHorizontal: spacing.lg,
               backgroundColor: colors.card,
               borderRadius: 12,
               borderWidth: 1,
