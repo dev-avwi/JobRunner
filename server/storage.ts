@@ -1287,6 +1287,7 @@ export interface IStorage {
   getSubcontractorInvoiceItems(invoiceId: string): Promise<SubcontractorInvoiceItem[]>;
   createSubcontractorInvoiceItem(item: InsertSubcontractorInvoiceItem): Promise<SubcontractorInvoiceItem>;
   deleteSubcontractorInvoiceItems(invoiceId: string): Promise<boolean>;
+  deleteSubcontractorInvoice(id: string): Promise<boolean>;
 
   // Worker payment details (Task #271)
   getWorkerPaymentDetails(userId: string): Promise<WorkerPaymentDetails | undefined>;
@@ -9018,6 +9019,12 @@ Thank you for your prompt attention to this matter.`,
 
   async deleteSubcontractorInvoiceItems(invoiceId: string): Promise<boolean> {
     const result = await db.delete(subcontractorInvoiceItems).where(eq(subcontractorInvoiceItems.invoiceId, invoiceId)).returning();
+    return result.length > 0;
+  }
+
+  async deleteSubcontractorInvoice(id: string): Promise<boolean> {
+    await db.delete(subcontractorInvoiceItems).where(eq(subcontractorInvoiceItems.invoiceId, id));
+    const result = await db.delete(subcontractorInvoices).where(eq(subcontractorInvoices.id, id)).returning();
     return result.length > 0;
   }
 

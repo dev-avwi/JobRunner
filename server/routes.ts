@@ -47110,6 +47110,36 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
+  // DELETE /api/subcontractor/invoices/:id - Subcontractor removes their own invoice
+  app.delete("/api/subcontractor/invoices/:id", requireAuth, async (req: any, res) => {
+    try {
+      const invoice = await storage.getSubcontractorInvoice(req.params.id);
+      if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+      // Only the subcontractor who created the invoice may delete it.
+      if (invoice.subcontractorUserId !== req.userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      // A paid invoice is a financial record — never allow it to be deleted.
+      if (invoice.status === 'paid') {
+        return res.status(400).json({ error: 'A paid invoice cannot be deleted.' });
+      }
+
+      // Once an invoice has been pushed to accounting (e.g. as a Xero/QBO bill),
+      // deleting it locally would orphan the external record. Block it.
+      if (invoice.accountingBillId || invoice.accountingSyncedAt) {
+        return res.status(400).json({ error: 'This invoice has been synced to your accounting software and cannot be deleted.' });
+      }
+
+      await storage.deleteSubcontractorInvoice(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[Subcontractor Invoice Delete] Error:', error);
+      res.status(500).json({ error: 'Failed to delete invoice' });
+    }
+  });
+
   // GET /api/business/subcontractor-invoices - Business owner views received invoices
   app.get("/api/business/subcontractor-invoices", requireAuth, async (req: any, res) => {
     try {

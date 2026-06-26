@@ -25,6 +25,7 @@ import { spacing, radius, shadows, typography, pageShell, usePageShell } from '.
 import { useScrollToTop } from '../contexts/ScrollContext';
 import { useUserRole } from '../hooks/use-user-role';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 interface SubcontractorJob {
   id: string;
@@ -145,6 +146,7 @@ export function SubcontractorDashboard() {
   const [invoices, setInvoices] = useState<SubInvoiceSummary[]>([]);
   const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
   const [showInvoices, setShowInvoices] = useState(false);
+  const confirm = useConfirmDialog();
 
   useEffect(() => {
     if (scrollToTopTrigger > 0) {
@@ -407,6 +409,25 @@ export function SubcontractorDashboard() {
     setShowInvoices(true);
     loadInvoices();
   }, [loadInvoices]);
+
+  const handleDeleteInvoice = useCallback(async (inv: SubInvoiceSummary) => {
+    const ok = await confirm({
+      title: 'Delete Invoice',
+      message: `Delete invoice ${inv.invoiceNumber}? This cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    const response = await api.delete(`/api/subcontractor/invoices/${inv.id}`);
+    if (response.error) {
+      Alert.alert('Could not delete invoice', response.error);
+      return;
+    }
+    loadInvoices();
+    fetchDashboard();
+  }, [confirm, loadInvoices, fetchDashboard]);
 
   const getInvoiceStatusColor = useCallback((status: string) => {
     switch (status) {
@@ -1361,15 +1382,26 @@ export function SubcontractorDashboard() {
                             <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground }}>
                               {inv.invoiceNumber}
                             </Text>
-                            <View style={{
-                              paddingHorizontal: spacing.sm,
-                              paddingVertical: 2,
-                              borderRadius: radius.pill,
-                              backgroundColor: colorWithOpacity(getInvoiceStatusColor(inv.status), 0.12),
-                            }}>
-                              <Text style={{ fontSize: 11, fontWeight: '600', color: getInvoiceStatusColor(inv.status), textTransform: 'capitalize' }}>
-                                {inv.status}
-                              </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                              <View style={{
+                                paddingHorizontal: spacing.sm,
+                                paddingVertical: 2,
+                                borderRadius: radius.pill,
+                                backgroundColor: colorWithOpacity(getInvoiceStatusColor(inv.status), 0.12),
+                              }}>
+                                <Text style={{ fontSize: 11, fontWeight: '600', color: getInvoiceStatusColor(inv.status), textTransform: 'capitalize' }}>
+                                  {inv.status}
+                                </Text>
+                              </View>
+                              {inv.status !== 'paid' && (
+                                <TouchableOpacity
+                                  onPress={() => handleDeleteInvoice(inv)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  accessibilityLabel={`Delete invoice ${inv.invoiceNumber}`}
+                                >
+                                  <Feather name="trash-2" size={16} color={colors.destructive} />
+                                </TouchableOpacity>
+                              )}
                             </View>
                           </View>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
