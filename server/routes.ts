@@ -242,7 +242,7 @@ import { notifyJobAssigned, notifyJobUpdate, notifyPaymentReceived, notifyQuoteA
 import { getEmailIntegration, getGmailConnectionStatus } from "./emailIntegrationService";
 import { getUncachableStripeClient, getStripePublishableKey, isStripeInitialized } from "./stripeClient";
 import { checkTwilioAvailability, sendSMS, validateTwilioWebhook } from "./twilioClient";
-import { geocodeAddress, haversineDistance, calculateRouteETA } from "./geocoding";
+import { geocodeAddress, haversineDistance, calculateRouteETA, getRouteGeometry } from "./geocoding";
 import { processStatusChangeAutomation, processPaymentReceivedAutomation, processTimeBasedAutomations } from "./automationService";
 import * as xeroService from "./xeroService";
 import * as myobService from "./myobService";
@@ -6280,7 +6280,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Route optimization endpoint - Uses Google Maps Directions API with waypoint optimization
+  // Returns the real road geometry (and per-leg drive time/distance) for a set
+  // of ordered stops, so the map can draw the actual driving path instead of
+  // straight lines. Falls back gracefully (404) when OSRM is unavailable.
+  app.post("/api/routes/geometry", requireAuth, async (req: any, res) => {
+    try {
+      const { stops } = req.body || {};
+      if (!Array.isArray(stops) || stops.length < 2) {
+        return res.status(400).json({ error: "At least 2 stops are required" });
+      }
+
+      const points = stops
+        .map((s: any) => ({ lat: Number(s?.lat), lng: Number(s?.lng) }))
+        .filter(
+          (p: { lat: number; lng: number }) =>
+            Number.isFinite(p.lat) &&
+            Number.isFinite(p.lng) &&
+            Math.abs(p.lat) <= 90 &&
+            Math.abs(p.lng) <= 180
+        );
+
+      if (points.length < 2) {
+        return res.status(400).json({ error: "At least 2 valid coordinates are required" });
+      }
+
+      const geometry = await getRouteGeometry(points);
+      if (!geometry) {
+        return res.status(404).json({ error: "Route geometry unavailable" });
+      }
+
+      return res.json(geometry);
+    } catch (error) {
+      console.error("Error fetching route geometry:", error);
+      return res.status(500).json({ error: "Failed to fetch route geometry" });
+    }
+  });
+
   app.post("/api/routes/optimize", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);

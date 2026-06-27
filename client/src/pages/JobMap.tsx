@@ -37,6 +37,7 @@ import {
   Zap,
   ChevronDown,
   ChevronUp,
+  ArrowDown,
   Navigation2,
   Wifi,
   WifiOff,
@@ -545,6 +546,21 @@ interface RouteJob {
   address?: string;
   latitude?: number;
   longitude?: number;
+  // Per-leg drive time (min) / distance (km) from the previous stop, carried
+  // over from the schedule planner so the map can show real leg estimates.
+  travelTime?: number;
+  travelDistance?: number;
+}
+
+interface RouteGeometryLeg {
+  durationMinutes: number;
+  distanceKm: number;
+}
+
+interface RouteGeometryResponse {
+  coordinates: Array<[number, number]>;
+  legs: RouteGeometryLeg[];
+  source: 'osrm';
 }
 
 function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwner: boolean; isManager: boolean }) {
@@ -579,6 +595,8 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
   const [routeJobs, setRouteJobs] = useState<RouteJob[]>([]);
   const [showRoutePanel, setShowRoutePanel] = useState(false);
   const [routeParsed, setRouteParsed] = useState(false);
+  // Real road geometry (OSRM) for the current route; null until fetched / on failure.
+  const [roadGeometry, setRoadGeometry] = useState<RouteGeometryResponse | null>(null);
 
   const defaultCenter: [number, number] = [-16.9186, 145.7781];
   const defaultZoom = 11;
@@ -971,6 +989,76 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
     return enrichedRouteJobs.filter(job => job.address);
   }, [enrichedRouteJobs]);
 
+  // Stable signature of the route stop coordinates, so we only refetch the road
+  // geometry when the actual stops (or their order) change.
+  const routeCoordsKey = useMemo(
+    () => routeCoordinates.map(([lat, lng]) => `${lat},${lng}`).join('|'),
+    [routeCoordinates]
+  );
+
+  // Per-stop leg info (drive from the previous stop), aligned to enrichedRouteJobs.
+  // Prefers real OSRM road legs from the fetched geometry; falls back to the
+  // per-leg estimates carried over from the schedule planner.
+  const routeLegInfo = useMemo(() => {
+    const legsMatchStops =
+      roadGeometry?.legs &&
+      roadGeometry.legs.length === Math.max(0, routeJobsWithCoords.length - 1);
+
+    let coordStopSeen = 0;
+    return enrichedRouteJobs.map((job, index) => {
+      const hasCoords = !!(job.latitude && job.longitude);
+      if (hasCoords) coordStopSeen += 1;
+
+      // Real road geometry leg (only when geometry legs line up with coord stops).
+      if (legsMatchStops && hasCoords && coordStopSeen > 1) {
+        const leg = roadGeometry!.legs[coordStopSeen - 2];
+        if (leg) {
+          return { minutes: leg.durationMinutes, km: leg.distanceKm };
+        }
+      }
+
+      // Fallback: planner-provided per-leg estimate carried in the route param.
+      if (index > 0 && typeof job.travelTime === 'number') {
+        return {
+          minutes: job.travelTime,
+          km: typeof job.travelDistance === 'number' ? job.travelDistance : undefined,
+        };
+      }
+      return null;
+    });
+  }, [enrichedRouteJobs, roadGeometry, routeJobsWithCoords.length]);
+
+  // Fetch the real road geometry (OSRM) for the current route stops. Falls back
+  // to straight-line segments (roadGeometry === null) if the request fails.
+  useEffect(() => {
+    if (!showRoutePanel || routeCoordinates.length < 2) {
+      setRoadGeometry(null);
+      return;
+    }
+
+    let cancelled = false;
+    const stops = routeCoordinates.map(([lat, lng]) => ({ lat, lng }));
+
+    (async () => {
+      try {
+        const res = await apiRequest('POST', '/api/routes/geometry', { stops });
+        const data = (await res.json()) as RouteGeometryResponse;
+        if (!cancelled && data?.coordinates?.length >= 2) {
+          setRoadGeometry(data);
+        } else if (!cancelled) {
+          setRoadGeometry(null);
+        }
+      } catch {
+        if (!cancelled) setRoadGeometry(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeCoordsKey, showRoutePanel]);
+
   // Sort team members: active members first, then by activity type (working > driving > online > offline)
   const sortedTeamLocations = useMemo(() => {
     return [...mergedTeamLocations].sort((a, b) => {
@@ -1262,8 +1350,19 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
             onComplete={() => setClickedJobPosition(null)}
           />
           
-          {/* Route polyline - draw line between stops */}
-          {showRoutePanel && routeCoordinates.length >= 2 && (
+          {/* Route polyline - follow real roads (OSRM) when available, else
+              fall back to dashed straight segments between stops */}
+          {showRoutePanel && roadGeometry && roadGeometry.coordinates.length >= 2 && (
+            <Polyline
+              positions={roadGeometry.coordinates}
+              pathOptions={{
+                color: 'hsl(var(--trade))',
+                weight: 5,
+                opacity: 0.85,
+              }}
+            />
+          )}
+          {showRoutePanel && !roadGeometry && routeCoordinates.length >= 2 && (
             <Polyline
               positions={routeCoordinates}
               pathOptions={{
@@ -1940,8 +2039,22 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
             
             <div className="space-y-1.5 mb-2 max-h-40 overflow-y-auto">
               {enrichedRouteJobs.map((job, index) => (
+                <div key={job.jobId}>
+                  {/* Per-leg drive time / distance from the previous stop */}
+                  {routeLegInfo[index] && (
+                    <div className="flex items-center gap-1 pl-1.5 mb-1 text-[10px] text-muted-foreground">
+                      <ArrowDown className="h-2.5 w-2.5 shrink-0" />
+                      <Clock className="h-2.5 w-2.5 shrink-0" />
+                      <span className="font-medium">{routeLegInfo[index]!.minutes} min</span>
+                      {typeof routeLegInfo[index]!.km === 'number' && (
+                        <>
+                          <span>·</span>
+                          <span>{routeLegInfo[index]!.km!.toFixed(1)} km</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 <div 
-                  key={job.jobId}
                   className={`flex items-center gap-1.5 p-1.5 rounded-lg ${
                     !job.address 
                       ? (isDark ? 'bg-amber-900/20 border border-amber-700/50' : 'bg-amber-50 border border-amber-200')
@@ -1966,6 +2079,7 @@ function FullScreenMap({ isTeam, isOwner, isManager }: { isTeam: boolean; isOwne
                   >
                     <X className="h-3 w-3" />
                   </Button>
+                </div>
                 </div>
               ))}
             </div>

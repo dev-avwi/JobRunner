@@ -214,6 +214,8 @@ export function AIScheduleOptimizer({ onApplySchedule, className }: AIScheduleOp
       title: item.job.title,
       clientName: item.job.clientName,
       address: item.job.address,
+      travelTime: item.travelTime,
+      travelDistance: item.travelDistance,
     }));
     const routeParam = encodeURIComponent(JSON.stringify(routeJobs));
     navigate(`/map?route=${routeParam}`);

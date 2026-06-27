@@ -207,6 +207,76 @@ export async function calculateRouteETA(
   }
 }
 
+export interface RouteGeometryLeg {
+  durationMinutes: number;
+  distanceKm: number;
+}
+
+export interface RouteGeometry {
+  // Ordered [lat, lng] points tracing the real road path through all stops.
+  coordinates: Array<[number, number]>;
+  // Per-leg drive time/distance (leg i = from stop i to stop i+1).
+  legs: RouteGeometryLeg[];
+  source: 'osrm';
+}
+
+/**
+ * Fetch the real road geometry (and per-leg drive time/distance) for a route
+ * passing through the given stops in order, using OSRM's route service with
+ * full GeoJSON overview. Returns null when OSRM is unavailable or errors, so
+ * the caller can fall back to straight-line segments.
+ */
+export async function getRouteGeometry(
+  points: Array<{ lat: number; lng: number }>
+): Promise<RouteGeometry | null> {
+  if (points.length < 2) return null;
+  try {
+    const coords = points.map((p) => `${p.lng},${p.lat}`).join(';');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=false`,
+        { signal: controller.signal }
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!res.ok) return null;
+    const data = await res.json();
+    const route = data?.routes?.[0];
+    if (
+      data?.code !== 'Ok' ||
+      !route?.geometry?.coordinates ||
+      !Array.isArray(route.geometry.coordinates)
+    ) {
+      return null;
+    }
+
+    // OSRM geometry is [lng, lat]; Leaflet wants [lat, lng].
+    const coordinates: Array<[number, number]> = route.geometry.coordinates
+      .filter(
+        (c: any) =>
+          Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number'
+      )
+      .map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+
+    if (coordinates.length < 2) return null;
+
+    const legs: RouteGeometryLeg[] = Array.isArray(route.legs)
+      ? route.legs.map((leg: any) => ({
+          durationMinutes: Math.max(0, Math.ceil((leg?.duration ?? 0) / 60)),
+          distanceKm: Math.round((leg?.distance ?? 0) / 100) / 10,
+        }))
+      : [];
+
+    return { coordinates, legs, source: 'osrm' };
+  } catch {
+    return null;
+  }
+}
+
 export interface DriveMatrix {
   // durations[i][j] = drive time in minutes from point i to point j
   durations: number[][];
