@@ -76,17 +76,17 @@ export const TIER_LIMITS = {
 // Pricing in cents (AUD) - flat per-tier (matches Apple IAP)
 export const PRICING = {
   pro: {
-    monthly: 3999, // $39.99/month
+    monthly: 4999, // $49.99/month
     name: 'JobRunner Pro',
     description: 'Unlimited jobs, quotes, and invoices for solo tradies',
   },
   team: {
-    monthly: 8999, // $89.99/month flat (up to 5 workers)
+    monthly: 9999, // $99.99/month flat (up to 5 workers)
     name: 'JobRunner Team',
     description: 'Everything in Pro plus team management for up to 5 workers',
   },
   business: {
-    monthly: 12999, // $129.99/month flat (up to 15 workers)
+    monthly: 19999, // $199.99/month flat (up to 15 workers)
     name: 'JobRunner Business',
     description: 'Everything in Team plus advanced reporting for up to 15 workers',
   },
@@ -528,7 +528,7 @@ export const businessSettings = pgTable("business_settings", {
   autoRemindersEnabled: boolean("auto_reminders_enabled").default(true),
   reminderDays: json("reminder_days").default([7, 14, 30]), // Days after due date to send reminders
   reminderTone: text("reminder_tone").default('friendly'), // friendly, professional, firm
-  // JobRunner Subscription Billing (tradie paying us $39.99/month)
+  // JobRunner Subscription Billing (tradie paying us $49.99/month)
   stripeCustomerId: text("stripe_customer_id"), // Platform customer ID for subscription billing
   stripeSubscriptionId: text("stripe_subscription_id"), // Active subscription ID
   subscriptionStatus: text("subscription_status").default('none'), // none, active, trialing, past_due, canceled, paused

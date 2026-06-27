@@ -158,7 +158,7 @@ export default function UpgradeToTeamCard({ onNavigate }: UpgradeToTeamCardProps
               </Button>
             </Link>
             <p className="text-xs text-center text-muted-foreground">
-              Team plan is $89.99/mo flat — up to 5 team members. 7-day free trial included.
+              Team plan is $99.99/mo flat — up to 5 team members. 7-day free trial included.
             </p>
           </>
         )}

@@ -2633,9 +2633,9 @@ function BillingTabContent() {
   };
 
   // Flat pricing in dollars (matches Apple IAP)
-  const proMonthly = formatPrice(PRICING.pro.monthly); // $39.99
-  const teamMonthly = formatPrice(PRICING.team.monthly); // $89.99
-  const businessMonthly = formatPrice(PRICING.business.monthly); // $129.99
+  const proMonthly = formatPrice(PRICING.pro.monthly); // $49.99
+  const teamMonthly = formatPrice(PRICING.team.monthly); // $99.99
+  const businessMonthly = formatPrice(PRICING.business.monthly); // $199.99
 
   // Fetch billing status
   const { data: billingStatus, isLoading: billingLoading } = useQuery<{
@@ -2685,7 +2685,7 @@ function BillingTabContent() {
     }
   });
 
-  // Create Team checkout session mutation (flat $89.99/mo)
+  // Create Team checkout session mutation (flat $99.99/mo)
   const createTeamCheckoutMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/billing/checkout/team");
@@ -2705,7 +2705,7 @@ function BillingTabContent() {
     }
   });
 
-  // Create Business checkout session mutation (flat $129.99/mo)
+  // Create Business checkout session mutation (flat $199.99/mo)
   const createBusinessCheckoutMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/billing/checkout/business");
@@ -2789,7 +2789,7 @@ function BillingTabContent() {
     }
   });
 
-  // Upgrade Pro to Team with trial mutation (flat $89.99/mo)
+  // Upgrade Pro to Team with trial mutation (flat $99.99/mo)
   const upgradeToTeamMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/subscription/upgrade-to-team");
@@ -2811,7 +2811,7 @@ function BillingTabContent() {
     }
   });
 
-  // Upgrade to Business with trial mutation (flat $129.99/mo)
+  // Upgrade to Business with trial mutation (flat $199.99/mo)
   const upgradeToBusinessMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/subscription/upgrade-to-business");

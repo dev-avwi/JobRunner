@@ -2770,7 +2770,7 @@ function RevenueView() {
           <CardContent>
             <div className="space-y-4">
               {[
-                { label: "Pro ($39.99/mo)", value: revenue?.subscribers.pro || 0, color: "bg-green-500", pct: revenue?.subscribers.total ? Math.round(((revenue?.subscribers.pro || 0) / revenue.subscribers.total) * 100) : 0 },
+                { label: "Pro ($49.99/mo)", value: revenue?.subscribers.pro || 0, color: "bg-green-500", pct: revenue?.subscribers.total ? Math.round(((revenue?.subscribers.pro || 0) / revenue.subscribers.total) * 100) : 0 },
                 { label: "Trial", value: revenue?.subscribers.trial || 0, color: "bg-blue-500", pct: revenue?.subscribers.total ? Math.round(((revenue?.subscribers.trial || 0) / revenue.subscribers.total) * 100) : 0 },
                 { label: "Free", value: revenue?.subscribers.free || 0, color: "bg-muted-foreground/40", pct: revenue?.subscribers.total ? Math.round(((revenue?.subscribers.free || 0) / revenue.subscribers.total) * 100) : 0 },
               ].map((tier) => (

@@ -70,7 +70,7 @@ export default function TermsOfService() {
                   <li>Basic features included at no cost</li>
                 </ul>
                 
-                <p className="text-muted-foreground leading-relaxed mt-4 mb-3"><strong>Pro Plan ($39.99/month AUD):</strong></p>
+                <p className="text-muted-foreground leading-relaxed mt-4 mb-3"><strong>Pro Plan ($49.99/month AUD):</strong></p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                   <li>Unlimited jobs, quotes, and invoices</li>
                   <li>Custom branding and theming</li>
@@ -79,7 +79,7 @@ export default function TermsOfService() {
                   <li>Autopilot automations</li>
                 </ul>
 
-                <p className="text-muted-foreground leading-relaxed mt-4 mb-3"><strong>Team Plan ($89.99/month AUD):</strong></p>
+                <p className="text-muted-foreground leading-relaxed mt-4 mb-3"><strong>Team Plan ($99.99/month AUD):</strong></p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                   <li>Everything in Pro, plus team management for up to 5 workers</li>
                   <li>Team member accounts with role-based permissions</li>
@@ -88,7 +88,7 @@ export default function TermsOfService() {
                   <li>Team chat and team operations centre</li>
                 </ul>
 
-                <p className="text-muted-foreground leading-relaxed mt-4 mb-3"><strong>Business Plan ($129.99/month AUD):</strong></p>
+                <p className="text-muted-foreground leading-relaxed mt-4 mb-3"><strong>Business Plan ($199.99/month AUD):</strong></p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                   <li>Everything in Team, plus support for up to 15 workers</li>
                   <li>Priority support and advanced features</li>

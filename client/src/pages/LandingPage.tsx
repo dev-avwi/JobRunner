@@ -865,7 +865,7 @@ export default function LandingPage() {
             <AnimatedSection delay={150}>
               <PricingCard
                 name="Pro"
-                price="$39.99"
+                price="$49.99"
                 period="/month"
                 description="Unlimited everything for solo operators"
                 features={[
@@ -891,7 +891,7 @@ export default function LandingPage() {
             <AnimatedSection delay={300}>
               <PricingCard
                 name="Team"
-                price="$89.99"
+                price="$99.99"
                 period="/month flat"
                 description="Full power for growing businesses"
                 features={[
@@ -915,7 +915,7 @@ export default function LandingPage() {
             <AnimatedSection delay={450}>
               <PricingCard
                 name="Business"
-                price="$129.99"
+                price="$199.99"
                 period="/month flat"
                 description="Advanced tools for established operators"
                 features={[

@@ -565,7 +565,7 @@ export default function SubscriptionPage() {
 
   const handleUpgrade = async (tier: 'pro' | 'team' | 'business') => {
     const tierNames = { pro: 'Pro', team: 'Team', business: 'Business' };
-    const defaultPrices = { pro: '$39.99', team: '$89.99', business: '$129.99' };
+    const defaultPrices = { pro: '$49.99', team: '$99.99', business: '$199.99' };
     const productIds = {
       pro: IAP_PRODUCT_IDS.pro,
       team: IAP_PRODUCT_IDS.team,
@@ -932,7 +932,7 @@ export default function SubscriptionPage() {
                     <Text style={styles.comparePlanName}>Pro</Text>
                     <Text style={styles.comparePlanDesc}>For solo tradies ready to grow</Text>
                   </View>
-                  <Text style={styles.comparePlanPrice}>$39.99<Text style={styles.comparePlanPriceUnit}>/mo</Text></Text>
+                  <Text style={styles.comparePlanPrice}>$49.99<Text style={styles.comparePlanPriceUnit}>/mo</Text></Text>
                 </View>
                 <View style={styles.comparePlanFeatures}>
                   {['Unlimited jobs & invoices', 'AI-powered features', 'Custom templates', 'Email integration', 'Priority support'].map((f, i) => (
@@ -958,7 +958,7 @@ export default function SubscriptionPage() {
                     <Text style={styles.comparePlanName}>Team</Text>
                     <Text style={styles.comparePlanDesc}>For businesses with workers</Text>
                   </View>
-                  <Text style={styles.comparePlanPrice}>$89.99<Text style={styles.comparePlanPriceUnit}>/mo</Text></Text>
+                  <Text style={styles.comparePlanPrice}>$99.99<Text style={styles.comparePlanPriceUnit}>/mo</Text></Text>
                 </View>
                 <View style={styles.comparePlanFeatures}>
                   {['Everything in Pro', 'Up to 5 workers', 'GPS & live tracking', 'Time tracking & timesheets', 'Team chat'].map((f, i) => (
@@ -984,7 +984,7 @@ export default function SubscriptionPage() {
                     <Text style={styles.comparePlanName}>Business</Text>
                     <Text style={styles.comparePlanDesc}>For larger crews</Text>
                   </View>
-                  <Text style={styles.comparePlanPrice}>$129.99<Text style={styles.comparePlanPriceUnit}>/mo</Text></Text>
+                  <Text style={styles.comparePlanPrice}>$199.99<Text style={styles.comparePlanPriceUnit}>/mo</Text></Text>
                 </View>
                 <View style={styles.comparePlanFeatures}>
                   {['Everything in Team', 'Up to 15 workers', 'Role-based permissions', 'Advanced reporting', 'Priority support'].map((f, i) => (

@@ -5406,7 +5406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { tier, seats } = req.body;
 
       // All three tiers are now self-serve via Stripe checkout
-      // (matches Apple IAP — Pro $39.99 / Team $89.99 / Business $129.99 flat).
+      // (matches Apple IAP — Pro $49.99 / Team $99.99 / Business $199.99 flat).
       if (!tier || !['pro', 'team', 'business'].includes(tier)) {
         return res.status(400).json({
           error: 'Invalid tier. Must be "pro", "team", or "business".',
@@ -5789,7 +5789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/subscription/upgrade-to-team - Upgrades Pro subscription to flat Team ($89.99/mo) with trial
+  // POST /api/subscription/upgrade-to-team - Upgrades Pro subscription to flat Team ($99.99/mo) with trial
   app.post("/api/subscription/upgrade-to-team", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { upgradeProToTeamTrial } = await import('./billingService');
@@ -5813,7 +5813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/subscription/upgrade-to-business - Upgrades to flat Business ($129.99/mo) with trial
+  // POST /api/subscription/upgrade-to-business - Upgrades to flat Business ($199.99/mo) with trial
   app.post("/api/subscription/upgrade-to-business", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { upgradeProToBusinessTrial } = await import('./billingService');
@@ -12164,7 +12164,7 @@ Be specific about materials, colors, and features that would be included.`
       
       res.json({
         success: true,
-        message: 'Team base price set to $89.99/month flat',
+        message: 'Team base price set to $99.99/month flat',
         oldPrice: result.oldPrice,
         newPrice: result.newPrice
       });
@@ -30604,7 +30604,7 @@ Respond with JSON in this format:
   
   // ===== STRIPE CONNECT ROUTES =====
   // Two-layer payment architecture:
-  // Layer 1: Platform subscriptions (JobRunner charges tradies $39.99/month Pro, $89.99/month Team flat, $129.99/month Business flat)
+  // Layer 1: Platform subscriptions (JobRunner charges tradies $49.99/month Pro, $99.99/month Team flat, $199.99/month Business flat)
   // Layer 2: Customer payments (clients pay tradies, with platform application_fee)
   
   // Create or get Stripe Connect Express account for tradie (owner only)
@@ -36695,7 +36695,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  // Create Team subscription checkout (flat $89.99/mo, includes up to 5 workers)
+  // Create Team subscription checkout (flat $99.99/mo, includes up to 5 workers)
   app.post("/api/billing/checkout/team", requireAuth, async (req: any, res) => {
     try {
       const { createTeamSubscriptionCheckout, getPublishableKey } = await import('./billingService');
@@ -36731,7 +36731,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  // Create Business subscription checkout (flat $129.99/mo, includes up to 15 workers)
+  // Create Business subscription checkout (flat $199.99/mo, includes up to 15 workers)
   app.post("/api/billing/checkout/business", requireAuth, async (req: any, res) => {
     try {
       const { createBusinessSubscriptionCheckout, getPublishableKey } = await import('./billingService');

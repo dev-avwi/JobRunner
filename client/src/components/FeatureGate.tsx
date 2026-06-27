@@ -99,7 +99,7 @@ export default function FeatureGate({
   const isToTeam = requiredTier === 'team';
   const isProToTeam = (subscriptionTier === 'pro' || subscriptionTier === 'trial') && requiredTier === 'team';
   const ctaText = isProToTeam ? 'Upgrade to Team' : 'Start 7-Day Free Trial';
-  const ctaSubtext = isProToTeam ? 'Team plan is $89.99/mo flat — includes up to 5 team members' : 'No credit card required to start your trial';
+  const ctaSubtext = isProToTeam ? 'Team plan is $99.99/mo flat — includes up to 5 team members' : 'No credit card required to start your trial';
 
   if (compact) {
     return (

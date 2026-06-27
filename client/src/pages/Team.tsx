@@ -163,7 +163,7 @@ function PlanLockOverlay({ onUpgrade, message }: { onUpgrade: () => void; messag
           <h3 className="text-base font-semibold mb-1">Team Plan required</h3>
           <p className="text-sm text-muted-foreground mb-4">{message}</p>
           <Button onClick={onUpgrade} data-testid="button-upgrade-from-team-page">
-            Upgrade to Team — $89.99/mo flat
+            Upgrade to Team — $99.99/mo flat
           </Button>
         </CardContent>
       </Card>
@@ -260,7 +260,7 @@ export default function TeamPage() {
       if (!hasTeamPlan) {
         toast({
           title: "Team Plan needed",
-          description: "Inviting members needs a Team plan ($89.99/mo flat). Upgrading now.",
+          description: "Inviting members needs a Team plan ($99.99/mo flat). Upgrading now.",
         });
         setLocation("/pricing");
         return;
@@ -339,7 +339,7 @@ export default function TeamPage() {
                     <div className="text-[11.5px] text-muted-foreground leading-relaxed">
                       Permanent staff with email login & role-based access.
                     </div>
-                    <Badge variant="secondary" className="mt-1 text-[10px]">Team Plan · $89.99/mo flat</Badge>
+                    <Badge variant="secondary" className="mt-1 text-[10px]">Team Plan · $99.99/mo flat</Badge>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -371,7 +371,7 @@ export default function TeamPage() {
                     <div className="text-[11.5px] text-muted-foreground leading-relaxed">
                       Recurring sub with their own dashboard & invoicing.
                     </div>
-                    <Badge variant="secondary" className="mt-1 text-[10px]">Team Plan · $89.99/mo flat</Badge>
+                    <Badge variant="secondary" className="mt-1 text-[10px]">Team Plan · $99.99/mo flat</Badge>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -462,7 +462,7 @@ export default function TeamPage() {
             <PlanLockOverlay
               onUpgrade={() => setLocation("/pricing")}
               message={isPro
-                ? "You're on Pro (single user). Upgrade to Team to invite staff — $89.99/mo flat — up to 5 team members."
+                ? "You're on Pro (single user). Upgrade to Team to invite staff — $99.99/mo flat — up to 5 team members."
                 : "Inviting team members requires a Team plan. Subs are still available on Pro."
               }
             />
@@ -521,7 +521,7 @@ export default function TeamPage() {
             iconColor="hsl(145 65% 42%)"
             title="Account subcontractor"
             desc="Recurring sub with their own dashboard, invoicing, and history."
-            tag={hasTeamPlan ? "$89.99/mo flat" : "Team Plan needed"}
+            tag={hasTeamPlan ? "$99.99/mo flat" : "Team Plan needed"}
             tagColor={hasTeamPlan ? "hsl(145 65% 42%)" : "hsl(35 90% 50%)"}
             locked={!hasTeamPlan}
             onClick={() => handleAddChoice("account_sub")}
@@ -649,8 +649,8 @@ function InviteMemberSheet({
   const isAccountSub = mode === "account_sub";
   const title = isAccountSub ? "Add an account subcontractor" : "Invite a team member";
   const desc = isAccountSub
-    ? "Invite a sub who'll have their own login and can submit invoices to you. included in $89.99/mo Team plan."
-    : "Permanent staff with email login & role-based access. included in $89.99/mo Team plan.";
+    ? "Invite a sub who'll have their own login and can submit invoices to you. included in $99.99/mo Team plan."
+    : "Permanent staff with email login & role-based access. included in $99.99/mo Team plan.";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
