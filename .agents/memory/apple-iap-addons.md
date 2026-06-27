@@ -25,5 +25,14 @@ A valid Apple receipt is NOT enough on its own. The endpoint must:
 On `Platform.OS === 'ios'`, the buy handlers handle the whole path and `return` regardless of outcome — including when `isIAPAvailable()` is false (show a "Purchase Unavailable" alert, do NOT fall through to the `/api/sms/purchase-number` Stripe branch or the `ai-receptionist-checkout` URL). Apple policy. Web/Android keep Stripe.
 **How to apply:** the dedicated-number screen stashes the picked number via `setPendingDedicatedNumber()` before `purchaseSubscription()`; the global IAP listener reads it when POSTing verify-apple-addon. AI receptionist requires a dedicated number first (pre-check before purchase).
 
+## Paid-tier gating (Pro+ only)
+Both add-ons require a Pro plan or higher — a free user must not buy OR provision either one. `requirePaidTier()` (server/routes/middleware.ts; resolves to the OWNER's effective tier, treats lapsed/canceled/past_due/unpaid/paused as free, 402 otherwise, bypassed only when `IS_BETA` which is currently false) must sit on EVERY provision/checkout entrypoint, not just one:
+- `POST /api/subscription/verify-apple-addon` (iOS Apple receipt verify+provision)
+- `POST /api/sms/purchase-number` (Stripe/Twilio number purchase — web+Android)
+- `POST /api/subscription/ai-receptionist-checkout` (Stripe checkout — web+Android)
+The AI Receptionist enable/config/resync routes were already gated; the purchase paths were the gap.
+**Why:** without a gate on the purchase path, a free user completes the Apple charge then gets blocked at the (gated) enable route → paid for nothing → refund mess.
+**How to apply:** also gate the mobile UI BEFORE `purchaseSubscription()` so free users never reach Apple's sheet — `isFreePlan = user.subscriptionTier==='free' && !betaLifetimeAccess && !isBeta`, show an upgrade prompt and return. Both phone-numbers.tsx handlers (purchase + reacquire) and ai-receptionist.tsx do this. Server stays the source of truth.
+
 ## Deploy reminder
 Prod DB needs the `addon_subscriptions` table + indexes created via raw SQL on deploy (this DB rejects db:push — see db-add-table-no-push). Includes the unique txn index above.

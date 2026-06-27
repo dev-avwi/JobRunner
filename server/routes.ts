@@ -5512,7 +5512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/subscription/ai-receptionist-checkout - Creates Stripe checkout for AI Receptionist add-on
-  app.post("/api/subscription/ai-receptionist-checkout", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/subscription/ai-receptionist-checkout", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       const { IS_BETA } = await import('./freemiumService');
       const userId = req.userId!;
@@ -5943,7 +5943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // (AI Receptionist / Dedicated Number) and provisions the feature. The addon_subscriptions
   // row is the single source of truth for add-on billing state across iOS, Android and web.
   // Returns 200 even on verification failure (success:false) so the client recovers gracefully.
-  app.post("/api/subscription/verify-apple-addon", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/subscription/verify-apple-addon", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { receiptData, productId, phoneNumber } = req.body;
@@ -34839,7 +34839,7 @@ Respond with JSON in this format:
   });
 
   // Purchase a Twilio phone number and assign to user's business
-  app.post("/api/sms/purchase-number", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.post("/api/sms/purchase-number", requireAuth, requirePaidTier(), ownerOnly(), async (req: any, res) => {
     try {
       const userId = req.userId!;
       let businessOwnerId = userId;

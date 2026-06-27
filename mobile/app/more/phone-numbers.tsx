@@ -72,7 +72,9 @@ export default function PhoneNumbersPage() {
   const { colors } = useTheme();
   const bottomInset = useBottomInset(40);
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { businessSettings, fetchBusinessSettings } = useAuthStore();
+  const { user, businessSettings, fetchBusinessSettings } = useAuthStore();
+  const userTier = user?.subscriptionTier || 'free';
+  const isFreePlan = userTier === 'free' && !user?.betaLifetimeAccess && !user?.isBeta;
   // Subcontractors viewing a joined business get read-only access — the
   // dedicated number is owned/managed by the business owner.
   const { isOwner, isManager, isLoading: roleLoading } = useUserRole();
@@ -199,6 +201,18 @@ export default function PhoneNumbersPage() {
 
   const handleReacquireLastNumber = async () => {
     if (!lastOwnedNumber) return;
+    // A dedicated number is a paid add-on — Pro plan or higher only.
+    if (isFreePlan) {
+      Alert.alert(
+        'Upgrade Required',
+        'A dedicated phone number requires a Pro plan or higher. Please upgrade your subscription first.',
+        [
+          { text: 'Not Now', style: 'cancel' },
+          { text: 'View Plans', onPress: () => router.push(asHref('/more/subscription')) },
+        ],
+      );
+      return;
+    }
     Alert.alert(
       'Re-acquire Number',
       `Get ${formatPhone(lastOwnedNumber)} back as your dedicated business number?`,
@@ -277,6 +291,18 @@ export default function PhoneNumbersPage() {
   };
 
   const handlePurchase = (number: AvailableNumber) => {
+    // A dedicated number is a paid add-on — Pro plan or higher only.
+    if (isFreePlan) {
+      Alert.alert(
+        'Upgrade Required',
+        'A dedicated phone number requires a Pro plan or higher. Please upgrade your subscription first.',
+        [
+          { text: 'Not Now', style: 'cancel' },
+          { text: 'View Plans', onPress: () => router.push(asHref('/more/subscription')) },
+        ],
+      );
+      return;
+    }
 
     const hasSms = number.capabilities?.sms;
     const hasMms = number.capabilities?.mms;
