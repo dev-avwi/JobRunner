@@ -13,7 +13,7 @@ import {
   Animated,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
-import MapView, { Marker, Callout, PROVIDER_GOOGLE, Region, MapStyleElement, Camera } from 'react-native-maps';
+import MapView, { Marker, Callout, Polyline, PROVIDER_GOOGLE, Region, MapStyleElement, Camera } from 'react-native-maps';
 
 // Error boundary to catch map-related crashes
 interface ErrorBoundaryState {
@@ -694,6 +694,65 @@ export default function MapScreen() {
   const [routeJobs, setRouteJobs] = useState<JobWithLocation[]>([]);
   const [showRoutePanel, setShowRoutePanel] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  // Real road geometry (OSRM) for the planned route; null = fall back to straight lines
+  const [routeGeometry, setRouteGeometry] = useState<{
+    coordinates: { latitude: number; longitude: number }[];
+    legs: { durationMinutes: number; distanceKm: number }[];
+  } | null>(null);
+  // Straight-line coords between stops, used as a fallback when OSRM geometry is unavailable
+  const routeStraightCoords = useMemo(
+    () =>
+      routeJobs
+        .filter((j) => j.latitude != null && j.longitude != null)
+        .map((j) => ({ latitude: j.latitude as number, longitude: j.longitude as number })),
+    [routeJobs]
+  );
+  // Total drive time/distance across all legs (shown in the route panel header)
+  const routeTotals = useMemo(() => {
+    if (!routeGeometry?.legs?.length) return null;
+    const minutes = routeGeometry.legs.reduce((s, l) => s + (l.durationMinutes || 0), 0);
+    const km = routeGeometry.legs.reduce((s, l) => s + (l.distanceKm || 0), 0);
+    return { minutes, km };
+  }, [routeGeometry]);
+
+  // Fetch real road geometry (OSRM) whenever the planned route changes.
+  // Falls back to straight lines (routeGeometry stays null) when unavailable.
+  useEffect(() => {
+    const stops = routeJobs
+      .filter((j) => j.latitude != null && j.longitude != null)
+      .map((j) => ({ lat: j.latitude as number, lng: j.longitude as number }));
+
+    if (stops.length < 2) {
+      setRouteGeometry(null);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.post('/api/routes/geometry', { stops });
+        if (cancelled) return;
+        const data = res.data as {
+          coordinates?: [number, number][];
+          legs?: { durationMinutes: number; distanceKm: number }[];
+        } | undefined;
+        if (!res.error && data?.coordinates && data.coordinates.length >= 2) {
+          setRouteGeometry({
+            coordinates: data.coordinates.map((c) => ({ latitude: c[0], longitude: c[1] })),
+            legs: Array.isArray(data.legs) ? data.legs : [],
+          });
+        } else {
+          setRouteGeometry(null);
+        }
+      } catch {
+        if (!cancelled) setRouteGeometry(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routeJobs]);
   
   // Geofence alerts state
   const [geofenceAlerts, setGeofenceAlerts] = useState<GeofenceAlert[]>([]);
@@ -1818,6 +1877,27 @@ export default function MapScreen() {
             </Marker>
           );
         })}
+
+        {/* Planned route line - real OSRM road geometry, with straight-line fallback */}
+        {isMapReady && routeGeometry && routeGeometry.coordinates.length >= 2 && (
+          <Polyline
+            coordinates={routeGeometry.coordinates}
+            strokeColor={colors.primary}
+            strokeWidth={5}
+            lineCap="round"
+            lineJoin="round"
+          />
+        )}
+        {isMapReady && !routeGeometry && routeStraightCoords.length >= 2 && (
+          <Polyline
+            coordinates={routeStraightCoords}
+            strokeColor={colors.primary}
+            strokeWidth={4}
+            lineDashPattern={[8, 8]}
+            lineCap="round"
+            lineJoin="round"
+          />
+        )}
       </MapView>
       </MapErrorBoundary>
 
@@ -2672,7 +2752,9 @@ export default function MapScreen() {
                   Route: {routeJobs.length} stop{routeJobs.length !== 1 ? 's' : ''}
                 </Text>
                 <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
-                  Tap to {showRoutePanel ? 'collapse' : 'expand'}
+                  {routeTotals
+                    ? `${routeTotals.minutes} min · ${routeTotals.km.toFixed(1)} km`
+                    : `Tap to ${showRoutePanel ? 'collapse' : 'expand'}`}
                 </Text>
               </View>
             </View>
@@ -2715,50 +2797,75 @@ export default function MapScreen() {
                 style={{ flex: 1, padding: spacing.md, paddingTop: spacing.sm }}
                 showsVerticalScrollIndicator={false}
               >
-                {routeJobs.map((job, index) => (
-                  <View
-                    key={job.id}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: colors.muted,
-                      padding: spacing.sm,
-                      borderRadius: radius.md,
-                      marginBottom: spacing.sm,
-                      gap: spacing.sm,
-                    }}
-                  >
-                    <View style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: colors.primary,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryForeground }}>
-                        {index + 1}
-                      </Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }} numberOfLines={1}>
-                        {job.title}
-                      </Text>
-                      {job.address && (
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground }} numberOfLines={1}>
-                          {job.address}
-                        </Text>
-                      )}
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveFromRoute(job.id)}
-                      style={{ padding: spacing.xs }}
-                      activeOpacity={0.7}
+                {routeJobs.map((job, index) => {
+                  const leg = routeGeometry?.legs?.[index];
+                  return (
+                  <View key={job.id}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: colors.muted,
+                        padding: spacing.sm,
+                        borderRadius: radius.md,
+                        marginBottom: spacing.sm,
+                        gap: spacing.sm,
+                      }}
                     >
-                      <Feather name="x" size={18} color={colors.mutedForeground} />
-                    </TouchableOpacity>
+                      <View style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: colors.primary,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryForeground }}>
+                          {index + 1}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }} numberOfLines={1}>
+                          {job.title}
+                        </Text>
+                        {job.address && (
+                          <Text style={{ fontSize: 11, color: colors.mutedForeground }} numberOfLines={1}>
+                            {job.address}
+                          </Text>
+                        )}
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleRemoveFromRoute(job.id)}
+                        style={{ padding: spacing.xs }}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="x" size={18} color={colors.mutedForeground} />
+                      </TouchableOpacity>
+                    </View>
+                    {index < routeJobs.length - 1 && leg && (
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: spacing.xs,
+                        paddingLeft: spacing.md + 2,
+                        marginTop: -spacing.xs,
+                        marginBottom: spacing.sm,
+                      }}>
+                        <Feather name="corner-down-right" size={12} color={colors.mutedForeground} />
+                        <Feather name="clock" size={11} color={colors.mutedForeground} />
+                        <Text style={{ fontSize: 11, fontWeight: '500', color: colors.mutedForeground }}>
+                          {leg.durationMinutes} min
+                        </Text>
+                        {typeof leg.distanceKm === 'number' && (
+                          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                            · {leg.distanceKm.toFixed(1)} km
+                          </Text>
+                        )}
+                      </View>
+                    )}
                   </View>
-                ))}
+                  );
+                })}
               </ScrollView>
               
               {/* Route Actions - Compact button row */}
