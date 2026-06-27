@@ -5240,6 +5240,30 @@ export const insertAiReceptionistConfigSchema = createInsertSchema(aiReceptionis
 export type InsertAiReceptionistConfig = z.infer<typeof insertAiReceptionistConfigSchema>;
 export type AiReceptionistConfig = typeof aiReceptionistConfig.$inferSelect;
 
+// Tracks paid add-on subscriptions (AI Receptionist, Dedicated Number) so their
+// billing state stays the single source of truth across iOS (Apple), Android & web (Stripe).
+// addon: 'dedicated_number' | 'ai_receptionist'
+// source: 'apple' | 'stripe'
+// status: 'active' | 'past_due' | 'canceled' | 'expired'
+export const addonSubscriptions = pgTable("addon_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  addon: text("addon").notNull(),
+  source: text("source").notNull().default('apple'),
+  status: text("status").notNull().default('active'),
+  appleProductId: text("apple_product_id"),
+  appleOriginalTransactionId: text("apple_original_transaction_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_addon_subs_user").on(table.userId),
+  index("idx_addon_subs_apple_txn").on(table.appleOriginalTransactionId),
+]);
+
+export const insertAddonSubscriptionSchema = createInsertSchema(addonSubscriptions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAddonSubscription = z.infer<typeof insertAddonSubscriptionSchema>;
+export type AddonSubscription = typeof addonSubscriptions.$inferSelect;
+
 export const aiReceptionistCalls = pgTable("ai_receptionist_calls", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),

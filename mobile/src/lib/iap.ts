@@ -19,13 +19,23 @@ export const IAP_PRODUCT_IDS = {
   business: 'com.jobrunner.business.monthly',
 };
 
+// Paid add-ons (auto-renewable). Live in separate App Store Connect subscription
+// groups from the tiers so a tradie can stack both add-ons on top of any plan.
+export const IAP_ADDON_PRODUCT_IDS = {
+  dedicatedNumber: 'com.jobrunner.dedicatednumber.monthly',
+  aiReceptionist: 'com.jobrunner.aireceptionist.monthly',
+};
+
 const ALL_PRODUCT_IDS = [
   IAP_PRODUCT_IDS.pro,
   IAP_PRODUCT_IDS.team,
   IAP_PRODUCT_IDS.business,
+  IAP_ADDON_PRODUCT_IDS.dedicatedNumber,
+  IAP_ADDON_PRODUCT_IDS.aiReceptionist,
 ];
 
 export type IAPTier = 'pro' | 'team' | 'business';
+export type IAPAddon = 'dedicated_number' | 'ai_receptionist';
 
 export function productIdToTier(productId: string): IAPTier | null {
   switch (productId) {
@@ -34,6 +44,26 @@ export function productIdToTier(productId: string): IAPTier | null {
     case IAP_PRODUCT_IDS.business: return 'business';
     default: return null;
   }
+}
+
+export function productIdToAddon(productId: string): IAPAddon | null {
+  switch (productId) {
+    case IAP_ADDON_PRODUCT_IDS.dedicatedNumber: return 'dedicated_number';
+    case IAP_ADDON_PRODUCT_IDS.aiReceptionist: return 'ai_receptionist';
+    default: return null;
+  }
+}
+
+// The dedicated-number purchase needs to know WHICH number the user picked. The global
+// purchase listener fires without that context, so the Phone Numbers screen stashes the
+// selected number here right before calling purchaseSubscription(). The listener reads it
+// when verifying the add-on receipt, then clears it.
+let pendingDedicatedNumber: string | null = null;
+export function setPendingDedicatedNumber(phoneNumber: string | null): void {
+  pendingDedicatedNumber = phoneNumber;
+}
+export function getPendingDedicatedNumber(): string | null {
+  return pendingDedicatedNumber;
 }
 
 let isInitialized = false;

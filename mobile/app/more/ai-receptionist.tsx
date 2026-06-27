@@ -15,6 +15,7 @@ import { spacing, radius, shadows, typography, pageShell } from '../../src/lib/d
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useUserRole } from '../../src/hooks/use-user-role';
+import { isIAPAvailable, purchaseSubscription, IAP_ADDON_PRODUCT_IDS } from '../../src/lib/iap';
 
 type FeatherIconName = React.ComponentProps<typeof Feather>['name'];
 
@@ -401,25 +402,42 @@ export default function AIReceptionistScreen() {
           },
         });
         setProvisioningStatus('Setting up your AI assistant...');
+        // iOS: AI Receptionist is sold as an Apple In-App Purchase. Apple policy means iOS
+        // must NEVER open the Stripe checkout for add-ons, so handle the whole iOS path here
+        // and return regardless of outcome.
+        if (Platform.OS === 'ios') {
+          setIsProvisioning(false);
+          setProvisioningStatus(null);
+          if (!isIAPAvailable()) {
+            Alert.alert('Purchase Unavailable', 'In-app purchases are not available on this device right now. Please try again later.');
+            return;
+          }
+          if (!businessSettings?.dedicatedPhoneNumber) {
+            confirm({
+              title: 'Dedicated Number Required',
+              message: 'You need a dedicated phone number before setting up AI Receptionist.',
+              confirmText: 'Get a Number',
+            }).then((okN) => { if (okN) router.push(asHref('/more/phone-numbers')); });
+            return;
+          }
+          // The global IAP listener verifies the receipt + provisions the assistant.
+          setIsProvisioning(true);
+          setProvisioningStatus('Configuring AI voice and responses...');
+          await purchaseSubscription(IAP_ADDON_PRODUCT_IDS.aiReceptionist);
+          pollProvisioningStatus();
+          return;
+        }
         const checkoutRes = await api.post<{ success?: boolean; provisioning?: boolean; url?: string }>('/api/subscription/ai-receptionist-checkout');
         if (checkoutRes.data?.url) {
           setIsProvisioning(false);
           setProvisioningStatus(null);
-          if (Platform.OS === 'ios') {
-            Alert.alert(
-              'Contact Us to Enable',
-              'AI Receptionist is a managed professional service. Please contact admin@avwebinnovation.com to get set up.',
-              [{ text: 'OK' }]
-            );
-          } else {
-            confirm({
-              title: 'Complete Setup',
-              message: 'You\'ll be taken to checkout to complete your AI Receptionist setup.',
-              confirmText: 'Continue',
-            }).then((ok2) => {
-              if (ok2) Linking.openURL(checkoutRes.data!.url!);
-            });
-          }
+          confirm({
+            title: 'Complete Setup',
+            message: 'You\'ll be taken to checkout to complete your AI Receptionist setup.',
+            confirmText: 'Continue',
+          }).then((ok2) => {
+            if (ok2) Linking.openURL(checkoutRes.data!.url!);
+          });
           return;
         }
         setProvisioningStatus('Configuring AI voice and responses...');

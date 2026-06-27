@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { initIAP, setupPurchaseListeners, productIdToTier } from './iap';
+import { initIAP, setupPurchaseListeners, productIdToTier, productIdToAddon, getPendingDedicatedNumber, setPendingDedicatedNumber } from './iap';
 import api from './api';
 import { useAuthStore } from './store';
 
@@ -16,21 +16,39 @@ export async function initGlobalIAP(): Promise<void> {
 
     setupPurchaseListeners(
       async (purchase) => {
-        const tier = productIdToTier(purchase.productId);
-        if (!tier || !purchase.transactionReceipt) {
-          console.log('[GlobalIAP] Purchase missing tier/receipt, skipping');
+        if (!purchase.transactionReceipt) {
+          console.log('[GlobalIAP] Purchase missing receipt, skipping');
           return;
         }
 
-        console.log('[GlobalIAP] Processing purchase for', tier);
+        const tier = productIdToTier(purchase.productId);
+        const addon = tier ? null : productIdToAddon(purchase.productId);
+        if (!tier && !addon) {
+          console.log('[GlobalIAP] Purchase is not a known tier/add-on, skipping');
+          return;
+        }
+
+        console.log('[GlobalIAP] Processing purchase for', tier || addon);
 
         const verifyPromise = (async () => {
           try {
-            await api.post('/api/subscription/verify-apple-receipt', {
-              receiptData: purchase.transactionReceipt,
-              productId: purchase.productId,
-            });
-            console.log('[GlobalIAP] Receipt verified, refreshing user');
+            if (addon) {
+              // For the dedicated number, pass along the number the user selected (if any).
+              const phoneNumber = addon === 'dedicated_number' ? getPendingDedicatedNumber() : undefined;
+              await api.post('/api/subscription/verify-apple-addon', {
+                receiptData: purchase.transactionReceipt,
+                productId: purchase.productId,
+                ...(phoneNumber ? { phoneNumber } : {}),
+              });
+              setPendingDedicatedNumber(null);
+              console.log('[GlobalIAP] Add-on receipt verified, refreshing user');
+            } else {
+              await api.post('/api/subscription/verify-apple-receipt', {
+                receiptData: purchase.transactionReceipt,
+                productId: purchase.productId,
+              });
+              console.log('[GlobalIAP] Receipt verified, refreshing user');
+            }
             await useAuthStore.getState().refreshUser();
           } catch (error) {
             console.error('[GlobalIAP] Failed to verify receipt:', error);

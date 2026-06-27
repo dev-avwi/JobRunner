@@ -25,6 +25,7 @@ import { useAuthStore } from '../../src/lib/store';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showToast } from '../../src/lib/toast';
+import { isIAPAvailable, purchaseSubscription, setPendingDedicatedNumber, IAP_ADDON_PRODUCT_IDS } from '../../src/lib/iap';
 
 function getLastNumberKey(businessId?: string | number) {
   const id = businessId || 'default';
@@ -208,6 +209,24 @@ export default function PhoneNumbersPage() {
           onPress: async () => {
             setReacquiring(true);
             try {
+              // iOS: re-acquiring is the same paid add-on, so go through Apple IAP and never
+              // fall through to Stripe checkout.
+              if (Platform.OS === 'ios') {
+                if (!isIAPAvailable()) {
+                  setReacquiring(false);
+                  Alert.alert('Purchase Unavailable', 'In-app purchases are not available on this device right now. Please try again later.');
+                  return;
+                }
+                setPendingDedicatedNumber(lastOwnedNumber);
+                await purchaseSubscription(IAP_ADDON_PRODUCT_IDS.dedicatedNumber);
+                setReacquiring(false);
+                Alert.alert(
+                  'Finishing Up',
+                  `We're reactivating ${formatPhone(lastOwnedNumber)}. This can take a moment. Pull to refresh if it doesn't appear right away.`,
+                );
+                setTimeout(() => { fetchBusinessSettings(); }, 4000);
+                return;
+              }
               const response = await api.post('/api/sms/purchase-number', { phoneNumber: lastOwnedNumber });
               if (response.error) {
                 if (response.error.includes('not available') || response.error.includes('not found')) {
@@ -279,6 +298,25 @@ export default function PhoneNumbersPage() {
           onPress: async () => {
             setPurchasing(number.phoneNumber);
             try {
+              // On iOS, dedicated numbers are sold as an Apple In-App Purchase. Apple policy
+              // means iOS must NEVER open the Stripe checkout for add-ons, so handle the
+              // whole iOS path here and return regardless of outcome.
+              if (Platform.OS === 'ios') {
+                if (!isIAPAvailable()) {
+                  setPurchasing(null);
+                  Alert.alert('Purchase Unavailable', 'In-app purchases are not available on this device right now. Please try again later.');
+                  return;
+                }
+                setPendingDedicatedNumber(number.phoneNumber);
+                await purchaseSubscription(IAP_ADDON_PRODUCT_IDS.dedicatedNumber);
+                setPurchasing(null);
+                Alert.alert(
+                  'Finishing Up',
+                  `We're activating ${formatPhone(number.phoneNumber)}. This can take a moment. Pull to refresh if it doesn't appear right away.`,
+                );
+                setTimeout(() => { fetchBusinessSettings(); }, 4000);
+                return;
+              }
               const response = await api.post('/api/sms/purchase-number', {
                 phoneNumber: number.phoneNumber,
               });

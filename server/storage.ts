@@ -379,6 +379,9 @@ import {
   aiReceptionistCalls,
   type AiReceptionistConfig,
   type InsertAiReceptionistConfig,
+  addonSubscriptions,
+  type AddonSubscription,
+  type InsertAddonSubscription,
   type AiReceptionistCall,
   type InsertAiReceptionistCall,
   websiteAddons,
@@ -7641,6 +7644,58 @@ Thank you for your prompt attention to this matter.`,
       .where(eq(aiReceptionistConfig.id, configId))
       .returning();
     return updated;
+  }
+
+  async getActiveAddonSubscription(userId: string, addon: string): Promise<AddonSubscription | undefined> {
+    const result = await db
+      .select()
+      .from(addonSubscriptions)
+      .where(and(
+        eq(addonSubscriptions.userId, userId),
+        eq(addonSubscriptions.addon, addon),
+        eq(addonSubscriptions.status, 'active'),
+      ))
+      .limit(1);
+    return result[0];
+  }
+
+  async getAddonSubscriptionByAppleTxn(originalTransactionId: string): Promise<AddonSubscription | undefined> {
+    const result = await db
+      .select()
+      .from(addonSubscriptions)
+      .where(eq(addonSubscriptions.appleOriginalTransactionId, originalTransactionId))
+      .limit(1);
+    return result[0];
+  }
+
+  // Insert-or-update an add-on subscription keyed by (userId, addon).
+  // Used by both the Apple IAP verify path and the Apple Server Notification webhook.
+  async upsertAddonSubscription(userId: string, addon: string, updates: Partial<InsertAddonSubscription>): Promise<AddonSubscription> {
+    const existing = await db
+      .select()
+      .from(addonSubscriptions)
+      .where(and(eq(addonSubscriptions.userId, userId), eq(addonSubscriptions.addon, addon)))
+      .limit(1);
+    if (existing[0]) {
+      const [updated] = await db
+        .update(addonSubscriptions)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(addonSubscriptions.id, existing[0].id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(addonSubscriptions)
+      .values({ id: randomUUID(), userId, addon, ...updates })
+      .returning();
+    return created;
+  }
+
+  async updateAddonSubscriptionStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(addonSubscriptions)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(addonSubscriptions.id, id));
   }
 
   async getAiReceptionistCalls(userId: string, limit: number = 50, phoneNumberId?: string): Promise<AiReceptionistCall[]> {

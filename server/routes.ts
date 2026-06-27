@@ -5939,6 +5939,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/subscription/verify-apple-addon - Verifies an Apple IAP add-on purchase
+  // (AI Receptionist / Dedicated Number) and provisions the feature. The addon_subscriptions
+  // row is the single source of truth for add-on billing state across iOS, Android and web.
+  // Returns 200 even on verification failure (success:false) so the client recovers gracefully.
+  app.post("/api/subscription/verify-apple-addon", requireAuth, ownerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { receiptData, productId, phoneNumber } = req.body;
+
+      if (!receiptData || !productId) {
+        return res.json({ success: false, message: 'Receipt data and product ID are required' });
+      }
+
+      const addonMap: Record<string, 'dedicated_number' | 'ai_receptionist'> = {
+        'com.jobrunner.dedicatednumber.monthly': 'dedicated_number',
+        'com.jobrunner.aireceptionist.monthly': 'ai_receptionist',
+      };
+      const addon = addonMap[productId];
+      if (!addon) {
+        return res.json({ success: false, message: 'Invalid add-on product ID' });
+      }
+
+      // Verify receipt with Apple (production first, sandbox fallback on 21007)
+      const verifyUrl = process.env.NODE_ENV === 'production'
+        ? 'https://buy.itunes.apple.com/verifyReceipt'
+        : 'https://sandbox.itunes.apple.com/verifyReceipt';
+      const appleResponse = await fetch(verifyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 'receipt-data': receiptData, password: process.env.APP_STORE_SHARED_SECRET || '' }),
+      });
+      let appleResult: any = await appleResponse.json();
+      let verified = appleResult.status === 0;
+      if (!verified && appleResult.status === 21007) {
+        const sandboxResponse = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 'receipt-data': receiptData, password: process.env.APP_STORE_SHARED_SECRET || '' }),
+        });
+        appleResult = await sandboxResponse.json();
+        verified = appleResult.status === 0;
+      }
+      if (!verified) {
+        console.warn(`[IAP] Add-on receipt verification failed for user ${userId}, product ${productId}, status ${appleResult.status}`);
+        return res.json({ success: false, message: `Receipt verification failed (status ${appleResult.status})` });
+      }
+
+      // The receipt MUST actually contain a transaction for the requested add-on product.
+      // Binding to latest_receipt_info[0] regardless of product would let any valid receipt
+      // (e.g. a tier subscription) activate an add-on, so require a real product match.
+      let originalTransactionId: string | undefined;
+      try {
+        const latestInfo = appleResult?.latest_receipt_info;
+        if (Array.isArray(latestInfo) && latestInfo.length > 0) {
+          const matching = latestInfo
+            .filter((t: any) => t.product_id === productId)
+            .sort((a: any, b: any) => Number(b.purchase_date_ms || 0) - Number(a.purchase_date_ms || 0));
+          originalTransactionId = matching[0]?.original_transaction_id;
+        }
+      } catch (e) {
+        console.warn('[IAP] Could not extract add-on originalTransactionId:', e);
+      }
+      if (!originalTransactionId) {
+        console.warn(`[IAP] Add-on receipt for user ${userId} has no transaction for product ${productId}`);
+        return res.json({ success: false, message: 'This receipt does not contain a purchase for that add-on.' });
+      }
+
+      // Replay / cross-account guard: an Apple transaction belongs to exactly one account.
+      // If this transaction is already linked to a DIFFERENT user, reject — never let a
+      // shared/leaked receipt grant a second account the entitlement.
+      const existingByTxn = await storage.getAddonSubscriptionByAppleTxn(originalTransactionId);
+      if (existingByTxn && existingByTxn.userId !== userId) {
+        console.warn(`[IAP] Add-on txn ${originalTransactionId} already linked to user ${existingByTxn.userId}, rejected for ${userId}`);
+        return res.json({ success: false, message: 'This purchase is already linked to another account.' });
+      }
+
+      // Record the add-on subscription as active — billing-state source of truth.
+      await storage.upsertAddonSubscription(userId, addon, {
+        source: 'apple',
+        status: 'active',
+        appleProductId: productId,
+        ...(originalTransactionId ? { appleOriginalTransactionId: originalTransactionId } : {}),
+      });
+      console.log(`[IAP] User ${userId} activated add-on ${addon} via Apple IAP (txn=${originalTransactionId || 'unknown'})`);
+
+      // Provision the feature
+      if (addon === 'dedicated_number') {
+        const settings = await storage.getBusinessSettings(userId);
+        // Provision a number now only if one was selected and none exists yet.
+        if (!settings?.dedicatedPhoneNumber && phoneNumber && /^\+\d{10,15}$/.test(phoneNumber)) {
+          if (!settings?.address) {
+            return res.json({ success: true, addon, status: 'active', needsNumberSelection: true, message: 'Subscription active. Add your business address in Settings to get your number.' });
+          }
+          try {
+            const { purchasePhoneNumber, createOrFindTwilioAddress } = await import('./twilioClient');
+            const addressResult = await createOrFindTwilioAddress(userId, {
+              businessName: settings.businessName || 'JobRunner Business',
+              address: settings.address,
+              customerName: settings.businessName,
+            });
+            if (addressResult.success && addressResult.addressSid) {
+              const baseUrl = process.env.CUSTOM_DOMAIN
+                ? `https://${process.env.CUSTOM_DOMAIN}`
+                : `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
+              const webhookUrl = `${baseUrl}/api/sms/webhook/incoming`;
+              const result = await purchasePhoneNumber(phoneNumber, webhookUrl, addressResult.addressSid, settings.businessName);
+              if (result.success) {
+                await storage.updateBusinessSettings(userId, { dedicatedPhoneNumber: result.phoneNumber, smsMode: 'ai_receptionist' });
+                return res.json({ success: true, addon, status: 'active', phoneNumber: result.phoneNumber, message: 'Dedicated number active and assigned.' });
+              }
+            }
+          } catch (e) {
+            console.error('[IAP] Dedicated number provisioning after Apple purchase failed:', e);
+          }
+        }
+        // Subscription active; number can be picked from the Phone Numbers screen (purchase route skips Stripe for Apple-paid users).
+        return res.json({ success: true, addon, status: 'active', needsNumberSelection: !settings?.dedicatedPhoneNumber, message: 'Dedicated number subscription active.' });
+      }
+
+      if (addon === 'ai_receptionist') {
+        const settings = await storage.getBusinessSettings(userId);
+        const dedicatedNumber = settings?.dedicatedPhoneNumber;
+        const { isSharedPlatformNumber } = await import('./phoneNumberUtils');
+        if (!dedicatedNumber || isSharedPlatformNumber(dedicatedNumber)) {
+          return res.json({ success: true, addon, status: 'active', needsDedicatedNumber: true, message: 'AI Receptionist active. Get a dedicated number to finish setup.' });
+        }
+        const existingConfigs = await storage.getAiReceptionistConfigsByUser(userId);
+        if (existingConfigs.length === 0) {
+          await storage.createAiReceptionistConfig({
+            userId,
+            enabled: false,
+            mode: 'always_on_message',
+            voiceName: 'Jess',
+            approvalStatus: 'provisioning',
+          });
+        } else {
+          await storage.updateAiReceptionistConfig(userId, { approvalStatus: 'provisioning', provisioningError: null });
+        }
+        await storage.updateBusinessSettings(userId, { aiReceptionistEnabled: true });
+        const { provisionAiReceptionist } = await import('./aiReceptionistProvisioning');
+        provisionAiReceptionist(userId, dedicatedNumber).catch(err => {
+          console.error('[IAP AI Receptionist] Provisioning failed:', err);
+        });
+        return res.json({ success: true, addon, status: 'active', provisioning: true, message: 'AI Receptionist activated.' });
+      }
+
+      return res.json({ success: true, addon, status: 'active' });
+    } catch (error: any) {
+      console.error('[IAP] Error verifying Apple add-on receipt:', error);
+      res.status(500).json({ success: false, message: error.message || 'Failed to verify add-on receipt' });
+    }
+  });
+
   // POST /api/subscription/verify-apple-receipt - Verifies a fresh IAP purchase receipt
   // Called by the mobile global IAP listener immediately after a successful purchase.
   // Returns 200 even on verification failure (with success:false) so the client
@@ -34740,8 +34893,13 @@ Respond with JSON in this format:
         });
       }
 
+      // Apple-paid (iOS) users have already paid for the dedicated-number add-on via
+      // In-App Purchase, so skip the Stripe charge and provision the number inline.
+      const appleDedicatedAddon = await storage.getActiveAddonSubscription(businessOwnerId, 'dedicated_number');
+      const applePaidDedicated = appleDedicatedAddon?.source === 'apple';
+
       // PRODUCTION: Charge the tradie via Stripe checkout before purchasing
-      if (!IS_BETA) {
+      if (!IS_BETA && !applePaidDedicated) {
         const user = await storage.getUser(businessOwnerId);
         if (!user) return res.status(404).json({ error: 'User not found' });
 

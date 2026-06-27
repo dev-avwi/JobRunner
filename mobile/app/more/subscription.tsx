@@ -1012,14 +1012,12 @@ export default function SubscriptionPage() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.addOnName}>AI Receptionist</Text>
-                <Text style={styles.addOnPrice}>{Platform.OS === 'ios' ? 'Managed Service' : '$60/mo'}</Text>
+                <Text style={styles.addOnPrice}>$60/mo</Text>
               </View>
               <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
             </View>
             <Text style={styles.addOnDescription}>
-              {Platform.OS === 'ios' 
-                ? 'Professional AI phone answering service with a dedicated Australian number. Contact us to set up.'
-                : 'AI-powered phone answering with a dedicated Australian number. Captures leads and transfers calls.'}
+              AI-powered phone answering with a dedicated Australian number. Captures leads and transfers calls.
             </Text>
           </PressableRow>
 
