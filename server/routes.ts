@@ -33518,7 +33518,12 @@ Respond with JSON in this format:
             currentJobTitle = activeJob?.title || 'On Job';
           }
 
-          if (!activeJob && isSubcontractor) {
+          // A subcontractor's map visibility depends on having an in-progress job.
+          // tradie_status.current_job_id can be stale (point to a now-'done' job),
+          // which would otherwise leave activeJob set to a non-in-progress job and
+          // hide a subcontractor who actually IS on an active job. So run the
+          // in-progress lookup whenever the resolved job isn't in_progress.
+          if ((!activeJob || activeJob.status !== 'in_progress') && isSubcontractor) {
             const memberJobs = await db.select().from(jobs)
               .where(and(
                 eq(jobs.userId, userContext.effectiveUserId),
