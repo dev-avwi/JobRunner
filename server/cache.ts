@@ -139,6 +139,12 @@ export const rateCardCache = new HotCache<any>("rateCards", { ttlMs: 60_000, max
 export const userCache = new HotCache<any>("user", { ttlMs: 30_000, max: 1000 });
 export const aggregateDashboardCache = new HotCache<any>("aggregateDashboard", { ttlMs: 15_000, max: 500 });
 
+// Drive-time/distance matrix cache (Task #285 — Day Planner route optimiser).
+// Repeated optimise calls for the same day reuse the OSRM table result for a
+// short TTL instead of re-hitting the rate-limited public OSRM server. Keyed by
+// the rounded, ordered coordinate list, so an unchanged job set is a cache hit.
+export const driveMatrixCache = new HotCache<any>("driveMatrix", { ttlMs: 300_000, max: 500 });
+
 // Accounting integration metadata caches (Task #91 — pull-and-cache for mapping UI)
 // 60s TTL keeps the Integrations page snappy without serving stale data when a
 // tenant adds a new account/tax-rate. Per-userId keys.
@@ -161,6 +167,7 @@ export function getCacheStats() {
     rateCards: rateCardCache,
     user: userCache,
     aggregateDashboard: aggregateDashboardCache,
+    driveMatrix: driveMatrixCache,
   };
   for (const [ns, c] of Object.entries(caches)) {
     const s = stats.get(ns) ?? { hits: 0, misses: 0, invalidations: 0 };

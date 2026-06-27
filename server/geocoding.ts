@@ -1,3 +1,14 @@
+import { driveMatrixCache } from "./cache";
+
+/**
+ * Base URL for OSRM routing. Defaults to the public demo server, which is
+ * rate-limited and can be slow/flaky for large coordinate sets. Set
+ * OSRM_BASE_URL to a self-hosted instance for fast, reliable routing.
+ */
+function getOsrmBaseUrl(): string {
+  return (process.env.OSRM_BASE_URL || 'https://router.project-osrm.org').replace(/\/+$/, '');
+}
+
 interface GeocodingResult {
   latitude: number;
   longitude: number;
@@ -176,7 +187,7 @@ export async function calculateRouteETA(
     let res: Response;
     try {
       res = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=false`,
+        `${getOsrmBaseUrl()}/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=false`,
         { signal: controller.signal }
       );
     } finally {
@@ -240,6 +251,13 @@ export async function getDriveTimeMatrix(
     return buildHaversineMatrix(points);
   }
 
+  // Cache key: ordered, rounded coordinate list. Repeated optimise calls for an
+  // unchanged job set hit the cache instead of re-querying OSRM. ~5dp is ~1m of
+  // precision — well within drive-matrix accuracy needs and stable across calls.
+  const cacheKey = points.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join(';');
+  const cached = driveMatrixCache.get(cacheKey) as DriveMatrix | undefined;
+  if (cached) return cached;
+
   const fallback = buildHaversineMatrix(points);
 
   try {
@@ -249,7 +267,7 @@ export async function getDriveTimeMatrix(
     let res: Response;
     try {
       res = await fetch(
-        `https://router.project-osrm.org/table/v1/driving/${coords}?annotations=duration,distance`,
+        `${getOsrmBaseUrl()}/table/v1/driving/${coords}?annotations=duration,distance`,
         { signal: controller.signal }
       );
     } finally {
@@ -278,7 +296,9 @@ export async function getDriveTimeMatrix(
         distances[i][j] = typeof distM === 'number' ? distM / 1000 : fallback.distances[i][j];
       }
     }
-    return { durations, distances, source: 'osrm' };
+    const result: DriveMatrix = { durations, distances, source: 'osrm' };
+    driveMatrixCache.set(cacheKey, result);
+    return result;
   } catch {
     return fallback;
   }
