@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -141,6 +141,19 @@ export default function SubcontractorInvoices() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [payInvoice, setPayInvoice] = useState<SubInvoice | null>(null);
+
+  // Deep link: open a specific invoice when the email CTA points here with
+  // ?invoice=<id>, then strip the param so refresh/close doesn't re-open it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('invoice');
+    if (id) {
+      setDetailId(id);
+      params.delete('invoice');
+      const qs = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''));
+    }
+  }, []);
   const [rejectInvoice, setRejectInvoice] = useState<SubInvoice | null>(null);
 
   // Pay form state

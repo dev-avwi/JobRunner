@@ -46993,6 +46993,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           const gstApplied = (invoice as any).gstEnabled !== false;
           const html = createSubcontractorInvoiceEmail({
             invoiceNumber,
+            invoiceId: invoice.id,
             docLabel: (invoice as any).docType === 'quote' ? 'Quote' : 'Tax Invoice',
             ownerName: bizSettings?.businessName || ownerUser.firstName || null,
             subtotal,

@@ -477,6 +477,7 @@ const renderEmailShell = (title: string, innerRows: string, footerNote?: string)
 // invoice/quote from them, with a CTA into the owner's JobRunner dashboard to review/pay.
 export const createSubcontractorInvoiceEmail = (opts: {
   invoiceNumber: string;
+  invoiceId?: string;
   docLabel: string;
   ownerName?: string | null;
   subtotal: number;
@@ -494,7 +495,10 @@ export const createSubcontractorInvoiceEmail = (opts: {
   const esc = (s: string | null | undefined): string =>
     String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const baseUrl = getBaseUrl();
-  const ctaUrl = opts.ctaUrl || `${baseUrl}/subcontractor-invoices`;
+  const ctaUrl = opts.ctaUrl
+    || (opts.invoiceId
+      ? `${baseUrl}/subcontractor-invoices?invoice=${encodeURIComponent(opts.invoiceId)}`
+      : `${baseUrl}/subcontractor-invoices`);
   // Logo lands in an <img src> — only allow http(s)/data, else fall back to the JobRunner logo.
   const rawLogo = opts.subcontractor.logoUrl || '';
   let logoUrl = `${baseUrl}/logo.png`;
