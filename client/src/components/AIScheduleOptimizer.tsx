@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useLocation } from 'wouter';
 import { useMutation } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ interface OptimizedJob {
   };
   suggestedTime: string;
   travelDistance?: number;
+  travelTime?: number;
   reason: string;
 }
 
@@ -46,6 +48,8 @@ interface OptimizedSchedule {
   optimizedOrder: OptimizedJob[];
   totalDistance: number;
   totalTime: number;
+  totalDriveTime?: number;
+  routeSource?: 'osrm' | 'haversine';
   aiSuggestions: string[];
   aiRecommendations: string;
   teamMembers?: TeamMemberInfo[];
@@ -65,7 +69,16 @@ interface AIScheduleOptimizerProps {
   className?: string;
 }
 
+function formatDriveTime(minutes?: number): string {
+  if (!minutes || minutes <= 0) return '0 min';
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  return `${m} min`;
+}
+
 export function AIScheduleOptimizer({ onApplySchedule, className }: AIScheduleOptimizerProps) {
+  const [, navigate] = useLocation();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [assignments, setAssignments] = useState<Record<string, JobAssignment>>({});
@@ -140,14 +153,26 @@ export function AIScheduleOptimizer({ onApplySchedule, className }: AIScheduleOp
     setIsSaving(true);
     try {
       for (const item of optimizedData.optimizedOrder) {
-        const assignment = assignments[item.job.id];
-        if (!assignment) continue;
-
-        if (assignment.workerId) {
-          await apiRequest('PATCH', `/api/jobs/${item.job.id}`, {
-            assignedTo: assignment.workerId,
-          });
+        // Apply the optimised order to the schedule by writing each job's
+        // start time. Build a timestamp from the plan date + suggested time.
+        const patch: Record<string, any> = {};
+        const [h, m] = item.suggestedTime.split(':').map(Number);
+        if (!Number.isNaN(h) && !Number.isNaN(m)) {
+          const scheduled = new Date(`${optimizedData.date}T00:00:00`);
+          scheduled.setHours(h, m, 0, 0);
+          patch.scheduledAt = scheduled.toISOString();
         }
+
+        const assignment = assignments[item.job.id];
+        if (assignment?.workerId) {
+          patch.assignedTo = assignment.workerId;
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await apiRequest('PATCH', `/api/jobs/${item.job.id}`, patch);
+        }
+
+        if (!assignment) continue;
 
         for (const eqId of assignment.equipmentIds) {
           try {
@@ -180,6 +205,18 @@ export function AIScheduleOptimizer({ onApplySchedule, className }: AIScheduleOp
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleViewRouteOnMap = () => {
+    if (!optimizedData) return;
+    const routeJobs = optimizedData.optimizedOrder.map(item => ({
+      jobId: item.job.id,
+      title: item.job.title,
+      clientName: item.job.clientName,
+      address: item.job.address,
+    }));
+    const routeParam = encodeURIComponent(JSON.stringify(routeJobs));
+    navigate(`/map?route=${routeParam}`);
   };
 
   const workerJobCounts = useMemo(() => {
@@ -287,10 +324,16 @@ export function AIScheduleOptimizer({ onApplySchedule, className }: AIScheduleOp
                 <div className="text-[10px] text-muted-foreground">Equipment</div>
               </div>
               <div className="text-center p-2.5 rounded-lg bg-muted/50">
-                <div className="text-lg font-bold text-foreground">{optimizedData.totalDistance}km</div>
-                <div className="text-[10px] text-muted-foreground">Travel</div>
+                <div className="text-lg font-bold text-foreground">{formatDriveTime(optimizedData.totalDriveTime)}</div>
+                <div className="text-[10px] text-muted-foreground">{optimizedData.totalDistance}km drive</div>
               </div>
             </div>
+
+            {optimizedData.routeSource === 'haversine' && (
+              <div className="text-[11px] text-muted-foreground -mt-2">
+                Drive times are straight-line estimates (live routing unavailable).
+              </div>
+            )}
 
             {/* AI Recommendations */}
             {optimizedData.aiRecommendations && (
@@ -418,6 +461,12 @@ export function AIScheduleOptimizer({ onApplySchedule, className }: AIScheduleOp
                                   {item.travelDistance.toFixed(1)}km
                                 </span>
                               )}
+                              {item.travelTime !== undefined && item.travelTime > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <Navigation className="h-3 w-3" />
+                                  {item.travelTime} min drive
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -512,6 +561,18 @@ export function AIScheduleOptimizer({ onApplySchedule, className }: AIScheduleOp
               >
                 Start Over
               </Button>
+              {optimizedData.optimizedOrder.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewRouteOnMap}
+                  className="flex-1"
+                  data-testid="button-view-route-map"
+                >
+                  <Route className="h-4 w-4 mr-2" />
+                  View Route
+                </Button>
+              )}
               {optimizedData.optimizedOrder.length > 0 && (
                 <Button
                   size="sm"

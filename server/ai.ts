@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { aiQueue, visionQueue } from "./concurrency";
 import { getErrorMessage } from "./lib/errors";
+import { getDriveTimeMatrix } from "./geocoding";
 
 const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -2153,21 +2154,6 @@ export function calculateJobProfit(params: {
   return { profit, margin, status };
 }
 
-// Haversine formula to calculate distance between two coordinates
-function haversineDistance(
-  lat1: number, lon1: number,
-  lat2: number, lon2: number
-): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 interface OptimizeScheduleJob {
   id: string;
   title: string;
@@ -2185,16 +2171,20 @@ interface OptimizedSchedule {
     job: OptimizeScheduleJob;
     suggestedTime: string;
     travelDistance?: number;
+    travelTime?: number; // drive minutes from the previous stop
     reason: string;
   }>;
   totalDistance: number;
   totalTime: number;
+  totalDriveTime: number; // total drive minutes across the day
+  routeSource: 'osrm' | 'haversine';
   aiSuggestions: string[];
 }
 
 /**
- * AI-powered schedule optimization using location and time constraints
- * Uses nearest-neighbor algorithm with AI enhancement for suggestions
+ * AI-powered schedule optimization using location and time constraints.
+ * Uses a nearest-neighbor algorithm driven by real road drive-times (OSRM),
+ * falling back to straight-line estimates when routing is unavailable.
  */
 export async function optimizeSchedule(
   jobs: OptimizeScheduleJob[],
@@ -2207,6 +2197,8 @@ export async function optimizeSchedule(
       optimizedOrder: [],
       totalDistance: 0,
       totalTime: 0,
+      totalDriveTime: 0,
+      routeSource: 'haversine',
       aiSuggestions: ['No jobs to schedule.']
     };
   }
@@ -2221,38 +2213,62 @@ export async function optimizeSchedule(
     (priorityOrder[a.priority || 'medium'] || 2) - (priorityOrder[b.priority || 'medium'] || 2)
   );
 
-  // Use nearest-neighbor algorithm for route optimization
+  // Build a real road-network drive-time/distance matrix from OSRM (single
+  // request), patched with Haversine estimates for any unreachable cell. The
+  // start location (if provided) is matrix node 0, so jobs are offset by 1.
+  const hasStart = !!(startLocation?.latitude && startLocation?.longitude);
+  const matrixPoints = [
+    ...(hasStart ? [{ lat: startLocation!.latitude, lng: startLocation!.longitude }] : []),
+    ...sortedByPriority.map(j => ({ lat: j.latitude!, lng: j.longitude! })),
+  ];
+  const matrix = await getDriveTimeMatrix(matrixPoints);
+  const jobOffset = hasStart ? 1 : 0;
+
+  // Nearest-neighbor route on real drive time, keeping the priority bias.
   const optimizedRoute: typeof sortedByPriority = [];
-  const remaining = [...sortedByPriority];
-  let currentLat = startLocation?.latitude || remaining[0]?.latitude || 0;
-  let currentLon = startLocation?.longitude || remaining[0]?.longitude || 0;
+  // Per-job leg info keyed by the route position (index in optimizedRoute).
+  const legs: Array<{ driveMinutes: number; driveKm: number }> = [];
+  const remainingK = sortedByPriority.map((_, k) => k); // indices into sortedByPriority
+  let currentNode: number | null = hasStart ? 0 : null;
   let totalDistance = 0;
+  let totalDriveTime = 0;
 
-  while (remaining.length > 0) {
-    let nearestIndex = 0;
-    let nearestDistance = Infinity;
+  while (remainingK.length > 0) {
+    if (currentNode === null) {
+      // No start location: the highest-priority job becomes the first stop.
+      const firstK = remainingK.shift()!;
+      currentNode = firstK + jobOffset;
+      optimizedRoute.push(sortedByPriority[firstK]);
+      legs.push({ driveMinutes: 0, driveKm: 0 });
+      continue;
+    }
 
-    for (let i = 0; i < remaining.length; i++) {
-      const job = remaining[i];
-      if (job.latitude && job.longitude) {
-        const dist = haversineDistance(currentLat, currentLon, job.latitude, job.longitude);
-        // Adjust distance by priority (urgent jobs get bonus proximity)
-        const priorityBonus = job.priority === 'urgent' ? 0.5 : job.priority === 'high' ? 0.7 : 1;
-        const adjustedDist = dist * priorityBonus;
-        if (adjustedDist < nearestDistance) {
-          nearestDistance = adjustedDist;
-          nearestIndex = i;
-        }
+    let bestPos = 0;
+    let bestScore = Infinity;
+    let bestMinutes = 0;
+    let bestKm = 0;
+    for (let p = 0; p < remainingK.length; p++) {
+      const k = remainingK[p];
+      const mIdx = k + jobOffset;
+      const minutes = matrix.durations[currentNode][mIdx];
+      const job = sortedByPriority[k];
+      // Adjust drive time by priority (urgent jobs get bonus proximity).
+      const priorityBonus = job.priority === 'urgent' ? 0.5 : job.priority === 'high' ? 0.7 : 1;
+      const score = minutes * priorityBonus;
+      if (score < bestScore) {
+        bestScore = score;
+        bestPos = p;
+        bestMinutes = minutes;
+        bestKm = matrix.distances[currentNode][mIdx];
       }
     }
 
-    const nextJob = remaining.splice(nearestIndex, 1)[0];
-    if (nextJob.latitude && nextJob.longitude) {
-      totalDistance += haversineDistance(currentLat, currentLon, nextJob.latitude, nextJob.longitude);
-      currentLat = nextJob.latitude;
-      currentLon = nextJob.longitude;
-    }
-    optimizedRoute.push(nextJob);
+    const k = remainingK.splice(bestPos, 1)[0];
+    totalDriveTime += bestMinutes;
+    totalDistance += bestKm;
+    optimizedRoute.push(sortedByPriority[k]);
+    legs.push({ driveMinutes: bestMinutes, driveKm: bestKm });
+    currentNode = k + jobOffset;
   }
 
   // Calculate suggested times
@@ -2270,32 +2286,32 @@ export async function optimizeSchedule(
   const endTime = parseTime(workdayEnd);
   let totalWorkTime = 0;
 
-  const optimizedOrder = optimizedRoute.map((job, index) => {
+  const optimizedOrder: OptimizedSchedule['optimizedOrder'] = optimizedRoute.map((job, index) => {
     const duration = (job.estimatedDuration || 1.5) * 60; // Default 1.5 hours
-    const travelTime = index > 0 ? 15 : 0; // 15 min travel between jobs
-    
+    const leg = legs[index];
+    // Real drive minutes between stops (rounded up); 0 for the first stop.
+    const travelTime = index > 0 ? Math.max(0, Math.ceil(leg.driveMinutes)) : 0;
+    const travelDistance = index > 0 ? Math.round(leg.driveKm * 10) / 10 : undefined;
+
     currentTime += travelTime;
     const suggestedTime = formatTime(currentTime);
     currentTime += duration;
     totalWorkTime += duration + travelTime;
 
-    const prevJob = index > 0 ? optimizedRoute[index - 1] : null;
-    const travelDistance = prevJob && prevJob.latitude && prevJob.longitude && job.latitude && job.longitude
-      ? haversineDistance(prevJob.latitude, prevJob.longitude, job.latitude, job.longitude)
-      : undefined;
-
     let reason = '';
     if (job.priority === 'urgent') {
       reason = 'Prioritised due to urgent status';
-    } else if (travelDistance && travelDistance < 5) {
-      reason = `Close to previous job (${travelDistance.toFixed(1)}km)`;
     } else if (index === 0) {
       reason = 'First stop of the day';
+    } else if (travelDistance !== undefined && travelTime <= 10) {
+      reason = `Short ${travelTime} min drive from previous job`;
+    } else if (travelDistance !== undefined) {
+      reason = `${travelTime} min drive (${travelDistance.toFixed(1)}km)`;
     } else {
       reason = 'Optimal route position';
     }
 
-    return { job, suggestedTime, travelDistance, reason };
+    return { job, suggestedTime, travelDistance, travelTime, reason };
   });
 
   // Add jobs without coordinates at the end
@@ -2310,14 +2326,17 @@ export async function optimizeSchedule(
       job,
       suggestedTime,
       travelDistance: undefined,
+      travelTime: undefined,
       reason: 'Location not available - scheduled at end'
     });
   }
 
   // Generate AI suggestions
   const aiSuggestions: string[] = [];
-  
-  if (totalDistance > 50) {
+
+  if (totalDriveTime > 120) {
+    aiSuggestions.push(`Heavy driving day (${Math.round(totalDriveTime)} min on the road, ${totalDistance.toFixed(1)}km) - consider grouping jobs by area.`);
+  } else if (totalDistance > 50) {
     aiSuggestions.push(`Long travel day (${totalDistance.toFixed(1)}km) - consider grouping jobs by area in future.`);
   }
   
@@ -2335,14 +2354,20 @@ export async function optimizeSchedule(
     aiSuggestions.push(`${urgentJobs} urgent jobs today - consider delegating some if possible.`);
   }
 
+  if (matrix.source === 'haversine' && jobsWithCoords.length > 1) {
+    aiSuggestions.push('Live road routing was unavailable - drive times are straight-line estimates.');
+  }
+
   if (aiSuggestions.length === 0) {
-    aiSuggestions.push('Schedule looks well-optimised! Minimal travel between jobs.');
+    aiSuggestions.push('Schedule looks well-optimised! Minimal driving between jobs.');
   }
 
   return {
     optimizedOrder,
     totalDistance: Math.round(totalDistance * 10) / 10,
     totalTime: Math.round(totalWorkTime / 60 * 10) / 10,
+    totalDriveTime: Math.round(totalDriveTime),
+    routeSource: matrix.source,
     aiSuggestions
   };
 }

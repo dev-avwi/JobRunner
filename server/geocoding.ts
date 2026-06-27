@@ -195,3 +195,91 @@ export async function calculateRouteETA(
     return null;
   }
 }
+
+export interface DriveMatrix {
+  // durations[i][j] = drive time in minutes from point i to point j
+  durations: number[][];
+  // distances[i][j] = drive distance in km from point i to point j
+  distances: number[][];
+  source: 'osrm' | 'haversine';
+}
+
+const AVERAGE_DRIVE_SPEED_KMH = 35;
+
+function buildHaversineMatrix(points: Array<{ lat: number; lng: number }>): DriveMatrix {
+  const n = points.length;
+  const durations: number[][] = [];
+  const distances: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    durations[i] = [];
+    distances[i] = [];
+    for (let j = 0; j < n; j++) {
+      if (i === j) {
+        durations[i][j] = 0;
+        distances[i][j] = 0;
+        continue;
+      }
+      const km = haversineDistance(points[i].lat, points[i].lng, points[j].lat, points[j].lng);
+      distances[i][j] = km;
+      durations[i][j] = (km / AVERAGE_DRIVE_SPEED_KMH) * 60;
+    }
+  }
+  return { durations, distances, source: 'haversine' };
+}
+
+/**
+ * Build a pairwise drive-time/distance matrix between points using OSRM's
+ * table service (a single request). Falls back to straight-line (Haversine)
+ * estimates when OSRM is unavailable, returns an error, or omits any cell.
+ */
+export async function getDriveTimeMatrix(
+  points: Array<{ lat: number; lng: number }>
+): Promise<DriveMatrix> {
+  const n = points.length;
+  if (n < 2) {
+    return buildHaversineMatrix(points);
+  }
+
+  const fallback = buildHaversineMatrix(points);
+
+  try {
+    const coords = points.map((p) => `${p.lng},${p.lat}`).join(';');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://router.project-osrm.org/table/v1/driving/${coords}?annotations=duration,distance`,
+        { signal: controller.signal }
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!res.ok) return fallback;
+    const data = await res.json();
+    if (
+      data.code !== 'Ok' ||
+      !Array.isArray(data.durations) ||
+      !Array.isArray(data.distances)
+    ) {
+      return fallback;
+    }
+
+    const durations: number[][] = [];
+    const distances: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      durations[i] = [];
+      distances[i] = [];
+      for (let j = 0; j < n; j++) {
+        const durSec = data.durations[i]?.[j];
+        const distM = data.distances[i]?.[j];
+        // OSRM uses null for unreachable pairs - patch those with the fallback.
+        durations[i][j] = typeof durSec === 'number' ? durSec / 60 : fallback.durations[i][j];
+        distances[i][j] = typeof distM === 'number' ? distM / 1000 : fallback.distances[i][j];
+      }
+    }
+    return { durations, distances, source: 'osrm' };
+  } catch {
+    return fallback;
+  }
+}
