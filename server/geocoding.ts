@@ -1,4 +1,4 @@
-import { driveMatrixCache } from "./cache";
+import { driveMatrixCache, routeGeometryCache } from "./cache";
 
 /**
  * Base URL for OSRM routing. Defaults to the public demo server, which is
@@ -230,6 +230,14 @@ export async function getRouteGeometry(
   points: Array<{ lat: number; lng: number }>
 ): Promise<RouteGeometry | null> {
   if (points.length < 2) return null;
+
+  // Cache key: ordered, rounded coordinate list. Identical stop sequences reuse
+  // the cached geometry instead of re-hitting the rate-limited public OSRM
+  // server. ~5dp is ~1m of precision, stable across repeated route views.
+  const cacheKey = points.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join(';');
+  const cached = routeGeometryCache.get(cacheKey) as RouteGeometry | undefined;
+  if (cached) return cached;
+
   try {
     const coords = points.map((p) => `${p.lng},${p.lat}`).join(';');
     const controller = new AbortController();
@@ -271,7 +279,9 @@ export async function getRouteGeometry(
         }))
       : [];
 
-    return { coordinates, legs, source: 'osrm' };
+    const result: RouteGeometry = { coordinates, legs, source: 'osrm' };
+    routeGeometryCache.set(cacheKey, result);
+    return result;
   } catch {
     return null;
   }

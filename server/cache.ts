@@ -145,6 +145,14 @@ export const aggregateDashboardCache = new HotCache<any>("aggregateDashboard", {
 // the rounded, ordered coordinate list, so an unchanged job set is a cache hit.
 export const driveMatrixCache = new HotCache<any>("driveMatrix", { ttlMs: 300_000, max: 500 });
 
+// Road-route geometry cache (Task #291 — Job Map driving path).
+// The public OSRM server is rate-limited and occasionally slow, so identical
+// stop sequences reuse the cached GeoJSON path for a short TTL instead of
+// re-fetching. Keyed by the rounded, ordered coordinate list. Only successful
+// OSRM responses are cached, so a true OSRM miss still falls back to straight
+// lines on the next call.
+export const routeGeometryCache = new HotCache<any>("routeGeometry", { ttlMs: 300_000, max: 500 });
+
 // Accounting integration metadata caches (Task #91 — pull-and-cache for mapping UI)
 // 60s TTL keeps the Integrations page snappy without serving stale data when a
 // tenant adds a new account/tax-rate. Per-userId keys.
@@ -168,6 +176,7 @@ export function getCacheStats() {
     user: userCache,
     aggregateDashboard: aggregateDashboardCache,
     driveMatrix: driveMatrixCache,
+    routeGeometry: routeGeometryCache,
   };
   for (const [ns, c] of Object.entries(caches)) {
     const s = stats.get(ns) ?? { hits: 0, misses: 0, invalidations: 0 };
