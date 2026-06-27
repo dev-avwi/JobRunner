@@ -280,7 +280,12 @@ export default function PhoneNumbersPage() {
                 showToast({ type: 'info', message: 'Number Reactivated!', description: `${formatPhone(lastOwnedNumber)} is your dedicated number again.` });
               }
             } catch (e: any) {
-              showToast({ type: 'error', message: 'Error', description: e?.message || 'Failed to re-acquire number' });
+              // Cancel/superseded → reset quietly and drop the stashed number.
+              if (e?.code === 'E_USER_CANCELLED' || e?.code === 'E_PURCHASE_SUPERSEDED') {
+                setPendingDedicatedNumber(null);
+              } else {
+                showToast({ type: 'error', message: 'Error', description: e?.message || 'Failed to re-acquire number' });
+              }
             } finally {
               setReacquiring(false);
             }
@@ -391,7 +396,13 @@ export default function PhoneNumbersPage() {
                 );
               }
             } catch (e: any) {
-              showToast({ type: 'error', message: 'Error', description: e?.message || 'Failed to set up number. Please try again.' });
+              // User dismissed the Apple sheet (or the purchase was superseded) — reset
+              // quietly. Clear the stashed number so it can't attach to a later purchase.
+              if (e?.code === 'E_USER_CANCELLED' || e?.code === 'E_PURCHASE_SUPERSEDED') {
+                setPendingDedicatedNumber(null);
+              } else {
+                showToast({ type: 'error', message: 'Error', description: e?.message || 'Failed to set up number. Please try again.' });
+              }
             } finally {
               setPurchasing(null);
             }

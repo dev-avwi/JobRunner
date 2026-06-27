@@ -70,6 +70,40 @@ let isInitialized = false;
 let purchaseUpdateSubscription: any = null;
 let purchaseErrorSubscription: any = null;
 
+// On iOS, requestSubscription() does NOT reliably reject when the user cancels the
+// Apple sheet — the outcome (success OR cancel/error) arrives asynchronously through
+// the global purchase listeners. We bridge that back to the caller's awaited promise
+// here so a cancel rejects (with E_USER_CANCELLED) and only a real, receipt-bearing
+// transaction resolves. Without this, screens treat "sheet opened" as "purchase done".
+let activePurchaseDeferred: { resolve: () => void; reject: (e: any) => void } | null = null;
+let activePurchaseTimeout: ReturnType<typeof setTimeout> | null = null;
+// The productId the caller is currently awaiting, so a stale/unrelated purchase update
+// (e.g. a queued or restored transaction) can't falsely resolve the active deferred.
+let activePurchaseProductId: string | null = null;
+
+function clearActivePurchaseTimeout(): void {
+  if (activePurchaseTimeout) {
+    clearTimeout(activePurchaseTimeout);
+    activePurchaseTimeout = null;
+  }
+}
+
+function settlePurchaseSuccess(): void {
+  clearActivePurchaseTimeout();
+  const deferred = activePurchaseDeferred;
+  activePurchaseDeferred = null;
+  activePurchaseProductId = null;
+  if (deferred) deferred.resolve();
+}
+
+function settlePurchaseError(error: any): void {
+  clearActivePurchaseTimeout();
+  const deferred = activePurchaseDeferred;
+  activePurchaseDeferred = null;
+  activePurchaseProductId = null;
+  if (deferred) deferred.reject(error);
+}
+
 export async function initIAP(): Promise<boolean> {
   if (Platform.OS === 'web') return false;
   if (isInitialized) return true;
@@ -112,10 +146,30 @@ export async function fetchSubscriptions(): Promise<Subscription[]> {
   }
 }
 
+// Resolves ONLY when a real, receipt-bearing transaction completes. Rejects with the
+// underlying error on failure — notably { code: 'E_USER_CANCELLED' } when the user
+// dismisses the Apple sheet. Callers must therefore treat a resolve as a genuine
+// purchase, and silently ignore E_USER_CANCELLED in their catch.
 export async function purchaseSubscription(productId: string): Promise<void> {
-  try {
-    if (!isInitialized) await initIAP();
+  if (!isInitialized) await initIAP();
 
+  // Abandon any prior in-flight purchase deferred so its promise can't leak.
+  if (activePurchaseDeferred) {
+    settlePurchaseError({ code: 'E_PURCHASE_SUPERSEDED' });
+  }
+
+  const outcome = new Promise<void>((resolve, reject) => {
+    activePurchaseDeferred = { resolve, reject };
+    activePurchaseProductId = productId;
+    // Safety net: if neither listener fires (e.g. the sheet never appears), don't
+    // leave the caller's spinner hanging forever.
+    activePurchaseTimeout = setTimeout(() => {
+      activePurchaseTimeout = null;
+      settlePurchaseError({ code: 'E_PURCHASE_TIMEOUT' });
+    }, 120000);
+  });
+
+  try {
     if (Platform.OS === 'ios') {
       await requestSubscription({ sku: productId });
     } else if (Platform.OS === 'android') {
@@ -125,13 +179,17 @@ export async function purchaseSubscription(productId: string): Promise<void> {
       });
     }
   } catch (error: any) {
+    // Some platform/library versions DO reject requestSubscription directly (incl.
+    // cancel). Surface that through the same deferred so we never double-settle.
     if (error?.code === 'E_USER_CANCELLED') {
       console.log('[IAP] User cancelled purchase');
-      return;
+    } else {
+      console.error('[IAP] Purchase error:', error);
     }
-    console.error('[IAP] Purchase error:', error);
-    throw error;
+    settlePurchaseError(error);
   }
+
+  return outcome;
 }
 
 export async function restorePurchases(): Promise<(ProductPurchase | SubscriptionPurchase)[]> {
@@ -155,15 +213,29 @@ export function setupPurchaseListeners(
 
   purchaseUpdateSubscription = purchaseUpdatedListener(async (purchase) => {
     console.log('[IAP] Purchase updated:', purchase.productId);
-    if (purchase.transactionReceipt) {
+    if (!purchase.transactionReceipt) return;
+    // Only the purchase the caller is actually awaiting may settle the deferred — a
+    // stale/queued/restored transaction for another product must not resolve it.
+    const matchesActive = purchase.productId === activePurchaseProductId;
+    try {
       await finishTransaction({ purchase, isConsumable: false });
-      onPurchaseSuccess(purchase);
+    } catch (err) {
+      console.error('[IAP] finishTransaction failed:', err);
+      if (matchesActive) settlePurchaseError(err);
+      return;
     }
+    onPurchaseSuccess(purchase);
+    // Let the awaiting caller know their real purchase landed.
+    if (matchesActive) settlePurchaseSuccess();
   });
 
   purchaseErrorSubscription = purchaseErrorListener((error) => {
-    // A user cancelling the purchase sheet is a normal action, not an error.
+    // Resolve the caller's awaited promise as a rejection for EVERY error — including
+    // a user cancel — so the screen can reset its loading state and never show success.
+    settlePurchaseError(error);
+    // A user cancelling the purchase sheet is a normal action, not an error to log/report.
     if (error.code === 'E_USER_CANCELLED') {
+      console.log('[IAP] User cancelled purchase');
       return;
     }
     console.error('[IAP] Purchase error listener:', error);

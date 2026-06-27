@@ -445,6 +445,10 @@ export default function AIReceptionistScreen() {
       } catch (e: any) {
         setIsProvisioning(false);
         setProvisioningStatus(null);
+        // User dismissed the Apple sheet (or the purchase was superseded) — reset quietly.
+        if (e?.code === 'E_USER_CANCELLED' || e?.code === 'E_PURCHASE_SUPERSEDED') {
+          return;
+        }
         const errorData = e?.response?.data || e;
         if (errorData?.needsDedicatedNumber) {
           confirm({
