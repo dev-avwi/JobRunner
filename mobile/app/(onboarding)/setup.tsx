@@ -532,9 +532,10 @@ export default function OnboardingSetupScreen() {
         phone: subPhone || null,
         abn: subAbn || null,
         teamSize: 'solo',
-        // Persist the standalone-subcontractor choice so /api/team/my-role can
-        // label this account "Subcontractor" even when no business invite is
-        // redeemed. A real team membership (if they later join one) overrides it.
+        // Tag the account as subcontractor so /api/team/my-role labels it
+        // correctly. The next step (subConnect) now REQUIRES redeeming an invite
+        // into a paid Team/Business — there is no standalone finish — so this is
+        // just the label; the redeemed team membership overrides it.
         accountType: 'subcontractor',
       };
 
@@ -552,29 +553,35 @@ export default function OnboardingSetupScreen() {
     }
   };
 
-  const handleSubConnect = async (skip: boolean) => {
-    if (!skip && subInviteValidation?.valid) {
-      setIsLoading(true);
-      try {
-        const response = await api.post('/api/team/invite-code/redeem', {
-          code: subInviteCode,
-          phone: subPhone || undefined,
-        });
-
-        if (response.error) {
-          Alert.alert('Error', response.error);
-          setIsLoading(false);
-          return;
-        }
-      } catch (error: any) {
-        Alert.alert('Error', error.message || 'Failed to connect');
-        setIsLoading(false);
-        return;
-      } finally {
-        setIsLoading(false);
-      }
+  const handleSubConnect = async () => {
+    // Subcontractor accounts only exist by joining a business that invited them.
+    // A valid invite code is mandatory — there is no standalone "skip" path.
+    // The redeem itself enforces that the business is on a paid Team/Business
+    // plan with an available seat (team_plan_required / seat-limit errors).
+    if (!subInviteValidation?.valid) {
+      Alert.alert(
+        'Invite code required',
+        'Subcontractors can only join through a business that invites them. Enter a valid invite code from a business on a Team or Business plan to continue.',
+      );
+      return;
     }
-    setSubStep('privacy');
+    setIsLoading(true);
+    try {
+      const response = await api.post('/api/team/invite-code/redeem', {
+        code: subInviteCode,
+        phone: subPhone || undefined,
+      });
+
+      if (response.error) {
+        Alert.alert('Error', response.error);
+        return;
+      }
+      setSubStep('privacy');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to connect');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubPrivacyAcknowledge = async () => {
@@ -1151,7 +1158,7 @@ export default function OnboardingSetupScreen() {
     <ScrollView style={styles.stepContainer} contentContainerStyle={styles.centeredContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>Connect to a business</Text>
-        <Text style={styles.stepSubtitle}>Enter an invite code from a business you work with</Text>
+        <Text style={styles.stepSubtitle}>Subcontractors join through a business that invites them. Enter your invite code to continue.</Text>
       </View>
 
       <View style={styles.codeInputWrap}>
@@ -1188,9 +1195,9 @@ export default function OnboardingSetupScreen() {
 
       <View style={styles.ctaWrap}>
         <TouchableOpacity
-          style={[styles.ctaButton, (isLoading || (!subInviteValidation?.valid && subInviteCode.length > 0)) && { opacity: 0.5 }]}
-          onPress={() => handleSubConnect(false)}
-          disabled={isLoading || (!subInviteValidation?.valid && subInviteCode.length > 0)}
+          style={[styles.ctaButton, (isLoading || !subInviteValidation?.valid) && { opacity: 0.5 }]}
+          onPress={() => handleSubConnect()}
+          disabled={isLoading || !subInviteValidation?.valid}
           activeOpacity={0.8}
         >
           {isLoading ? <ActivityIndicator color={colors.primaryForeground} /> : (
@@ -1201,10 +1208,6 @@ export default function OnboardingSetupScreen() {
           )}
         </TouchableOpacity>
       </View>
-
-      <TouchableOpacity style={styles.skipButton} onPress={() => handleSubConnect(true)} activeOpacity={0.6}>
-        <Text style={styles.skipText}>Skip for now</Text>
-      </TouchableOpacity>
     </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -1719,15 +1722,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
   },
 
-  skipButton: {
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  skipText: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    fontWeight: '500',
-  },
   skipTopText: {
     fontSize: 14,
     color: colors.mutedForeground,
