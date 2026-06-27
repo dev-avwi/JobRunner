@@ -13,6 +13,9 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { API_URL } from '../lib/api';
 import { router, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore, useTimeTrackingStore } from '../lib/store';
@@ -135,6 +138,21 @@ export function SubcontractorDashboard() {
     subcontractorName: string;
     businessName: string;
   }
+  interface SubInvoiceItem {
+    id: string;
+    description: string;
+    hours: string | null;
+    rate: string | null;
+    quantity: string | null;
+    unitPrice: string | null;
+    amount: string;
+  }
+  interface SubInvoiceDetail extends SubInvoiceSummary {
+    items: SubInvoiceItem[];
+    notes?: string | null;
+    rejectionReason?: string | null;
+    businessAbn?: string | null;
+  }
   const [showInvoiceCreate, setShowInvoiceCreate] = useState(false);
   const [unbilledWork, setUnbilledWork] = useState<UnbilledWorkItem[]>([]);
   const [selectedJobs, setSelectedJobs] = useState<Record<string, boolean>>({});
@@ -145,6 +163,9 @@ export function SubcontractorDashboard() {
   const [invoices, setInvoices] = useState<SubInvoiceSummary[]>([]);
   const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
   const [showInvoices, setShowInvoices] = useState(false);
+  const [detailInvoice, setDetailInvoice] = useState<SubInvoiceDetail | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   useEffect(() => {
     if (scrollToTopTrigger > 0) {
@@ -430,6 +451,69 @@ export function SubcontractorDashboard() {
       ],
     );
   }, [loadInvoices, fetchDashboard]);
+
+  const detailRequestId = useRef(0);
+  const openInvoiceDetail = useCallback(async (inv: SubInvoiceSummary) => {
+    const requestId = ++detailRequestId.current;
+    setIsLoadingDetail(true);
+    setDetailInvoice({ ...inv, items: [] } as SubInvoiceDetail);
+    try {
+      const response = await api.get<SubInvoiceDetail>(`/api/subcontractor/invoices/${inv.id}`);
+      if (requestId !== detailRequestId.current) return;
+      if (response.error || !response.data) {
+        Alert.alert('Could not open invoice', response.error || 'Please try again.');
+        setDetailInvoice(null);
+        return;
+      }
+      setDetailInvoice(response.data);
+    } catch {
+      if (requestId !== detailRequestId.current) return;
+      Alert.alert('Could not open invoice', 'Please try again.');
+      setDetailInvoice(null);
+    } finally {
+      if (requestId === detailRequestId.current) setIsLoadingDetail(false);
+    }
+  }, []);
+
+  const closeInvoiceDetail = useCallback(() => {
+    detailRequestId.current++;
+    setIsLoadingDetail(false);
+    setDetailInvoice(null);
+  }, []);
+
+  const downloadInvoicePdf = useCallback(async (inv: { id: string; invoiceNumber: string }) => {
+    setIsDownloadingPdf(true);
+    try {
+      const token = await api.getToken();
+      if (!token) {
+        Alert.alert('Could not open PDF', 'Please sign in again.');
+        return;
+      }
+      const fileUri = `${FileSystem.cacheDirectory}${inv.invoiceNumber || 'invoice'}_${Date.now()}.pdf`;
+      const result = await FileSystem.createDownloadResumable(
+        `${API_URL}/api/subcontractor/invoices/${inv.id}/pdf`,
+        fileUri,
+        { headers: { Authorization: `Bearer ${token}`, Accept: 'application/pdf' } },
+      ).downloadAsync();
+      if (!result?.uri || result.status !== 200) {
+        Alert.alert('Could not open PDF', 'Please try again.');
+        return;
+      }
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(result.uri, {
+          mimeType: 'application/pdf',
+          UTI: 'com.adobe.pdf',
+          dialogTitle: `Invoice ${inv.invoiceNumber}`,
+        });
+      } else {
+        Alert.alert('Could not open PDF', 'Sharing is not available on this device.');
+      }
+    } catch {
+      Alert.alert('Could not open PDF', 'Please try again.');
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  }, []);
 
   const getInvoiceStatusColor = useCallback((status: string) => {
     switch (status) {
@@ -1370,8 +1454,10 @@ export function SubcontractorDashboard() {
                         {bizName}
                       </Text>
                       {bizInvoices.map((inv) => (
-                        <View
+                        <TouchableOpacity
                           key={inv.id}
+                          activeOpacity={0.7}
+                          onPress={() => openInvoiceDetail(inv)}
                           style={{
                             padding: spacing.md,
                             borderWidth: 1,
@@ -1410,11 +1496,14 @@ export function SubcontractorDashboard() {
                             <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
                               {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
                             </Text>
-                            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>
-                              {formatCurrencyUtil(parseFloat(inv.totalAmount || '0'))}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>
+                                {formatCurrencyUtil(parseFloat(inv.totalAmount || '0'))}
+                              </Text>
+                              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                            </View>
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       ))}
                     </View>
                   ));
@@ -1422,6 +1511,171 @@ export function SubcontractorDashboard() {
               </ScrollView>
             )}
         </View>
+      </AppBottomSheet>
+
+      <AppBottomSheet
+        visible={!!detailInvoice}
+        onDismiss={closeInvoiceDetail}
+        snapPoints={['85%']}
+        scrollable
+        contentPadding={spacing.lg}>
+        {detailInvoice && (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.md }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground }}>
+                  {detailInvoice.invoiceNumber}
+                </Text>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground, marginTop: 2 }}>
+                  {detailInvoice.businessName}
+                </Text>
+              </View>
+              <View style={{
+                paddingHorizontal: spacing.sm,
+                paddingVertical: 2,
+                borderRadius: radius.pill,
+                backgroundColor: colorWithOpacity(getInvoiceStatusColor(detailInvoice.status), 0.12),
+              }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: getInvoiceStatusColor(detailInvoice.status), textTransform: 'capitalize' }}>
+                  {detailInvoice.status}
+                </Text>
+              </View>
+            </View>
+
+            {detailInvoice.status === 'rejected' && detailInvoice.rejectionReason ? (
+              <View style={{
+                backgroundColor: colorWithOpacity(colors.destructive, 0.1),
+                borderRadius: radius.md,
+                padding: spacing.md,
+                marginBottom: spacing.md,
+              }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.destructive, marginBottom: 2 }}>Rejected</Text>
+                <Text style={{ fontSize: 13, color: colors.foreground }}>{detailInvoice.rejectionReason}</Text>
+              </View>
+            ) : null}
+
+            {isLoadingDetail ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: spacing.lg }} />
+            ) : (
+              <>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm }}>
+                  Line items
+                </Text>
+                {(detailInvoice.items || []).length === 0 ? (
+                  <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md }}>
+                    No line items.
+                  </Text>
+                ) : (
+                  detailInvoice.items.map((item) => (
+                    <View
+                      key={item.id}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        paddingVertical: spacing.sm,
+                        borderBottomWidth: StyleSheet.hairlineWidth,
+                        borderBottomColor: colors.border,
+                        gap: spacing.md,
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, color: colors.foreground }}>{item.description}</Text>
+                        {item.hours && item.rate ? (
+                          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+                            {parseFloat(item.hours)} hrs @ {formatCurrencyUtil(parseFloat(item.rate))}/hr
+                          </Text>
+                        ) : item.quantity && item.unitPrice ? (
+                          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+                            {parseFloat(item.quantity)} × {formatCurrencyUtil(parseFloat(item.unitPrice))}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                        {formatCurrencyUtil(parseFloat(item.amount || '0'))}
+                      </Text>
+                    </View>
+                  ))
+                )}
+
+                <View style={{ marginTop: spacing.md, gap: 4 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Subtotal</Text>
+                    <Text style={{ fontSize: 13, color: colors.foreground }}>{formatCurrencyUtil(parseFloat(detailInvoice.subtotalAmount || '0'))}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 13, color: colors.mutedForeground }}>GST</Text>
+                    <Text style={{ fontSize: 13, color: colors.foreground }}>{formatCurrencyUtil(parseFloat(detailInvoice.gstAmount || '0'))}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>Total</Text>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }}>{formatCurrencyUtil(parseFloat(detailInvoice.totalAmount || '0'))}</Text>
+                  </View>
+                </View>
+
+                {detailInvoice.notes ? (
+                  <View style={{ marginTop: spacing.md }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Notes</Text>
+                    <Text style={{ fontSize: 13, color: colors.foreground }}>{detailInvoice.notes}</Text>
+                  </View>
+                ) : null}
+              </>
+            )}
+
+            <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                disabled={isDownloadingPdf}
+                onPress={() => downloadInvoicePdf(detailInvoice)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: spacing.sm,
+                  paddingVertical: spacing.md,
+                  borderRadius: radius.md,
+                  backgroundColor: colors.primary,
+                  opacity: isDownloadingPdf ? 0.6 : 1,
+                }}
+              >
+                {isDownloadingPdf ? (
+                  <ActivityIndicator size="small" color={colors.primaryForeground} />
+                ) : (
+                  <Feather name="download" size={16} color={colors.primaryForeground} />
+                )}
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primaryForeground }}>
+                  View PDF
+                </Text>
+              </TouchableOpacity>
+
+              {detailInvoice.status !== 'paid' && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    const inv = detailInvoice;
+                    closeInvoiceDetail();
+                    handleDeleteInvoice(inv);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: spacing.sm,
+                    paddingVertical: spacing.md,
+                    borderRadius: radius.md,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <Feather name="trash-2" size={16} color={colors.destructive} />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.destructive }}>
+                    Delete invoice
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </>
+        )}
       </AppBottomSheet>
 
       <WorkspaceSwitcher
