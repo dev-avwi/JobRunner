@@ -1287,6 +1287,7 @@ interface MobileOperationalAlert {
   actionLabel: string;
   relatedJobId?: string;
   relatedUserId?: string;
+  relatedInvoiceId?: string;
   timeInfo?: string;
 }
 
@@ -1322,7 +1323,9 @@ function OperationalAlertsCard() {
 
   const handleAlertAction = useCallback((alert: MobileOperationalAlert) => {
     if (alert.type === 'subcontractor_invoice') {
-      router.push('/more/team-management' as any);
+      router.push((alert.relatedInvoiceId
+        ? `/more/team-management?invoice=${alert.relatedInvoiceId}`
+        : '/more/team-management') as any);
       return;
     }
     if (alert.actionType === 'navigate' || alert.actionType === 'nudge') {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
-import { router, Stack, useFocusEffect } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { asHref } from '../../src/lib/nav';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -278,7 +278,7 @@ interface WorkerPaymentDetails {
   payId?: string | null;
 }
 
-function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
+function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: ThemeColors; focusInvoiceId?: string }) {
   const [invoices, setInvoices] = useState<MobileSubInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -318,6 +318,8 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
   }, []);
 
   useEffect(() => { loadInvoices(); loadConnectedProvider(); }, [loadInvoices, loadConnectedProvider]);
+
+  const handledFocusRef = useRef<string | null>(null);
 
   const approveInvoice = useCallback(async (invoiceId: string) => {
     setUpdatingId(invoiceId);
@@ -380,6 +382,18 @@ function SubcontractorInvoicesSection({ colors }: { colors: ThemeColors }) {
       setDetailsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!focusInvoiceId || isLoading || handledFocusRef.current === focusInvoiceId) return;
+    const inv = invoices.find((i) => i.id === focusInvoiceId);
+    if (!inv) return;
+    handledFocusRef.current = focusInvoiceId;
+    if (inv.status === 'submitted' || inv.status === 'approved') {
+      openPaySheet(inv);
+    } else {
+      openPaymentDetails(inv);
+    }
+  }, [focusInvoiceId, isLoading, invoices, openPaySheet, openPaymentDetails]);
 
   const downloadRemittance = useCallback(async (inv: MobileSubInvoice) => {
     setUpdatingId(inv.id);
@@ -1829,6 +1843,7 @@ export default function TeamManagementScreen() {
   const bottomInset = useBottomInset(40);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { user, isOwner } = useAuthStore();
+  const { invoice: focusInvoiceId } = useLocalSearchParams<{ invoice?: string }>();
   
   // Get subscription tier from auth store (single source of truth)
   const userSubscriptionTier = user?.subscriptionTier || 'free';
@@ -2871,7 +2886,7 @@ export default function TeamManagementScreen() {
           </TouchableOpacity>
 
           {/* Subcontractor Invoices Section - Business Owner Only */}
-          {currentUserIsOwner && <SubcontractorInvoicesSection colors={colors} />}
+          {currentUserIsOwner && <SubcontractorInvoicesSection colors={colors} focusInvoiceId={focusInvoiceId} />}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Team Members</Text>

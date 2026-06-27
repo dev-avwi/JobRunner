@@ -1808,6 +1808,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   completionButton: {
     paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
     borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
@@ -10497,23 +10498,23 @@ export default function JobDetailScreen() {
         showCloseButton
         snapPoints={['88%']}
         footer={(
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <View style={{ gap: spacing.sm }}>
             <TouchableOpacity 
-              style={[styles.completionButton, styles.completionButtonSecondary, { flex: 0.7 }]} 
-              onPress={() => setShowCompletionModal(false)}
-            >
-              <Text style={[styles.completionButtonText, styles.completionButtonTextSecondary]} numberOfLines={1}>Go Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.completionButton, styles.completionButtonPrimary, { flex: 1.3 }]} 
+              style={[styles.completionButton, styles.completionButtonPrimary]} 
               onPress={completionMode === 'worker' ? handleCompleteMyPart : handleConfirmComplete}
               disabled={isCompletingJob}
             >
               {isCompletingJob ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={styles.completionButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{completionMode === 'worker' ? 'Mark My Part Complete' : 'Complete Job'}</Text>
+                <Text style={styles.completionButtonText} numberOfLines={1}>{completionMode === 'worker' ? 'Mark My Part Complete' : 'Complete Job'}</Text>
               )}
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.completionButton, styles.completionButtonSecondary]} 
+              onPress={() => setShowCompletionModal(false)}
+            >
+              <Text style={[styles.completionButtonText, styles.completionButtonTextSecondary]} numberOfLines={1}>Go Back</Text>
             </TouchableOpacity>
           </View>
         )}>
