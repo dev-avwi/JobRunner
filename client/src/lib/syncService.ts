@@ -13,6 +13,7 @@ import {
 import { getSessionToken } from './queryClient';
 import { queryClient } from './queryClient';
 import { syncManager } from './syncManager';
+import { withSyncLock } from './syncLock';
 
 const MAX_RETRIES = 3;
 const ID_MAPPING_KEY = 'jobrunner_id_mapping';
@@ -294,6 +295,10 @@ function hasFieldConflict(localData: Record<string, unknown>, serverData: Record
 }
 
 export async function processSyncQueue(): Promise<SyncResult> {
+  return withSyncLock(() => processSyncQueueInner());
+}
+
+async function processSyncQueueInner(): Promise<SyncResult> {
   const queue = await getSyncQueue();
   
   if (queue.length === 0) {

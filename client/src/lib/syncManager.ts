@@ -16,6 +16,7 @@ import {
   type OfflineStoreName,
 } from './offlineStorage';
 import { apiRequest, queryClient, getStoreNameFromEndpoint } from './queryClient';
+import { withSyncLock } from './syncLock';
 
 const STORE_PRIORITY: Record<string, number> = {
   clients: 0,
@@ -129,6 +130,11 @@ class SyncManager {
   }
 
   async triggerSync(): Promise<void> {
+    if (!isOnline()) return;
+    return withSyncLock(() => this.runSyncQueue());
+  }
+
+  private async runSyncQueue(): Promise<void> {
     if (this.isSyncing || !isOnline()) {
       return;
     }
