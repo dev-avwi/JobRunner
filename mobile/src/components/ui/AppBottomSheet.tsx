@@ -289,9 +289,15 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
 
     // When a sticky footer is present, the footer handles bottom safe-area
     // padding itself; don't double-pad inside the scrollable content.
+    // Top padding: when the sheet has its own header band, keep it tight
+    // (the header already provides the top spacing). When there's NO header,
+    // the first child IS the content/title, so it needs a real top inset that
+    // matches the side padding — otherwise it rides up against the rounded
+    // top edge of the sheet.
+    const hasHeader = !!(title || showCloseButton);
     const innerContentStyle = {
       paddingHorizontal: contentPadding,
-      paddingTop: spacing.sm,
+      paddingTop: hasHeader ? spacing.sm : contentPadding,
       paddingBottom: footer
         ? contentPadding
         : contentPadding + Math.max(insets.bottom, 0),
