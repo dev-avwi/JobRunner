@@ -18,7 +18,6 @@ mobile/credentials/
 **/*.jks
 **/*.keystore
 **/*.mobileprovision
-mobile/google-services.json
 mobile/GoogleService-Info.plist
 
 # macOS Finder metadata — never commit these
