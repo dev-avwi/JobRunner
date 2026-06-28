@@ -442,6 +442,11 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-14 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left animate-fade-in">
+              {/* Eyebrow */}
+              <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-brand mb-4">
+                Job management for Australian trades
+              </p>
+
               {/* Main Headline */}
               <h1 className="text-[2.25rem] sm:text-[2.75rem] lg:text-[3.25rem] font-extrabold leading-[1.08] tracking-tight mb-5">
                 Built for how jobs{" "}
