@@ -2476,6 +2476,9 @@ function OwnerDashboardScreen() {
   
   // To Invoice count - jobs with status 'done' but no linked invoice
   const [toInvoiceCount, setToInvoiceCount] = useState(0);
+
+  // AI receptionist calls taken today (shown on the AI Phone overview card)
+  const [aiCallsToday, setAiCallsToday] = useState(0);
   
   // Worker state
   const [workerState, setWorkerState] = useState<{ state: string; note: string | null }>({ state: 'available', note: null });
@@ -2597,6 +2600,26 @@ function OwnerDashboardScreen() {
       if (__DEV__) console.log('Error fetching daily summary:', error);
     }
   }, []);
+
+  const fetchAiCallsToday = useCallback(async () => {
+    if (!businessSettings?.aiReceptionistEnabled) return;
+    try {
+      const response = await api.get<any[]>('/api/ai-receptionist/calls?limit=200');
+      if (!response.error && Array.isArray(response.data)) {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        const count = response.data.filter((c: any) => {
+          const created = c?.createdAt ? new Date(c.createdAt) : null;
+          return created && created >= start;
+        }).length;
+        setAiCallsToday(count);
+      } else {
+        setAiCallsToday(0);
+      }
+    } catch (error) {
+      if (__DEV__) console.log('Error fetching AI calls:', error);
+    }
+  }, [businessSettings?.aiReceptionistEnabled]);
 
   // Fetch user location and compute distances to today's jobs
   const computeJobDistances = useCallback(async () => {
@@ -2902,6 +2925,7 @@ function OwnerDashboardScreen() {
   const fetchToInvoiceCountRef = useRef(fetchToInvoiceCount);
   const fetchDailySummaryRef = useRef(fetchDailySummary);
   const fetchWorkerStateRef = useRef(fetchWorkerState);
+  const fetchAiCallsTodayRef = useRef(fetchAiCallsToday);
   
   // Keep refs updated
   fetchTodaysJobsRef.current = fetchTodaysJobs;
@@ -2913,6 +2937,7 @@ function OwnerDashboardScreen() {
   fetchToInvoiceCountRef.current = fetchToInvoiceCount;
   fetchDailySummaryRef.current = fetchDailySummary;
   fetchWorkerStateRef.current = fetchWorkerState;
+  fetchAiCallsTodayRef.current = fetchAiCallsToday;
 
   const refreshData = useCallback(async () => {
     try {
@@ -2925,6 +2950,7 @@ function OwnerDashboardScreen() {
         fetchToInvoiceCountRef.current(),
         fetchDailySummaryRef.current(),
         fetchWorkerStateRef.current(),
+        fetchAiCallsTodayRef.current(),
       ]);
     } finally {
       // Mark initial load complete even if a fetch rejected — the dashboard
@@ -3577,8 +3603,8 @@ function OwnerDashboardScreen() {
                 />
                 {businessSettings?.aiReceptionistEnabled ? (
                   <KPICard
-                    title="AI Phone"
-                    value={businessSettings?.aiReceptionistMode === 'always_on_transfer' ? 'Live' : businessSettings?.aiReceptionistMode === 'after_hours' ? 'After Hrs' : 'Active'}
+                    title={aiCallsToday === 1 ? 'Call Today' : 'Calls Today'}
+                    value={aiCallsToday}
                     icon="phone"
                     iconBg={colors.successLight}
                     iconColor={colors.success}
