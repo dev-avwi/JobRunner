@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jobrunner.app",
-      "buildNumber": "37",
+      "buildNumber": "38",
       "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
@@ -178,7 +178,7 @@
         "monochromeImage": "./assets/adaptive-icon-monochrome.png"
       },
       "package": "com.jobrunner.app",
-      "versionCode": 40,
+      "versionCode": 41,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCxuTz7CF7fuLq4pD85tuquilZFyIleHeU"
