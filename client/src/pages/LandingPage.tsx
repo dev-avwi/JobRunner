@@ -439,7 +439,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="pt-16 lg:pt-20 pb-12 lg:pb-20 px-5 lg:px-8">
         <LandingShell padded={false}>
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+          <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-14 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left animate-fade-in">
               {/* Main Headline */}
