@@ -442,12 +442,6 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left animate-fade-in">
-              {/* Tagline Badge */}
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-brand/5 to-brand-accent/5 border border-brand/10 rounded-full px-4 py-2 mb-6">
-                <Sparkles className="w-3.5 h-3.5 text-brand-accent" />
-                <span className="text-[13px] font-semibold text-gray-700">Start free — upgrade anytime</span>
-              </div>
-
               {/* Main Headline */}
               <h1 className="text-[2.25rem] sm:text-[2.75rem] lg:text-[3.25rem] font-extrabold leading-[1.08] tracking-tight mb-5">
                 Built for how jobs{" "}
@@ -498,15 +492,9 @@ export default function LandingPage() {
               </div>
 
               {/* Free tier note */}
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-full px-4 py-2">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-accent"></span>
-                </span>
-                <span className="text-[13px] font-medium text-orange-700">
-                  Free plan available — no credit card required
-                </span>
-              </div>
+              <p className="text-[13px] text-gray-500">
+                Free plan available — no credit card required.
+              </p>
             </div>
 
             {/* Right: Hero Video */}
