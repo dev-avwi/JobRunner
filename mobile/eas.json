@@ -66,6 +66,7 @@
         "appleTeamId": "6557LUX45F"
       },
       "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
         "track": "internal",
         "releaseStatus": "completed"
       }

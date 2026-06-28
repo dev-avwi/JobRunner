@@ -19,6 +19,7 @@ mobile/credentials/
 **/*.keystore
 **/*.mobileprovision
 mobile/GoogleService-Info.plist
+mobile/google-service-account.json
 
 # macOS Finder metadata — never commit these
 .DS_Store
