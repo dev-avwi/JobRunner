@@ -36,3 +36,6 @@ The AI Receptionist enable/config/resync routes were already gated; the purchase
 
 ## Deploy reminder
 Prod DB needs the `addon_subscriptions` table + indexes created via raw SQL on deploy (this DB rejects db:push — see db-add-table-no-push). Includes the unique txn index above.
+
+## "Invalid product ID" is an App Store Connect issue, not code
+The `Invalid product ID` toast comes from StoreKit (react-native-iap surfaces it; the string is NOT in our codebase). It means the store didn't return the SKU. Causes: the IAP product wasn't created in App Store Connect for the matching bundle id, it's not yet in at least "Ready to Submit", it's not in a subscription group, the Paid Applications agreement isn't active, or it just hasn't propagated (can take hours). The code's product-id strings (`com.jobrunner.dedicatednumber.monthly`, `com.jobrunner.aireceptionist.monthly`, tier `.monthly`) are correct — don't chase it in code. Fix is in ASC.

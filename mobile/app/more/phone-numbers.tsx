@@ -280,10 +280,9 @@ export default function PhoneNumbersPage() {
                 showToast({ type: 'info', message: 'Number Reactivated!', description: `${formatPhone(lastOwnedNumber)} is your dedicated number again.` });
               }
             } catch (e: any) {
-              // Cancel/superseded → reset quietly and drop the stashed number.
-              if (e?.code === 'E_USER_CANCELLED' || e?.code === 'E_PURCHASE_SUPERSEDED') {
-                setPendingDedicatedNumber(null);
-              } else {
+              // Any failure drops the stashed number so it can't attach to a later purchase.
+              setPendingDedicatedNumber(null);
+              if (e?.code !== 'E_USER_CANCELLED' && e?.code !== 'E_PURCHASE_SUPERSEDED') {
                 showToast({ type: 'error', message: 'Error', description: e?.message || 'Failed to re-acquire number' });
               }
             } finally {
@@ -309,19 +308,9 @@ export default function PhoneNumbersPage() {
       return;
     }
 
-    const hasSms = number.capabilities?.sms;
-    const hasMms = number.capabilities?.mms;
-    const hasVoice = number.capabilities?.voice;
-    let capabilityNote = '';
-    const caps: string[] = [];
-    if (hasVoice) caps.push('Voice');
-    if (hasSms) caps.push('SMS');
-    if (hasMms) caps.push('MMS');
-    capabilityNote = caps.length > 0 ? caps.join(' + ') : 'Standard';
-
     Alert.alert(
       'Get This Number',
-      `Set up ${formatPhone(number.phoneNumber)} as your business number?\n\nCapabilities: ${capabilityNote}${number.locality ? `\nLocation: ${number.locality}` : ''}`,
+      `Set up ${formatPhone(number.phoneNumber)} as your dedicated business number?${number.locality ? `\n\nLocation: ${number.locality}` : ''}\n\nThis becomes your own business line. Clients call AND text it — it handles incoming and outgoing calls, SMS, and picture messages (MMS). You can also add an AI Receptionist to answer it for you.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -396,11 +385,10 @@ export default function PhoneNumbersPage() {
                 );
               }
             } catch (e: any) {
-              // User dismissed the Apple sheet (or the purchase was superseded) — reset
-              // quietly. Clear the stashed number so it can't attach to a later purchase.
-              if (e?.code === 'E_USER_CANCELLED' || e?.code === 'E_PURCHASE_SUPERSEDED') {
-                setPendingDedicatedNumber(null);
-              } else {
+              // Any failure (cancel, superseded, or a store error like "Invalid product ID")
+              // must drop the stashed number so it can't attach to a later purchase.
+              setPendingDedicatedNumber(null);
+              if (e?.code !== 'E_USER_CANCELLED' && e?.code !== 'E_PURCHASE_SUPERSEDED') {
                 showToast({ type: 'error', message: 'Error', description: e?.message || 'Failed to set up number. Please try again.' });
               }
             } finally {
@@ -1074,24 +1062,14 @@ export default function PhoneNumbersPage() {
                         </Text>
                       )}
                       <View style={styles.capsRow}>
-                        {num.capabilities?.sms && (
-                          <View style={[styles.capBadge, { backgroundColor: `${colors.success}15` }]}>
-                            <Feather name="message-square" size={10} color={colors.success} />
-                            <Text style={[styles.capText, { color: colors.success }]}>SMS</Text>
-                          </View>
-                        )}
-                        {num.capabilities?.voice && (
-                          <View style={[styles.capBadge, { backgroundColor: `${colors.primary}15` }]}>
-                            <Feather name="phone-call" size={10} color={colors.primary} />
-                            <Text style={[styles.capText, { color: colors.primary }]}>Voice</Text>
-                          </View>
-                        )}
-                        {num.capabilities?.mms && (
-                          <View style={[styles.capBadge, { backgroundColor: `${colors.warning}15` }]}>
-                            <Feather name="image" size={10} color={colors.warning} />
-                            <Text style={[styles.capText, { color: colors.warning }]}>MMS</Text>
-                          </View>
-                        )}
+                        <View style={[styles.capBadge, { backgroundColor: `${colors.primary}15` }]}>
+                          <Feather name="phone-call" size={10} color={colors.primary} />
+                          <Text style={[styles.capText, { color: colors.primary }]}>Calls</Text>
+                        </View>
+                        <View style={[styles.capBadge, { backgroundColor: `${colors.success}15` }]}>
+                          <Feather name="message-square" size={10} color={colors.success} />
+                          <Text style={[styles.capText, { color: colors.success }]}>Texts (SMS/MMS)</Text>
+                        </View>
                       </View>
                     </View>
                     <View style={styles.selectButton}>
