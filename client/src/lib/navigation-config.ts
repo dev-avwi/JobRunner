@@ -233,7 +233,7 @@ export const mainMenuItems: NavItem[] = [
   },
   {
     title: "Sub Invoices",
-    url: "/subcontractor-invoices",
+    url: "/team?tab=subinvoices",
     icon: Receipt,
     description: "Review, approve, and pay subcontractor invoices",
     color: "text-primary",
@@ -242,8 +242,8 @@ export const mainMenuItems: NavItem[] = [
     requiresProPlan: true,
     hideForStaff: true,
     hideInSimpleMode: true,
-    showInSidebar: true,
-    showInMore: true,
+    showInSidebar: false,
+    showInMore: false,
     allowedRoles: ['owner', 'manager'],
   },
   {

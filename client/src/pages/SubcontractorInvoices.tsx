@@ -136,7 +136,7 @@ async function openPdf(url: string): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
 }
 
-export default function SubcontractorInvoices() {
+export default function SubcontractorInvoices({ embedded = false }: { embedded?: boolean } = {}) {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState('all');
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -271,16 +271,18 @@ export default function SubcontractorInvoices() {
   const busy = statusMutation.isPending || payMutation.isPending || pushMutation.isPending;
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <HardHat className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
-          <div>
-            <h2 className="text-lg font-semibold">Subcontractor Invoices</h2>
-            <p className="text-sm text-muted-foreground">Review, approve, pay, and push incoming invoices</p>
+    <div className={embedded ? "space-y-4" : "p-4 md:p-6 max-w-7xl mx-auto space-y-4"}>
+      {!embedded && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <HardHat className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
+            <div>
+              <h2 className="text-lg font-semibold">Subcontractor Invoices</h2>
+              <p className="text-sm text-muted-foreground">Review, approve, pay, and push incoming invoices</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
         <TabsList className="grid w-full grid-cols-5">

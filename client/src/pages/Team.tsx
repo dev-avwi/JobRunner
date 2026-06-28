@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import {
   Users, Plus, Filter, Sparkles, ArrowUpRight, MoreHorizontal,
   ChevronDown, Mail, ArrowRight, UserPlus, Link2, ShieldCheck,
   Search, Loader2, Lock, Crown, AlertCircle, MessageSquare,
-  Phone, MapPin, Clock, CheckCircle2, RefreshCw, X, Activity, Trash2,
+  Phone, MapPin, Clock, CheckCircle2, RefreshCw, X, Activity, Trash2, Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/use-subscription";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import SendMagicLinkSheet from "@/components/subs/SendMagicLinkSheet";
+import SubcontractorInvoices from "@/pages/SubcontractorInvoices";
 
 interface RoleOption {
   id: string;
@@ -43,7 +44,7 @@ interface RoleOption {
   description?: string;
 }
 
-type TabKey = "members" | "subcontractors";
+type TabKey = "members" | "subcontractors" | "subinvoices";
 type SubFilter = "all" | "active" | "pending" | "off" | "inactive";
 
 interface TeamMember {
@@ -175,7 +176,16 @@ export default function TeamPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { subscriptionTier, canAddTeamMembers } = useFeatureAccess();
-  const [tab, setTab] = useState<TabKey>("members");
+  const searchString = useSearch();
+  const urlTab = new URLSearchParams(searchString).get("tab");
+  const [tab, setTab] = useState<TabKey>(() =>
+    urlTab === "subinvoices" || urlTab === "subcontractors" ? urlTab : "members"
+  );
+  useEffect(() => {
+    if (urlTab === "subinvoices" || urlTab === "subcontractors" || urlTab === "members") {
+      setTab(urlTab as TabKey);
+    }
+  }, [urlTab]);
   const [filter, setFilter] = useState<SubFilter>("all");
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -392,6 +402,7 @@ export default function TeamPage() {
           {([
             ["members", "Members", filterCounts.all, Users, hasTeamPlan ? members.length : 0],
             ["subcontractors", "Subcontractors", subs.length, Link2, subs.length],
+            ["subinvoices", "Sub Invoices", 0, Receipt, null],
           ] as const).map(([key, label, _, Icon, count]) => {
             const active = tab === key;
             return (
@@ -405,9 +416,11 @@ export default function TeamPage() {
               >
                 <Icon className="w-3.5 h-3.5" />
                 {label}
-                <span className={`text-[10.5px] font-medium px-1.5 py-px rounded ${active ? "bg-foreground/10 text-foreground" : "bg-muted text-muted-foreground"}`}>
-                  {count}
-                </span>
+                {count !== null && (
+                  <span className={`text-[10.5px] font-medium px-1.5 py-px rounded ${active ? "bg-foreground/10 text-foreground" : "bg-muted text-muted-foreground"}`}>
+                    {count}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -422,6 +435,7 @@ export default function TeamPage() {
         </div>
 
         {/* Sub-filters + search */}
+        {tab !== "subinvoices" && (
         <div className="flex items-center gap-2 py-3.5 flex-wrap">
           {([
             ["all", "All", filterCounts.all],
@@ -455,9 +469,10 @@ export default function TeamPage() {
             />
           </div>
         </div>
+        )}
 
         {/* Tab content */}
-        <div className="relative">
+        <div className={tab === "subinvoices" ? "relative min-h-[420px] pt-3.5" : "relative"}>
           {tab === "members" && !hasTeamPlan && (
             <PlanLockOverlay
               onUpgrade={() => setLocation("/pricing")}
@@ -474,6 +489,15 @@ export default function TeamPage() {
               loading={membersQuery.isLoading && hasTeamPlan}
               showLockedSample={!hasTeamPlan}
             />
+          ) : tab === "subinvoices" ? (
+            isFree ? (
+              <PlanLockOverlay
+                onUpgrade={() => setLocation("/pricing")}
+                message="Reviewing and paying subcontractor invoices needs a paid plan. Upgrade to unlock."
+              />
+            ) : (
+              <SubcontractorInvoices embedded />
+            )
           ) : (
             <SubcontractorsTable
               rows={filteredSubs}

@@ -118,7 +118,7 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { path: '/reports', label: 'Reports', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
   { path: '/reports/profitability', label: 'Profitability', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
   { path: '/reports/payroll', label: 'Payroll', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
-  { path: '/subcontractor-invoices', label: 'Sub Invoices', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
+  { path: '/subcontractor-invoices', label: 'Sub Invoices', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
   
   // Collect Payment - office admin can collect payments
   { path: '/collect-payment', label: 'Collect Payment', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'], showInNav: true },
