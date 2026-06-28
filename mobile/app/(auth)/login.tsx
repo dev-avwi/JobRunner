@@ -41,7 +41,6 @@ export default function LoginScreen() {
   const [resendingVerification, setResendingVerification] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
   const { login, checkAuth, isLoading, error, clearError, isAuthenticated, user } = useAuthStore();
   const { colors } = useTheme();
   const bottomInset = useBottomInset(40);
@@ -152,46 +151,6 @@ export default function LoginScreen() {
     
     if (success) {
       await resolvePostAuthRedirect();
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    if (demoLoading) return;
-    setDemoLoading(true);
-    clearError();
-    try {
-      const response = await api.post<{ success: boolean; user: any; sessionToken: string; error?: string }>(
-        '/api/auth/demo-login',
-        {},
-      );
-      if (response.error || !response.data?.sessionToken) {
-        Alert.alert('Demo unavailable', response.error || 'Could not start the demo right now. Please try again in a moment.');
-        return;
-      }
-      await api.setToken(response.data.sessionToken);
-      await checkAuth();
-      // Explicitly mark onboarding complete (transactional) so demo users
-      // never get bounced into the wizard on cold start, deep-link, or token
-      // refresh. Endpoint is idempotent. If it fails we surface the error
-      // and abort navigation rather than landing in a broken state.
-      const completeRes = await api.post('/api/onboarding/complete', {});
-      if (completeRes.error) {
-        Alert.alert('Demo unavailable', completeRes.error || 'Could not finalise the demo session. Please try again.');
-        return;
-      }
-      const { fetchBusinessSettings: fetchBs } = useAuthStore.getState();
-      const refreshed = await fetchBs();
-      const bsState = useAuthStore.getState().businessSettings;
-      if (!bsState?.onboardingCompleted) {
-        Alert.alert('Demo unavailable', 'Could not finalise the demo session. Please try again.');
-        return;
-      }
-      void refreshed;
-      router.replace('/(tabs)');
-    } catch (err: any) {
-      Alert.alert('Demo unavailable', err?.message || 'Could not start the demo right now.');
-    } finally {
-      setDemoLoading(false);
     }
   };
 
@@ -493,23 +452,6 @@ export default function LoginScreen() {
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.demoButton}
-                onPress={handleDemoLogin}
-                disabled={demoLoading}
-                testID="button-demo-login"
-                activeOpacity={0.7}
-              >
-                {demoLoading ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles-outline" size={18} color={colors.primary} style={{ marginRight: 8 }} />
-                    <Text style={styles.demoButtonText}>Use demo account</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
               {appleAuthAvailable && AppleAuthentication && (
                 <View style={styles.appleButtonContainer}>
                   {appleLoading ? (
@@ -763,23 +705,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.foreground,
     fontSize: 16,
     fontWeight: '500',
-  },
-  demoButton: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary + '12',
-    borderWidth: 1,
-    borderColor: colors.primary + '40',
-    borderRadius: 12,
-    height: 52,
-    paddingHorizontal: 24,
-  },
-  demoButtonText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '600',
   },
   appleButtonContainer: {
     marginTop: 12,
