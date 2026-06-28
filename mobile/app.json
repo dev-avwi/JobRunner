@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jobrunner.app",
-      "buildNumber": "36",
+      "buildNumber": "37",
       "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
