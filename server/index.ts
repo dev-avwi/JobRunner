@@ -7,7 +7,7 @@ import connectPgSimple from "connect-pg-simple";
 import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { createDemoUserAndData, fixTestUserPasswords, seedSmsDataForTestUsers, createDemoTeamMembers, createDemoSubcontractorsAndInviteCodes, startDemoDataRefreshScheduler, createVisitorUser } from "./demoData";
+import { createDemoUserAndData, fixTestUserPasswords, seedSmsDataForTestUsers, createDemoTeamMembers, createDemoSubcontractorsAndInviteCodes, startDemoDataRefreshScheduler, createVisitorUser, ensureTryDemoData } from "./demoData";
 import { initializeStripe } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { storage, pool as sharedPgPool } from "./storage";
@@ -666,6 +666,9 @@ if (process.env.DATABASE_URL) {
           await createVisitorUser();
           await createDemoTeamMembers();
           await createDemoSubcontractorsAndInviteCodes();
+          // Public "Try the Demo" account (trydemo@) — same rich data as demo@,
+          // but it's the one visitors actually edit so demo@ stays untouched.
+          await ensureTryDemoData();
           console.log('[Demo] Demo data seeding complete');
         } catch (err) {
           console.error('[Demo] Demo data seeding failed (non-fatal):', err);

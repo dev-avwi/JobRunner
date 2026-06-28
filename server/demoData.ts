@@ -23,6 +23,18 @@ export const VISITOR_USER = {
   name: 'Demo Visitor',
 };
 
+// Public-facing demo account. Holds the SAME rich data as DEMO_USER but is the
+// one the public "Try the Demo" flow actually edits, so the real demo@ account
+// is never touched. Wiped + reseeded on every demo start and daily (see
+// resetTryDemoData), so visitors always get fresh, current-dated data.
+export const TRY_DEMO_USER = {
+  email: 'trydemo@jobrunner.com.au',
+  password: 'trydemo123',
+  name: 'Mike Thompson',
+  businessName: "Mike's Plumbing Services",
+  phone: '+61407888123',
+};
+
 export const DEMO_WORKER = {
   email: 'worker@jobrunner.com.au',
   password: 'worker123',
@@ -109,6 +121,9 @@ const MONTHLY_PAID_INVOICES = [
 // Counter for deterministic IDs - ensures same data in dev and production
 let xeroIdCounter = 100001;
 let tokenCounter = 1;
+// Payment tokens are globally unique, so each demo account needs its own prefix
+// (demo@ keeps DEMO_TOKEN_; trydemo@ uses TRYDEMO_TKN_) to avoid collisions.
+let demoTokenPrefix = 'DEMO_TOKEN_';
 
 function generateXeroId(prefix: string): string {
   // Use deterministic IDs so dev and production have identical data
@@ -117,8 +132,7 @@ function generateXeroId(prefix: string): string {
 
 function generatePaymentToken(): string {
   // Use deterministic tokens so dev and production have identical data
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const baseToken = `DEMO_TOKEN_${String(tokenCounter++).padStart(4, '0')}`;
+  const baseToken = `${demoTokenPrefix}${String(tokenCounter++).padStart(4, '0')}`;
   // Pad to 32 chars
   return baseToken.padEnd(32, 'X');
 }
@@ -367,26 +381,31 @@ export async function createVisitorUser(): Promise<{ id: string } | null> {
 // MAIN DEMO DATA CREATION
 // ============================================
 
-export async function createDemoUserAndData() {
+export async function createDemoUserAndData(
+  account: { email: string; password: string; name: string; businessName?: string; phone?: string } = DEMO_USER,
+  opts: { forceReseed?: boolean } = {},
+) {
   // Reset counters for deterministic IDs
   resetDemoCounters();
+  // Namespace globally-unique payment tokens per demo account.
+  demoTokenPrefix = account.email === TRY_DEMO_USER.email ? 'TRYDEMO_TKN_' : 'DEMO_TOKEN_';
   
   try {
-    let demoUser = await storage.getUserByEmail(DEMO_USER.email);
+    let demoUser = await storage.getUserByEmail(account.email);
 
     if (!demoUser) {
-      const hashedPassword = await bcrypt.hash(DEMO_USER.password, 10);
-      const [firstName, ...lastNameParts] = DEMO_USER.name.split(' ');
+      const hashedPassword = await bcrypt.hash(account.password, 10);
+      const [firstName, ...lastNameParts] = account.name.split(' ');
       const lastName = lastNameParts.join(' ');
       demoUser = await storage.createUser({
-        email: DEMO_USER.email,
+        email: account.email,
         password: hashedPassword,
         firstName,
         lastName,
       } as any);
       // Update with additional fields that aren't in InsertUser schema
       await storage.updateUser(demoUser.id, {
-        phone: DEMO_USER.phone,
+        phone: account.phone,
         emailVerified: true,
         // Demo seed provisions team members + invite codes, so the demo
         // owner must be on a team-capable tier.
@@ -395,8 +414,8 @@ export async function createDemoUserAndData() {
       console.log('✅ Demo user created:', demoUser.email);
     } else {
       // Ensure demo user has correct password, name, and email verified set
-      const hashedPassword = await bcrypt.hash(DEMO_USER.password, 10);
-      const [firstName, ...lastNameParts] = DEMO_USER.name.split(' ');
+      const hashedPassword = await bcrypt.hash(account.password, 10);
+      const [firstName, ...lastNameParts] = account.name.split(' ');
       const lastName = lastNameParts.join(' ');
       await storage.updateUser(demoUser.id, { 
         password: hashedPassword,
@@ -416,7 +435,7 @@ export async function createDemoUserAndData() {
 
     // Check for existing demo data - PRESERVE it to maintain consistent IDs across web/mobile
     const existingClients = await storage.getClients(demoUser.id);
-    if (existingClients.length > 0) {
+    if (existingClients.length > 0 && !opts.forceReseed) {
       console.log(`✅ Demo data already exists for ${demoUser.email} - preserving existing data for consistent IDs`);
       
       // Ensure business settings, team members exist but don't recreate clients/invoices/jobs/quotes
@@ -450,9 +469,9 @@ export async function createDemoUserAndData() {
     if (!businessSettings) {
       businessSettings = await storage.createBusinessSettings({
         userId: demoUser.id,
-        businessName: DEMO_USER.businessName,
+        businessName: account.businessName ?? DEMO_USER.businessName,
         businessAddress: '15 Mulgrave Road, Cairns QLD 4870',
-        businessPhone: DEMO_USER.phone,
+        businessPhone: account.phone ?? DEMO_USER.phone,
         businessEmail: 'info@demoplumbing.com.au',
         abn: '12 345 678 901',
         bankName: 'Commonwealth Bank',
@@ -1680,9 +1699,9 @@ export async function seedSmsDataForTestUsers() {
 }
 
 // Create demo team members with location data
-export async function createDemoTeamMembers() {
+export async function createDemoTeamMembers(account: { email: string } = DEMO_USER) {
   try {
-    const demoUser = await storage.getUserByEmail(DEMO_USER.email);
+    const demoUser = await storage.getUserByEmail(account.email);
     if (!demoUser) {
       console.log('No demo user found for team creation');
       return;
@@ -1795,9 +1814,9 @@ export async function createDemoTeamMembers() {
   }
 }
 
-export async function createDemoSubcontractorsAndInviteCodes() {
+export async function createDemoSubcontractorsAndInviteCodes(account: { email: string } = DEMO_USER) {
   try {
-    const demoUser = await storage.getUserByEmail(DEMO_USER.email);
+    const demoUser = await storage.getUserByEmail(account.email);
     if (!demoUser) {
       console.log('No demo user found for subcontractor creation');
       return;
@@ -1882,10 +1901,13 @@ export async function createDemoSubcontractorsAndInviteCodes() {
       console.log('✅ Created Manager role');
     }
 
+    // Invite codes are globally unique, so each demo account needs its own set
+    // (demo@ keeps DEMO01-03; trydemo@ uses TRYD01-03) to avoid collisions.
+    const codePrefix = account.email === TRY_DEMO_USER.email ? 'TRYD0' : 'DEMO0';
     const demoCodes = [
-      { code: 'DEMO01', roleType: 'worker', maxUses: 50, roleId: workerRole?.id || null },
-      { code: 'DEMO02', roleType: 'subcontractor', maxUses: 50, roleId: subRole.id },
-      { code: 'DEMO03', roleType: 'manager', maxUses: 10, roleId: managerRole?.id || null },
+      { code: `${codePrefix}1`, roleType: 'worker', maxUses: 50, roleId: workerRole?.id || null },
+      { code: `${codePrefix}2`, roleType: 'subcontractor', maxUses: 50, roleId: subRole.id },
+      { code: `${codePrefix}3`, roleType: 'manager', maxUses: 10, roleId: managerRole?.id || null },
     ];
 
     for (const dc of demoCodes) {
@@ -1979,7 +2001,7 @@ export async function createDemoSubcontractorsAndInviteCodes() {
     }
 
     console.log('✅ Demo subcontractors and invite codes ready');
-    console.log('   Invite codes: DEMO01 (worker), DEMO02 (subcontractor), DEMO03 (manager)');
+    console.log(`   Invite codes: ${demoCodes[0].code} (worker), ${demoCodes[1].code} (subcontractor), ${demoCodes[2].code} (manager)`);
   } catch (error) {
     console.error('Error creating demo subcontractors:', error);
   }
@@ -2047,6 +2069,113 @@ export async function refreshDemoTeamActivity() {
   }
 }
 
+// ============================================
+// PUBLIC "TRY THE DEMO" ACCOUNT (trydemo@)
+// ============================================
+// trydemo@ holds the same rich data as demo@ but is the account the public demo
+// flow actually edits, so demo@ is never touched. It is wiped + reseeded with
+// current dates on every demo start and daily (see resetTryDemoData), so every
+// visitor / day starts from fresh, non-stale data.
+
+// Module-level lock so concurrent demo starts don't reseed on top of each other.
+// All trydemo@ seed/reset operations run through one serialization chain so a
+// reset and an ensure (or two resets) can never interleave — interleaving
+// deletes + inserts on the same account corrupts the data (partial seed).
+let tryDemoChain: Promise<void> = Promise.resolve();
+let tryDemoResetInFlight: Promise<void> | null = null;
+
+function serializeTryDemoOp(fn: () => Promise<void>): Promise<void> {
+  const next = tryDemoChain.then(fn, fn); // run after prior op regardless of its outcome
+  tryDemoChain = next.catch(() => {}); // keep the chain from staying rejected
+  return next;
+}
+
+// One-time seed: create + fully populate trydemo@ (core data + team + subs).
+// No-ops if it already has data.
+export async function ensureTryDemoData(): Promise<void> {
+  return serializeTryDemoOp(async () => {
+    const existing = await storage.getUserByEmail(TRY_DEMO_USER.email);
+    if (existing) {
+      const clients = await storage.getClients(existing.id);
+      if (clients.length > 0) return; // already seeded
+    }
+    await createDemoUserAndData(TRY_DEMO_USER);
+    const tryUser = await storage.getUserByEmail(TRY_DEMO_USER.email);
+    if (tryUser) {
+      await createDemoTeamMembers(TRY_DEMO_USER);
+      await createDemoSubcontractorsAndInviteCodes(TRY_DEMO_USER);
+    }
+  });
+}
+
+// Total refresh: wipe the editable core data then rebuild it with current dates.
+// Team/subs are not date-sensitive and are left in place (ensureTryDemoData
+// creates them once). Concurrency-guarded via tryDemoResetInFlight.
+export async function resetTryDemoData(): Promise<void> {
+  // Dedupe: concurrent demo starts share one in-flight reset instead of queueing
+  // a separate wipe+reseed each.
+  if (tryDemoResetInFlight) return tryDemoResetInFlight;
+  tryDemoResetInFlight = serializeTryDemoOp(async () => {
+    try {
+      const tryUser = await storage.getUserByEmail(TRY_DEMO_USER.email);
+      if (!tryUser) {
+        // No user yet: do the one-time seed inline (already inside the chain,
+        // so don't re-enter ensureTryDemoData which would deadlock the chain).
+        await createDemoUserAndData(TRY_DEMO_USER);
+        const seeded = await storage.getUserByEmail(TRY_DEMO_USER.email);
+        if (seeded) {
+          await createDemoTeamMembers(TRY_DEMO_USER);
+          await createDemoSubcontractorsAndInviteCodes(TRY_DEMO_USER);
+        }
+        return;
+      }
+      console.log('[TryDemo] Resetting public demo data...');
+      // Receipts FK to invoices/clients with onDelete:set-null, so they survive
+      // the wipe below and would accumulate on every reseed. Delete them first
+      // (the reseed always creates a fresh set) to keep the refresh truly total.
+      const receipts = await storage.getReceipts(tryUser.id);
+      for (const r of receipts) await storage.deleteReceipt(r.id, tryUser.id);
+      // Delete editable core data; DB-level cascades clean up all children
+      // (line items, job equipment/assignments/time entries, etc.).
+      // NOTE: getInvoices/getQuotes/getJobs(id, includeArchived) returns ONLY
+      // active rows when false and ONLY archived rows when true, so we must pass
+      // BOTH to catch visitor-archived records (deleting clients also cascades
+      // these, but we delete explicitly so the refresh never relies on cascade).
+      const invoices = [
+        ...await storage.getInvoices(tryUser.id, false),
+        ...await storage.getInvoices(tryUser.id, true),
+      ];
+      for (const inv of invoices) await storage.deleteInvoice(inv.id, tryUser.id);
+      const quotes = [
+        ...await storage.getQuotes(tryUser.id, false),
+        ...await storage.getQuotes(tryUser.id, true),
+      ];
+      for (const q of quotes) await storage.deleteQuote(q.id, tryUser.id);
+      const jobs = [
+        ...await storage.getJobs(tryUser.id, false),
+        ...await storage.getJobs(tryUser.id, true),
+      ];
+      for (const j of jobs) await storage.deleteJob(j.id, tryUser.id);
+      const clients = await storage.getClients(tryUser.id);
+      for (const c of clients) await storage.deleteClient(c.id, tryUser.id);
+
+      // Rebuild core with current dates. Idempotent helpers (templates,
+      // equipment, safety, SMS) no-op since their data survives the wipe;
+      // activity logs + notifications clear-and-reinsert themselves.
+      await createDemoUserAndData(TRY_DEMO_USER, { forceReseed: true });
+      console.log('[TryDemo] Public demo data reset complete.');
+    } catch (err) {
+      // Re-throw: a half-finished wipe/reseed leaves trydemo@ partial, so the
+      // caller (demo-login / daily scheduler) must know and refuse to serve it.
+      console.error('[TryDemo] Reset failed:', getErrorMessage(err));
+      throw err;
+    } finally {
+      tryDemoResetInFlight = null;
+    }
+  });
+  return tryDemoResetInFlight;
+}
+
 // Start the demo data refresh scheduler (every 5 minutes)
 export function startDemoDataRefreshScheduler() {
   const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -2074,7 +2203,16 @@ export function startDemoDataRefreshScheduler() {
   setInterval(() => {
     refreshDemoTeamActivity();
   }, REFRESH_INTERVAL);
-  
+
+  // Daily total refresh of the public "Try the Demo" account so it never goes
+  // stale (fresh dates, visitor edits wiped).
+  const DAILY_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+  setInterval(() => {
+    resetTryDemoData().catch((err) =>
+      console.error('[TryDemo] Daily reset failed:', getErrorMessage(err)),
+    );
+  }, DAILY_INTERVAL);
+
   console.log('[DemoScheduler] Demo data refresh scheduler running every 5 minutes');
 }
 

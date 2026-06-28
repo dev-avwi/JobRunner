@@ -57,7 +57,7 @@ import {
 import { loginSchema, insertUserSchema, type SafeUser, requestLoginCodeSchema, verifyLoginCodeSchema } from "@shared/schema";
 import { sendEmailVerificationEmail, sendLoginCodeEmail, sendJobConfirmationEmail, sendPasswordResetEmail, sendTeamInviteEmail, sendJobAssignmentEmail, sendJobCompletionNotificationEmail, sendWelcomeEmail } from "./emailService";
 import { FreemiumService } from "./freemiumService";
-import { DEMO_USER, VISITOR_USER } from "./demoData";
+import { DEMO_USER, VISITOR_USER, TRY_DEMO_USER } from "./demoData";
 import { ownerOnly, ownerOrManagerOnly, requirePermission, requireOwnerSubscriptionActive, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, hasAnyPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, WORKER_PROFILE_PLACEHOLDER_NAME } from "./permissions";
 import { logTeamActivity } from "./activityService";
 import {
@@ -4150,14 +4150,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastAttempt: now,
       });
 
+      // Total refresh of the public demo account (trydemo@) on every demo start
+      // so each visitor gets fresh, current-dated data. Concurrency-guarded.
+      // This wipes the previous visitor's edits and never touches the real demo@.
       try {
-        const { refreshDemoDataForScreenshots } = await import('./demoData');
-        await refreshDemoDataForScreenshots();
+        // resetTryDemoData self-heals a missing account and is serialized +
+        // deduped, so it's the only call needed (a separate ensure here raced
+        // the reset and could corrupt the data).
+        const { resetTryDemoData } = await import('./demoData');
+        await resetTryDemoData();
       } catch (refreshErr) {
-        console.error("Demo data refresh error (non-blocking):", refreshErr);
+        // A failed reset can leave trydemo@ partially wiped, so refuse to start
+        // a demo session against inconsistent data rather than serve garbage.
+        console.error("Try-demo reset failed:", refreshErr);
+        return res.status(503).json({ message: "Demo is refreshing, please try again in a moment." });
       }
 
-      const demoUser = await storage.getUserByEmail(DEMO_USER.email);
+      const demoUser = await storage.getUserByEmail(TRY_DEMO_USER.email);
       const visitorUser = await storage.getUserByEmail(VISITOR_USER.email);
       
       if (!demoUser || !visitorUser) {
@@ -4197,8 +4206,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: VISITOR_USER.email,
           firstName: demoUser.firstName || 'Mike',
           lastName: demoUser.lastName || 'Thompson',
-          businessName: DEMO_USER.businessName,
-          phone: demoUser.phone || DEMO_USER.phone,
+          businessName: TRY_DEMO_USER.businessName,
+          phone: demoUser.phone || TRY_DEMO_USER.phone,
           tradeType: demoUser.tradeType,
           subscriptionTier: demoUser.subscriptionTier,
           isActive: true,
@@ -23953,7 +23962,7 @@ Be specific about materials, colors, and features that would be included.`
       // Verify the charge actually succeeded with Stripe before marking it paid —
       // never trust the client callback. Demo bypass only for the demo business.
       const termOwner = await storage.getUser(req.userId);
-      const isDemoTerminalBusiness = termOwner?.email === DEMO_USER.email || termOwner?.email === VISITOR_USER.email;
+      const isDemoTerminalBusiness = termOwner?.email === DEMO_USER.email || termOwner?.email === VISITOR_USER.email || termOwner?.email === TRY_DEMO_USER.email;
       const isDemoTerminalPayment = isDemoTerminalBusiness && String(paymentIntentId).startsWith('demo_pi_');
       if (!isDemoTerminalPayment) {
         const stripe = await getUncachableStripeClient();
@@ -24767,7 +24776,7 @@ Be specific about materials, colors, and features that would be included.`
       // account — never on a client-supplied flag. Otherwise any client could mark
       // their own payment request paid for free by sending paymentMethod:'demo'.
       const payReqOwner = await storage.getUser(request.userId);
-      const isDemoBusiness = payReqOwner?.email === DEMO_USER.email || payReqOwner?.email === VISITOR_USER.email;
+      const isDemoBusiness = payReqOwner?.email === DEMO_USER.email || payReqOwner?.email === VISITOR_USER.email || payReqOwner?.email === TRY_DEMO_USER.email;
       const isDemoPayment = isDemoBusiness && (paymentMethod === 'demo' || (paymentIntentId && String(paymentIntentId).startsWith('demo_pi_')));
 
       if (!isDemoPayment) {
