@@ -437,9 +437,9 @@ export default function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="pt-16 lg:pt-20 pb-12 lg:pb-20 px-5 lg:px-8">
+      <section className="pt-28 lg:pt-36 pb-16 lg:pb-24 px-5 lg:px-8">
         <LandingShell padded={false}>
-          <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-14 items-center">
+          <div className="grid lg:grid-cols-2 gap-10 sm:gap-12 lg:gap-16 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left animate-fade-in">
               {/* Eyebrow */}
@@ -448,7 +448,7 @@ export default function LandingPage() {
               </p>
 
               {/* Main Headline */}
-              <h1 className="text-[2.25rem] sm:text-[2.75rem] lg:text-[3.25rem] font-extrabold leading-[1.08] tracking-tight mb-5">
+              <h1 className="text-[2.25rem] sm:text-[2.75rem] lg:text-[3.25rem] font-extrabold leading-[1.08] tracking-tight mb-6">
                 Built for how jobs{" "}
                 <span className="text-brand">actually run.</span>
               </h1>
