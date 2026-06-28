@@ -464,6 +464,7 @@ export interface IStorage {
   // Business Settings
   getBusinessSettings(userId: string): Promise<BusinessSettings | undefined>;
   getAllBusinessSettings(): Promise<BusinessSettings[]>;
+  getBusinessSettingsByBookingSlug(slug: string): Promise<BusinessSettings | undefined>;
   createBusinessSettings(settings: InsertBusinessSettings): Promise<BusinessSettings>;
   updateBusinessSettings(userId: string, settings: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined>;
 
@@ -1815,6 +1816,16 @@ export class PostgresStorage implements IStorage {
   async getAllBusinessSettings(): Promise<BusinessSettings[]> {
     const result = await db.select().from(businessSettings);
     return result;
+  }
+
+  async getBusinessSettingsByBookingSlug(slug: string): Promise<BusinessSettings | undefined> {
+    const result = await db
+      .select()
+      .from(businessSettings)
+      .where(eq(businessSettings.bookingSlug, slug))
+      .orderBy(desc(businessSettings.updatedAt))
+      .limit(1);
+    return result[0];
   }
 
   async createBusinessSettings(settings: InsertBusinessSettings & { userId: string }): Promise<BusinessSettings> {

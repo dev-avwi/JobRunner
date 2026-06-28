@@ -4412,6 +4412,7 @@ export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, creat
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 export type Lead = typeof leads.$inferSelect;
 
+
 // ========================
 // Payment Scheduling (Installment Plans)
 // ========================

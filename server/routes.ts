@@ -8463,6 +8463,7 @@ Be specific about materials, colors, and features that would be included.`
     'aiEnabled', 'aiPhotoAnalysisEnabled', 'aiSuggestionsEnabled',
     'geofenceSmsAlerts', 'smsMode', 'smartRunningLateEnabled', 'pushNotificationsEnabled',
     'googleReviewUrl', 'bookingSlug', 'bookingPageEnabled',
+    'bookingPageServices', 'bookingPageDescription',
   ];
 
   app.get("/api/business-settings", requireAuth, async (req: any, res) => {
@@ -46185,6 +46186,236 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.status(400).json({ error: error.errors[0].message });
       }
       console.error("Error in website booking:", error);
+      res.status(500).json({ error: "Failed to submit booking request" });
+    }
+  });
+
+  // ============================================================
+  // Client Self-Booking Portal (Task #283) — request & approve
+  // ============================================================
+
+  const bookingPortalLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    message: { error: 'Too many requests. Please wait a moment.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Build the next N days of bookable slots from working hours minus existing
+  // commitments (jobs + already-requested booking slots). Wall-clock based:
+  // slots are returned as { date: 'YYYY-MM-DD', time: 'HH:MM', label }.
+  const buildBookingAvailability = async (ownerId: string, settings: any) => {
+    const SLOT_MINUTES = 60;
+    const DAYS_AHEAD = 14;
+    const workDays: number[] = Array.isArray(settings?.workDays) && settings.workDays.length > 0
+      ? settings.workDays
+      : [1, 2, 3, 4, 5];
+    const parseHM = (s: string | null | undefined, fallback: string) => {
+      const v = (s && /^\d{1,2}:\d{2}$/.test(s)) ? s : fallback;
+      const [h, m] = v.split(':').map(Number);
+      return h * 60 + m;
+    };
+    const dayStartMin = parseHM(settings?.workHoursStart, '07:00');
+    const dayEndMin = parseHM(settings?.workHoursEnd, '17:00');
+
+    // Capacity = owner + active team members (so a single overlap doesn't block a team).
+    let capacity = 1;
+    try {
+      const members = await storage.getTeamMembers(ownerId);
+      capacity = 1 + (members?.filter((m: any) => m.status === 'active' || m.status === 'accepted' || !m.status).length || 0);
+    } catch { capacity = 1; }
+    if (capacity < 1) capacity = 1;
+
+    const now = new Date();
+    const rangeStart = new Date(now);
+    rangeStart.setHours(0, 0, 0, 0);
+    const rangeEnd = new Date(rangeStart);
+    rangeEnd.setDate(rangeEnd.getDate() + DAYS_AHEAD + 1);
+
+    // Busy intervals (epoch ms start/end) from jobs and active booking requests.
+    const busy: Array<{ start: number; end: number }> = [];
+    try {
+      const jobs = await storage.getJobs(ownerId);
+      for (const j of jobs) {
+        if (!j.scheduledAt) continue;
+        if (j.status === 'cancelled' || j.status === 'done' || j.status === 'invoiced') continue;
+        const d = new Date(j.scheduledAt as any);
+        if (isNaN(d.getTime())) continue;
+        let start = d.getTime();
+        if (j.scheduledTime && /^\d{1,2}:\d{2}$/.test(j.scheduledTime)) {
+          const [h, m] = j.scheduledTime.split(':').map(Number);
+          const sd = new Date(d);
+          sd.setHours(h, m, 0, 0);
+          start = sd.getTime();
+        }
+        const dur = (j.estimatedDuration && j.estimatedDuration > 0) ? j.estimatedDuration : 60;
+        busy.push({ start, end: start + dur * 60000 });
+      }
+    } catch {}
+
+    const days: Array<{ date: string; label: string; slots: Array<{ time: string; label: string }> }> = [];
+    for (let i = 0; i <= DAYS_AHEAD; i++) {
+      const day = new Date(rangeStart);
+      day.setDate(day.getDate() + i);
+      if (!workDays.includes(day.getDay())) continue;
+      const yyyy = day.getFullYear();
+      const mm = String(day.getMonth() + 1).padStart(2, '0');
+      const dd = String(day.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      const dayLabel = day.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
+      const slots: Array<{ time: string; label: string }> = [];
+      for (let mins = dayStartMin; mins + SLOT_MINUTES <= dayEndMin; mins += SLOT_MINUTES) {
+        const slotStart = new Date(day);
+        slotStart.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+        const slotStartMs = slotStart.getTime();
+        const slotEndMs = slotStartMs + SLOT_MINUTES * 60000;
+        if (slotStartMs <= now.getTime()) continue; // no past slots
+        const overlapping = busy.filter(b => b.start < slotEndMs && b.end > slotStartMs).length;
+        if (overlapping >= capacity) continue;
+        const hh = String(Math.floor(mins / 60)).padStart(2, '0');
+        const mn = String(mins % 60).padStart(2, '0');
+        const labelDate = new Date(2000, 0, 1, Math.floor(mins / 60), mins % 60);
+        slots.push({ time: `${hh}:${mn}`, label: labelDate.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true }) });
+      }
+      if (slots.length > 0) {
+        days.push({ date: dateStr, label: dayLabel, slots });
+      }
+    }
+    return days;
+  };
+
+  // Public: business info + services + availability for a booking slug.
+  app.get("/api/public/booking/:slug", bookingPortalLimiter, async (req: any, res) => {
+    try {
+      const { slug } = req.params;
+      const settings = await storage.getBusinessSettingsByBookingSlug(slug);
+      if (!settings || !settings.bookingPageEnabled) {
+        return res.status(404).json({ error: "Booking page not found" });
+      }
+      const ownerId = settings.userId;
+      const owner = await storage.getUser(ownerId);
+      const rawServices = Array.isArray(settings.bookingPageServices) ? settings.bookingPageServices : [];
+      const services = rawServices.map((s: any) => {
+        if (typeof s === 'string') return { name: s, duration: 60, description: null };
+        return {
+          name: s?.name || 'Service',
+          duration: (s?.duration && s.duration > 0) ? s.duration : 60,
+          description: s?.description || null,
+        };
+      }).filter((s: any) => s.name);
+
+      const availability = await buildBookingAvailability(ownerId, settings);
+
+      res.json({
+        business: {
+          name: settings.businessName || 'Our Business',
+          description: settings.bookingPageDescription || null,
+          phone: settings.phone || settings.dedicatedPhoneNumber || null,
+          logoUrl: settings.logoUrl || null,
+        },
+        services,
+        availability,
+      });
+    } catch (error) {
+      console.error("Error loading booking page:", error);
+      res.status(500).json({ error: "Failed to load booking page" });
+    }
+  });
+
+  // Public: submit a pending booking request.
+  app.post("/api/public/booking/:slug/request", bookingPortalLimiter, async (req: any, res) => {
+    try {
+      const { slug } = req.params;
+      const settings = await storage.getBusinessSettingsByBookingSlug(slug);
+      if (!settings || !settings.bookingPageEnabled) {
+        return res.status(404).json({ error: "Booking page not found" });
+      }
+      const ownerId = settings.userId;
+
+      const schema = z.object({
+        service: z.string().max(200).optional().nullable(),
+        customerName: z.string().min(1, "Name is required").max(200),
+        customerEmail: z.string().email().max(200).optional().nullable(),
+        customerPhone: z.string().min(1, "Phone number is required").max(30),
+        customerAddress: z.string().max(500).optional().nullable(),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
+        time: z.string().regex(/^\d{1,2}:\d{2}$/, "Invalid time"),
+        notes: z.string().max(2000).optional().nullable(),
+      });
+      const parsed = schema.parse(req.body);
+
+      const requestedAt = new Date(`${parsed.date}T${parsed.time}:00`);
+      if (isNaN(requestedAt.getTime())) {
+        return res.status(400).json({ error: "Invalid date or time" });
+      }
+      if (requestedAt.getTime() < Date.now()) {
+        return res.status(400).json({ error: "That time has already passed. Please pick another slot." });
+      }
+
+      // Fold the booking into the Leads pipeline: every booking-page submission
+      // becomes a Lead (source 'booking_page'), keeping the chosen service +
+      // requested time on the lead. The owner converts it from the Leads page.
+      const whenLabel = requestedAt.toLocaleString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true });
+      const description = [
+        parsed.service ? `Service: ${parsed.service}` : null,
+        `Requested time: ${whenLabel}`,
+        parsed.customerAddress ? `Address: ${parsed.customerAddress}` : null,
+        parsed.notes ? `Notes: ${parsed.notes}` : null,
+      ].filter(Boolean).join('\n');
+
+      const lead = await storage.createLead({
+        userId: ownerId,
+        name: parsed.customerName,
+        email: parsed.customerEmail || null,
+        phone: parsed.customerPhone,
+        source: 'booking_page',
+        status: 'new',
+        description,
+        followUpDate: requestedAt,
+      });
+
+      // Notify the owner: in-app bell + email, pointing to the Leads pipeline.
+      try {
+        const { createNotification } = await import('./notifications');
+        await createNotification(storage, {
+          userId: ownerId,
+          type: 'lead',
+          title: 'New booking lead',
+          message: `${parsed.customerName} requested ${parsed.service || 'a booking'} for ${whenLabel}`,
+          relatedType: 'lead',
+          relatedId: lead.id,
+          priority: 'important',
+          actionUrl: '/leads',
+          actionLabel: 'View lead',
+        });
+      } catch (notifErr) {
+        console.error("Failed to create booking lead notification:", notifErr);
+      }
+      try {
+        const owner = await storage.getUser(ownerId);
+        if (owner?.email) {
+          const { sendSystemEmail } = await import('./emailService');
+          await sendSystemEmail({
+            to: owner.email,
+            subject: 'New booking lead',
+            html: `<p>You have a new booking lead.</p>
+<p><strong>Customer:</strong> ${parsed.customerName} (${parsed.customerPhone})${parsed.customerEmail ? ` &lt;${parsed.customerEmail}&gt;` : ''}<br/>
+<strong>Service:</strong> ${parsed.service || 'Not specified'}<br/>
+<strong>Requested time:</strong> ${whenLabel}${parsed.customerAddress ? `<br/><strong>Address:</strong> ${parsed.customerAddress}` : ''}${parsed.notes ? `<br/><strong>Notes:</strong> ${parsed.notes}` : ''}</p>
+<p>Open JobRunner and check your Leads to follow up and convert this into a job.</p>`,
+          });
+        }
+      } catch (emailErr) {
+        console.error("Failed to email owner of booking lead:", emailErr);
+      }
+
+      res.json({ success: true, message: "Booking request submitted. We'll confirm with you soon." });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors[0].message });
+      }
+      console.error("Error submitting booking request:", error);
       res.status(500).json({ error: "Failed to submit booking request" });
     }
   });

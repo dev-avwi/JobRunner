@@ -83,6 +83,7 @@ const TermsOfService = lazyWithReload(() => import("@/pages/TermsOfService"));
 const DeleteAccount = lazyWithReload(() => import("@/pages/DeleteAccount"));
 const Support = lazyWithReload(() => import("@/pages/Support"));
 const TrackArrival = lazyWithReload(() => import("@/pages/TrackArrival"));
+const BookingPage = lazyWithReload(() => import("@/pages/BookingPage"));
 const Reports = lazyWithReload(() => import("@/pages/Reports"));
 const Calculators = lazyWithReload(() => import("@/pages/Calculators"));
 const CollectPayment = lazyWithReload(() => import("@/pages/CollectPayment"));
@@ -1868,6 +1869,7 @@ function App() {
               <Route path="/s/:token">{(params) => <SubcontractorWebView token={params.token} />}</Route>
               <Route path="/m/:token">{() => <MagicLinkLanding />}</Route>
               <Route path="/track/:token">{(params) => <TrackArrival token={params.token} />}</Route>
+              <Route path="/book/:slug">{(params) => <BookingPage slug={params.slug} />}</Route>
               <Route path="/receipt/:token">{(params) => <PublicReceiptRedirect token={params.token} />}</Route>
               <Route path="/privacy" component={PrivacyPolicy} />
               <Route path="/terms" component={TermsOfService} />

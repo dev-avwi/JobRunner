@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -123,6 +125,240 @@ function getStatusConfig(status: string) {
     default:
       return { label: "To Do", className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30" };
   }
+}
+
+interface BookingServiceItem {
+  name: string;
+  duration: number;
+  description?: string | null;
+}
+
+interface BookingBusinessSettings {
+  bookingSlug?: string | null;
+  bookingPageEnabled?: boolean | null;
+  bookingPageDescription?: string | null;
+  bookingPageServices?: BookingServiceItem[] | null;
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function BookingPortalCard() {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const { data: settings, isLoading } = useQuery<BookingBusinessSettings>({
+    queryKey: ["/api/business-settings"],
+  });
+
+  const [enabled, setEnabled] = useState(false);
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [services, setServices] = useState<BookingServiceItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  if (settings && !hydrated) {
+    setEnabled(!!settings.bookingPageEnabled);
+    setSlug(settings.bookingSlug || "");
+    setDescription(settings.bookingPageDescription || "");
+    setServices(Array.isArray(settings.bookingPageServices) ? settings.bookingPageServices : []);
+    setHydrated(true);
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: Partial<BookingBusinessSettings>) => {
+      const res = await apiRequest("PATCH", "/api/business-settings", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      toast({ title: "Booking page saved" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not save", description: err?.message || "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(label);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
+
+  const handleSave = () => {
+    const cleanSlug = slugify(slug);
+    if (enabled && !cleanSlug) {
+      toast({ title: "Add a booking link name first", variant: "destructive" });
+      return;
+    }
+    setSlug(cleanSlug);
+    saveMutation.mutate({
+      bookingPageEnabled: enabled,
+      bookingSlug: cleanSlug || null,
+      bookingPageDescription: description.trim() || null,
+      bookingPageServices: services.filter((s) => s.name.trim()),
+    });
+  };
+
+  const updateService = (index: number, patch: Partial<BookingServiceItem>) => {
+    setServices((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+  };
+
+  return (
+    <Card data-testid="card-booking-portal">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <CalendarPlus className="h-4 w-4 text-muted-foreground" />
+          Online Booking Page
+        </CardTitle>
+        <Switch
+          checked={enabled}
+          onCheckedChange={setEnabled}
+          data-testid="switch-booking-enabled"
+        />
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <CardDescription>
+          Share a link customers can use to request a booking. You approve or decline each request — nothing is locked in until you say so.
+        </CardDescription>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="booking-slug">Booking link name</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">/book/</span>
+                <Input
+                  id="booking-slug"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  onBlur={() => setSlug(slugify(slug))}
+                  placeholder="your-business"
+                  data-testid="input-booking-slug"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="booking-description">Intro text (optional)</Label>
+              <Textarea
+                id="booking-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="A short welcome message shown at the top of your booking page"
+                rows={2}
+                data-testid="input-booking-description"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label>Services customers can pick</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setServices((prev) => [...prev, { name: "", duration: 60, description: "" }])}
+                  data-testid="button-add-service"
+                >
+                  Add service
+                </Button>
+              </div>
+              {services.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No services yet. Customers can still request a general booking.</p>
+              ) : (
+                <div className="space-y-3">
+                  {services.map((service, index) => (
+                    <div key={index} className="rounded-md border p-3 space-y-2" data-testid={`service-row-${index}`}>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={service.name}
+                          onChange={(e) => updateService(index, { name: e.target.value })}
+                          placeholder="Service name"
+                          data-testid={`input-service-name-${index}`}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setServices((prev) => prev.filter((_, i) => i !== index))}
+                          data-testid={`button-remove-service-${index}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Duration (min)</span>
+                        <Input
+                          type="number"
+                          min={15}
+                          step={15}
+                          value={service.duration}
+                          onChange={(e) => updateService(index, { duration: parseInt(e.target.value, 10) || 0 })}
+                          className="max-w-[120px]"
+                          data-testid={`input-service-duration-${index}`}
+                        />
+                      </div>
+                      <Input
+                        value={service.description || ""}
+                        onChange={(e) => updateService(index, { description: e.target.value })}
+                        placeholder="Short description (optional)"
+                        data-testid={`input-service-description-${index}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Button onClick={handleSave} disabled={saveMutation.isPending} data-testid="button-save-booking">
+              {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save booking page
+            </Button>
+
+            {settings?.bookingPageEnabled && settings?.bookingSlug ? (
+              <div className="space-y-3 pt-2 border-t">
+                <div className="space-y-2">
+                  <Label>Your booking link</Label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <code className="text-xs bg-muted rounded-md px-2 py-1.5 break-all flex-1 min-w-[200px]" data-testid="text-booking-url">
+                      {`${window.location.origin}/book/${settings.bookingSlug}`}
+                    </code>
+                    <Button variant="outline" size="sm" onClick={() => copy(`${window.location.origin}/book/${settings.bookingSlug}`, "link")} data-testid="button-copy-booking-link">
+                      {copied === "link" ? <Check className="h-3.5 w-3.5 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+                      {copied === "link" ? "Copied" : "Copy"}
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={`${window.location.origin}/book/${settings.bookingSlug}`} target="_blank" rel="noopener noreferrer" data-testid="link-open-booking">
+                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                        Open
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><Code className="h-3.5 w-3.5" /> Embed button</Label>
+                  <pre className="text-xs bg-muted rounded-md p-3 overflow-x-auto" data-testid="text-booking-embed"><code>{`<a href="${window.location.origin}/book/${settings.bookingSlug}" target="_blank" rel="noopener" style="display:inline-block;padding:12px 20px;background:#2563eb;color:#fff;border-radius:6px;font-family:sans-serif;text-decoration:none;font-weight:600;">Book a job</a>`}</code></pre>
+                  <Button variant="outline" size="sm" onClick={() => copy(`<a href="${window.location.origin}/book/${settings.bookingSlug}" target="_blank" rel="noopener" style="display:inline-block;padding:12px 20px;background:#2563eb;color:#fff;border-radius:6px;font-family:sans-serif;text-decoration:none;font-weight:600;">Book a job</a>`, "embed")} data-testid="button-copy-booking-embed">
+                    {copied === "embed" ? <Check className="h-3.5 w-3.5 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+                    {copied === "embed" ? "Copied" : "Copy embed code"}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function WebsiteAddon() {
@@ -272,6 +508,9 @@ export default function WebsiteAddon() {
             </Button>
           }
         />
+        <div className="max-w-lg mx-auto mb-6">
+          <BookingPortalCard />
+        </div>
         <div className="max-w-lg mx-auto">
           <Card data-testid="card-website-upgrade">
             <CardContent className="flex flex-col items-center text-center py-12 px-6">
@@ -336,6 +575,7 @@ export default function WebsiteAddon() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
+          <BookingPortalCard />
           <Card data-testid="card-website-preview">
             <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
               <CardTitle className="text-base flex items-center gap-2">
