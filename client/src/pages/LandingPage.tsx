@@ -437,7 +437,7 @@ export default function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="pt-28 lg:pt-36 pb-16 lg:pb-24 px-5 lg:px-8">
+      <section className="pt-36 lg:pt-44 pb-16 lg:pb-24 px-5 lg:px-8">
         <LandingShell padded={false}>
           <div className="grid lg:grid-cols-2 gap-10 sm:gap-12 lg:gap-16 items-center">
             {/* Left: Content */}
