@@ -129,3 +129,4 @@
 - [Mobile active-workspace-owner signal](mobile-active-workspace-owner-signal.md) — active business owner id is on user.businessOwnerId (from /api/auth/me), NOT roleInfo; use for cross-workspace gates. stopTimer returns false on fail (no throw).
 - [Push-token device exclusivity](push-token-device-exclusivity.md) — device kept getting prev account's pushes (overtime nudge) after account switch; logout must DELETE /api/push-tokens (unbind) BEFORE api.logout, run first in own try/catch.
 - [getX includeArchived is archived-only](getx-includearchived-archived-only.md) — storage.getQuotes/getInvoices/getJobs(id,true) returns ONLY archived, (id,false) ONLY active; merge both for a full set. Caused a false demo-corruption diagnosis.
+- [Upload paths web vs mobile](upload-paths-web-vs-mobile.md) — use POST /api/upload (returns servable /objects/ {url}, accepts PDF); presigned /api/objects/upload pathname stored raw is NOT viewable. Multipart needs raw fetch + Bearer.

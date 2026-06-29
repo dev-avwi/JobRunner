@@ -8861,10 +8861,20 @@ Be specific about materials, colors, and features that would be included.`
   // General file upload endpoint for logos and images
   const generalUpload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB (PDFs/scans run larger than images)
   });
 
-  app.post("/api/upload", requireAuth, generalUpload.single('file'), async (req: any, res) => {
+  app.post("/api/upload", requireAuth, (req: any, res, next) => {
+    generalUpload.single('file')(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ error: "File must be under 10MB" });
+        }
+        return res.status(400).json({ error: "Upload failed", details: err.message });
+      }
+      next();
+    });
+  }, async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });

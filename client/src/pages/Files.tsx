@@ -70,7 +70,7 @@ import {
 } from "lucide-react";
 import { PageShell, PageHeader } from "@/components/ui/page-shell";
 import { EmptyState } from "@/components/ui/compact-card";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { ComplianceDocument } from "@shared/schema";
@@ -151,15 +151,20 @@ export default function FilesPage() {
     setUploadingFile(true);
     setSelectedFileName(file.name);
     try {
-      const res = await apiRequest("POST", "/api/objects/upload");
-      const { uploadURL } = await res.json();
-      await fetch(uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("type", "compliance");
+      const token = getSessionToken();
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: fd,
+        credentials: "include",
       });
-      const objectPath = new URL(uploadURL).pathname;
-      setFormData(prev => ({ ...prev, attachmentUrl: objectPath }));
+      if (!res.ok) throw new Error(`${res.status}`);
+      const { url } = await res.json();
+      if (!url) throw new Error("No URL returned");
+      setFormData(prev => ({ ...prev, attachmentUrl: url }));
       toast({ title: "File uploaded" });
     } catch {
       toast({ title: "Upload failed", variant: "destructive" });

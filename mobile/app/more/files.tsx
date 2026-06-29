@@ -5,6 +5,8 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as WebBrowser from 'expo-web-browser';
+import { resolveAttachmentUrl } from '../../src/lib/chat-attachments';
 import { useTheme } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { api } from '../../src/lib/api';
@@ -834,6 +836,17 @@ export default function FilesScreen() {
     setHasExistingAttachment(false);
   };
 
+  const openAttachment = async (url: string | null) => {
+    const fullUrl = resolveAttachmentUrl(url);
+    if (!fullUrl) return;
+    try {
+      await WebBrowser.openBrowserAsync(fullUrl);
+    } catch (err) {
+      if (__DEV__) console.log('Open attachment failed:', err);
+      Alert.alert('Error', 'Could not open the attachment.');
+    }
+  };
+
   const handlePickImage = async () => {
     Alert.alert(
       'Add Photo',
@@ -1085,10 +1098,11 @@ export default function FilesScreen() {
             {doc.attachmentUrl && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Attachment</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                  <Feather name="paperclip" size={12} color={colors.primary} />
-                  <Text style={[styles.detailValue, { color: colors.primary }]}>Uploaded</Text>
-                </View>
+                <PressableRow style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }} onPress={() => openAttachment(doc.attachmentUrl)} >
+                  <Feather name={doc.attachmentType === 'pdf' ? 'file-text' : 'image'} size={12} color={colors.primary} />
+                  <Text style={[styles.detailValue, { color: colors.primary }]}>View</Text>
+                  <Feather name="external-link" size={12} color={colors.primary} />
+                </PressableRow>
               </View>
             )}
             {doc.notes && (
