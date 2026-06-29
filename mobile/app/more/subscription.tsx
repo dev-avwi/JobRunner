@@ -17,6 +17,7 @@ import { asHref } from '../../src/lib/nav';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useAuthStore } from '../../src/lib/store';
+import { useUserRole } from '../../src/hooks/use-user-role';
 import { api } from '../../src/lib/api';
 import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
 import {
@@ -464,6 +465,7 @@ export default function SubscriptionPage() {
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
   const user = useAuthStore(state => state.user);
+  const { isSubcontractor, isStandaloneSubcontractor } = useUserRole();
 
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
@@ -913,7 +915,7 @@ export default function SubscriptionPage() {
           </Text>
         )}
 
-        {!isBeta && (currentTier === 'free' || currentTier === 'pro' || currentTier === 'team') && (
+        {!isBeta && (currentTier === 'free' || currentTier === 'pro' || currentTier === 'team') && !(isSubcontractor && currentTier !== 'free') && !(isSubcontractor && !isStandaloneSubcontractor) && (
           <View style={styles.comparePlansSection}>
             <Text style={styles.comparePlansTitle}>
               {currentTier === 'free' ? 'Upgrade Your Plan' : 'Available Upgrades'}
@@ -948,7 +950,7 @@ export default function SubscriptionPage() {
               </View>
             )}
 
-            {(currentTier === 'free' || currentTier === 'pro') && (
+            {!isSubcontractor && (currentTier === 'free' || currentTier === 'pro') && (
               <View style={[styles.comparePlanCard, currentTier === 'pro' ? { borderColor: '#7C3AED', borderWidth: 2 } : {}]}>
                 <View style={styles.comparePlanHeader}>
                   <View style={[styles.comparePlanIcon, { backgroundColor: '#7C3AED15' }]}>
@@ -974,7 +976,7 @@ export default function SubscriptionPage() {
               </View>
             )}
 
-            {(currentTier === 'free' || currentTier === 'pro' || currentTier === 'team') && (
+            {!isSubcontractor && (currentTier === 'free' || currentTier === 'pro' || currentTier === 'team') && (
               <View style={[styles.comparePlanCard, currentTier === 'team' ? { borderColor: '#059669', borderWidth: 2 } : {}]}>
                 <View style={styles.comparePlanHeader}>
                   <View style={[styles.comparePlanIcon, { backgroundColor: '#05966915' }]}>
