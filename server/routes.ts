@@ -8861,14 +8861,14 @@ Be specific about materials, colors, and features that would be included.`
   // General file upload endpoint for logos and images
   const generalUpload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB (PDFs/scans run larger than images)
+    limits: { fileSize: 100 * 1024 * 1024 } // 100MB (PDFs/scans/large docs)
   });
 
   app.post("/api/upload", requireAuth, (req: any, res, next) => {
     generalUpload.single('file')(req, res, (err: any) => {
       if (err) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(413).json({ error: "File must be under 10MB" });
+          return res.status(413).json({ error: "File must be under 100MB" });
         }
         return res.status(400).json({ error: "Upload failed", details: err.message });
       }
@@ -32942,7 +32942,7 @@ Respond with JSON in this format:
   // Upload media to a job via multipart form (for large files like videos)
   const upload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit for photos/videos
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for photos/videos/job documents
     fileFilter: imageVideoOrPdfFilter, // shared with job documents route, which allows PDFs
   });
   

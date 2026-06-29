@@ -144,8 +144,8 @@ export default function FilesPage() {
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   const handleFileUpload = async (file: globalThis.File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "File must be under 10MB", variant: "destructive" });
+    if (file.size > 100 * 1024 * 1024) {
+      toast({ title: "File must be under 100MB", variant: "destructive" });
       return;
     }
     setUploadingFile(true);

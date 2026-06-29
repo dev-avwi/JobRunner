@@ -148,10 +148,10 @@ export function JobDocuments({ jobId, canUpload = true }: JobDocumentsProps) {
         });
         return;
       }
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 100 * 1024 * 1024) {
         toast({
           title: 'File too large',
-          description: 'Please upload a file smaller than 10MB.',
+          description: 'Please upload a file smaller than 100MB.',
           variant: 'destructive',
         });
         return;
@@ -345,7 +345,7 @@ export function JobDocuments({ jobId, canUpload = true }: JobDocumentsProps) {
                   <div className="text-muted-foreground">
                     <Upload className="h-8 w-8 mx-auto mb-2" />
                     <p className="text-sm">Click to select a file</p>
-                    <p className="text-xs mt-1">PDF or images up to 10MB</p>
+                    <p className="text-xs mt-1">PDF or images up to 100MB</p>
                   </div>
                 )}
               </div>

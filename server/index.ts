@@ -13,6 +13,7 @@ import { WebhookHandlers } from "./webhookHandlers";
 import { storage, pool as sharedPgPool } from "./storage";
 import { setupWebSocket } from "./websocket";
 import { metricsMiddleware } from "./metrics";
+import { uploadQueue, send429 } from "./concurrency";
 import { activityTrackingMiddleware, backfillSignupDayActivity, backfillFeaturePermissions } from "./routes/middleware";
 import { getErrorMessage } from "./lib/errors";
 
@@ -522,15 +523,53 @@ if (process.env.DATABASE_URL) {
 
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
+      // File uploads (multipart/form-data) can legitimately take minutes on slow
+      // mobile connections, so they get a longer — but still finite — timeout.
+      // Total size is still hard-capped by multer's per-route fileSize limit, and
+      // concurrent in-flight uploads are bounded by the uploadQueue gate below.
+      const isFileUpload = (req.headers['content-type'] || '').includes('multipart/form-data');
+      const timeoutMs = isFileUpload ? 5 * 60 * 1000 : 30000;
       const timeout = setTimeout(() => {
         if (!res.headersSent) {
           res.status(504).json({ error: 'Request timeout' });
         }
-      }, 30000);
+      }, timeoutMs);
       res.on('finish', () => clearTimeout(timeout));
       res.on('close', () => clearTimeout(timeout));
     }
     next();
+  });
+
+  // Bound concurrent in-memory file uploads so a burst of large (up to 100MB)
+  // uploads can't exhaust RAM. Sheds excess with HTTP 429 + Retry-After, which
+  // both the web and mobile clients already handle gracefully.
+  app.use((req, res, next) => {
+    if (!req.path.startsWith('/api')) return next();
+    const isFileUpload = (req.headers['content-type'] || '').includes('multipart/form-data');
+    if (!isFileUpload) return next();
+
+    let acquired = false; // true once we own a live queue slot
+    let aborted = false;  // request closed before/while waiting
+    let released = false;
+    const release = () => {
+      if (acquired && !released) { released = true; uploadQueue.release(); }
+    };
+    // Attach listeners up front so a disconnect/timeout while still waiting in
+    // the queue can't strand the slot once acquire() eventually resolves.
+    res.on('finish', release);
+    res.on('close', () => { aborted = true; release(); });
+
+    uploadQueue.acquire().then(() => {
+      acquired = true;
+      if (aborted) {
+        // Client already gone — hand the slot straight back, never call next().
+        release();
+        return;
+      }
+      next();
+    }).catch((e) => {
+      if (!aborted && !res.headersSent) send429(res, e);
+    });
   });
 
   // Per-route timing + counters for /api/metrics (in-memory, ring buffer per route)

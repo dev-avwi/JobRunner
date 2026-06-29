@@ -100,9 +100,14 @@ export class BoundedQueue {
 export const pdfQueue = new BoundedQueue("pdf", 3, 12, 8);
 export const aiQueue = new BoundedQueue("ai", 8, 24, 5);
 export const visionQueue = new BoundedQueue("vision", 4, 12, 8);
+// File uploads are buffered fully in memory (multer.memoryStorage) before they
+// reach object storage. With a 100MB per-file cap, unbounded concurrency could
+// exhaust RAM, so we cap how many large uploads are in flight at once and shed
+// the rest with HTTP 429 + Retry-After.
+export const uploadQueue = new BoundedQueue("upload", 6, 12, 8);
 
 export function getAllQueueStats() {
-  return [pdfQueue.stats(), aiQueue.stats(), visionQueue.stats()];
+  return [pdfQueue.stats(), aiQueue.stats(), visionQueue.stats(), uploadQueue.stats()];
 }
 
 /** True when the thrown value originated from a bounded queue at capacity. */
