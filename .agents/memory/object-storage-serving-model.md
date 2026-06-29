@@ -20,9 +20,23 @@ Everything the open route `GET /objects/:objectPath(*)` (server/routes.ts) serve
   `/object-storage/signed-object-url`) minted by `requireAuth` + owner-scoped endpoints
   (`photoService.getSignedPhotoUrl`, `voiceNoteService`, `/api/photos`, `/api/jobs/:id/photos`).
   They NEVER go through `/objects/`.
+- **Compliance files (`.private/compliance/{businessOwnerId}/<uuid>.<ext>`)**: a FOURTH authorized
+  `/objects/` prefix, but gated to owner + managers only (`canAccessComplianceFile` = getUserContext,
+  `effectiveUserId === ownerIdInPath` (= `entityId.split('/')[2]`) AND (isOwner || MANAGE_TEAM)).
+  Workers — INCLUDING a doc's `holderUserId` — are intentionally blocked from the file. Uploads go
+  through `/api/upload` with `type==='compliance'`: that route ALSO gates upload to owner/manager and
+  writes the no-leading-slash path (self-consistent with storage write/read). **Compliance upload must
+  fail closed** — its `data:` URL fallback is disabled (503 on storage failure) so a degraded upload
+  can't bypass `/objects/` authz. Mobile in-app browser can't send the Bearer token, so it calls
+  `POST /api/objects/sign-download` (requireAuth, same `canAccessComplianceFile` gate) to mint a signed
+  URL, then opens it. Web `<img>/<a>` to `/objects/` authenticate via the express-session cookie
+  (resolveOptionalUser checks cookie first), so no web change was needed.
+  **Caveat:** legacy already-uploaded compliance files live on the OLD open path
+  (`compliance/{userId}/...`, non-`.private`) — they stay publicly served; no migration was done.
 
 **Rule (default-deny):** in the `/objects/` handler, any `entityId` starting with `.private/` that
-is not one of the three authorized chat prefixes returns 404 before serving.
+is not an authorized prefix (the three chat prefixes, or `.private/compliance/` which adds its own
+auth gate) returns 404 before serving.
 **Why:** stops a new sensitive `.private/*` category from leaking by default if someone adds a prefix
 to storage but forgets to authorize it here. Safe because non-chat private data uses signed URLs, and
 public assets are non-`.private`.

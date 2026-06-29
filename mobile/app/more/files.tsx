@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, Modal, TextInput, Platform, KeyboardAvoidingView } from 'react-native';
 import { Alert } from '@/lib/alert';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -837,9 +837,21 @@ export default function FilesScreen() {
   };
 
   const openAttachment = async (url: string | null) => {
-    const fullUrl = resolveAttachmentUrl(url);
-    if (!fullUrl) return;
+    if (!url) return;
     try {
+      // Private compliance files are gated to owners/managers server-side. The in-app
+      // browser can't send the auth token, so fetch a short-lived signed URL first.
+      if (url.includes('.private/compliance/')) {
+        const res = await api.post<{ url: string }>('/api/objects/sign-download', { path: url });
+        if (res.error || !res.data?.url) {
+          Alert.alert('Access denied', "You don't have permission to open this file.");
+          return;
+        }
+        await WebBrowser.openBrowserAsync(res.data.url);
+        return;
+      }
+      const fullUrl = resolveAttachmentUrl(url);
+      if (!fullUrl) return;
       await WebBrowser.openBrowserAsync(fullUrl);
     } catch (err) {
       if (__DEV__) console.log('Open attachment failed:', err);
@@ -1221,13 +1233,13 @@ export default function FilesScreen() {
         <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
       </PressableRow>
 
-      <PressableRow style={styles.categoryCard} onPress={() => router.push('/more/documents' as any)} >
+      <PressableRow style={styles.categoryCard} onPress={() => setActiveFilter('documents')} >
         <View style={[styles.categoryIconContainer, { backgroundColor: CATEGORY_COLORS.voiceNotes.bg }]}>
           <Feather name="folder" size={16} color={CATEGORY_COLORS.voiceNotes.color} />
         </View>
         <View style={styles.categoryContent}>
           <Text style={styles.categoryTitle}>Documents</Text>
-          <Text style={styles.categoryCount}>Quotes, invoices & receipts</Text>
+          <Text style={styles.categoryCount}>PDFs, files & other documents</Text>
         </View>
         <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
       </PressableRow>
@@ -1282,31 +1294,9 @@ export default function FilesScreen() {
     <PhotoLibrary />
   );
 
-  const renderDocumentsContent = () => (
-    <View style={styles.quickAccessSection}>
-      <PressableRow style={styles.categoryCard} onPress={() => router.push('/(tabs)/jobs' as any)} >
-        <View style={[styles.categoryIconContainer, { backgroundColor: CATEGORY_COLORS.voiceNotes.bg }]}>
-          <Feather name="mic" size={16} color={CATEGORY_COLORS.voiceNotes.color} />
-        </View>
-        <View style={styles.categoryContent}>
-          <Text style={styles.categoryTitle}>Voice Notes</Text>
-          <Text style={styles.categoryCount}>Attached to jobs</Text>
-        </View>
-        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-      </PressableRow>
-
-      <PressableRow style={styles.categoryCard} onPress={() => router.push('/more/documents' as any)} >
-        <View style={[styles.categoryIconContainer, { backgroundColor: CATEGORY_COLORS.photos.bg }]}>
-          <Feather name="folder" size={16} color={CATEGORY_COLORS.photos.color} />
-        </View>
-        <View style={styles.categoryContent}>
-          <Text style={styles.categoryTitle}>Quotes, Invoices & Receipts</Text>
-          <Text style={styles.categoryCount}>Business documents</Text>
-        </View>
-        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-      </PressableRow>
-    </View>
-  );
+  // The Documents view shows the actual uploaded files/PDFs (the compliance store).
+  // Quotes, invoices & receipts have their own dedicated page and are not files.
+  const renderDocumentsContent = () => renderComplianceSection();
 
   const renderComplianceContent = () => renderComplianceSection();
 

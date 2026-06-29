@@ -181,6 +181,24 @@ export class ObjectStorageService {
     return objectFile;
   }
 
+  // Signs a short-lived GET URL for a private object so it can be opened by a
+  // client that cannot send auth headers (e.g. the mobile in-app browser).
+  async getSignedDownloadURL(objectPath: string, ttlSec: number = 300): Promise<string> {
+    if (!objectPath.startsWith("/objects/")) {
+      throw new ObjectNotFoundError();
+    }
+    const entityId = objectPath
+      .slice("/objects/".length)
+      .replace(/^\/+/, "")
+      .replace(/\/{2,}/g, "/");
+    let entityDir = this.getPrivateObjectDir();
+    if (!entityDir.endsWith("/")) {
+      entityDir = `${entityDir}/`;
+    }
+    const { bucketName, objectName } = parseObjectPath(`${entityDir}${entityId}`);
+    return signObjectURL({ bucketName, objectName, method: "GET", ttlSec });
+  }
+
   normalizeObjectEntityPath(
     rawPath: string,
   ): string {

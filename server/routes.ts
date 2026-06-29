@@ -8882,7 +8882,21 @@ Be specific about materials, colors, and features that would be included.`
 
       const uploadType = req.body.type || 'general';
       const fileExt = req.file.originalname.split('.').pop() || 'png';
-      const fileName = `${uploadType}/${req.userId}/${crypto.randomUUID()}.${fileExt}`;
+
+      let fileName: string;
+      if (uploadType === 'compliance') {
+        // Compliance documents are sensitive business records. Store them in the
+        // private namespace so the /objects/ route gates them to the business owner
+        // + managers only, and block non-owners/managers from uploading at all.
+        const ctx = await getUserContext(req.userId);
+        const isOwnerOrManager = ctx.isOwner || ctx.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+        if (!isOwnerOrManager) {
+          return res.status(403).json({ error: "Only owners and managers can upload compliance documents" });
+        }
+        fileName = `.private/compliance/${ctx.effectiveUserId}/${crypto.randomUUID()}.${fileExt}`;
+      } else {
+        fileName = `${uploadType}/${req.userId}/${crypto.randomUUID()}.${fileExt}`;
+      }
 
       // Try to upload to object storage
       try {
@@ -8891,6 +8905,12 @@ Be specific about materials, colors, and features that would be included.`
         // uploadFile returns the path in /objects/{filename} format that works with /objects route
         res.json({ url: objectPath });
       } catch (storageError) {
+        // Compliance files must stay private. Never fall back to an embeddable data:
+        // URL for them — that would bypass the /objects authorization entirely.
+        if (uploadType === 'compliance') {
+          console.error("[Upload] Object storage failed for compliance upload:", storageError);
+          return res.status(503).json({ error: "File storage is temporarily unavailable. Please try again." });
+        }
         console.log("[Upload] Object storage not available, using data URL");
         // Fallback to data URL if object storage is not available
         const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
@@ -26100,6 +26120,20 @@ Respond with JSON in this format:
     return userId || null;
   };
 
+  // Authorize access to a private compliance file. Path layout:
+  //   .private/compliance/{businessOwnerId}/{uuid}.{ext}
+  // Only the business owner and managers (MANAGE_TEAM) of that business may view.
+  // Workers (including a doc's holder) are intentionally excluded.
+  const canAccessComplianceFile = async (userId: string, ownerIdInPath: string): Promise<boolean> => {
+    try {
+      const ctx = await getUserContext(userId);
+      if (ctx.effectiveUserId !== ownerIdInPath) return false;
+      return ctx.isOwner || ctx.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+    } catch {
+      return false;
+    }
+  };
+
   // Object Storage Routes for logo uploads + chat attachments. Logos / generic
   // uploads remain accessible (existing behavior) but chat-attachment paths
   // require auth + ownership checks to prevent any-URL leakage of private files.
@@ -26119,6 +26153,11 @@ Respond with JSON in this format:
       const isTeamChatAttachment = entityId.startsWith('.private/team-chat-attachments/');
       const isJobChatAttachment = entityId.startsWith('.private/chat-attachments/');
       const isKnownChatAttachment = isDmAttachment || isTeamChatAttachment || isJobChatAttachment;
+      // Compliance documents are private business records. Path layout:
+      //   .private/compliance/{businessOwnerId}/{uuid}.{ext}
+      // Served through this route for the web viewer (browser sends the session
+      // cookie); mobile uses /api/objects/sign-download instead.
+      const isComplianceDoc = entityId.startsWith('.private/compliance/');
 
       // Default-deny for the private namespace: this open route only authorizes the
       // three chat-attachment prefixes above (each with an ownership check below).
@@ -26127,8 +26166,20 @@ Respond with JSON in this format:
       // URLs from its own auth + ownership-scoped endpoints, never through /objects/.
       // Refusing any other `.private/` path here prevents a new sensitive category from
       // leaking by default if its prefix is ever added to storage but not authorized.
-      if (entityId.startsWith('.private/') && !isKnownChatAttachment) {
+      if (entityId.startsWith('.private/') && !isKnownChatAttachment && !isComplianceDoc) {
         return res.sendStatus(404);
+      }
+
+      if (isComplianceDoc) {
+        const userId = await resolveOptionalUser(req);
+        if (!userId) {
+          return res.status(401).json({ error: 'Authentication required' });
+        }
+        // segments: [".private", "compliance", "<businessOwnerId>", "<uuid>.<ext>"]
+        const ownerIdInPath = entityId.split('/')[2];
+        if (!ownerIdInPath || !(await canAccessComplianceFile(userId, ownerIdInPath))) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
       }
 
       if (isKnownChatAttachment) {
@@ -26211,6 +26262,35 @@ Respond with JSON in this format:
       console.error("[Upload] Error getting upload URL:", error?.message || error);
       console.error("[Upload] Stack:", error?.stack);
       res.status(500).json({ error: "Failed to get upload URL", details: error?.message });
+    }
+  });
+
+  // Mint a short-lived signed URL for a private compliance file. The mobile app's
+  // in-app browser cannot send the Bearer token the /objects/ route requires, so it
+  // calls this (authenticated) endpoint first and opens the returned signed URL.
+  app.post("/api/objects/sign-download", requireAuth, async (req: any, res) => {
+    try {
+      let entityId = String(req.body?.path || '');
+      entityId = entityId.replace(/^https?:\/\/[^/]+/i, '');
+      entityId = entityId.replace(/^\/objects\//, '');
+      try { entityId = decodeURIComponent(entityId); } catch {}
+      entityId = entityId.replace(/^\/+/, '').replace(/\/{2,}/g, '/');
+
+      // Only compliance files are signable through this endpoint.
+      if (!entityId.startsWith('.private/compliance/')) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      const ownerIdInPath = entityId.split('/')[2];
+      if (!ownerIdInPath || !(await canAccessComplianceFile(req.userId, ownerIdInPath))) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const url = await objectStorageService.getSignedDownloadURL(`/objects/${entityId}`);
+      res.json({ url });
+    } catch (error: any) {
+      console.error('[sign-download] Failed:', error?.message || error);
+      res.status(500).json({ error: 'Failed to sign URL' });
     }
   });
 
