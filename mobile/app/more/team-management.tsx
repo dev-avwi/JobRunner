@@ -2238,7 +2238,7 @@ export default function TeamManagementScreen() {
         firstName: inviteFirstName,
         lastName: inviteLastName,
         roleId: roleObj.id,
-        hourlyRate: inviteHourlyRate ? parseFloat(inviteHourlyRate) : undefined,
+        hourlyRate: inviteHourlyRate.trim() ? inviteHourlyRate.trim() : undefined,
         phone: invitePhone.trim() || undefined,
       });
       let sentVia = 'email';

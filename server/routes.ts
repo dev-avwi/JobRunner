@@ -28890,11 +28890,23 @@ Respond with JSON in this format:
         inviteAcceptedAt: true,
       });
       
+      // Normalize numeric hourlyRate to string — drizzle-zod types the decimal
+      // column as a string, but the web/mobile clients send a parsed number,
+      // which would otherwise fail validation with a generic 400.
+      if (req.body && typeof req.body.hourlyRate === 'number') {
+        req.body.hourlyRate = Number.isFinite(req.body.hourlyRate)
+          ? String(req.body.hourlyRate)
+          : undefined;
+      }
+
       let inviteData;
       try {
         inviteData = inviteRequestSchema.parse(req.body);
       } catch (validationError: any) {
-        console.error('[TeamInvite] Validation failed for invite request');
+        const fields = Array.isArray(validationError?.issues)
+          ? validationError.issues.map((i: any) => i.path?.join('.')).filter(Boolean).join(', ')
+          : '';
+        console.error(`[TeamInvite] Validation failed for invite request${fields ? ` (fields: ${fields})` : ''}`);
         return res.status(400).json({ 
           error: 'Invalid invite data. Please check all required fields.'
         });
