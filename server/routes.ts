@@ -38948,9 +38948,26 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const allBusinessSettings = await db.select({
         userId: businessSettings.userId,
         businessName: businessSettings.businessName,
-      }).from(businessSettings);
+        accountType: businessSettings.accountType,
+      }).from(businessSettings).orderBy(businessSettings.id);
       
       const businessSettingsMap = new Map(allBusinessSettings.map(bs => [bs.userId, bs]));
+
+      // Resolve team-member roles (for users who are members of someone else's business)
+      const memberRoleRows = await db.select({
+        memberId: teamMembers.memberId,
+        roleName: userRoles.name,
+      })
+        .from(teamMembers)
+        .leftJoin(userRoles, eq(teamMembers.roleId, userRoles.id))
+        .where(eq(teamMembers.inviteStatus, 'accepted'))
+        .orderBy(teamMembers.id);
+      const memberRoleMap = new Map<string, string>();
+      for (const row of memberRoleRows) {
+        if (row.memberId && !memberRoleMap.has(row.memberId)) {
+          memberRoleMap.set(row.memberId, row.roleName || 'Team member');
+        }
+      }
 
       const allWebsiteAddons = await db.select({
         businessId: websiteAddons.businessId,
@@ -38963,9 +38980,19 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       // Enrich user data
       const enrichedUsers = allUsers.map(user => {
         const wa = websiteAddonMap.get(user.id);
+        const ownSettings = businessSettingsMap.get(user.id);
+        let role: string;
+        if (ownSettings?.accountType === 'subcontractor') {
+          role = 'Subcontractor';
+        } else if (ownSettings) {
+          role = 'Owner';
+        } else {
+          role = memberRoleMap.get(user.id) || 'Unassigned';
+        }
         return {
           ...user,
           name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Unknown',
+          role,
           hasCompletedOnboarding: businessSettingsMap.has(user.id),
           businessName: businessSettingsMap.get(user.id)?.businessName || null,
           websiteFeatures: wa ? {

@@ -133,6 +133,7 @@ interface AdminUser {
   emailVerified: boolean | null;
   hasCompletedOnboarding: boolean;
   businessName: string | null;
+  role: string | null;
   betaUser: boolean | null;
   betaLifetimeAccess: boolean | null;
 }
@@ -766,6 +767,7 @@ function UsersView({
                   <TableHead className="hidden sm:table-cell">Email</TableHead>
                   {hasAnyBusiness && <TableHead className="hidden lg:table-cell">Business</TableHead>}
                   {hasAnyTrade && <TableHead className="hidden xl:table-cell">Trade</TableHead>}
+                  <TableHead className="hidden sm:table-cell">Role</TableHead>
                   <TableHead className="hidden md:table-cell whitespace-nowrap">Signup</TableHead>
                   <TableHead>Tier</TableHead>
                   <TableHead className="hidden lg:table-cell whitespace-nowrap">Last Active</TableHead>
@@ -776,7 +778,7 @@ function UsersView({
               <TableBody>
                 {usersLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12">
+                    <TableCell colSpan={10} className="text-center py-12">
                       <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
                     </TableCell>
                   </TableRow>
@@ -805,6 +807,11 @@ function UsersView({
                           )}
                         </TableCell>
                       )}
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {user.role || 'Unassigned'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground text-sm whitespace-nowrap">
                         {formatDate(user.createdAt)}
                       </TableCell>
@@ -925,7 +932,7 @@ function UsersView({
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12">
+                    <TableCell colSpan={10} className="text-center py-12">
                       <Search className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="text-muted-foreground">
                         {searchQuery || tierFilter !== "all" || statusFilter !== "all" 
