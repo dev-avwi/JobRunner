@@ -1879,6 +1879,12 @@ export default function TeamManagementScreen() {
       icon: 'user',
       description: 'Field worker - works on assigned jobs' 
     },
+    subcontractor: { 
+      label: 'Subcontractor', 
+      color: colors.warning, 
+      icon: 'briefcase',
+      description: 'Independent contractor - bills for their work' 
+    },
     staff: { 
       label: 'Staff', 
       color: colors.info, 
