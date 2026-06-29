@@ -18,7 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../lib/theme';
 import { spacing, radius, typography, shadows } from '../lib/design-tokens';
 import { api } from '../lib/api';
-import { useAuthStore } from '../lib/store';
+import { useAuthStore, useTimeTrackingStore } from '../lib/store';
 import { useNotificationsStore } from '../lib/notifications-store';
 import { clearRoleCache } from '../lib/role-cache';
 import offlineStorage from '../lib/offline-storage';
@@ -116,7 +116,46 @@ export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitc
 
   const handleSwitch = async (businessId: string) => {
     if (businessId === activeBusinessId) return;
-    
+
+    // If a timer is running, it belongs to a job in the workspace we're leaving.
+    // Ask what to do before switching so the worker doesn't accidentally keep or
+    // lose tracked time. (Location tracking is already stopped below.)
+    const runningTimer = useTimeTrackingStore.getState().activeTimer;
+    if (runningTimer) {
+      const choice = await new Promise<'keep' | 'stop' | 'cancel'>((resolve) => {
+        Alert.alert(
+          'Timer running',
+          `You have a timer running${runningTimer.jobTitle ? ` on "${runningTimer.jobTitle}"` : ''}. What do you want to do before switching workspace?`,
+          [
+            { text: 'Keep running', onPress: () => resolve('keep') },
+            { text: 'Stop timer', style: 'destructive', onPress: () => resolve('stop') },
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve('cancel') },
+          ],
+          { cancelable: true, onDismiss: () => resolve('cancel') },
+        );
+      });
+      if (choice === 'cancel') return;
+      if (choice === 'stop') {
+        let stopped = false;
+        try {
+          stopped = await useTimeTrackingStore.getState().stopTimer();
+        } catch (e) {
+          if (__DEV__) console.error('[WorkspaceSwitcher] stopTimer error:', e);
+          stopped = false;
+        }
+        // stopTimer() returns false (rather than throwing) on most failures, so
+        // don't switch on a failed stop — that would leave a timer running in the
+        // workspace we're leaving, the exact thing the user chose to avoid.
+        if (!stopped) {
+          Alert.alert(
+            "Couldn't stop timer",
+            'Your timer is still running, so the workspace was not switched. Please try again.',
+          );
+          return;
+        }
+      }
+    }
+
     setSwitching(businessId);
     try {
       const res = await api.switchBusiness(businessId);

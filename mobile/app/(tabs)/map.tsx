@@ -52,6 +52,7 @@ import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../src/lib/store';
+import { useLocationStore } from '../../src/lib/location-store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserRole } from '../../src/hooks/use-user-role';
@@ -649,6 +650,35 @@ export default function MapScreen() {
   const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
+
+  // One-tap "share my location with the team" lives right on the map so workers
+  // and subbies don't have to dig into App Settings to be seen on the team map.
+  const locShareEnabled = useLocationStore((s) => s.isEnabled);
+  const locShareStatus = useLocationStore((s) => s.status);
+  const enableLocationSharing = useLocationStore((s) => s.enableTracking);
+  const disableLocationSharing = useLocationStore((s) => s.disableTracking);
+  const [locShareBusy, setLocShareBusy] = useState(false);
+
+  const handleToggleLocationShare = async () => {
+    if (locShareBusy) return;
+    setLocShareBusy(true);
+    try {
+      if (locShareEnabled) {
+        await disableLocationSharing();
+      } else {
+        const ok = await enableLocationSharing();
+        if (!ok) {
+          Alert.alert(
+            'Location sharing',
+            useLocationStore.getState().errorMessage ||
+              'Could not start location sharing. Check location permissions in Settings.',
+          );
+        }
+      }
+    } finally {
+      setLocShareBusy(false);
+    }
+  };
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   
   const { user } = useAuthStore();
@@ -1960,6 +1990,77 @@ export default function MapScreen() {
             />
           </TouchableOpacity>
         </View>
+
+        {/* One-tap team location sharing — always visible so it's discoverable */}
+        {!locShareEnabled ? (
+          <TouchableOpacity
+            onPress={handleToggleLocationShare}
+            activeOpacity={0.85}
+            disabled={locShareBusy}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
+              marginTop: spacing.sm,
+              backgroundColor: colors.primary,
+              borderRadius: radius.lg,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+              opacity: locShareBusy ? 0.7 : 1,
+            }}
+          >
+            {locShareBusy ? (
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
+            ) : (
+              <Feather name="radio" size={16} color={colors.primaryForeground} />
+            )}
+            <Text style={{ flex: 1, fontWeight: '600', fontSize: 13, color: colors.primaryForeground }}>
+              Share my location with the team
+            </Text>
+            <Feather name="chevron-right" size={16} color={colors.primaryForeground} />
+          </TouchableOpacity>
+        ) : (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
+              marginTop: spacing.sm,
+              backgroundColor: locShareStatus === 'paused' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+              borderRadius: radius.lg,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+            }}
+          >
+            {locShareStatus === 'starting' || locShareBusy ? (
+              <ActivityIndicator size="small" color={colors.success} />
+            ) : (
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: locShareStatus === 'paused' ? '#F59E0B' : colors.success,
+                }}
+              />
+            )}
+            <Text style={{ flex: 1, fontWeight: '600', fontSize: 13, color: colors.foreground }}>
+              {locShareStatus === 'starting'
+                ? 'Starting location sharing…'
+                : locShareStatus === 'paused'
+                ? 'Sharing on — paused outside work hours'
+                : "You're sharing your location"}
+            </Text>
+            <TouchableOpacity
+              onPress={handleToggleLocationShare}
+              activeOpacity={0.7}
+              disabled={locShareBusy}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={{ fontWeight: '700', fontSize: 13, color: colors.destructive }}>Stop</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {!headerCollapsed && (
           <View style={styles.controlsRow}>

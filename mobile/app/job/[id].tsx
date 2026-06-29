@@ -59,6 +59,7 @@ import { MobileSendModal } from '../../src/components/MobileSendModal';
 import { spacing, radius, shadows, iconSizes, typography, pageShell } from '../../src/lib/design-tokens';
 import { getAvatarColor } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
+import { WorkspaceSwitcher } from '../../src/components/WorkspaceSwitcher';
 import { VoiceRecorder, VoiceNotePlayer } from '../../src/components/VoiceRecorder';
 import { SignaturePad } from '../../src/components/SignaturePad';
 import { JobForms } from '../../src/components/FormRenderer';
@@ -2229,6 +2230,7 @@ export default function JobDetailScreen() {
     await api.patch(`/api/jobs/${jobId}`, { notes });
   };
   const { businessSettings, roleInfo, user, hasPermission, logout } = useAuthStore();
+  const [showWorkspaceSwitcher, setShowWorkspaceSwitcher] = useState(false);
   const { isSmsReady } = useIntegrationHealth();
   
   const isOwnerOrManager = roleInfo 
@@ -6156,6 +6158,43 @@ export default function JobDetailScreen() {
             <Text style={styles.errorSecondaryBtnText}>Go back</Text>
           </TouchableOpacity>
         </View>
+      </View>
+    );
+  }
+
+  // Cross-workspace gate. This job belongs to one business (job.userId). The
+  // active workspace's owner is user.businessOwnerId — the server's /api/auth/me
+  // resolves it from the active business membership (for joined workers it's the
+  // business owner; for an owner / personal profile it's the user's own id). If
+  // those don't match, the user is viewing a job from a DIFFERENT workspace —
+  // timers and edits would silently fail — so we block the screen and make them
+  // switch first. Fail open if user isn't loaded to avoid wrongly locking out a
+  // legitimate worker.
+  const activeOwnerId = user?.businessOwnerId ?? user?.id ?? null;
+  const isOutOfWorkspace = !!user && !!job.userId && !!activeOwnerId && job.userId !== activeOwnerId;
+  if (isOutOfWorkspace) {
+    const targetBusinessName = (job as any).businessName || "the job's business";
+    return (
+      <View style={styles.errorContainer}>
+        <Feather name="briefcase" size={48} color={colors.primary} />
+        <Text style={styles.errorText}>Switch workspace to open this job</Text>
+        <Text style={[styles.errorText, { fontSize: 14, marginTop: 4 }]}>
+          This job belongs to {targetBusinessName}. You're currently in a different workspace, so you can't start a timer or make changes here. Switch to that workspace to work on it.
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => setShowWorkspaceSwitcher(true)} style={styles.errorPrimaryBtn}>
+            <Feather name="repeat" size={16} color="#FFFFFF" />
+            <Text style={styles.errorPrimaryBtnText}>Switch workspace</Text>
+          </TouchableOpacity>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => router.back()} style={styles.errorSecondaryBtn}>
+            <Text style={styles.errorSecondaryBtnText}>Go back</Text>
+          </TouchableOpacity>
+        </View>
+        <WorkspaceSwitcher
+          visible={showWorkspaceSwitcher}
+          onClose={() => setShowWorkspaceSwitcher(false)}
+          onSwitch={() => { setShowWorkspaceSwitcher(false); loadJob(); }}
+        />
       </View>
     );
   }
