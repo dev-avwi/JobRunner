@@ -4,6 +4,7 @@ import { Alert } from '@/lib/alert';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { api } from '../../src/lib/api';
@@ -745,6 +746,8 @@ export default function FilesScreen() {
   const [form, setForm] = useState<FormData>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
   const [attachmentUri, setAttachmentUri] = useState<string | null>(null);
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const [attachmentMime, setAttachmentMime] = useState<string | null>(null);
   const [hasExistingAttachment, setHasExistingAttachment] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -794,6 +797,8 @@ export default function FilesScreen() {
     setEditingDoc(null);
     setForm(emptyForm);
     setAttachmentUri(null);
+    setAttachmentName(null);
+    setAttachmentMime(null);
     setHasExistingAttachment(false);
     setShowModal(true);
   };
@@ -813,6 +818,8 @@ export default function FilesScreen() {
       vehiclePlate: doc.vehiclePlate || '',
     });
     setAttachmentUri(null);
+    setAttachmentName(null);
+    setAttachmentMime(null);
     setHasExistingAttachment(!!doc.attachmentUrl);
     setShowModal(true);
   };
@@ -822,13 +829,15 @@ export default function FilesScreen() {
     setEditingDoc(null);
     setForm(emptyForm);
     setAttachmentUri(null);
+    setAttachmentName(null);
+    setAttachmentMime(null);
     setHasExistingAttachment(false);
   };
 
   const handlePickImage = async () => {
     Alert.alert(
       'Add Photo',
-      'Choose a source for the document photo',
+      'Choose a source for the document',
       [
         {
           text: 'Camera',
@@ -840,7 +849,10 @@ export default function FilesScreen() {
             }
             const result = await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: true });
             if (!result.canceled && result.assets[0]) {
-              setAttachmentUri(result.assets[0].uri);
+              const asset = result.assets[0];
+              setAttachmentUri(asset.uri);
+              setAttachmentName(asset.fileName || asset.uri.split('/').pop() || 'photo.jpg');
+              setAttachmentMime(asset.mimeType || 'image/jpeg');
             }
           },
         },
@@ -854,7 +866,30 @@ export default function FilesScreen() {
             }
             const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, allowsEditing: true });
             if (!result.canceled && result.assets[0]) {
-              setAttachmentUri(result.assets[0].uri);
+              const asset = result.assets[0];
+              setAttachmentUri(asset.uri);
+              setAttachmentName(asset.fileName || asset.uri.split('/').pop() || 'photo.jpg');
+              setAttachmentMime(asset.mimeType || 'image/jpeg');
+            }
+          },
+        },
+        {
+          text: 'Attach File (PDF)',
+          onPress: async () => {
+            try {
+              const result = await DocumentPicker.getDocumentAsync({
+                type: ['application/pdf', 'image/*'],
+                copyToCacheDirectory: true,
+              });
+              if (!result.canceled && result.assets?.[0]) {
+                const asset = result.assets[0];
+                setAttachmentUri(asset.uri);
+                setAttachmentName(asset.name || asset.uri.split('/').pop() || 'document');
+                setAttachmentMime(asset.mimeType || 'application/octet-stream');
+              }
+            } catch (err) {
+              if (__DEV__) console.log('Document pick failed:', err);
+              Alert.alert('Error', 'Could not open the file picker. Please try again.');
             }
           },
         },
@@ -866,10 +901,11 @@ export default function FilesScreen() {
   const uploadAttachment = async (docId: string): Promise<string | null> => {
     if (!attachmentUri) return null;
     try {
-      const filename = attachmentUri.split('/').pop() || 'document.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const ext = match ? match[1] : 'jpg';
-      const type = `image/${ext}`;
+      const fallbackName = attachmentUri.split('/').pop() || 'document';
+      const filename = attachmentName || fallbackName;
+      const extMatch = /\.(\w+)$/.exec(filename);
+      const ext = extMatch ? extMatch[1].toLowerCase() : 'jpg';
+      const type = attachmentMime || (ext === 'pdf' ? 'application/pdf' : `image/${ext}`);
 
       const formData = new FormData();
       formData.append('file', {
@@ -926,9 +962,10 @@ export default function FilesScreen() {
       if (attachmentUri && response.data?.id) {
         const uploadedUrl = await uploadAttachment(response.data.id);
         if (uploadedUrl) {
+          const isPdf = (attachmentMime || '').includes('pdf') || /\.pdf$/i.test(attachmentName || uploadedUrl);
           await api.patch(`/api/compliance-documents/${response.data.id}`, {
             attachmentUrl: uploadedUrl,
-            attachmentType: 'image',
+            attachmentType: isPdf ? 'pdf' : 'image',
           });
         }
       }
@@ -1403,12 +1440,12 @@ export default function FilesScreen() {
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Document Photo</Text>
+              <Text style={styles.formLabel}>Document File</Text>
               {attachmentUri ? (
                 <View style={styles.uploadedIndicator}>
-                  <Feather name="image" size={16} color="#22c55e" />
-                  <Text style={styles.uploadedText}>Photo selected</Text>
-                  <PressableRow style={styles.removeUploadButton} onPress={() => setAttachmentUri(null)} >
+                  <Feather name={(attachmentMime || '').includes('pdf') ? 'file-text' : 'image'} size={16} color="#22c55e" />
+                  <Text style={styles.uploadedText} numberOfLines={1}>{attachmentName || 'File selected'}</Text>
+                  <PressableRow style={styles.removeUploadButton} onPress={() => { setAttachmentUri(null); setAttachmentName(null); setAttachmentMime(null); }} >
                     <Feather name="x" size={16} color="#ef4444" />
                   </PressableRow>
                 </View>
@@ -1422,8 +1459,8 @@ export default function FilesScreen() {
                 </View>
               ) : (
                 <PressableRow style={styles.uploadButton} onPress={handlePickImage} >
-                  <Feather name="camera" size={18} color={colors.mutedForeground} />
-                  <Text style={styles.uploadButtonText}>Take Photo or Choose from Library</Text>
+                  <Feather name="paperclip" size={18} color={colors.mutedForeground} />
+                  <Text style={styles.uploadButtonText}>Take Photo, or Attach a File / PDF</Text>
                 </PressableRow>
               )}
             </View>
@@ -1431,7 +1468,7 @@ export default function FilesScreen() {
             <View style={{ height: 20 }} />
           </ScrollView>
 
-          <View style={styles.modalFooter}>
+          <View style={[styles.modalFooter, { paddingBottom: insets.bottom + spacing.md }]}>
             <PressableRow style={styles.cancelButton} onPress={closeModal} >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </PressableRow>
