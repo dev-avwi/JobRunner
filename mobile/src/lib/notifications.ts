@@ -333,6 +333,32 @@ class NotificationService {
   }
 
   /**
+   * Public: deactivate this device's push token for the CURRENT user on the
+   * backend. Call this on logout BEFORE the auth token is cleared (requireAuth
+   * needs it) so the device immediately stops receiving the logged-out user's
+   * pushes — e.g. an overtime nudge for a timer the previous account started.
+   * The next login re-binds the token via ensureRegisteredWithBackend().
+   */
+  async deactivateTokenWithBackend(): Promise<void> {
+    if (!this.pushToken) {
+      this.isRegisteredWithBackend = false;
+      return;
+    }
+    try {
+      // api.request resolves with { error } on 401/404/offline (it does NOT
+      // throw), so inspect the result rather than assuming success.
+      const res = await api.request('DELETE', '/api/push-tokens', { token: this.pushToken });
+      if ((res as any)?.error) {
+        if (__DEV__) console.warn('[Notifications] Token deactivation returned error:', (res as any).error);
+      }
+    } catch (error) {
+      if (__DEV__) console.warn('[Notifications] Failed to deactivate token on logout:', error);
+    } finally {
+      this.isRegisteredWithBackend = false;
+    }
+  }
+
+  /**
    * Set callback for notifications received while app is open
    */
   onReceived(callback: (notification: NotificationPayload) => void): void {

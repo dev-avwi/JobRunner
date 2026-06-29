@@ -395,6 +395,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // The `finally` block always resets to a signed-out state so the UI can
     // navigate to login — otherwise a thrown cleanup error would leave the user
     // stuck on the dashboard (the original logout glitch).
+    // Unbind this device's push token from the current user on the server FIRST,
+    // in its own protected block, while the auth token is still valid and before
+    // any other cleanup step can throw and skip it. Otherwise the next account
+    // that signs in here keeps receiving this user's pushes (e.g. an overtime
+    // nudge for a timer the old account started).
+    try {
+      await notificationService.deactivateTokenWithBackend();
+    } catch (err) {
+      if (__DEV__) console.warn('[Auth] push-token unbind failed (continuing):', err);
+    }
+    // End any lock-screen Live Activity timer from this account, and clear the
+    // in-memory active timer (separate store), so a previous account's running
+    // timer doesn't linger on the device after switching accounts.
+    try { await LiveActivity.end(); } catch {}
+    useTimeTrackingStore.setState({ activeTimer: null });
     try {
       // Clear cached auth data for offline access
       await offlineStorage.clearCachedAuthData();
@@ -403,7 +418,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await locationTracking.stopJobTracking();
       await locationTracking.stopTracking();
       locationTracking.setSubcontractorMode(false);
-      notificationService.resetBackendRegistration();
       await api.logout();
     } catch (err) {
       if (__DEV__) console.warn('[Auth] logout cleanup error (continuing to clear state):', err);
