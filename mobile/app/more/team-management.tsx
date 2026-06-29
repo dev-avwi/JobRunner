@@ -1915,7 +1915,7 @@ export default function TeamManagementScreen() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteFirstName, setInviteFirstName] = useState('');
   const [inviteLastName, setInviteLastName] = useState('');
-  const [inviteRole, setInviteRole] = useState('staff');
+  const [inviteRole, setInviteRole] = useState('');
   const [inviteHourlyRate, setInviteHourlyRate] = useState('');
   const [invitePhone, setInvitePhone] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -2211,6 +2211,10 @@ export default function TeamManagementScreen() {
       showToast({ type: 'error', message: 'Please enter first and last name' });
       return;
     }
+    if (!inviteRole) {
+      showToast({ type: 'error', message: 'Please select a role' });
+      return;
+    }
     
     setIsSending(true);
     try {
@@ -2246,7 +2250,7 @@ export default function TeamManagementScreen() {
       setInviteEmail('');
       setInviteFirstName('');
       setInviteLastName('');
-      setInviteRole('staff');
+      setInviteRole('');
       setInviteHourlyRate('');
       setInvitePhone('');
       fetchTeam();
