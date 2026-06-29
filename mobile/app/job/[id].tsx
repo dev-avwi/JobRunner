@@ -2158,6 +2158,11 @@ export default function JobDetailScreen() {
     hourlyRate: string;
     isCurrentUser: boolean;
   }>>([]);
+
+  // Owner/manager rate correction for a worker's running entry on this job
+  const [editRateTimer, setEditRateTimer] = useState<{ id: string; workerName: string; hourlyRate: string } | null>(null);
+  const [rateInput, setRateInput] = useState('');
+  const [isSavingRate, setIsSavingRate] = useState(false);
   
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionMode, setCompletionMode] = useState<'owner' | 'worker'>('owner');
@@ -4155,6 +4160,33 @@ export default function JobDetailScreen() {
     } catch (error) {
       if (__DEV__) console.log('Error loading team timers:', error);
       setTeamTimers([]);
+    }
+  };
+
+  const handleSaveRate = async () => {
+    if (!editRateTimer) return;
+    const parsed = parseFloat(rateInput);
+    if (isNaN(parsed) || parsed < 0) {
+      Alert.alert('Invalid Rate', 'Enter a valid hourly rate.');
+      return;
+    }
+    setIsSavingRate(true);
+    try {
+      const res = await api.patch(`/api/time-entries/${editRateTimer.id}`, {
+        hourlyRate: parsed.toFixed(2),
+        editReason: 'Hourly rate corrected by manager',
+      });
+      if (res.error) {
+        Alert.alert('Could not update', res.error);
+        return;
+      }
+      setEditRateTimer(null);
+      await loadTeamTimers();
+      Alert.alert('Updated', 'Hourly rate updated for this job.');
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to update rate.');
+    } finally {
+      setIsSavingRate(false);
     }
   };
   
@@ -6742,9 +6774,24 @@ export default function JobDetailScreen() {
                   <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
                     {timer.workerName}{timer.isCurrentUser ? ' (You)' : ''}
                   </Text>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
-                    ${timer.hourlyRate}/hr
-                  </Text>
+                  {(isOwnerOrManager || isSoloOwner) ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setEditRateTimer({ id: timer.id, workerName: timer.workerName, hourlyRate: timer.hourlyRate });
+                        setRateInput(String(timer.hourlyRate ?? ''));
+                      }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                    >
+                      <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '600' }}>
+                        ${timer.hourlyRate}/hr
+                      </Text>
+                      <Feather name="edit-2" size={12} color={colors.primary} />
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                      ${timer.hourlyRate}/hr
+                    </Text>
+                  )}
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={{ 
@@ -10108,6 +10155,45 @@ export default function JobDetailScreen() {
             multiline
             autoFocus
           />
+        </View>
+      </AppBottomSheet>
+
+      <AppBottomSheet
+        visible={!!editRateTimer}
+        onDismiss={() => setEditRateTimer(null)}
+        title="Edit Hourly Rate"
+        showCloseButton
+        autoHeight
+        footer={(
+          <SheetButton
+            fullWidth
+            loading={isSavingRate}
+            disabled={isSavingRate}
+            onPress={handleSaveRate}
+            label="Save Rate"
+          />
+        )}
+      >
+        <View>
+          <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: spacing.md }}>
+            Set the hourly rate for {editRateTimer?.workerName} on this job. This updates their current time entry.
+          </Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+            Hourly Rate (AUD)
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingHorizontal: spacing.md, minHeight: 48 }}>
+            <Text style={{ fontSize: 16, color: colors.foreground, marginRight: 4 }}>$</Text>
+            <TextInput
+              style={{ flex: 1, fontSize: 16, color: colors.foreground, letterSpacing: 0, textAlign: 'left' }}
+              value={rateInput}
+              onChangeText={setRateInput}
+              placeholder="0.00"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="decimal-pad"
+              autoFocus
+            />
+            <Text style={{ fontSize: 14, color: colors.mutedForeground }}>/hr</Text>
+          </View>
         </View>
       </AppBottomSheet>
 

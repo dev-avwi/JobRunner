@@ -26832,18 +26832,54 @@ Respond with JSON in this format:
 
       // Multiple workers can now track time on the same job simultaneously
       // Each worker's timer is independent and tracked with their userId
-      
+
+      // Resolve the hourly rate on the SERVER. Clients don't send a rate on
+      // clock-in, so without this the entry silently defaulted to '85.00' even
+      // when the worker's configured rate was higher (the "set 105, shows 85"
+      // bug). Source-of-truth order:
+      //   1. Per-job rate override for this worker (job_assignments)
+      //   2. The worker's team-member employment rate (team_members)
+      //   3. A rate the client explicitly sent (manual / legacy web flow)
+      //   4. Legacy '85.00' fallback
+      const hasUsableRate = (v: any) =>
+        v !== null && v !== undefined && String(v).trim() !== '' &&
+        !isNaN(parseFloat(String(v))) && parseFloat(String(v)) > 0;
+      const rateCtx = await getUserContext(userId);
+      let resolvedHourlyRate: string | null = null;
+      if (data.jobId) {
+        const assignments = await storage.getJobAssignments(data.jobId);
+        const myAssignment = assignments.find(
+          (a: any) => a.userId === userId && a.isActive !== false,
+        );
+        if (myAssignment && hasUsableRate(myAssignment.hourlyRateOverride)) {
+          resolvedHourlyRate = String(myAssignment.hourlyRateOverride);
+        }
+      }
+      if (!resolvedHourlyRate) {
+        const memberRow = await storage.getTeamMemberByOwnerAndMemberId(
+          rateCtx.effectiveUserId,
+          userId,
+        );
+        if (memberRow && hasUsableRate(memberRow.hourlyRate)) {
+          resolvedHourlyRate = String(memberRow.hourlyRate);
+        }
+      }
+      if (!resolvedHourlyRate && hasUsableRate(data.hourlyRate)) {
+        resolvedHourlyRate = String(data.hourlyRate);
+      }
+      const finalHourlyRate = resolvedHourlyRate || '85.00';
+
       const timeEntry = await storage.createTimeEntry({
         ...data,
         userId,
         startTime: data.startTime || new Date(),
         isBreak: data.isBreak || false,
         isOvertime: data.isOvertime || false,
-        hourlyRate: data.hourlyRate || '85.00', // Ensure string format for decimal
+        hourlyRate: finalHourlyRate, // Ensure string format for decimal
       } as InsertTimeEntry & { userId: string });
       
       // Get user context for broadcasts - effectiveUserId is the business owner ID
-      const userContext = await getUserContext(userId);
+      const userContext = rateCtx;
       const businessId = userContext.effectiveUserId; // Business owner ID for broadcast targeting
       
       // Auto-update job status from "scheduled" to "in_progress" when timer starts
@@ -27220,20 +27256,52 @@ Respond with JSON in this format:
         }
       }
       
-      const existingEntry = await storage.getTimeEntry(id, userId);
+      // Try the requester's own entry first (the common, self-edit case).
+      let existingEntry = await storage.getTimeEntry(id, userId);
+      let isEditingSelf = !!existingEntry;
+      let canManageEntry = isEditingSelf;
+
+      // Otherwise this may be an owner/manager editing a team member's entry
+      // (e.g. fixing an hourly rate the worker forgot to set for the job). The
+      // entry is user-scoped in storage, so fetch it unscoped and authorize the
+      // requester against the entry's business before allowing the edit.
+      if (!existingEntry) {
+        const anyEntry = await storage.getTimeEntryAny(id);
+        if (anyEntry) {
+          const tc = await getUserContext(userId);
+          const canManageTeam =
+            tc.isOwner || tc.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+          if (canManageTeam) {
+            // Confirm the entry belongs to THIS business. time_entries has no
+            // tenant column and the worker may belong to multiple businesses,
+            // so a bare team-membership check would let a manager in business A
+            // edit the same worker's entry in business B. When the entry is tied
+            // to a job, require that job to be owned by this business. Only fall
+            // back to the membership check for job-less manual entries.
+            let inBusiness = false;
+            if ((anyEntry as any).jobId) {
+              const job = await storage.getJob((anyEntry as any).jobId, tc.effectiveUserId);
+              inBusiness = !!job;
+            } else {
+              const member = await storage.getTeamMemberByOwnerAndMemberId(
+                tc.effectiveUserId,
+                (anyEntry as any).userId,
+              );
+              inBusiness = !!member;
+            }
+            if (inBusiness) {
+              existingEntry = anyEntry;
+              canManageEntry = true;
+              isEditingSelf = false;
+            }
+          }
+        }
+      }
+
       if (!existingEntry) {
         return res.status(404).json({ error: 'Time entry not found' });
       }
-      
-      let canManageEntry = (existingEntry as any).userId === userId;
-      const isEditingSelf = (existingEntry as any).userId === userId;
-      
-      if (!canManageEntry && (existingEntry as any).userId !== userId) {
-        const teamMembers = await storage.getTeamMembers(userId);
-        const isTeamMember = teamMembers.some((member: any) => member.id === (existingEntry as any).userId);
-        canManageEntry = isTeamMember;
-      }
-      
+
       if (!canManageEntry) {
         return res.status(403).json({ error: 'Access denied - not your time entry or team member' });
       }
@@ -27267,7 +27335,8 @@ Respond with JSON in this format:
         }
       }
       
-      const timeEntry = await storage.updateTimeEntry(id, userId, data);
+      // Scope the update to the entry's real owner, not the requester.
+      const timeEntry = await storage.updateTimeEntry(id, (existingEntry as any).userId, data);
       if (!timeEntry) {
         return res.status(500).json({ error: 'Failed to update time entry' });
       }

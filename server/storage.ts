@@ -701,6 +701,7 @@ export interface IStorage {
   getTimeEntriesInRange(userId: string, start: Date, end: Date): Promise<TimeEntry[]>;
   getTeamTimeEntriesInRange(businessOwnerId: string, start: Date, end: Date): Promise<TimeEntry[]>;
   getTimeEntry(id: string, userId: string): Promise<TimeEntry | undefined>;
+  getTimeEntryAny(id: string): Promise<TimeEntry | undefined>;
   createTimeEntry(entry: InsertTimeEntry & { userId: string }): Promise<TimeEntry>;
   updateTimeEntry(id: string, userId: string, entry: Partial<InsertTimeEntry>): Promise<TimeEntry | undefined>;
   deleteTimeEntry(id: string, userId: string): Promise<boolean>;
@@ -3764,6 +3765,16 @@ export class PostgresStorage implements IStorage {
   async getTimeEntry(id: string, userId: string): Promise<TimeEntry | undefined> {
     const result = await db.select().from(timeEntries)
       .where(and(eq(timeEntries.id, id), eq(timeEntries.userId, userId)))
+      .limit(1);
+    return result[0];
+  }
+
+  // Fetch a time entry by id WITHOUT user-scoping. Only callers that have
+  // already verified the requester can manage the entry's owner (e.g. an
+  // owner/manager editing a team member's entry) may use this.
+  async getTimeEntryAny(id: string): Promise<TimeEntry | undefined> {
+    const result = await db.select().from(timeEntries)
+      .where(eq(timeEntries.id, id))
       .limit(1);
     return result[0];
   }
