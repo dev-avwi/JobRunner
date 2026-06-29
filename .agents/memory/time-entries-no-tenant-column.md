@@ -3,7 +3,7 @@ name: time_entries has no business-owner column
 description: Business-wide active-timer / time-entry queries must verify job ownership per non-self entry or they leak across businesses.
 ---
 
-`time_entries` has NO business-owner / workspace column. A worker can be a member of multiple businesses, and one user can have an active timer (endTime IS NULL) on a job belonging to ANOTHER workspace.
+`time_entries` has NO business-owner / workspace column. Per the domain model, only SUBCONTRACTORS can belong to multiple businesses (workers and managers are single-business — they make a separate account to join another). So a subcontractor can have an active timer (endTime IS NULL) on a job belonging to ANOTHER workspace.
 
 **Rule:** any business-wide query that gathers time entries by `userId IN (owner + team memberIds)` MUST, for every entry that is NOT the caller's own, require the linked `jobId` to resolve via `storage.getJob(jobId, effectiveUserId)` (the per-business getter). Drop entries whose job isn't owned by this business. Self entries (`entry.userId === callerUserId`) are always safe to include.
 
