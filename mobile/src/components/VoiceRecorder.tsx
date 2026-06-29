@@ -24,6 +24,10 @@ let isAudioAvailable = false;
 // time". Tracking it here lets us force-unload it even without a live ref.
 let globalRecording: any = null;
 
+// Cap voice notes at 5 minutes. Long enough for a tradie to talk through a job,
+// and keeps the encoded upload comfortably under the 10MB JSON body limit.
+const MAX_RECORDING_SECONDS = 300;
+
 try {
   const expoAv = require('expo-av');
   Audio = expoAv.Audio;
@@ -196,6 +200,20 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
     await new Promise(resolve => setTimeout(resolve, Platform.OS === 'ios' ? 150 : 50));
   };
 
+  const startDurationTimer = () => {
+    durationInterval.current = setInterval(() => {
+      setRecordingDuration(prev => {
+        const next = prev + 1;
+        if (next >= MAX_RECORDING_SECONDS) {
+          // Auto-stop at the cap so the note always stays uploadable.
+          setTimeout(() => { stopRecording(); }, 0);
+          return MAX_RECORDING_SECONDS;
+        }
+        return next;
+      });
+    }, 1000);
+  };
+
   const startRecording = async () => {
     try {
       const hasPermission = await requestPermissions();
@@ -226,9 +244,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
       setIsPaused(false);
       setRecordingDuration(0);
 
-      durationInterval.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
+      startDurationTimer();
 
       if (__DEV__) console.log('[VoiceRecorder] Recording started successfully');
       
@@ -292,9 +308,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
           setIsRecording(true);
           setIsPaused(false);
           setRecordingDuration(0);
-          durationInterval.current = setInterval(() => {
-            setRecordingDuration(prev => prev + 1);
-          }, 1000);
+          startDurationTimer();
           if (__DEV__) console.log('[VoiceRecorder] Retry recording started successfully');
           return;
         } catch (retryError) {
@@ -391,9 +405,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
       if (isPaused) {
         await recording.startAsync();
         setIsPaused(false);
-        durationInterval.current = setInterval(() => {
-          setRecordingDuration(prev => prev + 1);
-        }, 1000);
+        startDurationTimer();
       } else {
         await recording.pauseAsync();
         setIsPaused(true);
@@ -480,6 +492,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading }: VoiceRecorderPr
           </View>
           
           <Text style={styles.duration}>{formatDuration(recordingDuration)}</Text>
+          <Text style={styles.maxHint}>Up to {formatDuration(MAX_RECORDING_SECONDS)}</Text>
           
           <View style={styles.buttonRow}>
             {!isRecording ? (
@@ -1028,6 +1041,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     fontWeight: '600',
     fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
     color: theme.colors.foreground,
+    marginBottom: 4,
+  },
+  maxHint: {
+    fontSize: 12,
+    color: theme.colors.mutedForeground,
     marginBottom: 16,
   },
   buttonRow: {

@@ -4,6 +4,10 @@ import { Card } from './card';
 import { Mic, Square, Play, Pause, Trash2, Save, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Cap voice notes at 5 minutes. Long enough for a tradie to talk through a job,
+// and keeps the encoded upload comfortably under the 10MB JSON body limit.
+const MAX_RECORDING_SECONDS = 300;
+
 interface VoiceRecorderProps {
   onSave: (audioBlob: Blob, duration: number) => void;
   onCancel?: () => void;
@@ -34,6 +38,29 @@ export function VoiceRecorder({ onSave, onCancel, isUploading, className }: Voic
       }
     };
   }, [audioUrl]);
+
+  const startDurationTimer = () => {
+    timerRef.current = setInterval(() => {
+      setDuration(d => {
+        const next = d + 1;
+        if (next >= MAX_RECORDING_SECONDS) {
+          // Auto-stop at the cap so the note always stays uploadable.
+          setTimeout(() => {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            const mr = mediaRecorderRef.current;
+            if (mr && mr.state !== 'inactive') mr.stop();
+            setIsRecording(false);
+            setIsPaused(false);
+          }, 0);
+          return MAX_RECORDING_SECONDS;
+        }
+        return next;
+      });
+    }, 1000);
+  };
 
   const startRecording = async () => {
     try {
@@ -89,9 +116,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading, className }: Voic
       setIsRecording(true);
       setDuration(0);
       
-      timerRef.current = setInterval(() => {
-        setDuration(d => d + 1);
-      }, 1000);
+      startDurationTimer();
       
     } catch (error) {
       console.error('Error accessing microphone:', error);
@@ -115,9 +140,7 @@ export function VoiceRecorder({ onSave, onCancel, isUploading, className }: Voic
     if (mediaRecorderRef.current && isRecording) {
       if (isPaused) {
         mediaRecorderRef.current.resume();
-        timerRef.current = setInterval(() => {
-          setDuration(d => d + 1);
-        }, 1000);
+        startDurationTimer();
       } else {
         mediaRecorderRef.current.pause();
         if (timerRef.current) {
@@ -188,8 +211,13 @@ export function VoiceRecorder({ onSave, onCancel, isUploading, className }: Voic
               )} />
             </div>
             
-            <div className="text-2xl font-mono font-semibold">
-              {formatDuration(duration)}
+            <div className="text-center">
+              <div className="text-2xl font-mono font-semibold">
+                {formatDuration(duration)}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Up to {formatDuration(MAX_RECORDING_SECONDS)}
+              </div>
             </div>
             
             <div className="flex gap-2">
