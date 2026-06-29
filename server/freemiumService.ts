@@ -297,16 +297,13 @@ export class FreemiumService {
       const subscriptionTier = user.subscriptionTier || 'free';
       const limits = SUBSCRIPTION_LIMITS[subscriptionTier];
 
-      // Check if we need to reset the monthly count
-      await this.maybeResetMonthlyCount(userId);
-
-      // Refresh user data after potential reset
-      const updatedUser = await storage.getUserById(userId);
-      if (!updatedUser) {
-        throw new Error('User not found after refresh');
-      }
-
-      const jobsCreatedThisMonth = updatedUser.jobsCreatedThisMonth || 0;
+      // Count jobs created this month directly from the DB so enforcement matches
+      // the usage display (the stored counter can drift / miss creation paths).
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const jobs = await storage.getJobs(userId);
+      const jobsCreatedThisMonth = jobs.filter((j: any) =>
+        j.createdAt && new Date(j.createdAt) >= startOfMonth
+      ).length;
       const remainingJobs = limits.jobsPerMonth === -1 ? -1 : Math.max(0, limits.jobsPerMonth - jobsCreatedThisMonth);
       const canCreateJob = limits.jobsPerMonth === -1 || jobsCreatedThisMonth < limits.jobsPerMonth;
 
@@ -512,13 +509,16 @@ export class FreemiumService {
       const clients = await storage.getClients(userId);
       const templates = await storage.getDocumentTemplates(userId);
 
-      // For monthly counts, we use the jobs created this month from user record
-      const jobsUsed = user.jobsCreatedThisMonth || 0;
-      
-      // For invoices and quotes, count this month's creations
+      // For monthly counts, count this month's creations directly from the DB
+      // so usage always matches the actual records (counter fields can drift and
+      // aren't incremented by demo/sample data or every creation path).
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
+
+      const jobsUsed = jobs.filter((j: any) =>
+        j.createdAt && new Date(j.createdAt) >= startOfMonth
+      ).length;
+
       const invoicesThisMonth = invoices.filter((i: any) => 
         i.createdAt && new Date(i.createdAt) >= startOfMonth
       ).length;
