@@ -4,7 +4,6 @@ import { Alert } from '@/lib/alert';
 import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
 import * as WebBrowser from 'expo-web-browser';
 import { resolveAttachmentUrl } from '../../src/lib/chat-attachments';
 import { useTheme } from '../../src/lib/theme';
@@ -16,6 +15,21 @@ import PhotoLibrary from '../../src/components/PhotoLibrary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+
+// expo-document-picker ships a native module that may be missing from an older
+// dev/native build. Load it lazily inside the handler so the screen never
+// hard-crashes at mount; if the native side isn't present we degrade with a
+// clear message instead of taking down the whole Files screen.
+let documentPickerModule: typeof import('expo-document-picker') | null = null;
+function getDocumentPicker(): typeof import('expo-document-picker') | null {
+  if (documentPickerModule) return documentPickerModule;
+  try {
+    documentPickerModule = require('expo-document-picker');
+    return documentPickerModule;
+  } catch {
+    return null;
+  }
+}
 
 interface ComplianceDocument {
   id: string;
@@ -901,6 +915,14 @@ export default function FilesScreen() {
         {
           text: 'Attach File (PDF)',
           onPress: async () => {
+            const DocumentPicker = getDocumentPicker();
+            if (!DocumentPicker) {
+              Alert.alert(
+                'Update required',
+                'Attaching PDFs needs the latest app build. Please update the app, then try again. You can still attach photos in the meantime.'
+              );
+              return;
+            }
             try {
               const result = await DocumentPicker.getDocumentAsync({
                 type: ['application/pdf', 'image/*'],
