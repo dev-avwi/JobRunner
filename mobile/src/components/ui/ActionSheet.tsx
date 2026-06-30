@@ -117,14 +117,16 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
               const labelColor = isDestructive ? colors.destructive : colors.foreground;
+              const perRow = Math.min(primaryActions.length, 4);
+              const itemWidth = `${100 / perRow}%` as const;
               return (
                 <Pressable
                   key={`${action.label}-${idx}`}
                   onPress={() => onActionPress(action)}
                   style={({ pressed }) => [
-                    styles.gridCard,
-                    { backgroundColor: colors.card, borderColor: colors.cardBorder },
-                    pressed && { backgroundColor: colors.muted },
+                    styles.gridItem,
+                    { width: itemWidth },
+                    pressed && { opacity: 0.55 },
                   ]}
                 >
                   {action.icon ? (
@@ -230,20 +232,15 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignSelf: 'stretch',
     width: '100%',
-    gap: spacing.sm,
   },
-  gridCard: {
-    flex: 1,
+  gridItem: {
     alignItems: 'center',
     justifyContent: 'flex-start',
-    borderRadius: radius.xl,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.xs,
-    borderWidth: 1,
-    minHeight: 116,
-    ...shadows.sm,
   },
   gridIconChip: {
     width: 60,
