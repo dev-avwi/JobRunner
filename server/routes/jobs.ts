@@ -5520,7 +5520,12 @@ import { logSystemEvent } from "../systemEventService";
   app.get("/api/jobs/:id/portal-links", requireAuth, async (req: any, res) => {
     try {
       const tokens = await storage.getJobPortalTokensByJobId(req.params.id);
-      res.json(tokens);
+      const baseUrl = getProductionBaseUrl(req);
+      const withUrls = (tokens || []).map((t: any) => ({
+        ...t,
+        url: `${baseUrl}/p/${t.token}`,
+      }));
+      res.json(withUrls);
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to get portal links' });
     }

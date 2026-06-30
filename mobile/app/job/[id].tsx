@@ -4382,7 +4382,7 @@ export default function JobDetailScreen() {
     try {
       const res = await api.get<any[]>(`/api/jobs/${id}/portal-links`);
       if (Array.isArray(res.data)) {
-        setPortalLinks(res.data);
+        setPortalLinks(res.data.filter((t: any) => !t.revokedAt));
       }
     } catch (e) {
       if (__DEV__) console.log('Portal links not available:', e);
@@ -4441,9 +4441,10 @@ export default function JobDetailScreen() {
         await loadPortalLinks();
         if (portalLinks.length === 0) {
           try {
-            const res = await api.post<any>(`/api/jobs/${job.id}/portal-links`, {});
-            if (res.data) {
-              setPortalLinks([res.data]);
+            const res = await api.post<any>(`/api/jobs/${job.id}/portal-link`, {});
+            if (res.data?.url) {
+              const t = res.data.token || {};
+              setPortalLinks([{ id: t.id, url: res.data.url, token: t.token, expiresAt: t.expiresAt, createdAt: t.createdAt }]);
             }
           } catch {}
         }
@@ -4459,9 +4460,11 @@ export default function JobDetailScreen() {
     if (!job) return;
     setIsGeneratingPortalLink(true);
     try {
-      const res = await api.post<any>(`/api/jobs/${job.id}/portal-links`, {});
-      if (res.data) {
-        setPortalLinks(prev => [...prev, res.data!]);
+      const res = await api.post<any>(`/api/jobs/${job.id}/portal-link`, {});
+      if (res.data?.url) {
+        const t = res.data.token || {};
+        const link = { id: t.id, url: res.data.url, token: t.token, expiresAt: t.expiresAt, createdAt: t.createdAt };
+        setPortalLinks(prev => [...prev, link]);
         showToast({ type: 'success', message: 'Portal link generated' });
       } else {
         showToast({ type: 'error', message: res.error || 'Failed to generate portal link' });
