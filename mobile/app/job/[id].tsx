@@ -11271,16 +11271,13 @@ export default function JobDetailScreen() {
         showCloseButton
         snapPoints={['90%']}
         footer={(
-          <Button
-            size="lg"
-            variant="default"
+          <SheetButton
             fullWidth
+            label="Send Invite"
             loading={isSavingSubcontractor}
             disabled={isSavingSubcontractor}
             onPress={handleInviteSubcontractor}
-          >
-            Send Invite
-          </Button>
+          />
         )}>
         <View>
                 <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
