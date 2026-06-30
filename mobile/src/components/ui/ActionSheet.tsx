@@ -37,6 +37,7 @@ const ActionSheetContext = createContext<ActionSheetContextType | null>(null);
 export function ActionSheetProvider({ children }: { children: ReactNode }) {
   const [opts, setOpts] = useState<ActionSheetOptions | null>(null);
   const [visible, setVisible] = useState(false);
+  const [gridWidth, setGridWidth] = useState(0);
   const sheetRef = useRef<AppBottomSheetRef>(null);
   const { colors } = useTheme();
 
@@ -112,20 +113,27 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
             </Text>
           ) : null
         ) : layout === 'grid' ? (
-          <View style={styles.grid}>
+          <View
+            style={styles.grid}
+            onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
+          >
             {primaryActions.map((action, idx) => {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
               const labelColor = isDestructive ? colors.destructive : colors.foreground;
               const perRow = Math.min(primaryActions.length, 4);
-              const itemWidth = `${100 / perRow}%` as const;
+              // Pixel widths from the measured grid width — percentage widths
+              // are unreliable inside AppBottomSheet's vertical ScrollView
+              // content container, which is why the items bunched/collapsed.
+              const itemWidth =
+                gridWidth > 0 ? Math.floor(gridWidth / perRow) : undefined;
               return (
                 <Pressable
                   key={`${action.label}-${idx}`}
                   onPress={() => onActionPress(action)}
                   style={({ pressed }) => [
                     styles.gridItem,
-                    { width: itemWidth },
+                    itemWidth ? { width: itemWidth } : { width: `${100 / perRow}%` as const },
                     pressed && { opacity: 0.55 },
                   ]}
                 >
