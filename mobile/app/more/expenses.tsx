@@ -1136,8 +1136,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       color: colors.mutedForeground,
     },
     deleteButton: {
-      justifyContent: 'center',
-      paddingHorizontal: spacing.md,
+      alignSelf: 'flex-start',
+      padding: spacing.md,
     },
     modalContainer: {
       flex: 1,
