@@ -1,13 +1,15 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, ReactNode } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../lib/theme';
-import { radius, spacing, typography } from '../../lib/design-tokens';
+import { radius, spacing, shadows, typography } from '../../lib/design-tokens';
 import AppBottomSheet, { AppBottomSheetRef } from './AppBottomSheet';
 
 export interface ActionSheetAction {
   label: string;
+  /** Optional secondary line shown under the label (premium card layout). */
+  description?: string;
   onPress?: () => void;
   icon?: keyof typeof Feather.glyphMap;
   style?: 'default' | 'destructive' | 'cancel';
@@ -45,11 +47,10 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
       Haptics.selectionAsync().catch(() => {});
       setVisible(false);
       // Defer the side-effect until AFTER the sheet's Modal has fully
-      // unmounted. The close animation runs ~220ms with a 280ms safety
-      // unmount in AppBottomSheet; firing too early (the old 200ms) meant a
-      // follow-up native modal (document picker) or Alert tried to present
-      // WHILE this sheet's Modal was still up — iOS silently refuses to
-      // present, so the row appeared to "do nothing". 320ms clears it.
+      // unmounted. AppBottomSheet's close runs ~220ms with a 280ms safety
+      // unmount; firing too early meant a follow-up native modal (document
+      // picker) or Alert tried to present WHILE this sheet's Modal was still
+      // up — iOS silently refuses, so the row appeared to "do nothing".
       if (action.style !== 'cancel') {
         setTimeout(() => action.onPress?.(), 320);
       }
@@ -57,8 +58,6 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  // Cancel actions render as a separate grouped button below the main list,
-  // matching the premium iOS action-sheet pattern used elsewhere in the app.
   const primaryActions = useMemo(
     () => (opts?.actions ?? []).filter((a) => a.style !== 'cancel'),
     [opts]
@@ -68,42 +67,6 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
     [opts]
   );
 
-  const renderRow = (action: ActionSheetAction, idx: number, isLast: boolean) => {
-    const isDestructive = action.style === 'destructive';
-    const tint = isDestructive ? colors.destructive : colors.foreground;
-    const chipBg = isDestructive ? `${colors.destructive}1A` : colors.muted;
-    return (
-      <Pressable
-        key={`${action.label}-${idx}`}
-        onPress={() => onActionPress(action)}
-        style={({ pressed }) => [
-          styles.row,
-          !isLast && { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-          pressed && { backgroundColor: colors.muted },
-        ]}
-      >
-        {action.icon ? (
-          <View style={[styles.iconChip, { backgroundColor: chipBg }]}>
-            <Feather name={action.icon} size={18} color={tint} />
-          </View>
-        ) : null}
-        <Text
-          style={[
-            typography.body,
-            {
-              color: tint,
-              fontFamily: isDestructive ? 'Inter_600SemiBold' : 'Inter_500Medium',
-              flex: 1,
-            },
-          ]}
-          numberOfLines={1}
-        >
-          {action.label}
-        </Text>
-      </Pressable>
-    );
-  };
-
   return (
     <ActionSheetContext.Provider value={{ show }}>
       {children}
@@ -112,57 +75,71 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
         visible={visible}
         onDismiss={dismiss}
         scrollable={false}
-        contentPadding={0}
         title={opts?.title}
         showCloseButton
+        footer={
+          cancelAction ? (
+            <TouchableOpacity
+              style={[styles.cancelBtn, { borderColor: colors.border }]}
+              onPress={() => onActionPress(cancelAction)}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+                {cancelAction.label}
+              </Text>
+            </TouchableOpacity>
+          ) : undefined
+        }
       >
         {opts?.message ? (
-          <View style={styles.messageWrap}>
-            <Text style={[typography.caption, { color: colors.mutedForeground }]}>
-              {opts.message}
-            </Text>
-          </View>
+          <Text style={[typography.caption, styles.message, { color: colors.mutedForeground }]}>
+            {opts.message}
+          </Text>
         ) : null}
 
-        {primaryActions.length === 0 && !cancelAction ? (
-          <View style={styles.emptyWrap}>
-            <Text style={[typography.body, { color: colors.mutedForeground }]}>
+        {primaryActions.length === 0 ? (
+          !cancelAction ? (
+            <Text style={[typography.body, { color: colors.mutedForeground, paddingVertical: spacing.md }]}>
               No actions available
             </Text>
-          </View>
-        ) : primaryActions.length === 0 ? null : (
-          <View
-            style={[
-              styles.group,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            {primaryActions.map((action, idx) =>
-              renderRow(action, idx, idx === primaryActions.length - 1)
-            )}
-          </View>
+          ) : null
+        ) : (
+          primaryActions.map((action, idx) => {
+            const isDestructive = action.style === 'destructive';
+            const tint = isDestructive ? colors.destructive : colors.primary;
+            const labelColor = isDestructive ? colors.destructive : colors.foreground;
+            const isLast = idx === primaryActions.length - 1;
+            return (
+              <Pressable
+                key={`${action.label}-${idx}`}
+                onPress={() => onActionPress(action)}
+                style={({ pressed }) => [
+                  styles.card,
+                  { backgroundColor: colors.card, borderColor: colors.cardBorder },
+                  !isLast && { marginBottom: spacing.sm },
+                  pressed && { backgroundColor: colors.muted },
+                ]}
+              >
+                {action.icon ? (
+                  <View style={[styles.iconChip, { backgroundColor: `${tint}1A` }]}>
+                    <Feather name={action.icon} size={22} color={tint} />
+                  </View>
+                ) : null}
+                <View style={styles.content}>
+                  <Text style={[styles.value, { color: labelColor }]} numberOfLines={1}>
+                    {action.label}
+                  </Text>
+                  {action.description ? (
+                    <Text style={[styles.desc, { color: colors.mutedForeground }]} numberOfLines={2}>
+                      {action.description}
+                    </Text>
+                  ) : null}
+                </View>
+                <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+              </Pressable>
+            );
+          })
         )}
-
-        {cancelAction ? (
-          <Pressable
-            onPress={() => onActionPress(cancelAction)}
-            style={({ pressed }) => [
-              styles.group,
-              styles.cancelGroup,
-              { backgroundColor: colors.card, borderColor: colors.border },
-              pressed && { backgroundColor: colors.muted },
-            ]}
-          >
-            <Text
-              style={[
-                typography.body,
-                { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold', textAlign: 'center', flex: 1 },
-              ]}
-            >
-              {cancelAction.label}
-            </Text>
-          </Pressable>
-        ) : null}
       </AppBottomSheet>
     </ActionSheetContext.Provider>
   );
@@ -179,42 +156,41 @@ export function useActionSheet(): ActionSheetContextType['show'] {
 }
 
 const styles = StyleSheet.create({
-  messageWrap: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+  message: {
+    marginBottom: spacing.md,
   },
-  emptyWrap: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  group: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-    borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
-  cancelGroup: {
-    marginTop: spacing.md,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  row: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 60,
-    gap: spacing.md,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    ...shadows.sm,
   },
   iconChip: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.full,
+    width: 44,
+    height: 44,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  content: {
+    flex: 1,
+  },
+  value: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  desc: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  cancelBtn: {
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    borderWidth: 1,
   },
 });
 
