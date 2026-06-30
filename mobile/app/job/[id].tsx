@@ -2724,9 +2724,10 @@ export default function JobDetailScreen() {
       title: 'Upload Document',
       message: 'Choose a source',
       actions: [
-        { label: 'Take Photo', onPress: pickDocumentFromCamera },
-        { label: 'Choose Photo', onPress: pickDocumentFromLibrary },
-        { label: 'Attach File (PDF)', onPress: pickDocumentFile },
+        { label: 'Take Photo', icon: 'camera', onPress: pickDocumentFromCamera },
+        { label: 'Choose Photo', icon: 'image', onPress: pickDocumentFromLibrary },
+        { label: 'Attach File (PDF)', icon: 'file-text', onPress: pickDocumentFile },
+        { label: 'Cancel', style: 'cancel' },
       ],
     });
   }, [showActionSheet, pickDocumentFromCamera, pickDocumentFromLibrary, pickDocumentFile]);
