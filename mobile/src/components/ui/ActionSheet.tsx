@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, ReactNode } from 'react';
-import { View, Text, Pressable, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../lib/theme';
@@ -37,7 +37,7 @@ const ActionSheetContext = createContext<ActionSheetContextType | null>(null);
 export function ActionSheetProvider({ children }: { children: ReactNode }) {
   const [opts, setOpts] = useState<ActionSheetOptions | null>(null);
   const [visible, setVisible] = useState(false);
-  const [gridWidth, setGridWidth] = useState(0);
+  const { width: windowWidth } = useWindowDimensions();
   const sheetRef = useRef<AppBottomSheetRef>(null);
   const { colors } = useTheme();
 
@@ -113,27 +113,26 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
             </Text>
           ) : null
         ) : layout === 'grid' ? (
-          <View
-            style={styles.grid}
-            onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
-          >
+          <View style={[styles.grid, { width: Math.max(0, windowWidth - spacing.lg * 2) }]}>
             {primaryActions.map((action, idx) => {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
               const labelColor = isDestructive ? colors.destructive : colors.foreground;
               const perRow = Math.min(primaryActions.length, 4);
-              // Pixel widths from the measured grid width — percentage widths
-              // are unreliable inside AppBottomSheet's vertical ScrollView
-              // content container, which is why the items bunched/collapsed.
-              const itemWidth =
-                gridWidth > 0 ? Math.floor(gridWidth / perRow) : undefined;
+              // Deterministic column width from the screen width minus the sheet's
+              // horizontal padding (AppBottomSheet default contentPadding = spacing.lg
+              // on each side). Self-measuring the grid via onLayout / width:'100%' is
+              // unreliable inside AppBottomSheet's vertical ScrollView content
+              // container — it collapsed to a fraction of the real width, bunching the
+              // columns and overflowing the labels.
+              const itemWidth = Math.max(0, Math.floor((windowWidth - spacing.lg * 2) / perRow));
               return (
                 <Pressable
                   key={`${action.label}-${idx}`}
                   onPress={() => onActionPress(action)}
                   style={({ pressed }) => [
                     styles.gridItem,
-                    itemWidth ? { width: itemWidth } : { width: `${100 / perRow}%` as const },
+                    { width: itemWidth },
                     pressed && { opacity: 0.55 },
                   ]}
                 >
