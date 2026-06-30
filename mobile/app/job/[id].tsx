@@ -39,6 +39,7 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { GlassButton } from '../../src/components/ui/GlassButton';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { getDocumentPicker } from '../../src/lib/document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Location from 'expo-location';
@@ -2631,30 +2632,18 @@ export default function JobDetailScreen() {
     }
   }, [id]);
 
-  const handleUploadDocument = useCallback(async () => {
+  const uploadDocumentFile = useCallback(async (file: { uri: string; name: string; type: string }) => {
     if (!id) return;
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-        allowsEditing: false,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-
-      const asset = result.assets[0];
       setIsUploadingDocument(true);
-
       const token = await api.getToken();
-      const uri = asset.uri;
-      const fileName = asset.fileName || uri.split('/').pop() || 'document.jpg';
-      const mimeType = asset.mimeType || 'image/jpeg';
-      const title = fileName.replace(/\.[^/.]+$/, '');
+      const title = file.name.replace(/\.[^/.]+$/, '');
 
       const formData = new FormData();
       formData.append('file', {
-        uri,
-        name: fileName,
-        type: mimeType,
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
       } as any);
       formData.append('title', title);
       formData.append('documentType', 'general');
@@ -2681,6 +2670,66 @@ export default function JobDetailScreen() {
       setIsUploadingDocument(false);
     }
   }, [id, loadUploadedDocuments]);
+
+  const pickDocumentFromCamera = useCallback(async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showToast({ type: 'error', message: 'Camera permission is required to take a photo' });
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    const name = asset.fileName || asset.uri.split('/').pop() || `photo-${Date.now()}.jpg`;
+    await uploadDocumentFile({ uri: asset.uri, name, type: asset.mimeType || 'image/jpeg' });
+  }, [uploadDocumentFile]);
+
+  const pickDocumentFromLibrary = useCallback(async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: false,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    const name = asset.fileName || asset.uri.split('/').pop() || 'document.jpg';
+    await uploadDocumentFile({ uri: asset.uri, name, type: asset.mimeType || 'image/jpeg' });
+  }, [uploadDocumentFile]);
+
+  const pickDocumentFile = useCallback(async () => {
+    const DocumentPicker = getDocumentPicker();
+    if (!DocumentPicker) {
+      Alert.alert(
+        'Update required',
+        'Attaching PDFs needs the latest app build. Please update the app, then try again. You can still attach photos in the meantime.'
+      );
+      return;
+    }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      const name = asset.name || asset.uri.split('/').pop() || 'document';
+      await uploadDocumentFile({ uri: asset.uri, name, type: asset.mimeType || 'application/octet-stream' });
+    } catch (e: any) {
+      showToast({ type: 'error', message: e?.message || 'Could not open the file picker' });
+    }
+  }, [uploadDocumentFile]);
+
+  const handleUploadDocument = useCallback(() => {
+    showActionSheet({
+      title: 'Upload Document',
+      message: 'Choose a source',
+      actions: [
+        { label: 'Take Photo', onPress: pickDocumentFromCamera },
+        { label: 'Choose Photo', onPress: pickDocumentFromLibrary },
+        { label: 'Attach File (PDF)', onPress: pickDocumentFile },
+      ],
+    });
+  }, [showActionSheet, pickDocumentFromCamera, pickDocumentFromLibrary, pickDocumentFile]);
 
   const handleDeleteDocument = useCallback((doc: JobDocument) => {
     confirm({

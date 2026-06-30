@@ -15,21 +15,7 @@ import PhotoLibrary from '../../src/components/PhotoLibrary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
-
-// expo-document-picker ships a native module that may be missing from an older
-// dev/native build. Load it lazily inside the handler so the screen never
-// hard-crashes at mount; if the native side isn't present we degrade with a
-// clear message instead of taking down the whole Files screen.
-let documentPickerModule: typeof import('expo-document-picker') | null = null;
-function getDocumentPicker(): typeof import('expo-document-picker') | null {
-  if (documentPickerModule) return documentPickerModule;
-  try {
-    documentPickerModule = require('expo-document-picker');
-    return documentPickerModule;
-  } catch {
-    return null;
-  }
-}
+import { getDocumentPicker } from '../../src/lib/document-picker';
 
 interface ComplianceDocument {
   id: string;
