@@ -19,6 +19,13 @@ export interface ActionSheetOptions {
   title?: string;
   message?: string;
   actions: ActionSheetAction[];
+  /**
+   * 'list'  — full-width stacked cards (icon left, chevron right). Best for
+   *           longer menus or items with descriptions. Default.
+   * 'grid'  — equal-width cards laid out horizontally (icon on top, label
+   *           below, centered). Best for a small set (2-4) of short sources.
+   */
+  layout?: 'list' | 'grid';
 }
 
 interface ActionSheetContextType {
@@ -66,6 +73,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
     () => (opts?.actions ?? []).find((a) => a.style === 'cancel'),
     [opts]
   );
+  const layout = opts?.layout ?? 'list';
 
   return (
     <ActionSheetContext.Provider value={{ show }}>
@@ -103,6 +111,34 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
               No actions available
             </Text>
           ) : null
+        ) : layout === 'grid' ? (
+          <View style={styles.grid}>
+            {primaryActions.map((action, idx) => {
+              const isDestructive = action.style === 'destructive';
+              const tint = isDestructive ? colors.destructive : colors.primary;
+              const labelColor = isDestructive ? colors.destructive : colors.foreground;
+              return (
+                <Pressable
+                  key={`${action.label}-${idx}`}
+                  onPress={() => onActionPress(action)}
+                  style={({ pressed }) => [
+                    styles.gridCard,
+                    { backgroundColor: colors.card, borderColor: colors.cardBorder },
+                    pressed && { backgroundColor: colors.muted },
+                  ]}
+                >
+                  {action.icon ? (
+                    <View style={[styles.gridIconChip, { backgroundColor: `${tint}1A` }]}>
+                      <Feather name={action.icon} size={26} color={tint} />
+                    </View>
+                  ) : null}
+                  <Text style={[styles.gridLabel, { color: labelColor }]} numberOfLines={2}>
+                    {action.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         ) : (
           primaryActions.map((action, idx) => {
             const isDestructive = action.style === 'destructive';
@@ -191,6 +227,32 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     alignItems: 'center',
     borderWidth: 1,
+  },
+  grid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  gridCard: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: radius.xl,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
+    ...shadows.sm,
+  },
+  gridIconChip: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  gridLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

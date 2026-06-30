@@ -2723,6 +2723,7 @@ export default function JobDetailScreen() {
     showActionSheet({
       title: 'Upload Document',
       message: 'Choose a source',
+      layout: 'grid',
       actions: [
         { label: 'Take Photo', icon: 'camera', onPress: pickDocumentFromCamera },
         { label: 'Choose Photo', icon: 'image', onPress: pickDocumentFromLibrary },
