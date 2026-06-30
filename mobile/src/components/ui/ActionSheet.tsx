@@ -231,6 +231,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     alignSelf: 'stretch',
+    width: '100%',
     gap: spacing.sm,
   },
   gridCard: {
