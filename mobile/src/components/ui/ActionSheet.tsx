@@ -259,6 +259,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   gridLabel: {
+    alignSelf: 'stretch',
     fontSize: 13,
     lineHeight: 17,
     fontWeight: '600',
