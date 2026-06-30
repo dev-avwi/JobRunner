@@ -230,6 +230,7 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: 'row',
+    alignSelf: 'stretch',
     gap: spacing.sm,
   },
   gridCard: {
