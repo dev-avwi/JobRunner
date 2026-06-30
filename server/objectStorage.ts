@@ -199,6 +199,15 @@ export class ObjectStorageService {
     return signObjectURL({ bucketName, objectName, method: "GET", ttlSec });
   }
 
+  // Signs a short-lived GET URL from a raw object storage key (full
+  // bucket-qualified path). Uses the Replit sidecar signer (token-based, no
+  // service-account client_email), unlike the GCS SDK's getSignedUrl which
+  // requires a client_email and fails on Replit object storage.
+  async getSignedReadURLFromKey(objectKey: string, ttlSec: number = 3600): Promise<string> {
+    const { bucketName, objectName } = parseObjectPath(objectKey);
+    return signObjectURL({ bucketName, objectName, method: "GET", ttlSec });
+  }
+
   normalizeObjectEntityPath(
     rawPath: string,
   ): string {

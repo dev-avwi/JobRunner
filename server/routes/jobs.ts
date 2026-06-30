@@ -7104,13 +7104,7 @@ import { logSystemEvent } from "../systemEventService";
       const objectStorage = new ObjectStorageService();
       const documentsWithUrls = await Promise.all(documents.map(async (doc) => {
         try {
-          const { bucketName, objectName } = parseObjectPath(doc.objectStorageKey);
-          const bucket = objectStorageClient.bucket(bucketName);
-          const file = bucket.file(objectName);
-          const [signedUrl] = await file.getSignedUrl({
-            action: 'read',
-            expires: Date.now() + 3600 * 1000,
-          });
+          const signedUrl = await objectStorage.getSignedReadURLFromKey(doc.objectStorageKey, 3600);
           return { ...doc, fileUrl: signedUrl };
         } catch (error) {
           console.error('Error getting signed URL for document:', error);
@@ -7179,10 +7173,7 @@ import { logSystemEvent } from "../systemEventService";
         uploadedBy: userId,
       });
       
-      const [signedUrl] = await gcsFile.getSignedUrl({
-        action: 'read',
-        expires: Date.now() + 3600 * 1000,
-      });
+      const signedUrl = await objectStorage.getSignedReadURLFromKey(objectKey, 3600);
       
       res.json({ ...document, fileUrl: signedUrl, success: true });
     } catch (error: any) {
@@ -7237,14 +7228,8 @@ import { logSystemEvent } from "../systemEventService";
         return res.status(404).json({ error: 'Document not found' });
       }
       
-      const { bucketName, objectName } = parseObjectPath(document.objectStorageKey);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const [signedUrl] = await file.getSignedUrl({
-        action: 'read',
-        expires: Date.now() + 3600 * 1000,
-      });
+      const objectStorage = new ObjectStorageService();
+      const signedUrl = await objectStorage.getSignedReadURLFromKey(document.objectStorageKey, 3600);
       
       res.redirect(signedUrl);
     } catch (error: any) {
