@@ -298,9 +298,15 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
     const innerContentStyle = {
       paddingHorizontal: contentPadding,
       paddingTop: hasHeader ? spacing.sm : contentPadding,
+      // No-footer sheets pad their own bottom for the safe area. `insets.bottom`
+      // frequently reads 0 inside an RN <Modal> (the safe-area context isn't
+      // reliably propagated into the modal's separate view tree), and callers
+      // like ActionSheet pass contentPadding=0 — which left the last row flush
+      // with the screen edge and clipped by the device's rounded corner / home
+      // indicator. Guarantee a minimum bottom inset, mirroring the footer path.
       paddingBottom: footer
         ? contentPadding
-        : contentPadding + Math.max(insets.bottom, 0),
+        : contentPadding + Math.max(insets.bottom, spacing.md),
     };
 
     // Sheet sizing:

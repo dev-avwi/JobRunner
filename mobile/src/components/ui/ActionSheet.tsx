@@ -67,7 +67,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
         showCloseButton
       >
         {opts?.message ? (
-          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
             <Text style={[typography.caption, { color: colors.mutedForeground }]}>
               {opts.message}
             </Text>
