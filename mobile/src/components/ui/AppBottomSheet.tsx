@@ -310,6 +310,19 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
       ? { maxHeight: maxSheetHeight }
       : { height: fixedSheetHeight };
 
+    // For the auto-height NON-scrollable menu path (ActionSheet / QuickActionSheet)
+    // we cap the inner ScrollView with an explicit maxHeight rather than
+    // flexShrink. A ScrollView's flex-basis does NOT measure to its content
+    // height on iOS, so flexShrink:1 compresses the rows even when there is
+    // plenty of room (squished menu). An explicit maxHeight lets the list size
+    // to its content when short (no squish) and scroll when it would exceed the
+    // sheet (no hard-clip on foldables). The value is derived from the reactive
+    // window dims, so it stays correct across fold/unfold.
+    const menuScrollMaxHeight = Math.max(
+      0,
+      maxSheetHeight - (hasHeader ? 64 : 0) - (footer ? 80 : 0),
+    );
+
     return (
       <Modal
         // Remount on dimension change so the native Android dialog window
@@ -385,16 +398,17 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
 
               {scrollable || useAutoHeight ? (
                 // Auto-height non-scroll sheets (ActionSheet / QuickActionSheet)
-                // also use a ScrollView with flexShrink so their rows stay
-                // reachable (scroll) instead of being hard-clipped by the
-                // sheet's overflow:hidden when vertical space is squeezed.
+                // also use a ScrollView, capped with an explicit maxHeight (see
+                // menuScrollMaxHeight) so their rows size to content when short
+                // and stay reachable (scroll) instead of being hard-clipped by
+                // the sheet's overflow:hidden when vertical space is squeezed.
                 <ScrollView
                   style={
                     scrollable
                       ? useAutoHeight
                         ? undefined
                         : { flex: 1, backgroundColor: colors.card }
-                      : { flexShrink: 1, backgroundColor: colors.card }
+                      : { maxHeight: menuScrollMaxHeight, backgroundColor: colors.card }
                   }
                   contentContainerStyle={innerContentStyle}
                   keyboardShouldPersistTaps="handled"
