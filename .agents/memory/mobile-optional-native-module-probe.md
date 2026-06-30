@@ -35,3 +35,13 @@ every build. The native module name (`'ExpoDocumentPicker'`) is the string passe
 **Crucial caveat:** this only stops the *crash*. The feature itself still needs a **native
 rebuild** (prebuild + run, or a new dev client / EAS build). A JS `git pull` + reload can
 never add a native module — see `mobile-dev-sync-model.md`.
+
+**Build-order trap (the reason a "rebuild" keeps failing):** `expo run:ios`/`run:android`
+REUSES an existing `ios/`/`android/` folder — it does NOT re-autolink a newly-added native
+package. So adding a package + `run:ios` alone leaves the native module missing forever.
+Correct order: `npm install` (inside `mobile/`) → `expo prebuild --clean` (regenerates the
+native project WITH the new pod) → `run:ios`. If install/prebuild ran out of order or the
+package wasn't in `node_modules` at prebuild time, the module is silently absent.
+**Two checks that localize the failure:** `ls node_modules/expo-document-picker` (proves the
+JS package installed) and `grep -i documentpicker ios/Podfile.lock` (proves prebuild actually
+linked the native pod). If check 2 is empty, no number of rebuilds will help.
