@@ -8623,7 +8623,7 @@ export default function JobDetailScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        {((token.noteCount && token.noteCount > 0) || (token.photoCount && token.photoCount > 0)) && (
+                        {(((token.noteCount ?? 0) > 0) || ((token.photoCount ?? 0) > 0)) && (
                           <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm, paddingLeft: 48 }}>
                             {token.noteCount && token.noteCount > 0 ? (
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
