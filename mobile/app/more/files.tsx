@@ -1495,16 +1495,16 @@ export default function FilesScreen() {
           </ScrollView>
 
           <View style={[styles.modalFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-            <PressableRow style={styles.cancelButton} onPress={closeModal} >
+            <TouchableOpacity style={styles.cancelButton} onPress={closeModal} activeOpacity={0.7} >
               <Text style={styles.cancelButtonText}>Cancel</Text>
-            </PressableRow>
-            <PressableRow style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} onPress={handleSave} disabled={isSaving} >
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} onPress={handleSave} disabled={isSaving} activeOpacity={0.8} >
               {isSaving ? (
                 <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
                 <Text style={styles.saveButtonText}>{editingDoc ? 'Update' : 'Add Document'}</Text>
               )}
-            </PressableRow>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
