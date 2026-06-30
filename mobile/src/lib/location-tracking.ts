@@ -43,6 +43,9 @@ export interface GeofenceEvent {
   identifier: string;
   action: 'enter' | 'exit';
   timestamp: number;
+  latitude?: number;
+  longitude?: number;
+  accuracy?: number | null;
 }
 
 export type TrackingStatus = 
@@ -499,6 +502,10 @@ class LocationTrackingService {
         await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME);
       }
 
+      // Dedupe: drop any existing region for this job before re-adding, so a
+      // toggle on/off (or a sync that already registered it) can't stack
+      // duplicate regions toward the OS geofence cap (~20 on iOS).
+      this.geofences = this.geofences.filter(g => g.identifier !== region.identifier);
       this.geofences.push(region);
 
       await Location.startGeofencingAsync(GEOFENCE_TASK_NAME, this.geofences);
@@ -834,9 +841,9 @@ class LocationTrackingService {
           jobId,
           identifier: event.identifier,
           action: event.action,
-          latitude: (event as any).latitude,
-          longitude: (event as any).longitude,
-          accuracy: (event as any).accuracy,
+          latitude: event.latitude,
+          longitude: event.longitude,
+          accuracy: event.accuracy ?? undefined,
           timestamp: event.timestamp,
         });
       } catch (err) {
@@ -917,11 +924,36 @@ TaskManager.defineTask(GEOFENCE_TASK_NAME, async ({ data, error }) => {
       eventType: Location.GeofencingEventType;
       region: Location.LocationRegion;
     };
-    
+
+    // Attach coordinates to the event. The OS geofence callback carries only
+    // identifier/action — but the server gates auto clock-in/out on valid
+    // coordinates, so an event with no coords is silently dropped. We prefer the
+    // worker's real last-known position (fast, cached) and fall back to the
+    // region centre (= job site coords, always present and within radius).
+    const r = region as any;
+    let latitude: number | undefined =
+      typeof r?.latitude === 'number' ? r.latitude : undefined;
+    let longitude: number | undefined =
+      typeof r?.longitude === 'number' ? r.longitude : undefined;
+    let accuracy: number | null = null;
+    try {
+      const last = await Location.getLastKnownPositionAsync({ maxAge: 60000 });
+      if (last?.coords && typeof last.coords.latitude === 'number' && typeof last.coords.longitude === 'number') {
+        latitude = last.coords.latitude;
+        longitude = last.coords.longitude;
+        accuracy = last.coords.accuracy ?? null;
+      }
+    } catch {
+      // last-known position unavailable → keep region-centre coords
+    }
+
     const event: GeofenceEvent = {
       identifier: region.identifier ?? 'unknown',
       action: eventType === Location.GeofencingEventType.Enter ? 'enter' : 'exit',
       timestamp: Date.now(),
+      latitude,
+      longitude,
+      accuracy,
     };
     
     locationTracking.handleGeofenceEvent(event);
