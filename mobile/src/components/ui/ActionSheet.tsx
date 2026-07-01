@@ -137,7 +137,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                   onPress={() => onActionPress(action)}
                   style={({ pressed }) => [
                     styles.gridItem,
-                    { width: gridItemWidth },
+                    { flex: 1, minWidth: 0 },
                     pressed && { opacity: 0.55 },
                   ]}
                 >
