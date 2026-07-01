@@ -40,6 +40,8 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   const { width: windowWidth } = useWindowDimensions();
   const sheetRef = useRef<AppBottomSheetRef>(null);
   const { colors } = useTheme();
+  const [dbgBox, setDbgBox] = useState(0);
+  const [dbgGrid, setDbgGrid] = useState(0);
 
   const show = useCallback((options: ActionSheetOptions) => {
     setOpts(options);
@@ -126,7 +128,17 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
             </Text>
           ) : null
         ) : layout === 'grid' ? (
-          <View style={[styles.grid, { width: gridInnerWidth }]}>
+          <View
+            style={{ alignSelf: 'stretch' }}
+            onLayout={(e) => setDbgBox(Math.round(e.nativeEvent.layout.width))}
+          >
+            <Text style={{ color: 'red', fontSize: 12, marginBottom: 4 }}>
+              win={Math.round(windowWidth)} inner={Math.round(gridInnerWidth)} box={dbgBox} grid={dbgGrid}
+            </Text>
+          <View
+            style={[styles.grid, { width: gridInnerWidth }]}
+            onLayout={(e) => setDbgGrid(Math.round(e.nativeEvent.layout.width))}
+          >
             {primaryActions.map((action, idx) => {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
@@ -158,6 +170,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                 </Pressable>
               );
             })}
+          </View>
           </View>
         ) : (
           primaryActions.map((action, idx) => {
