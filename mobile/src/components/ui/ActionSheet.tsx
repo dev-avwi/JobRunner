@@ -142,7 +142,13 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                       <Feather name={action.icon} size={26} color={tint} />
                     </View>
                   ) : null}
-                  <Text style={[styles.gridLabel, { color: labelColor }]} numberOfLines={2}>
+                  <Text
+                    style={[
+                      styles.gridLabel,
+                      { width: Math.max(0, gridItemWidth - spacing.xs * 2), color: labelColor },
+                    ]}
+                    numberOfLines={2}
+                  >
                     {action.label}
                   </Text>
                 </Pressable>
@@ -259,7 +265,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   gridLabel: {
-    alignSelf: 'stretch',
     fontSize: 13,
     lineHeight: 17,
     fontWeight: '600',
