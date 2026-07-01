@@ -162,7 +162,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                   <Text
                     style={[
                       styles.gridLabel,
-                      { width: gridItemWidth, color: labelColor },
+                      { maxWidth: gridItemWidth, color: labelColor },
                     ]}
                     numberOfLines={2}
                   >
