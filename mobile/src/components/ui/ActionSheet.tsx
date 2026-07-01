@@ -76,6 +76,15 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   );
   const layout = opts?.layout ?? 'list';
 
+  // Grid sizing is computed as explicit pixel widths (not flex / %) because the
+  // grid renders inside AppBottomSheet's ScrollView, whose content container
+  // shrinks to content on the horizontal axis — that collapses flex:1 and
+  // percentage widths (every card hugs its label, bunched to the left). An
+  // absolute per-card width fills the row evenly regardless of that behavior.
+  const gridColumns = Math.min(Math.max(primaryActions.length, 1), 4);
+  const gridInnerWidth = Math.max(0, windowWidth - spacing.lg * 2);
+  const gridItemWidth = Math.floor(gridInnerWidth / gridColumns);
+
   return (
     <ActionSheetContext.Provider value={{ show }}>
       {children}
@@ -113,7 +122,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
             </Text>
           ) : null
         ) : layout === 'grid' ? (
-          <View style={[styles.grid, { width: Math.max(0, windowWidth - spacing.lg * 2) }]}>
+          <View style={[styles.grid, { width: gridInnerWidth }]}>
             {primaryActions.map((action, idx) => {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
@@ -124,6 +133,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                   onPress={() => onActionPress(action)}
                   style={({ pressed }) => [
                     styles.gridItem,
+                    { width: gridItemWidth },
                     pressed && { opacity: 0.55 },
                   ]}
                 >
@@ -230,11 +240,11 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'flex-start',
     alignSelf: 'stretch',
   },
   gridItem: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingVertical: spacing.sm,
