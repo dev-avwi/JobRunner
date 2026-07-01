@@ -37,7 +37,6 @@ const ActionSheetContext = createContext<ActionSheetContextType | null>(null);
 export function ActionSheetProvider({ children }: { children: ReactNode }) {
   const [opts, setOpts] = useState<ActionSheetOptions | null>(null);
   const [visible, setVisible] = useState(false);
-  const [measuredContentWidth, setMeasuredContentWidth] = useState(0);
   const { width: windowWidth } = useWindowDimensions();
   const sheetRef = useRef<AppBottomSheetRef>(null);
   const { colors } = useTheme();
@@ -78,17 +77,16 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   const layout = opts?.layout ?? 'list';
 
   // Grid sizing uses explicit pixel widths (not flex / %) because the grid
-  // renders inside AppBottomSheet's ScrollView, whose content container can
-  // shrink to content on the horizontal axis — that collapses flex:1 and
+  // renders inside AppBottomSheet's ScrollView, whose content container
+  // shrinks to content on the horizontal axis — that collapses flex:1 and
   // percentage widths (every card hugs its label, bunched to the left).
-  // The available width is MEASURED from a full-width probe (below) rather
-  // than derived from windowWidth: the sheet's content box is windowWidth
-  // minus padding, and on tablets / foldables / split-view the sheet is not
-  // the full window. windowWidth-minus-padding is only the pre-measure fallback.
+  // The sheet is ALWAYS the full window width (AppBottomSheet: kbWrapper is
+  // flex:1 + alignItems:stretch and the sheet is width:'100%' with no maxWidth
+  // or horizontal margin), so the content box is exactly windowWidth minus the
+  // ScrollView's horizontal padding (spacing.lg each side). Giving the grid
+  // that explicit width makes it define — and fully span — the content box.
   const gridColumns = Math.min(Math.max(primaryActions.length, 1), 4);
-  const fallbackInnerWidth = Math.max(0, windowWidth - spacing.lg * 2);
-  const gridInnerWidth =
-    measuredContentWidth > 0 ? measuredContentWidth : fallbackInnerWidth;
+  const gridInnerWidth = Math.max(0, windowWidth - spacing.lg * 2);
   const gridItemWidth = gridInnerWidth / gridColumns;
 
   return (
@@ -128,18 +126,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
             </Text>
           ) : null
         ) : layout === 'grid' ? (
-          <>
-            <View
-              pointerEvents="none"
-              style={styles.measureProbe}
-              onLayout={(e) => {
-                const w = Math.round(e.nativeEvent.layout.width);
-                if (w > 0 && Math.abs(w - measuredContentWidth) > 1) {
-                  setMeasuredContentWidth(w);
-                }
-              }}
-            />
-            <View style={[styles.grid, { width: gridInnerWidth }]}>
+          <View style={[styles.grid, { width: gridInnerWidth }]}>
             {primaryActions.map((action, idx) => {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
@@ -171,8 +158,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                 </Pressable>
               );
             })}
-            </View>
-          </>
+          </View>
         ) : (
           primaryActions.map((action, idx) => {
             const isDestructive = action.style === 'destructive';
@@ -267,10 +253,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'flex-start',
     alignSelf: 'stretch',
-  },
-  measureProbe: {
-    alignSelf: 'stretch',
-    height: 0,
   },
   gridItem: {
     alignItems: 'center',

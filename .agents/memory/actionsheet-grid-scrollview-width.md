@@ -10,14 +10,17 @@ items inside `AppBottomSheet`'s ScrollView **even though ActionSheet passes
 defaults true when no `snapPoints` are given.
 
 **Rule:** inside AppBottomSheet's auto-height vertical ScrollView content
-container, do NOT size the grid by self-measurement. Both of these FAILED there:
+container, do NOT size the grid by self-measurement. All of these FAILED there:
 - percentage `width` (e.g. `'33.333%'`) on flex children → columns bunch left /
   collapse to content width (labels run together);
 - `onLayout` + `width:'100%'`/`alignSelf:'stretch'` on the grid container →
-  the container itself collapses to a *fraction* of the real width, so the
-  measured `gridWidth` is too small, columns come out narrow, and labels overflow.
-  (An earlier revision of this note wrongly claimed the container "fills width
-  fine and onLayout reports the true px" — it does not.)
+  the container itself collapses to a *fraction* of the real width;
+- a separate full-width `onLayout` **probe** (`alignSelf:'stretch', height:0`)
+  used to measure the content box → **under-measures** inside the shrink-to-content
+  container (grid rendered ~72% of the box, bunched left). The probe was added on
+  the FALSE premise that the sheet may be narrower than the window on tablet/
+  foldable/split-view — it never is (see below). Removing the probe and using the
+  deterministic window-width formula fixed the bunching.
 
 **Fix that works (deterministic, no self-measurement):** compute widths from the
 screen via `useWindowDimensions().width` minus the sheet's known horizontal
@@ -32,7 +35,12 @@ each label fills and centers within its now-correct column instead of overflowin
 
 **Why:** percentage and `100%` widths need a parent with a definite *resolved*
 width; AppBottomSheet's auto-height ScrollView content container doesn't reliably
-provide one for cross-axis sizing. Window width is always definite.
+provide one for cross-axis sizing. Window width is always definite. The sheet is
+ALWAYS the full window width — `kbWrapper` is `{flex:1, justifyContent:'flex-end'}`
+(default `alignItems:'stretch'`) and `styles.sheet` is `{width:'100%'}` with NO
+maxWidth/margin, inside a full-screen `overFullScreen` Modal. So `windowWidth -
+spacing.lg*2` is the exact content box on every device — do NOT re-add a measuring
+probe "for tablets/foldables".
 
 **How to apply:** any even-width horizontal row inside AppBottomSheet should derive
 its widths from `useWindowDimensions()` minus the sheet `contentPadding`, not from
