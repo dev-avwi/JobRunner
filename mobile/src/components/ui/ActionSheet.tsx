@@ -118,21 +118,12 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
               const labelColor = isDestructive ? colors.destructive : colors.foreground;
-              const perRow = Math.min(primaryActions.length, 4);
-              // Deterministic column width from the screen width minus the sheet's
-              // horizontal padding (AppBottomSheet default contentPadding = spacing.lg
-              // on each side). Self-measuring the grid via onLayout / width:'100%' is
-              // unreliable inside AppBottomSheet's vertical ScrollView content
-              // container — it collapsed to a fraction of the real width, bunching the
-              // columns and overflowing the labels.
-              const itemWidth = Math.max(0, Math.floor((windowWidth - spacing.lg * 2) / perRow));
               return (
                 <Pressable
                   key={`${action.label}-${idx}`}
                   onPress={() => onActionPress(action)}
                   style={({ pressed }) => [
                     styles.gridItem,
-                    { width: itemWidth },
                     pressed && { opacity: 0.55 },
                   ]}
                 >
@@ -239,11 +230,11 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'flex-start',
     alignSelf: 'stretch',
-    width: '100%',
   },
   gridItem: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingVertical: spacing.sm,
