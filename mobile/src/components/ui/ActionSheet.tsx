@@ -37,6 +37,7 @@ const ActionSheetContext = createContext<ActionSheetContextType | null>(null);
 export function ActionSheetProvider({ children }: { children: ReactNode }) {
   const [opts, setOpts] = useState<ActionSheetOptions | null>(null);
   const [visible, setVisible] = useState(false);
+  const [measuredContentWidth, setMeasuredContentWidth] = useState(0);
   const { width: windowWidth } = useWindowDimensions();
   const sheetRef = useRef<AppBottomSheetRef>(null);
   const { colors } = useTheme();
@@ -76,14 +77,19 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   );
   const layout = opts?.layout ?? 'list';
 
-  // Grid sizing is computed as explicit pixel widths (not flex / %) because the
-  // grid renders inside AppBottomSheet's ScrollView, whose content container
-  // shrinks to content on the horizontal axis — that collapses flex:1 and
-  // percentage widths (every card hugs its label, bunched to the left). An
-  // absolute per-card width fills the row evenly regardless of that behavior.
+  // Grid sizing uses explicit pixel widths (not flex / %) because the grid
+  // renders inside AppBottomSheet's ScrollView, whose content container can
+  // shrink to content on the horizontal axis — that collapses flex:1 and
+  // percentage widths (every card hugs its label, bunched to the left).
+  // The available width is MEASURED from a full-width probe (below) rather
+  // than derived from windowWidth: the sheet's content box is windowWidth
+  // minus padding, and on tablets / foldables / split-view the sheet is not
+  // the full window. windowWidth-minus-padding is only the pre-measure fallback.
   const gridColumns = Math.min(Math.max(primaryActions.length, 1), 4);
-  const gridInnerWidth = Math.max(0, windowWidth - spacing.lg * 2);
-  const gridItemWidth = Math.floor(gridInnerWidth / gridColumns);
+  const fallbackInnerWidth = Math.max(0, windowWidth - spacing.lg * 2);
+  const gridInnerWidth =
+    measuredContentWidth > 0 ? measuredContentWidth : fallbackInnerWidth;
+  const gridItemWidth = gridInnerWidth / gridColumns;
 
   return (
     <ActionSheetContext.Provider value={{ show }}>
@@ -122,7 +128,18 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
             </Text>
           ) : null
         ) : layout === 'grid' ? (
-          <View style={[styles.grid, { width: gridInnerWidth }]}>
+          <>
+            <View
+              pointerEvents="none"
+              style={styles.measureProbe}
+              onLayout={(e) => {
+                const w = Math.round(e.nativeEvent.layout.width);
+                if (w > 0 && Math.abs(w - measuredContentWidth) > 1) {
+                  setMeasuredContentWidth(w);
+                }
+              }}
+            />
+            <View style={[styles.grid, { width: gridInnerWidth }]}>
             {primaryActions.map((action, idx) => {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
@@ -145,7 +162,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                   <Text
                     style={[
                       styles.gridLabel,
-                      { width: Math.max(0, gridItemWidth - spacing.xs * 2), color: labelColor },
+                      { width: gridItemWidth, color: labelColor },
                     ]}
                     numberOfLines={2}
                   >
@@ -154,7 +171,8 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                 </Pressable>
               );
             })}
-          </View>
+            </View>
+          </>
         ) : (
           primaryActions.map((action, idx) => {
             const isDestructive = action.style === 'destructive';
@@ -250,11 +268,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     alignSelf: 'stretch',
   },
+  measureProbe: {
+    alignSelf: 'stretch',
+    height: 0,
+  },
   gridItem: {
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
   },
   gridIconChip: {
     width: 60,
@@ -269,6 +290,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     fontWeight: '600',
     textAlign: 'center',
+    paddingHorizontal: spacing.xs,
   },
 });
 
