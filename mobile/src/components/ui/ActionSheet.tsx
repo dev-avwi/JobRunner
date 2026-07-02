@@ -149,10 +149,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                     </View>
                   ) : null}
                   <Text
-                    style={[
-                      styles.gridLabel,
-                      { maxWidth: gridItemWidth, color: labelColor },
-                    ]}
+                    style={[styles.gridLabel, { color: labelColor }]}
                     numberOfLines={2}
                   >
                     {action.label}
@@ -273,6 +270,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     fontWeight: '600',
     textAlign: 'center',
+    alignSelf: 'stretch',
     paddingHorizontal: spacing.xs,
   },
 });
