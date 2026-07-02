@@ -1,54 +1,48 @@
 ---
 name: ActionSheet grid even-width inside AppBottomSheet
-description: Why self-measured/percentage widths collapse in the grid ActionSheet and the deterministic window-width fix
+description: Why the grid ActionSheet cards bunched left, and the real fix (flexWrap defeats flex-grow in Yoga)
 ---
 
-The grid-layout ActionSheet (`mobile/src/components/ui/ActionSheet.tsx`) renders its
-items inside `AppBottomSheet`'s ScrollView **even though ActionSheet passes
-`scrollable={false}`** — AppBottomSheet uses the ScrollView whenever
-`useAutoHeight` is true (`scrollable || useAutoHeight`), and `useAutoHeight`
-defaults true when no `snapPoints` are given.
+The grid-layout ActionSheet (`mobile/src/components/ui/ActionSheet.tsx`) shows 3–4
+icon cards (Take Photo / Choose Photo / Attach File …) that must spread evenly
+across the full sheet width. For a long time they bunched to the left with empty
+space on the right.
 
-**Rule:** inside AppBottomSheet's auto-height vertical ScrollView content
-container, do NOT size the grid by self-measurement. All of these FAILED there:
-- percentage `width` (e.g. `'33.333%'`) on flex children → columns bunch left /
-  collapse to content width (labels run together);
-- `onLayout` + `width:'100%'`/`alignSelf:'stretch'` on the grid container →
-  the container itself collapses to a *fraction* of the real width;
-- a separate full-width `onLayout` **probe** (`alignSelf:'stretch', height:0`)
-  used to measure the content box → **under-measures** inside the shrink-to-content
-  container (grid rendered ~72% of the box, bunched left). The probe was added on
-  the FALSE premise that the sheet may be narrower than the window on tablet/
-  foldable/split-view — it never is (see below). Removing the probe and using the
-  deterministic window-width formula fixed the bunching.
+**Real root cause (proven on-device 2026-07):** `styles.grid` had
+`flexWrap: 'wrap'`. **Yoga does NOT distribute flex-grow across a wrapping row.**
+So with `flexWrap:'wrap'`, the `flex:1` cards stayed at content width and packed to
+the left (flex-start), leaving the empty gap — even though the grid CONTAINER was
+already the full content width.
 
-**Fix that works (deterministic, no self-measurement):** compute widths from the
-screen via `useWindowDimensions().width` minus the sheet's known horizontal
-padding. AppBottomSheet's default `contentPadding = spacing.lg` is applied as
-`paddingHorizontal` on each side and ActionSheet does NOT override it, so:
-- container width = `Math.max(0, windowWidth - spacing.lg*2)` (pin the grid
-  container too, so fixed-width items can't sum wider than it and wrap to rows);
-- item width   = `Math.max(0, Math.floor((windowWidth - spacing.lg*2)/perRow))`,
-  `perRow = Math.min(count, 4)`.
-Keep `gridLabel` `alignSelf:'stretch' + textAlign:'center' + numberOfLines={2}` so
-each label fills and centers within its now-correct column instead of overflowing.
+**How it was proven:** a throwaway on-screen readout (`onLayout` on both a stretch
+wrapper and the grid, printed as red text in the sheet) returned
+`win=420 inner=388 box=388 grid=388` — ALL equal. i.e. the container was `windowWidth
+- spacing.lg*2` exactly, the stretch wrapper filled it, and the grid rendered at the
+full 388. The container was never narrow; only the children failed to fill it. That
+killed every earlier "the ScrollView shrinks the content box" theory.
 
-**Why:** percentage and `100%` widths need a parent with a definite *resolved*
-width; AppBottomSheet's auto-height ScrollView content container doesn't reliably
-provide one for cross-axis sizing. Window width is always definite. The sheet is
-ALWAYS the full window width — `kbWrapper` is `{flex:1, justifyContent:'flex-end'}`
-(default `alignItems:'stretch'`) and `styles.sheet` is `{width:'100%'}` with NO
-maxWidth/margin, inside a full-screen `overFullScreen` Modal. So `windowWidth -
-spacing.lg*2` is the exact content box on every device — do NOT re-add a measuring
-probe "for tablets/foldables".
+**Fix that works:**
+- `styles.grid`: `flexDirection:'row'`, `alignItems:'flex-start'`,
+  `columnGap: spacing.sm`. **No `flexWrap`. No `alignSelf:'stretch'`.**
+- keep the explicit container width `{ width: gridInnerWidth }` where
+  `gridInnerWidth = Math.max(0, windowWidth - spacing.lg*2)` (definite width so the
+  flex children have something to distribute across);
+- each card is a `Pressable` with `{ flex: 1, minWidth: 0 }` → equal columns filling
+  the row;
+- label `maxWidth: gridInnerWidth/perRow` + `textAlign:'center'` + `numberOfLines={2}`
+  so it centers under its icon within its column.
 
-**How to apply:** any even-width horizontal row inside AppBottomSheet should derive
-its widths from `useWindowDimensions()` minus the sheet `contentPadding`, not from
-`%` or `onLayout`. If ActionSheet ever passes a custom `contentPadding`, update the
-subtraction to match. (FloatingActionButton's Quick Create uses plain `width:'25%'`
-and works only because its parent is a plain non-scroll View.)
+**Rule / how to apply:** for an even-width single row inside AppBottomSheet, use
+`flex:1` children in a `flexDirection:'row'` container that has a definite width, and
+**never add `flexWrap`** — we only ever render ≤4 cards so wrap is unnecessary and it
+silently defeats flex-grow. The sheet is always full window width (`kbWrapper`
+`{flex:1, justifyContent:'flex-end'}` default `alignItems:'stretch'`, `styles.sheet`
+`{width:'100%'}`, no maxWidth/margin, inside a full-screen `overFullScreen` Modal), so
+`windowWidth - spacing.lg*2` is the exact content box on every device — do NOT re-add
+a measuring probe "for tablets/foldables". If ActionSheet ever passes a custom
+`contentPadding`, update the subtraction to match.
 
 **Sync caveat:** fixes only reach the user's device after they push Replit→GitHub,
 `git pull`, AND restart Metro with `npx expo start -c` (cache clear mandatory).
-Stale Metro bundles made several different-looking "still broken" screenshots that
-were all old code; confirm the device is on the right commit before re-debugging.
+Stale Metro bundles produced several different-looking "still broken" screenshots
+that were all old code; confirm the device is on the right commit before re-debugging.

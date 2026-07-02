@@ -40,8 +40,6 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   const { width: windowWidth } = useWindowDimensions();
   const sheetRef = useRef<AppBottomSheetRef>(null);
   const { colors } = useTheme();
-  const [dbgBox, setDbgBox] = useState(0);
-  const [dbgGrid, setDbgGrid] = useState(0);
 
   const show = useCallback((options: ActionSheetOptions) => {
     setOpts(options);
@@ -78,15 +76,16 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   );
   const layout = opts?.layout ?? 'list';
 
-  // Grid sizing uses explicit pixel widths (not flex / %) because the grid
-  // renders inside AppBottomSheet's ScrollView, whose content container
-  // shrinks to content on the horizontal axis — that collapses flex:1 and
-  // percentage widths (every card hugs its label, bunched to the left).
-  // The sheet is ALWAYS the full window width (AppBottomSheet: kbWrapper is
-  // flex:1 + alignItems:stretch and the sheet is width:'100%' with no maxWidth
-  // or horizontal margin), so the content box is exactly windowWidth minus the
-  // ScrollView's horizontal padding (spacing.lg each side). Giving the grid
-  // that explicit width makes it define — and fully span — the content box.
+  // The grid container is given an explicit width (windowWidth minus the
+  // ScrollView's horizontal padding, spacing.lg each side) — verified on-device
+  // to equal the sheet content box exactly. The cards then use flex:1 to fill
+  // that width evenly.
+  //
+  // CRITICAL: styles.grid must NOT use flexWrap. Yoga does not distribute
+  // flex-grow across a wrapping row, so with flexWrap:'wrap' the flex:1 cards
+  // stay at content width and bunch to the left, leaving empty space on the
+  // right (the long-standing bug). We only ever render <=4 cards on one line,
+  // so wrap is unnecessary. Keep it off.
   const gridColumns = Math.min(Math.max(primaryActions.length, 1), 4);
   const gridInnerWidth = Math.max(0, windowWidth - spacing.lg * 2);
   const gridItemWidth = gridInnerWidth / gridColumns;
@@ -128,17 +127,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
             </Text>
           ) : null
         ) : layout === 'grid' ? (
-          <View
-            style={{ alignSelf: 'stretch' }}
-            onLayout={(e) => setDbgBox(Math.round(e.nativeEvent.layout.width))}
-          >
-            <Text style={{ color: 'red', fontSize: 12, marginBottom: 4 }}>
-              win={Math.round(windowWidth)} inner={Math.round(gridInnerWidth)} box={dbgBox} grid={dbgGrid}
-            </Text>
-          <View
-            style={[styles.grid, { width: gridInnerWidth }]}
-            onLayout={(e) => setDbgGrid(Math.round(e.nativeEvent.layout.width))}
-          >
+          <View style={[styles.grid, { width: gridInnerWidth }]}>
             {primaryActions.map((action, idx) => {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
@@ -170,7 +159,6 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                 </Pressable>
               );
             })}
-          </View>
           </View>
         ) : (
           primaryActions.map((action, idx) => {
@@ -263,9 +251,8 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'flex-start',
-    alignSelf: 'stretch',
+    columnGap: spacing.sm,
   },
   gridItem: {
     alignItems: 'center',
