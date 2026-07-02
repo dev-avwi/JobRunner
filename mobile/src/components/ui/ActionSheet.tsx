@@ -144,8 +144,10 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                   ]}
                 >
                   {action.icon ? (
-                    <View style={[styles.gridIconChip, { backgroundColor: `${tint}1A` }]}>
-                      <Feather name={action.icon} size={26} color={tint} />
+                    <View style={styles.gridIconWrap}>
+                      <View style={[styles.gridIconChip, { backgroundColor: `${tint}1A` }]}>
+                        <Feather name={action.icon} size={26} color={tint} />
+                      </View>
                     </View>
                   ) : null}
                   <Text
@@ -257,13 +259,17 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingVertical: spacing.sm,
   },
+  gridIconWrap: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   gridIconChip: {
     width: 60,
     height: 60,
     borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
   },
   gridLabel: {
     fontSize: 13,

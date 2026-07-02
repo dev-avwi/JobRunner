@@ -26,6 +26,12 @@ passes a custom `contentPadding`, update the subtraction to match.
 widths from `useWindowDimensions()` minus sheet padding, spread with
 `space-between`. Never reach for `flex:1`/`%` there.
 
+**Icon+label centering:** center the icon and the label with the SAME full-width
+mechanism, or they drift apart (offset grows with label length). Both the icon
+wrapper and the label get `alignSelf:'stretch'` + center (icon: `alignItems:'center'`;
+label: `textAlign:'center'`). A bare 60px chip left to the parent's `alignItems`
+resolves its center against a different reference than a stretched label.
+
 **Sync caveat:** fixes reach the user's device only after push→GitHub, `git pull`, and
 Metro restart with `npx expo start -c` (cache clear). Confirm the device is on the
 right commit before re-debugging — stale bundles look like "still broken".
