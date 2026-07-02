@@ -76,16 +76,17 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   );
   const layout = opts?.layout ?? 'list';
 
-  // The grid container is given an explicit width (windowWidth minus the
-  // ScrollView's horizontal padding, spacing.lg each side) — verified on-device
-  // to equal the sheet content box exactly. The cards then use flex:1 to fill
-  // that width evenly.
-  //
-  // CRITICAL: styles.grid must NOT use flexWrap. Yoga does not distribute
-  // flex-grow across a wrapping row, so with flexWrap:'wrap' the flex:1 cards
-  // stay at content width and bunch to the left, leaving empty space on the
-  // right (the long-standing bug). We only ever render <=4 cards on one line,
-  // so wrap is unnecessary. Keep it off.
+  // Even-spread grid sizing — DETERMINISTIC pixel widths only. On-device
+  // diagnostics proved the grid CONTAINER already spans the full content box
+  // (windowWidth - spacing.lg*2), yet the cards still bunched left. The reason:
+  // inside AppBottomSheet's ScrollView content container, `flex:1` (flex-basis
+  // 0%) does NOT distribute across the row (same collapse as percentage widths)
+  // — the cards stay content-sized and pack to flex-start. The fix that holds:
+  //   - explicit CONTAINER width = windowWidth - spacing.lg*2 (the real box);
+  //   - explicit ITEM width = that / columns (NOT flex, NOT %);
+  //   - styles.grid uses justifyContent:'space-between' (NO flexWrap) so the
+  //     columns reach both edges even if rounding leaves a pixel of slack.
+  // Do NOT switch the items back to flex:1 / '%' — it silently bunches here.
   const gridColumns = Math.min(Math.max(primaryActions.length, 1), 4);
   const gridInnerWidth = Math.max(0, windowWidth - spacing.lg * 2);
   const gridItemWidth = gridInnerWidth / gridColumns;
@@ -138,7 +139,7 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
                   onPress={() => onActionPress(action)}
                   style={({ pressed }) => [
                     styles.gridItem,
-                    { flex: 1, minWidth: 0 },
+                    { width: gridItemWidth },
                     pressed && { opacity: 0.55 },
                   ]}
                 >
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    columnGap: spacing.sm,
+    justifyContent: 'space-between',
   },
   gridItem: {
     alignItems: 'center',
