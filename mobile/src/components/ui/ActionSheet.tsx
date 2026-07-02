@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import { View, Text, Pressable, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -38,8 +38,15 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   const [opts, setOpts] = useState<ActionSheetOptions | null>(null);
   const [visible, setVisible] = useState(false);
   const { width: windowWidth } = useWindowDimensions();
+  const [gridWidth, setGridWidth] = useState(0);
   const sheetRef = useRef<AppBottomSheetRef>(null);
   const { colors } = useTheme();
+
+  // Drop a stale measured width when the window changes size (rotation / fold),
+  // so the next open re-measures instead of using a prior layout's width.
+  useEffect(() => {
+    setGridWidth(0);
+  }, [windowWidth]);
 
   const show = useCallback((options: ActionSheetOptions) => {
     setOpts(options);
@@ -76,20 +83,21 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   );
   const layout = opts?.layout ?? 'list';
 
-  // Even-spread grid sizing — DETERMINISTIC pixel widths only. On-device
-  // diagnostics proved the grid CONTAINER already spans the full content box
-  // (windowWidth - spacing.lg*2), yet the cards still bunched left. The reason:
-  // inside AppBottomSheet's ScrollView content container, `flex:1` (flex-basis
-  // 0%) does NOT distribute across the row (same collapse as percentage widths)
-  // — the cards stay content-sized and pack to flex-start. The fix that holds:
-  //   - explicit CONTAINER width = windowWidth - spacing.lg*2 (the real box);
-  //   - explicit ITEM width = that / columns (NOT flex, NOT %);
-  //   - styles.grid uses justifyContent:'space-between' (NO flexWrap) so the
-  //     columns reach both edges even if rounding leaves a pixel of slack.
-  // Do NOT switch the items back to flex:1 / '%' — it silently bunches here.
+  // Even-spread grid sizing — DETERMINISTIC pixel widths, but sourced from the
+  // grid's ACTUAL measured width (onLayout), NOT a windowWidth guess. Earlier we
+  // set the container to an explicit `windowWidth - spacing.lg*2`; when that value
+  // is narrower than the sheet's real content box (device/padding dependent), a
+  // fixed-width child left-aligns in the box, shifting the whole grid left (left
+  // icon hugs the edge, right icon gets extra gap). So: the container now STRETCHES
+  // to fill the real box and reports its width via onLayout; each card gets an
+  // explicit width = measured / columns. Items still use fixed pixel widths (NOT
+  // flex:1 / '%', which silently bunch to flex-start in this ScrollView) + minWidth:0
+  // (so a long label can't grow its cell), and space-between so columns reach both
+  // edges symmetrically even with a pixel of rounding slack.
   const gridColumns = Math.min(Math.max(primaryActions.length, 1), 4);
-  const gridInnerWidth = Math.max(0, windowWidth - spacing.lg * 2);
-  const gridItemWidth = gridInnerWidth / gridColumns;
+  const fallbackGridWidth = Math.max(0, windowWidth - spacing.lg * 2);
+  const effectiveGridWidth = gridWidth > 0 ? gridWidth : fallbackGridWidth;
+  const gridItemWidth = Math.floor(effectiveGridWidth / gridColumns);
 
   return (
     <ActionSheetContext.Provider value={{ show }}>
@@ -128,7 +136,13 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
             </Text>
           ) : null
         ) : layout === 'grid' ? (
-          <View style={[styles.grid, { width: gridInnerWidth }]}>
+          <View
+            style={styles.grid}
+            onLayout={(e) => {
+              const w = e.nativeEvent.layout.width;
+              if (w > 0 && Math.abs(w - gridWidth) > 0.5) setGridWidth(w);
+            }}
+          >
             {primaryActions.map((action, idx) => {
               const isDestructive = action.style === 'destructive';
               const tint = isDestructive ? colors.destructive : colors.primary;
@@ -253,6 +267,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+    // Fill the sheet's real content box (measured via onLayout) instead of a
+    // guessed pixel width, so the whole grid stays centered edge-to-edge.
+    alignSelf: 'stretch',
   },
   gridItem: {
     alignItems: 'center',
