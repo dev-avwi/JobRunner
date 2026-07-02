@@ -32,6 +32,17 @@ wrapper and the label get `alignSelf:'stretch'` + center (icon: `alignItems:'cen
 label: `textAlign:'center'`). A bare 60px chip left to the parent's `alignItems`
 resolves its center against a different reference than a stretched label.
 
+**Equal columns need `minWidth:0` on each card:** even with explicit `width =
+containerWidth/columns`, a card whose label has a wide min-content ("Attach File
+(PDF)") grows PAST its assigned width, because RN flex items default to
+`minWidth:auto` (= min-content) and won't shrink below it. Unequal card widths + 
+`space-between` then space the icon CENTERS unevenly (the middle icon drifts toward
+the shorter neighbour) — reads as "alignment feels off". Fix = add `minWidth:0` to
+the card style so every cell honors its width and long labels wrap (numberOfLines:2)
+inside the cell instead of stretching it. Tradeoff: long labels wrap to 2 lines on
+narrow phones — acceptable; if single-line is required, shorten the copy, don't
+weaken the equal-width constraint.
+
 **Sync caveat:** fixes reach the user's device only after push→GitHub, `git pull`, and
 Metro restart with `npx expo start -c` (cache clear). Confirm the device is on the
 right commit before re-debugging — stale bundles look like "still broken".

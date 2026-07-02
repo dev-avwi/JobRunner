@@ -258,6 +258,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingVertical: spacing.sm,
+    // RN flex items default to minWidth:auto (= min-content), which lets a card
+    // with a wide label (e.g. "Attach File (PDF)") grow past its computed column
+    // width. That makes the three columns unequal, so space-between spaces the
+    // icon CENTERS unevenly (middle icon drifts left). minWidth:0 forces every
+    // cell to honor its equal `width: gridItemWidth`, so the icons sit on a true
+    // even grid and long labels wrap within their cell instead of stretching it.
+    minWidth: 0,
   },
   gridIconWrap: {
     alignSelf: 'stretch',
