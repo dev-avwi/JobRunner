@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/use-user-role";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,13 @@ import {
   Shield,
   ShieldCheck,
   ClipboardList,
+  ClipboardCheck,
+  FileDown,
+  Loader2,
+  Lock,
+  ListTodo,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { CustomForm, FormSubmission, Job } from "@shared/schema";
@@ -689,6 +697,185 @@ export function FormSubmissionList({ jobId, onFillForm }: FormSubmissionListProp
   );
 }
 
+interface JobCardSectionProps {
+  jobId: string;
+}
+
+export function JobCardSection({ jobId }: JobCardSectionProps) {
+  const { toast } = useToast();
+  const { data: submissions, isLoading: loadingSubmissions } = useQuery<FormSubmission[]>({
+    queryKey: ['/api/jobs', jobId, 'form-submissions'],
+  });
+
+  const { data: user } = useQuery<{ tradeType?: string }>({
+    queryKey: ['/api/auth/me'],
+  });
+  const tradeType = user?.tradeType;
+
+  const { data: forms, isLoading: loadingForms } = useQuery<CustomForm[]>({
+    queryKey: ['/api/custom-forms', tradeType],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (tradeType) params.append('tradeType', tradeType);
+      const url = `/api/custom-forms${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url, { credentials: 'include', headers: getAuthHeaders() });
+      if (!response.ok) throw new Error('Failed to fetch forms');
+      return response.json();
+    },
+  });
+
+  const [selectedForm, setSelectedForm] = useState<CustomForm | null>(null);
+  const [existingSubmission, setExistingSubmission] = useState<FormSubmission | null>(null);
+  const [showFormDialog, setShowFormDialog] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const isLoading = loadingSubmissions || loadingForms;
+  const jobCards = (forms || []).filter(f => f.isActive && (f as any).isJobCard);
+  const getSubmissionForForm = (formId: string) =>
+    (submissions || []).find(s => s.formId === formId);
+
+  const handleFill = (form: CustomForm) => {
+    setSelectedForm(form);
+    setExistingSubmission(getSubmissionForForm(form.id) || null);
+    setShowFormDialog(true);
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const response = await fetch(`/api/jobs/${jobId}/job-card-pdf`, {
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error('Failed to generate PDF');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `job-card-${jobId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: 'Could not generate the job card PDF. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (jobCards.length === 0) return null;
+
+  const completedCount = jobCards.filter(f => !!getSubmissionForForm(f.id)).length;
+  const anyCompleted = completedCount > 0;
+
+  return (
+    <Card data-testid="card-job-cards">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            Job Card
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{completedCount}/{jobCards.length} done</Badge>
+            {anyCompleted && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExport}
+                disabled={exporting}
+                data-testid="button-export-job-card"
+              >
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                Export PDF
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {jobCards.map(form => {
+          const submission = getSubmissionForForm(form.id);
+          const isDone = !!submission;
+          const required = !!(form as any).blockJobCompletion;
+          return (
+            <Card
+              key={form.id}
+              className="p-3 hover-elevate cursor-pointer"
+              onClick={() => handleFill(form)}
+              data-testid={`job-card-${form.id}`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`h-8 w-8 rounded-lg ${isDone ? 'bg-green-100 dark:bg-green-900' : 'bg-primary/10'} flex items-center justify-center shrink-0`}>
+                    {isDone ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <ClipboardList className="h-4 w-4 text-primary" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{form.name}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isDone && submission?.submittedAt && (
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(submission.submittedAt), 'dd MMM yyyy, h:mm a')}
+                        </span>
+                      )}
+                      {required && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Lock className="h-3 w-3" />
+                          Required to close
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {isDone ? (
+                  <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" />Done</Badge>
+                ) : (
+                  <Badge variant="outline">Not started</Badge>
+                )}
+              </div>
+            </Card>
+          );
+        })}
+      </CardContent>
+
+      <Dialog open={showFormDialog} onOpenChange={setShowFormDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedForm && (
+            <FormRenderer
+              form={selectedForm}
+              jobId={jobId}
+              existingSubmission={existingSubmission || undefined}
+              onSubmit={() => setShowFormDialog(false)}
+              onCancel={() => setShowFormDialog(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
 interface JobFormsProps {
   jobId: string;
 }
@@ -719,5 +906,130 @@ export function JobForms({ jobId }: JobFormsProps) {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+interface JobTask {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: string;
+  source?: string | null;
+  createdAt?: string;
+}
+
+export function JobTasksSection({ jobId }: { jobId: string }) {
+  const { toast } = useToast();
+  const { isOwner } = useUserRole();
+  const [newTitle, setNewTitle] = useState("");
+
+  const { data: tasks = [], isLoading } = useQuery<JobTask[]>({
+    queryKey: ['/api/jobs', jobId, 'tasks'],
+    enabled: !!jobId,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (title: string) =>
+      apiRequest('POST', '/api/tasks', { title, jobId }),
+    onSuccess: () => {
+      setNewTitle("");
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'tasks'] });
+    },
+    onError: () => toast({ title: 'Could not add task', variant: 'destructive' }),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) =>
+      apiRequest('PATCH', `/api/tasks/${id}`, { status: status === 'done' ? 'open' : 'done' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'tasks'] }),
+    onError: () => toast({ title: 'Could not update task', variant: 'destructive' }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest('DELETE', `/api/tasks/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'tasks'] }),
+    onError: () => toast({ title: 'Could not delete task', variant: 'destructive' }),
+  });
+
+  if (isLoading) return null;
+  // Non-owners only see the card when there are tasks (read-only). Owners always
+  // see it so they can add follow-up tasks manually even when none exist yet.
+  if (tasks.length === 0 && !isOwner) return null;
+
+  const openCount = tasks.filter(t => t.status !== 'done').length;
+
+  return (
+    <Card data-testid="card-job-tasks">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <ListTodo className="h-4 w-4" />
+            Follow-up Tasks
+          </CardTitle>
+          <Badge variant="secondary">{openCount} open</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {tasks.length === 0 && isOwner && (
+          <p className="text-sm text-muted-foreground py-1">
+            No follow-up tasks yet. Add one below or set up form task rules.
+          </p>
+        )}
+        {tasks.map(task => (
+          <div
+            key={task.id}
+            className="flex items-start gap-3 p-3 rounded-md bg-muted/50"
+            data-testid={`job-task-${task.id}`}
+          >
+            <Checkbox
+              checked={task.status === 'done'}
+              onCheckedChange={() => toggleMutation.mutate({ id: task.id, status: task.status })}
+              disabled={!isOwner}
+              className="mt-0.5"
+              data-testid={`checkbox-task-${task.id}`}
+            />
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm ${task.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>
+                {task.title}
+              </p>
+              {task.description && (
+                <p className="text-xs text-muted-foreground whitespace-pre-line mt-0.5">{task.description}</p>
+              )}
+            </div>
+            {isOwner && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => deleteMutation.mutate(task.id)}
+                data-testid={`button-delete-task-${task.id}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        ))}
+        {isOwner && (
+          <div className="flex items-center gap-2 pt-1">
+            <Input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Add a task"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTitle.trim()) createMutation.mutate(newTitle.trim());
+              }}
+              data-testid="input-new-task"
+            />
+            <Button
+              size="icon"
+              onClick={() => newTitle.trim() && createMutation.mutate(newTitle.trim())}
+              disabled={!newTitle.trim() || createMutation.isPending}
+              data-testid="button-add-task"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

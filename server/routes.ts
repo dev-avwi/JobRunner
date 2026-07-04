@@ -236,6 +236,7 @@ import {
   tradieRateCards 
 } from "./tradieTemplates";
 import { getSafetyFormTemplates, getSafetyFormTemplate } from "./safetyTemplates";
+import { evaluateTaskRules } from "./taskRules";
 import { generateAISuggestions, chatWithAI, analyzeReceipt, detectHazards, type BusinessContext } from "./ai";
 import { notifyQuoteSent, notifyInvoiceSent, notifyInvoicePaid, notifyJobScheduled, notifyJobStarted, notifyJobCompleted, notifyJobAssigned as notifyJobAssignedDB, notifyTeamMemberInvited, notifySmsReceived, notifyTimesheetSubmitted, notifyChatMessage, notifyQuoteAccepted as notifyQuoteAcceptedDB, notifyQuoteRejected as notifyQuoteRejectedDB, notifyGeofenceCheckIn, notifyGeofenceCheckOut, notifyRecurringJobCreated, notifyRecurringInvoiceCreated, notifyInvoiceOverdue as notifyInvoiceOverdueDB, notifyQuoteExpiring, notifyPaymentFailed } from "./notifications";
 import { notifyJobAssigned, notifyJobUpdate, notifyPaymentReceived, notifyQuoteAccepted, notifyQuoteRejected, notifyTeamMessage, notifyInvoiceOverdue, notifySmsReceived as notifySmsReceivedPush, notifyGeofenceEvent, notifyTimesheetSubmitted as notifyTimesheetSubmittedPush, notifyQuoteExpiring as notifyQuoteExpiringPush, notifyPaymentFailed as notifyPaymentFailedPush, notifyTrialExpiring as notifyTrialExpiringPush, notifyTimesheetDisputeFiled, notifyTimesheetDisputeResolved, notifyJobNudge, notifyNudgeResponse } from "./pushNotifications";
@@ -38670,6 +38671,14 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         submittedBy: userId,
         submittedAt: new Date(),
       });
+
+      // Spawn follow-up tasks from the form's owner-defined task rules
+      try {
+        const answers = (submission as any).submissionData || payload?.submissionData || payload?.data || {};
+        await evaluateTaskRules({ form, submission, answers, ownerUserId: userContext.effectiveUserId, jobId: payload.jobId || null, assignedBy: userId });
+      } catch (e) {
+        console.error('[taskRules] form-submission hook failed:', e);
+      }
 
       if (idempotencyKey) {
         await setIdempotencyRecord(`formsub:${userId}:${idempotencyKey}`, submission);

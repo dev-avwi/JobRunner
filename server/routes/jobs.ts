@@ -233,6 +233,7 @@ import {
   tradieRateCards 
 } from "../tradieTemplates";
 import { getSafetyFormTemplates, getSafetyFormTemplate } from "../safetyTemplates";
+import { evaluateTaskRules } from "../taskRules";
 import { generateAISuggestions, chatWithAI, analyzeReceipt, detectHazards, type BusinessContext } from "../ai";
 import { notifyQuoteSent, notifyInvoiceSent, notifyInvoicePaid, notifyJobScheduled, notifyJobStarted, notifyJobCompleted, notifyJobAssigned as notifyJobAssignedDB, notifyTeamMemberInvited, notifySmsReceived, notifyTimesheetSubmitted, notifyChatMessage, notifyQuoteAccepted as notifyQuoteAcceptedDB, notifyQuoteRejected as notifyQuoteRejectedDB, notifyGeofenceCheckIn, notifyGeofenceCheckOut, notifyRecurringJobCreated, notifyRecurringInvoiceCreated, notifyInvoiceOverdue as notifyInvoiceOverdueDB, notifyQuoteExpiring, notifyPaymentFailed } from "../notifications";
 import { notifyJobAssigned, notifyJobUpdate, notifyPaymentReceived, notifyQuoteAccepted, notifyQuoteRejected, notifyTeamMessage, notifyInvoiceOverdue, notifySmsReceived as notifySmsReceivedPush, notifyGeofenceEvent, notifyTimesheetSubmitted as notifyTimesheetSubmittedPush, notifyQuoteExpiring as notifyQuoteExpiringPush, notifyPaymentFailed as notifyPaymentFailedPush, notifyTrialExpiring as notifyTrialExpiringPush, notifyTimesheetDisputeFiled, notifyTimesheetDisputeResolved, notifyJobNudge, notifyNudgeResponse } from "../pushNotifications";
@@ -402,9 +403,31 @@ import { logSystemEvent } from "../systemEventService";
 
   // Shared "all timers stopped / time entries sane" precondition for marking a
   // job done. Returns a list of human-readable problems (empty = OK to complete).
-  async function getJobCompletionErrors(jobId: string): Promise<string[]> {
+  async function getJobCompletionErrors(jobId: string, effectiveUserId?: string): Promise<string[]> {
     const timeEntries = await storage.getTimeEntriesForJob(jobId);
     const validationErrors: string[] = [];
+
+    // Job Card required-to-close gate: any active job card marked
+    // "block job completion" must have a submission for this job before it can close.
+    if (effectiveUserId) {
+      try {
+        const forms = await storage.getCustomForms(effectiveUserId);
+        const blockingCards = forms.filter(
+          (f) => f.isJobCard && f.blockJobCompletion && f.isActive !== false,
+        );
+        if (blockingCards.length > 0) {
+          const submissions = await storage.getFormSubmissionsByJob(jobId, effectiveUserId);
+          const submittedFormIds = new Set(submissions.map((s) => s.formId));
+          for (const card of blockingCards) {
+            if (!submittedFormIds.has(card.id)) {
+              validationErrors.push(`Job Card "${card.name}" must be completed before closing this job`);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[getJobCompletionErrors] job card gate check failed:', err);
+      }
+    }
 
     const openEntries = timeEntries.filter(e => !e.endTime && !e.isBreak);
     if (openEntries.length > 0) {
@@ -685,6 +708,37 @@ import { logSystemEvent } from "../systemEventService";
       console.error("Error generating proof pack PDF:", error);
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to generate proof pack PDF" });
+    }
+  });
+
+  app.get("/api/jobs/:jobId/job-card-pdf", requireAuth, pdfPerUserLimiter, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const jobId = req.params.jobId;
+      const userId = userContext.effectiveUserId;
+
+      const job = await storage.getJob(jobId, userId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      const forms = await storage.getCustomForms(userId);
+      const jobCards = forms.filter((f: any) => f.isJobCard);
+      const submissions = await storage.getFormSubmissionsByJob(jobId, userId);
+
+      const businessSettings = await storage.getBusinessSettings(userId);
+      const client = job.clientId ? await storage.getClient(job.clientId, userId) : undefined;
+
+      const { generateJobCardHTML, generatePDFBuffer } = await import('../pdfService');
+      const html = generateJobCardHTML({ job, jobCards, submissions, businessSettings, client });
+      const pdfBuffer = await generatePDFBuffer(html);
+      const fileName = `job-card-${jobId}.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      console.error("Error generating job card PDF:", error);
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      res.status(500).json({ error: "Failed to generate job card PDF" });
     }
   });
 
@@ -2695,7 +2749,7 @@ import { logSystemEvent } from "../systemEventService";
             continue;
           }
           if (status === 'done') {
-            const completionErrors = await getJobCompletionErrors(id);
+            const completionErrors = await getJobCompletionErrors(id, effectiveUserId);
             if (completionErrors.length > 0) {
               results.failed++;
               results.errors.push(`Job ${id}: ${completionErrors.join('; ')}`);
@@ -2839,7 +2893,7 @@ import { logSystemEvent } from "../systemEventService";
           }
         }
 
-        const validationErrors = await getJobCompletionErrors(req.params.id);
+        const validationErrors = await getJobCompletionErrors(req.params.id, effectiveUserId);
         if (validationErrors.length > 0) {
           return res.status(400).json({
             error: 'Time entries need attention before completing this job',
@@ -3180,7 +3234,7 @@ import { logSystemEvent } from "../systemEventService";
           });
         }
 
-        const validationErrors = await getJobCompletionErrors(req.params.id);
+        const validationErrors = await getJobCompletionErrors(req.params.id, effectiveUserId);
         if (validationErrors.length > 0) {
           return res.status(400).json({
             error: 'Time entries need attention before completing this job',
@@ -7942,14 +7996,53 @@ import { logSystemEvent } from "../systemEventService";
     try {
       const userId = req.userId!;
       const { jobId } = req.params;
-      
+
+      const { ...payload } = req.body || {};
+
+      // Validate referenced form and job belong to this business (cross-business write guard)
+      const userContext = await getUserContext(userId);
+      if (!payload.formId) {
+        return res.status(400).json({ error: 'formId is required' });
+      }
+      const form = await storage.getCustomForm(payload.formId, userContext.effectiveUserId);
+      if (!form) {
+        return res.status(404).json({ error: 'Form not found' });
+      }
+      const job = await storage.getJob(jobId, userContext.effectiveUserId);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+
+      // Normalize mobile payload key (`data`) to the DB column (`submissionData`)
+      if (payload.submissionData === undefined && payload.data !== undefined) {
+        payload.submissionData = payload.data;
+      }
+      delete payload.data;
+
+      // Strip server-controlled fields (mass-assignment guard)
+      delete payload.id;
+      delete payload.submittedBy;
+      delete payload.submittedAt;
+      delete payload.reviewedBy;
+      delete payload.reviewedAt;
+      delete payload.status;
+      delete payload.customerUserId;
+
       const submission = await storage.createFormSubmission({
-        ...req.body,
+        ...payload,
         jobId,
         submittedBy: userId,
         submittedAt: new Date(),
       });
-      
+
+      // Spawn follow-up tasks from the form's owner-defined task rules
+      try {
+        const answers = (submission as any).submissionData || payload?.submissionData || {};
+        await evaluateTaskRules({ form, submission, answers, ownerUserId: userContext.effectiveUserId, jobId, assignedBy: userId });
+      } catch (e) {
+        console.error('[taskRules] job form-submission hook failed:', e);
+      }
+
       res.status(201).json(submission);
     } catch (error: any) {
       console.error('Error creating job form submission:', error);

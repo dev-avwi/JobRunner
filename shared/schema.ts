@@ -2455,6 +2455,9 @@ export const customForms = pgTable("custom_forms", {
   fields: json("fields").default([]), // Form field definitions
   settings: json("settings").default({}), // Form settings and styling
   requiresSignature: boolean("requires_signature").default(false),
+  isJobCard: boolean("is_job_card").default(false), // Treat this form as a Job Card (first-class tab on the job)
+  blockJobCompletion: boolean("block_job_completion").default(false), // Job cannot be marked done until this job card's required fields are submitted
+  taskRules: json("task_rules").default([]), // [{ fieldId, operator, value, taskTitle, assignTo }] — spawn follow-up tasks on submit
   isDefault: boolean("is_default").default(false), // System-provided default form
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -2485,6 +2488,33 @@ export const formSubmissions = pgTable("form_submissions", {
   index("idx_form_submissions_customer_user_id").on(table.customerUserId),
   index("idx_form_submissions_reviewed_by").on(table.reviewedBy),
 ]);
+
+// Follow-up Tasks — spawned when a form/job-card answer matches a task rule
+export const tasks = pgTable("tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }), // owner (business) scope
+  jobId: varchar("job_id").references(() => jobs.id, { onDelete: 'cascade' }),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").default('open'), // open, done
+  assignedTo: varchar("assigned_to").references(() => users.id, { onDelete: 'set null' }),
+  dueAt: timestamp("due_at"),
+  source: text("source").default('manual'), // manual, form_rule
+  sourceFormId: varchar("source_form_id").references(() => customForms.id, { onDelete: 'set null' }),
+  sourceSubmissionId: varchar("source_submission_id").references(() => formSubmissions.id, { onDelete: 'set null' }),
+  completedAt: timestamp("completed_at"),
+  completedBy: varchar("completed_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_tasks_user_id").on(table.userId),
+  index("idx_tasks_job_id").on(table.jobId),
+  index("idx_tasks_assigned_to").on(table.assignedTo),
+]);
+
+export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true, updatedAt: true, completedAt: true, completedBy: true });
+export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type Task = typeof tasks.$inferSelect;
 
 export const digitalSignatures = pgTable("digital_signatures", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

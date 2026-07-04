@@ -153,6 +153,9 @@ import {
   type InsertFormSubmission,
   customForms,
   formSubmissions,
+  tasks,
+  type Task,
+  type InsertTask,
   smsConversations,
   smsMessages,
   smsTemplates,
@@ -920,6 +923,12 @@ export interface IStorage {
   createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission>;
   updateFormSubmission(id: string, userId: string, submission: Partial<InsertFormSubmission>): Promise<FormSubmission | undefined>;
   deleteFormSubmission(id: string, userId: string): Promise<boolean>;
+  createTask(task: InsertTask): Promise<Task>;
+  getTasks(userId: string, jobId?: string): Promise<Task[]>;
+  getTask(id: string, userId: string): Promise<Task | undefined>;
+  updateTask(id: string, userId: string, updates: Partial<InsertTask>): Promise<Task | undefined>;
+  completeTask(id: string, userId: string, completedBy: string): Promise<Task | undefined>;
+  deleteTask(id: string, userId: string): Promise<boolean>;
 
   // SMS Conversations
   getSmsConversation(id: string): Promise<SmsConversation | undefined>;
@@ -5486,6 +5495,55 @@ export class PostgresStorage implements IStorage {
     
     const result = await db.delete(formSubmissions)
       .where(eq(formSubmissions.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Follow-up Tasks
+  async createTask(task: InsertTask): Promise<Task> {
+    const [result] = await db.insert(tasks).values(task).returning();
+    return result;
+  }
+
+  async getTasks(userId: string, jobId?: string): Promise<Task[]> {
+    const conds = [eq(tasks.userId, userId)];
+    if (jobId) conds.push(eq(tasks.jobId, jobId));
+    return await db.select().from(tasks)
+      .where(and(...conds))
+      .orderBy(desc(tasks.createdAt));
+  }
+
+  async getTask(id: string, userId: string): Promise<Task | undefined> {
+    const [result] = await db.select().from(tasks)
+      .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
+    return result;
+  }
+
+  async updateTask(id: string, userId: string, updates: Partial<InsertTask>): Promise<Task | undefined> {
+    const existing = await this.getTask(id, userId);
+    if (!existing) return undefined;
+    const [result] = await db.update(tasks)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tasks.id, id))
+      .returning();
+    return result;
+  }
+
+  async completeTask(id: string, userId: string, completedBy: string): Promise<Task | undefined> {
+    const existing = await this.getTask(id, userId);
+    if (!existing) return undefined;
+    const [result] = await db.update(tasks)
+      .set({ status: 'done', completedAt: new Date(), completedBy, updatedAt: new Date() })
+      .where(eq(tasks.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteTask(id: string, userId: string): Promise<boolean> {
+    const existing = await this.getTask(id, userId);
+    if (!existing) return false;
+    const result = await db.delete(tasks)
+      .where(eq(tasks.id, id))
       .returning();
     return result.length > 0;
   }

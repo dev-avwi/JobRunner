@@ -64,6 +64,7 @@ import { WorkspaceSwitcher } from '../../src/components/WorkspaceSwitcher';
 import { VoiceRecorder, VoiceNotePlayer } from '../../src/components/VoiceRecorder';
 import { SignaturePad } from '../../src/components/SignaturePad';
 import { JobForms } from '../../src/components/FormRenderer';
+import { JobTasksSection } from '../../src/components/JobTasksSection';
 import SmartActionsPanel, { SmartAction, getJobSmartActions } from '../../src/components/SmartActionsPanel';
 import { JobProgressBar, LinkedDocumentsCard, NextActionCard, PaymentCollectionCard } from '../../src/components/JobWorkflowComponents';
 import { CollapsibleSection } from '../../src/components/ui/CollapsibleSection';
@@ -2190,6 +2191,7 @@ export default function JobDetailScreen() {
   const [sendModalDefaultTab, setSendModalDefaultTab] = useState<'email' | 'sms'>('email');
 
   const [isGeneratingProofPack, setIsGeneratingProofPack] = useState(false);
+  const [isExportingJobCard, setIsExportingJobCard] = useState(false);
   const [showProofPackModal, setShowProofPackModal] = useState(false);
   const [proofPackSections, setProofPackSections] = useState({
     timeline: true,
@@ -4428,6 +4430,40 @@ export default function JobDetailScreen() {
       showToast({ type: 'error', message: error.message || 'Failed to generate Proof Pack' });
     } finally {
       setIsGeneratingProofPack(false);
+    }
+  };
+
+  const handleExportJobCard = async () => {
+    if (!job) return;
+    setIsExportingJobCard(true);
+    try {
+      const token = await api.getToken();
+      const pdfUrl = `${API_URL}/api/jobs/${job.id}/job-card-pdf`;
+      const filename = `job-card-${job.id}.pdf`;
+      const localUri = `${FileSystem.cacheDirectory}${filename}`;
+
+      const downloadResult = await FileSystem.downloadAsync(pdfUrl, localUri, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (downloadResult.status === 200) {
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'Share Job Card',
+          });
+        } else {
+          showToast({ type: 'success', message: 'Job Card PDF downloaded successfully' });
+        }
+      } else {
+        showToast({ type: 'error', message: 'Failed to generate Job Card PDF' });
+      }
+    } catch (error: any) {
+      console.error('Job card export error:', error);
+      showToast({ type: 'error', message: error.message || 'Failed to export Job Card' });
+    } finally {
+      setIsExportingJobCard(false);
     }
   };
 
@@ -8905,6 +8941,25 @@ export default function JobDetailScreen() {
         onCreateInvoice={() => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
       />
       )}
+
+      {/* Job Card Section - customizable required-to-close forms with PDF export */}
+      <View style={styles.photosCard}>
+        <JobForms
+          jobId={job.id}
+          jobCardMode
+          readOnly={job.status === 'invoiced'}
+          onExport={handleExportJobCard}
+          isExporting={isExportingJobCard}
+        />
+      </View>
+
+      {/* Follow-up Tasks - spawned by form task rules, plus manual (owner-managed) */}
+      <View style={styles.photosCard}>
+        <JobTasksSection
+          jobId={job.id}
+          readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
+        />
+      </View>
 
       {/* Job Checklist Section - available for all job statuses */}
       <View style={styles.photosCard}>

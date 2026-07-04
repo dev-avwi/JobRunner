@@ -145,6 +145,11 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
     queryKey: ['/api/style-presets'],
   });
 
+  // Rate cards carry the material markup % applied when materials roll into an invoice
+  const { data: rateCards = [] } = useQuery<any[]>({
+    queryKey: ['/api/rate-cards'],
+  });
+
   // Get the default style preset for preview styling
   const defaultStylePreset = stylePresets.find((p) => p.isDefault) || stylePresets[0];
 
@@ -258,15 +263,29 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
       // Silently skip labour on failure
     }
 
-    // Materials charged to the client
+    // Materials charged to the client — cost rolls up with the rate-card markup applied.
+    // Sell-price priority: explicit unitPrice > (unitCost x markup) > unitCost.
+    // Markup % priority: material's own markupPercent > rate card materialMarkupPct > 20% default.
     try {
       const matRes = await fetch(`/api/jobs/${jobId}/materials`, { credentials: 'include', headers: authHeaders });
       if (matRes.ok) {
         const materials = await matRes.json();
         if (Array.isArray(materials)) {
+          const defaultRateCard = (rateCards as any[]).find((r) => r?.tradeType === (businessSettings as any)?.tradeType) || (rateCards as any[])[0];
+          const cardMarkup = parseFloat(defaultRateCard?.materialMarkupPct ?? '');
+          const fallbackMarkup = Number.isFinite(cardMarkup) ? cardMarkup : 20;
           for (const m of materials) {
             const qty = parseFloat(m.quantity ?? '1') || 0;
-            const price = parseFloat(m.unitPrice ?? '0') || parseFloat(m.unitCost ?? '0') || 0;
+            const explicitPrice = parseFloat(m.unitPrice ?? '0') || 0;
+            const cost = parseFloat(m.unitCost ?? '0') || 0;
+            const ownMarkup = parseFloat(m.markupPercent ?? '');
+            const markupPct = Number.isFinite(ownMarkup) ? ownMarkup : fallbackMarkup;
+            let price = 0;
+            if (explicitPrice > 0) {
+              price = explicitPrice;
+            } else if (cost > 0) {
+              price = Math.round(cost * (1 + markupPct / 100) * 100) / 100;
+            }
             if (qty <= 0 || price <= 0) continue;
             const unitLabel = m.unit && m.unit !== 'each' ? ` (${m.unit})` : '';
             items.push({

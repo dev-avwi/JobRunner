@@ -887,6 +887,7 @@ export default function NewInvoiceScreen() {
         }
 
         if (!prefilledFromQuote) {
+          const prefillLines: LineItem[] = [];
           try {
             const timeResponse = await api.get(`/api/time-entries?jobId=${jId}&teamView=true`);
             if (timeResponse.data && Array.isArray(timeResponse.data)) {
@@ -911,13 +912,12 @@ export default function NewInvoiceScreen() {
                     byWorker[key].rate = parseFloat(e.hourlyRate);
                   }
                 });
-                const workerLines: LineItem[] = [];
                 Object.entries(byWorker).forEach(([, worker]) => {
                   const hrs = Math.round(worker.totalMs / (1000 * 60 * 60) * 10) / 10;
                   if (hrs > 0) {
                     const rate = Math.round(worker.rate * 100) / 100;
                     const rateNote = rate > 0 ? '' : ' (rate not set)';
-                    workerLines.push({
+                    prefillLines.push({
                       id: `labour-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
                       description: `Labour \u2014 ${worker.name} \u2014 ${hrs}hrs${rateNote}`,
                       quantity: String(hrs),
@@ -925,13 +925,55 @@ export default function NewInvoiceScreen() {
                     });
                   }
                 });
-                if (workerLines.length > 0) {
-                  setLineItems(workerLines);
-                }
               }
             }
           } catch (timeError) {
             if (__DEV__) console.log('Error fetching time entries:', timeError);
+          }
+
+          // Materials roll into the invoice with the rate-card markup applied.
+          // Sell-price priority: explicit unitPrice > (unitCost x markup) > skip.
+          // Markup % priority: material markupPercent > rate card materialMarkupPct > 20% default.
+          try {
+            const matResponse = await api.get(`/api/jobs/${jId}/materials`);
+            if (matResponse.data && Array.isArray(matResponse.data) && matResponse.data.length > 0) {
+              let fallbackMarkup = 20;
+              try {
+                const rcResponse = await api.get(`/api/rate-cards`);
+                if (rcResponse.data && Array.isArray(rcResponse.data)) {
+                  const card = rcResponse.data.find((r: any) => r?.tradeType === (businessSettings as any)?.tradeType) || rcResponse.data[0];
+                  const cardMarkup = parseFloat(card?.materialMarkupPct ?? '');
+                  if (Number.isFinite(cardMarkup)) fallbackMarkup = cardMarkup;
+                }
+              } catch {}
+              matResponse.data.forEach((m: any) => {
+                const qty = parseFloat(m.quantity ?? '1') || 0;
+                const explicitPrice = parseFloat(m.unitPrice ?? '0') || 0;
+                const cost = parseFloat(m.unitCost ?? '0') || 0;
+                const ownMarkup = parseFloat(m.markupPercent ?? '');
+                const markupPct = Number.isFinite(ownMarkup) ? ownMarkup : fallbackMarkup;
+                let price = 0;
+                if (explicitPrice > 0) {
+                  price = explicitPrice;
+                } else if (cost > 0) {
+                  price = Math.round(cost * (1 + markupPct / 100) * 100) / 100;
+                }
+                if (qty <= 0 || price <= 0) return;
+                const unitLabel = m.unit && m.unit !== 'each' ? ` (${m.unit})` : '';
+                prefillLines.push({
+                  id: `mat-${m.id || Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  description: `${m.name}${unitLabel}`,
+                  quantity: String(qty),
+                  unitPrice: String(price),
+                });
+              });
+            }
+          } catch (matError) {
+            if (__DEV__) console.log('Error fetching materials:', matError);
+          }
+
+          if (prefillLines.length > 0) {
+            setLineItems(prefillLines);
           }
         }
       }

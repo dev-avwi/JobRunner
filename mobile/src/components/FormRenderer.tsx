@@ -54,11 +54,14 @@ interface FormSubmission {
 interface JobFormsProps {
   jobId: string;
   readOnly?: boolean;
+  jobCardMode?: boolean;
+  onExport?: () => void;
+  isExporting?: boolean;
   onSubmissionsChange?: (submissions: FormSubmission[]) => void;
   onFormsChange?: (forms: CustomForm[]) => void;
 }
 
-export function JobForms({ jobId, readOnly = false, onSubmissionsChange, onFormsChange }: JobFormsProps) {
+export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExport, isExporting = false, onSubmissionsChange, onFormsChange }: JobFormsProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   
@@ -450,23 +453,46 @@ export function JobForms({ jobId, readOnly = false, onSubmissionsChange, onForms
     );
   }
 
+  const isJobCardForm = (f: CustomForm) => !!(f as any).isJobCard;
+  const displayForms = jobCardMode ? forms.filter(isJobCardForm) : forms.filter(f => !isJobCardForm(f));
+  const displaySubmissions = submissions.filter(s => {
+    const form = forms.find(f => f.id === s.formId);
+    const isJC = form ? isJobCardForm(form) : false;
+    return jobCardMode ? isJC : !isJC;
+  });
+
+  if (jobCardMode && displayForms.length === 0) return null;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={[styles.headerIcon, { backgroundColor: `${colors.primary}15` }]}>
-          <Feather name="check-square" size={iconSizes.lg} color={colors.primary} />
+          <Feather name={jobCardMode ? 'clipboard' : 'check-square'} size={iconSizes.lg} color={colors.primary} />
         </View>
-        <Text style={styles.headerLabel}>Checklist</Text>
-        {submissions.length > 0 && (
+        <Text style={styles.headerLabel}>{jobCardMode ? 'Job Card' : 'Checklist'}</Text>
+        {displaySubmissions.length > 0 && (
           <View style={styles.countBadge}>
-            <Text style={styles.countText}>{submissions.length}</Text>
+            <Text style={styles.countText}>{displaySubmissions.length}</Text>
           </View>
         )}
       </View>
 
-      {submissions.length > 0 && (
+      {jobCardMode && onExport && displaySubmissions.length > 0 && (
+        <PressableRow style={styles.exportButton} onPress={onExport} disabled={isExporting}>
+          {isExporting ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <>
+              <Feather name="download" size={16} color={colors.primary} />
+              <Text style={styles.exportButtonText}>Export PDF</Text>
+            </>
+          )}
+        </PressableRow>
+      )}
+
+      {displaySubmissions.length > 0 && (
         <View style={styles.submissions}>
-          {submissions.map(renderSubmission)}
+          {displaySubmissions.map(renderSubmission)}
         </View>
       )}
 
@@ -498,14 +524,14 @@ export function JobForms({ jobId, readOnly = false, onSubmissionsChange, onForms
             )}
           </PressableRow>
         </View>
-      ) : forms.length > 0 ? (
+      ) : displayForms.length > 0 ? (
         <PressableRow style={styles.addFormButton} onPress={() => setShowFormSelector(true)} >
           <Feather name="plus" size={18} color={colors.primaryForeground} />
-          <Text style={styles.addFormButtonText}>Add Checklist</Text>
+          <Text style={styles.addFormButtonText}>{jobCardMode ? 'Fill Job Card' : 'Add Checklist'}</Text>
         </PressableRow>
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No checklists available</Text>
+          <Text style={styles.emptyText}>{jobCardMode ? 'No job card available' : 'No checklists available'}</Text>
         </View>
       )}
 
@@ -517,13 +543,13 @@ export function JobForms({ jobId, readOnly = false, onSubmissionsChange, onForms
         contentPadding={0}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Checklist</Text>
+            <Text style={styles.modalTitle}>{jobCardMode ? 'Select Job Card' : 'Select Checklist'}</Text>
             <PressableRow onPress={() => setShowFormSelector(false)}>
               <Feather name="x" size={24} color={colors.foreground} />
             </PressableRow>
           </View>
           <FlatList
-            data={forms}
+            data={displayForms}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.formsList}
             renderItem={({ item }) => (
@@ -619,6 +645,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   countText: {
     color: colors.primaryForeground,
     fontSize: 12,
+    fontWeight: '600',
+  },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    marginBottom: spacing.md,
+  },
+  exportButtonText: {
+    color: colors.primary,
+    fontSize: 14,
     fontWeight: '600',
   },
   submissions: {

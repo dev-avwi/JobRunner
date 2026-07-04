@@ -288,6 +288,9 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
   const [formDescription, setFormDescription] = useState("");
   const [formType, setFormType] = useState("general");
   const [requiresSignature, setRequiresSignature] = useState(false);
+  const [isJobCard, setIsJobCard] = useState(false);
+  const [blockJobCompletion, setBlockJobCompletion] = useState(false);
+  const [taskRules, setTaskRules] = useState<Array<{ fieldId: string; operator: string; value: string; taskTitle: string }>>([]);
   const [fields, setFields] = useState<FormField[]>([]);
   const [editingField, setEditingField] = useState<FormField | null>(null);
   const [showFieldDialog, setShowFieldDialog] = useState(false);
@@ -307,6 +310,9 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
       setFormDescription(existingForm.description || "");
       setFormType(existingForm.formType || "general");
       setRequiresSignature(existingForm.requiresSignature || false);
+      setIsJobCard((existingForm as any).isJobCard || false);
+      setBlockJobCompletion((existingForm as any).blockJobCompletion || false);
+      setTaskRules(Array.isArray((existingForm as any).taskRules) ? (existingForm as any).taskRules : []);
       setFields((existingForm.fields as FormField[]) || []);
     }
   }, [existingForm]);
@@ -354,6 +360,9 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
       description: formDescription,
       formType,
       requiresSignature,
+      isJobCard,
+      blockJobCompletion: isJobCard ? blockJobCompletion : false,
+      taskRules: taskRules.filter(r => r.fieldId && r.taskTitle),
       fields,
       isActive: true,
     };
@@ -562,6 +571,121 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                     data-testid="switch-require-signature"
                   />
                 </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                  <div className="space-y-0.5">
+                    <Label>Use as Job Card</Label>
+                    <p className="text-xs text-muted-foreground">Show this form as a Job Card tab on every job</p>
+                  </div>
+                  <Switch
+                    checked={isJobCard}
+                    onCheckedChange={setIsJobCard}
+                    data-testid="switch-is-job-card"
+                  />
+                </div>
+                {isJobCard && (
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                    <div className="space-y-0.5">
+                      <Label>Required to Close Job</Label>
+                      <p className="text-xs text-muted-foreground">Job can't be marked done until this card is filled in</p>
+                    </div>
+                    <Switch
+                      checked={blockJobCompletion}
+                      onCheckedChange={setBlockJobCompletion}
+                      data-testid="switch-block-completion"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl overflow-visible">
+              <CardContent className="p-4 space-y-3">
+                <div className="space-y-0.5">
+                  <Label>Follow-up Task Rules</Label>
+                  <p className="text-xs text-muted-foreground">Automatically create a follow-up task when an answer matches a rule</p>
+                </div>
+                {fields.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Add a field first to create rules.</p>
+                ) : (
+                  <>
+                    {taskRules.map((rule, idx) => (
+                      <div key={idx} className="space-y-2 p-3 bg-muted/50 rounded-xl" data-testid={`task-rule-${idx}`}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground shrink-0">When</span>
+                          <Select
+                            value={rule.fieldId}
+                            onValueChange={(v) => setTaskRules(prev => prev.map((r, i) => i === idx ? { ...r, fieldId: v } : r))}
+                          >
+                            <SelectTrigger className="h-9 rounded-lg flex-1" data-testid={`select-rule-field-${idx}`}>
+                              <SelectValue placeholder="Field" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {fields.map((f) => (
+                                <SelectItem key={f.id} value={f.id}>{f.label || f.id}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setTaskRules(prev => prev.filter((_, i) => i !== idx))}
+                            data-testid={`button-remove-rule-${idx}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={rule.operator}
+                            onValueChange={(v) => setTaskRules(prev => prev.map((r, i) => i === idx ? { ...r, operator: v } : r))}
+                          >
+                            <SelectTrigger className="h-9 rounded-lg w-40" data-testid={`select-rule-operator-${idx}`}>
+                              <SelectValue placeholder="Condition" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="equals">is equal to</SelectItem>
+                              <SelectItem value="not_equals">is not equal to</SelectItem>
+                              <SelectItem value="contains">contains</SelectItem>
+                              <SelectItem value="is_checked">is checked / yes</SelectItem>
+                              <SelectItem value="not_checked">is unchecked / no</SelectItem>
+                              <SelectItem value="is_empty">is empty</SelectItem>
+                              <SelectItem value="is_not_empty">is not empty</SelectItem>
+                              <SelectItem value="greater_than">is greater than</SelectItem>
+                              <SelectItem value="less_than">is less than</SelectItem>
+                              <SelectItem value="any">has any answer</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {!['is_checked', 'not_checked', 'is_empty', 'is_not_empty', 'any'].includes(rule.operator) && (
+                            <Input
+                              className="h-9 rounded-lg flex-1"
+                              placeholder="Value"
+                              value={rule.value}
+                              onChange={(e) => setTaskRules(prev => prev.map((r, i) => i === idx ? { ...r, value: e.target.value } : r))}
+                              data-testid={`input-rule-value-${idx}`}
+                            />
+                          )}
+                        </div>
+                        <Input
+                          className="h-9 rounded-lg"
+                          placeholder="Task to create (e.g. Order replacement part)"
+                          value={rule.taskTitle}
+                          onChange={(e) => setTaskRules(prev => prev.map((r, i) => i === idx ? { ...r, taskTitle: e.target.value } : r))}
+                          data-testid={`input-rule-title-${idx}`}
+                        />
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={() => setTaskRules(prev => [...prev, { fieldId: fields[0]?.id || '', operator: 'equals', value: '', taskTitle: '' }])}
+                      data-testid="button-add-task-rule"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Rule
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
 

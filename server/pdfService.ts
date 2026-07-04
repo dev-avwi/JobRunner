@@ -5238,3 +5238,131 @@ export async function generateRemittancePdf(data: RemittancePdfData): Promise<Bu
 
   return await generatePDFBuffer(html);
 }
+
+interface JobCardPdfData {
+  job: any;
+  jobCards: any[];
+  submissions: any[];
+  businessSettings?: any;
+  client?: any;
+}
+
+export function generateJobCardHTML(data: JobCardPdfData): string {
+  const { job, jobCards, submissions, businessSettings, client } = data;
+
+  const businessName = ensureDisplayName(businessSettings?.name, 'Business');
+  const rawBrand = (businessSettings?.brandColor || '').trim();
+  const brandColor = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(rawBrand) ? rawBrand : '#1e3a5f';
+
+  const fmtDate = (d: any) => {
+    if (!d) return '';
+    try { return new Date(d).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return ''; }
+  };
+
+  const renderFieldValue = (field: any, value: any): string => {
+    if (value === undefined || value === null || value === '') {
+      return '<span style="color:#9ca3af;">—</span>';
+    }
+    if (field.type === 'photo' || field.type === 'signature') {
+      if (typeof value === 'string' && value.startsWith('data:image')) {
+        return `<img src="${value}" style="max-width:280px;max-height:200px;border:1px solid #e5e7eb;border-radius:6px;" />`;
+      }
+      return '<span style="color:#9ca3af;">—</span>';
+    }
+    if (field.type === 'checkbox') {
+      return value === true || value === 'true' ? 'Yes' : 'No';
+    }
+    if (Array.isArray(value)) {
+      return escapeHtml(value.join(', '));
+    }
+    return escapeHtml(String(value));
+  };
+
+  const renderCard = (card: any): string => {
+    const cardSubs = submissions.filter((s: any) => s.formId === card.id);
+    const fields = (card.fields as any[]) || [];
+
+    if (cardSubs.length === 0) {
+      return `
+        <div class="card">
+          <div class="card-title">${escapeHtml(card.name)}</div>
+          <p style="color:#9ca3af;margin:0;">Not completed</p>
+        </div>`;
+    }
+
+    const subsHtml = cardSubs.map((sub: any) => {
+      const answers = (sub.submissionData || {}) as Record<string, any>;
+      const rows = fields.map((field: any) => {
+        if (field.type === 'section') {
+          return `<tr><td colspan="2" class="section-row">${escapeHtml(field.label)}</td></tr>`;
+        }
+        return `
+          <tr>
+            <td class="field-label">${escapeHtml(field.label)}${field.required ? ' *' : ''}</td>
+            <td class="field-value">${renderFieldValue(field, answers[field.id])}</td>
+          </tr>`;
+      }).join('');
+
+      const sig = answers['_signature'];
+      const sigHtml = sig && typeof sig === 'string' && sig.startsWith('data:image')
+        ? `<tr><td class="field-label">Signature</td><td class="field-value"><img src="${sig}" style="max-width:280px;max-height:150px;border:1px solid #e5e7eb;border-radius:6px;" /></td></tr>`
+        : '';
+
+      return `
+        <div class="card">
+          <div class="card-title">${escapeHtml(card.name)}</div>
+          <p class="submitted-at">Submitted ${escapeHtml(fmtDate(sub.submittedAt || sub.createdAt))}</p>
+          <table class="fields">${rows}${sigHtml}</table>
+        </div>`;
+    }).join('');
+
+    return subsHtml;
+  };
+
+  const cardsHtml = jobCards.length > 0
+    ? jobCards.map(renderCard).join('')
+    : '<div class="card"><p style="color:#9ca3af;margin:0;">No job cards configured.</p></div>';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          * { box-sizing: border-box; }
+          body { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 32px; font-size: 13px; }
+          .header { border-bottom: 3px solid ${brandColor}; padding-bottom: 16px; margin-bottom: 20px; }
+          .header h1 { margin: 0 0 4px; font-size: 22px; color: ${brandColor}; }
+          .header .sub { color: #6b7280; font-size: 12px; }
+          .meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+          .meta-item { min-width: 160px; }
+          .meta-item label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 2px; }
+          .meta-item span { font-size: 13px; font-weight: 500; }
+          .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; page-break-inside: avoid; }
+          .card-title { font-size: 15px; font-weight: 600; color: ${brandColor}; margin-bottom: 4px; }
+          .submitted-at { color: #9ca3af; font-size: 11px; margin: 0 0 10px; }
+          table.fields { width: 100%; border-collapse: collapse; }
+          table.fields td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+          .field-label { width: 40%; color: #6b7280; font-weight: 500; }
+          .field-value { width: 60%; }
+          .section-row { font-weight: 600; background: #f9fafb; color: #374151; padding-top: 12px; }
+          .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 10px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Job Card</h1>
+          <div class="sub">${escapeHtml(businessName)}</div>
+        </div>
+        <div class="meta">
+          <div class="meta-item"><label>Job</label><span>${escapeHtml(job.number ? `#${job.number}` : '')} ${escapeHtml(job.title || '')}</span></div>
+          ${client ? `<div class="meta-item"><label>Client</label><span>${escapeHtml(ensureDisplayName(client.name, 'Client'))}</span></div>` : ''}
+          ${job.address ? `<div class="meta-item"><label>Address</label><span>${escapeHtml(job.address)}</span></div>` : ''}
+          <div class="meta-item"><label>Status</label><span>${escapeHtml(job.status || '')}</span></div>
+        </div>
+        ${cardsHtml}
+        <div class="footer">Generated ${escapeHtml(fmtDate(new Date()))} • ${escapeHtml(businessName)}</div>
+      </body>
+    </html>
+  `;
+}

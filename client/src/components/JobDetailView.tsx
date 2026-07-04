@@ -19,7 +19,7 @@ import { JobVariations } from "./JobVariations";
 import { JobSignature } from "./JobSignature";
 import { AIPhotoAnalysis } from "./AIPhotoAnalysis";
 import { useFeatureAccess } from "@/hooks/use-subscription";
-import { JobForms } from "./CustomFormRenderer";
+import { JobForms, JobCardSection, JobTasksSection } from "./CustomFormRenderer";
 import { SafetyFormsSection, SafetyCheckDialog } from "./SafetyFormsSection";
 import { JobChat } from "./JobChat";
 import SmartActionsPanel, { getJobSmartActions, SmartAction } from "./SmartActionsPanel";
@@ -3916,6 +3916,12 @@ export default function JobDetailView({
               </CardContent>
             </Card>
           )}
+
+          {/* Job Card Section - customizable required-to-close forms with PDF export */}
+          <JobCardSection jobId={jobId} />
+
+          {/* Follow-up Tasks - spawned by form task rules, plus manual */}
+          <JobTasksSection jobId={jobId} />
 
           <JobPhotoGallery jobId={jobId} canUpload={job.status !== 'invoiced'} />
 
