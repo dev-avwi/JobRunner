@@ -1544,17 +1544,76 @@ interface FormItem extends CustomForm {
   templateKey?: string;
 }
 
+interface JobCardTemplate {
+  id: string;
+  trade: string;
+  tradeLabel: string;
+  name: string;
+  description: string;
+  requiresSignature?: boolean;
+  blockJobCompletion?: boolean;
+  fields: any[];
+}
+
 function JobCardsTab() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { data: business } = useBusinessSettings();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [toDelete, setToDelete] = useState<CustomForm | null>(null);
+  const [templatesOpen, setTemplatesOpen] = useState(true);
 
   const { data: customForms = [], isLoading } = useQuery<CustomForm[]>({
     queryKey: ["/api/custom-forms"],
   });
 
+  const { data: templates = [] } = useQuery<JobCardTemplate[]>({
+    queryKey: ["/api/job-card-templates"],
+  });
+
   const jobCards = customForms.filter(f => (f as any).isJobCard && f.isActive);
+
+  const myTrade = (business as any)?.tradeType as string | undefined;
+
+  // Group templates by trade, ordered with the user's trade first, then General, then the rest.
+  const groupedTemplates = (() => {
+    const groups = new Map<string, { label: string; items: JobCardTemplate[] }>();
+    for (const t of templates) {
+      if (!groups.has(t.trade)) groups.set(t.trade, { label: t.tradeLabel, items: [] });
+      groups.get(t.trade)!.items.push(t);
+    }
+    return Array.from(groups.entries())
+      .map(([trade, g]) => ({ trade, ...g }))
+      .sort((a, b) => {
+        const rank = (tr: string) => (tr === myTrade ? 0 : tr === 'general' ? 1 : 2);
+        const ra = rank(a.trade), rb = rank(b.trade);
+        if (ra !== rb) return ra - rb;
+        return a.label.localeCompare(b.label);
+      });
+  })();
+
+  const createFromTemplateMutation = useMutation({
+    mutationFn: async (template: JobCardTemplate) => {
+      const res = await apiRequest("POST", "/api/custom-forms", {
+        name: template.name,
+        description: template.description,
+        formType: 'general',
+        tradeType: template.trade,
+        fields: template.fields,
+        isJobCard: true,
+        blockJobCompletion: template.blockJobCompletion || false,
+        requiresSignature: template.requiresSignature || false,
+        isActive: true,
+      });
+      return await res.json();
+    },
+    onSuccess: (form: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/custom-forms"] });
+      toast({ title: "Job card created from template" });
+      setLocation(`/forms/${form.id}/edit?returnTab=job-cards`);
+    },
+    onError: () => toast({ title: "Failed to create job card", variant: "destructive" }),
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => apiRequest("DELETE", `/api/custom-forms/${id}`),
@@ -1655,6 +1714,67 @@ function JobCardsTab() {
             );
           })}
         </div>
+      )}
+
+      {groupedTemplates.length > 0 && (
+        <Card data-testid="card-job-card-templates">
+          <CardHeader className="pb-2 cursor-pointer" onClick={() => setTemplatesOpen(!templatesOpen)}>
+            <CardTitle className="text-sm font-medium flex items-center justify-between gap-4">
+              <span className="flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5 text-primary" />
+                <div>
+                  <div>Start from a template</div>
+                  <div className="text-xs font-normal text-muted-foreground">Ready-made job cards for your trade — customise and save your own</div>
+                </div>
+              </span>
+              <Badge variant="secondary" className="text-xs">{templates.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          {templatesOpen && (
+            <CardContent className="pt-0 space-y-5">
+              {groupedTemplates.map((group) => (
+                <div key={group.trade} className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-2 pb-1">
+                    {group.label}
+                    {group.trade === myTrade && <span className="ml-2 normal-case font-normal text-primary">Your trade</span>}
+                  </p>
+                  {group.items.map((template) => (
+                    <div
+                      key={template.id}
+                      className="flex items-center justify-between gap-3 p-2 rounded-md"
+                      data-testid={`row-job-card-template-${template.id}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <ClipboardCheck className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm truncate">{template.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{template.description}</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0"
+                        onClick={() => createFromTemplateMutation.mutate(template)}
+                        disabled={createFromTemplateMutation.isPending}
+                        data-testid={`button-customize-job-card-${template.id}`}
+                      >
+                        {createFromTemplateMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            Customise
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </CardContent>
+          )}
+        </Card>
       )}
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

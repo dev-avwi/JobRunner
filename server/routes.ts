@@ -43366,6 +43366,18 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
+  // Built-in Job Card templates (read-only). Customising one creates a real
+  // job card via POST /api/custom-forms on the client (mirrors SWMS flow).
+  app.get("/api/job-card-templates", requireAuth, async (req: any, res) => {
+    try {
+      const { getJobCardTemplates } = await import('./jobCardTemplates');
+      const { tradeType } = req.query;
+      res.json(getJobCardTemplates(tradeType as string | undefined));
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/swms", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
