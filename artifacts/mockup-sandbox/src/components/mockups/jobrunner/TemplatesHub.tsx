@@ -3,7 +3,7 @@ import {
   Search, Plus, ChevronRight, ShieldAlert,
   Settings2, DollarSign, Palette, Home, Calendar,
   Briefcase, ClipboardList, CheckCircle2, History,
-  FileCheck2, LayoutTemplate
+  FileCheck2, LayoutTemplate, FileText
 } from 'lucide-react';
 
 export default function TemplatesHub() {
@@ -64,6 +64,25 @@ export default function TemplatesHub() {
         {/* Content */}
         <div className="flex-1 overflow-y-auto hide-scrollbar pb-28">
           <div className="px-5 pt-1 space-y-6">
+
+            {/* QUICK KPI ROW */}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { icon: ClipboardList, tint: 'var(--trade)', count: '14', label: 'Job Cards' },
+                { icon: ShieldAlert, tint: 'var(--status-in-progress)', count: '5', label: 'SWMS' },
+                { icon: Palette, tint: 'var(--status-invoiced)', count: '4', label: 'Documents' },
+                { icon: FileText, tint: 'var(--status-completed)', count: '3', label: 'Inputs' },
+              ].map((k) => (
+                <div key={k.label} className="feed-card card-press p-2.5 flex flex-col items-center text-center gap-1.5">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                       style={{ backgroundColor: `hsl(${k.tint} / 0.12)` }}>
+                    <k.icon size={16} style={{ color: `hsl(${k.tint})` }} />
+                  </div>
+                  <span className="text-[19px] font-bold leading-none">{k.count}</span>
+                  <span className="text-[10px] font-medium text-muted-foreground leading-tight">{k.label}</span>
+                </div>
+              ))}
+            </div>
 
             {/* HERO: Job Card Templates */}
             <div className="rounded-2xl overflow-hidden relative shadow-lg"
