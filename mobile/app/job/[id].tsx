@@ -6396,7 +6396,7 @@ export default function JobDetailScreen() {
   const clientInitials = client?.name ? client.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
 
   const TAB_CONFIG = [
-    { id: 'overview' as const, label: 'Info', icon: 'briefcase' as const },
+    { id: 'overview' as const, label: 'Job Card', icon: 'briefcase' as const },
     { id: 'documents' as const, label: 'Docs', icon: 'file-text' as const },
     { id: 'chat' as const, label: 'Chat', icon: 'message-circle' as const },
     ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'manage' as const, label: 'More', icon: 'settings' as const }] : []),
@@ -6430,6 +6430,17 @@ export default function JobDetailScreen() {
 
       {/* Job Progress Bar - Visual workflow indicator */}
       <JobProgressBar status={job.status} />
+
+      {/* Job Card Section - primary view, leads the Job Card tab */}
+      <View style={styles.photosCard}>
+        <JobForms
+          jobId={job.id}
+          jobCardMode
+          readOnly={job.status === 'invoiced'}
+          onExport={handleExportJobCard}
+          isExporting={isExportingJobCard}
+        />
+      </View>
 
       {/* Wrap-Up Banner - appears when next job is approaching */}
       {showWrapUpBanner && wrapUpNextJob && (
@@ -8941,17 +8952,6 @@ export default function JobDetailScreen() {
         onCreateInvoice={() => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
       />
       )}
-
-      {/* Job Card Section - customizable required-to-close forms with PDF export */}
-      <View style={styles.photosCard}>
-        <JobForms
-          jobId={job.id}
-          jobCardMode
-          readOnly={job.status === 'invoiced'}
-          onExport={handleExportJobCard}
-          isExporting={isExportingJobCard}
-        />
-      </View>
 
       {/* Follow-up Tasks - spawned by form task rules, plus manual (owner-managed) */}
       <View style={styles.photosCard}>

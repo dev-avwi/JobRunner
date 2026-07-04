@@ -2129,6 +2129,11 @@ export default function JobDetailView({
         )}
       </div>
 
+      {/* Job Card - primary view, opens the focused Job Card popup */}
+      <div className="mt-4">
+        <JobCardSection jobId={jobId} />
+      </div>
+
       {/* Two-column layout on desktop, single column on mobile */}
       <div className="lg:grid lg:grid-cols-5 lg:gap-6 space-y-4 lg:space-y-0 mt-4">
         {/* Left column - Primary content */}
@@ -3916,9 +3921,6 @@ export default function JobDetailView({
               </CardContent>
             </Card>
           )}
-
-          {/* Job Card Section - customizable required-to-close forms with PDF export */}
-          <JobCardSection jobId={jobId} />
 
           {/* Follow-up Tasks - spawned by form task rules, plus manual */}
           <JobTasksSection jobId={jobId} />

@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/use-user-role";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,8 @@ import {
   ShieldCheck,
   ClipboardList,
   ClipboardCheck,
+  ChevronRight,
+  Pencil,
   FileDown,
   Loader2,
   Lock,
@@ -703,6 +706,9 @@ interface JobCardSectionProps {
 
 export function JobCardSection({ jobId }: JobCardSectionProps) {
   const { toast } = useToast();
+  const { isOwner, isManager } = useUserRole();
+  const canManageJobCard = isOwner || isManager;
+  const [, setLocation] = useLocation();
   const { data: submissions, isLoading: loadingSubmissions } = useQuery<FormSubmission[]>({
     queryKey: ['/api/jobs', jobId, 'form-submissions'],
   });
@@ -724,9 +730,10 @@ export function JobCardSection({ jobId }: JobCardSectionProps) {
     },
   });
 
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<'list' | 'form'>('list');
   const [selectedForm, setSelectedForm] = useState<CustomForm | null>(null);
   const [existingSubmission, setExistingSubmission] = useState<FormSubmission | null>(null);
-  const [showFormDialog, setShowFormDialog] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const isLoading = loadingSubmissions || loadingForms;
@@ -734,10 +741,12 @@ export function JobCardSection({ jobId }: JobCardSectionProps) {
   const getSubmissionForForm = (formId: string) =>
     (submissions || []).find(s => s.formId === formId);
 
+  const openList = () => { setView('list'); setOpen(true); };
+
   const handleFill = (form: CustomForm) => {
     setSelectedForm(form);
     setExistingSubmission(getSubmissionForForm(form.id) || null);
-    setShowFormDialog(true);
+    setView('form');
   };
 
   const handleExport = async () => {
@@ -770,109 +779,179 @@ export function JobCardSection({ jobId }: JobCardSectionProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center p-4">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  if (jobCards.length === 0) return null;
+  const hasCards = jobCards.length > 0;
+  // Workers with no job card set up see nothing; owners/managers always get the launcher so they can set one up.
+  if (!hasCards && !canManageJobCard) return null;
 
   const completedCount = jobCards.filter(f => !!getSubmissionForForm(f.id)).length;
   const anyCompleted = completedCount > 0;
+  const requiredRemaining = jobCards.filter(
+    f => (f as any).blockJobCompletion && !getSubmissionForForm(f.id)
+  ).length;
 
   return (
-    <Card data-testid="card-job-cards">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <ClipboardCheck className="h-4 w-4" />
-            Job Card
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">{completedCount}/{jobCards.length} done</Badge>
-            {anyCompleted && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExport}
-                disabled={exporting}
-                data-testid="button-export-job-card"
-              >
-                {exporting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileDown className="h-4 w-4 mr-2" />
-                )}
-                Export PDF
-              </Button>
-            )}
+    <>
+      {/* Launcher - opens the focused Job Card popup */}
+      <Card
+        className="hover-elevate cursor-pointer"
+        onClick={openList}
+        data-testid="card-job-card-launcher"
+      >
+        <CardContent className="flex items-center gap-3 p-4">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <ClipboardCheck className="h-5 w-5 text-primary" />
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {jobCards.map(form => {
-          const submission = getSubmissionForForm(form.id);
-          const isDone = !!submission;
-          const required = !!(form as any).blockJobCompletion;
-          return (
-            <Card
-              key={form.id}
-              className="p-3 hover-elevate cursor-pointer"
-              onClick={() => handleFill(form)}
-              data-testid={`job-card-${form.id}`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`h-8 w-8 rounded-lg ${isDone ? 'bg-green-100 dark:bg-green-900' : 'bg-primary/10'} flex items-center justify-center shrink-0`}>
-                    {isDone ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    ) : (
-                      <ClipboardList className="h-4 w-4 text-primary" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">Job Card</p>
+            <p className="text-sm text-muted-foreground truncate">
+              {hasCards
+                ? `${completedCount}/${jobCards.length} sections done${requiredRemaining > 0 ? ` · ${requiredRemaining} required to close` : ''}`
+                : 'No sections yet — tap to set up'}
+            </p>
+          </div>
+          {hasCards && (
+            <Badge variant={requiredRemaining > 0 ? 'outline' : 'secondary'}>
+              {completedCount}/{jobCards.length}
+            </Badge>
+          )}
+          <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+        </CardContent>
+      </Card>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {view === 'list' && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <DialogTitle className="flex items-center gap-2">
+                    <ClipboardCheck className="h-5 w-5" />
+                    Job Card
+                  </DialogTitle>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {canManageJobCard && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setLocation('/templates')}
+                        data-testid="button-edit-job-card"
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit sections
+                      </Button>
+                    )}
+                    {anyCompleted && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleExport}
+                        disabled={exporting}
+                        data-testid="button-export-job-card"
+                      >
+                        {exporting ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <FileDown className="h-4 w-4 mr-2" />
+                        )}
+                        Export PDF
+                      </Button>
                     )}
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{form.name}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {isDone && submission?.submittedAt && (
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(submission.submittedAt), 'dd MMM yyyy, h:mm a')}
-                        </span>
-                      )}
-                      {required && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Lock className="h-3 w-3" />
-                          Required to close
-                        </span>
-                      )}
-                    </div>
-                  </div>
                 </div>
-                {isDone ? (
-                  <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" />Done</Badge>
-                ) : (
-                  <Badge variant="outline">Not started</Badge>
-                )}
-              </div>
-            </Card>
-          );
-        })}
-      </CardContent>
+                <DialogDescription>
+                  {hasCards
+                    ? 'Complete each section for this job.'
+                    : 'No job card sections have been set up yet.'}
+                </DialogDescription>
+              </DialogHeader>
 
-      <Dialog open={showFormDialog} onOpenChange={setShowFormDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          {selectedForm && (
+              <div className="space-y-2">
+                {!hasCards && (
+                  <div className="text-center text-muted-foreground py-6">
+                    <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No job card sections yet.</p>
+                    {canManageJobCard && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3"
+                        onClick={() => setLocation('/templates')}
+                        data-testid="button-setup-job-card"
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Set up job card
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {jobCards.map(form => {
+                  const submission = getSubmissionForForm(form.id);
+                  const isDone = !!submission;
+                  const required = !!(form as any).blockJobCompletion;
+                  return (
+                    <Card
+                      key={form.id}
+                      className="p-3 hover-elevate cursor-pointer"
+                      onClick={() => handleFill(form)}
+                      data-testid={`job-card-${form.id}`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`h-8 w-8 rounded-lg ${isDone ? 'bg-green-100 dark:bg-green-900' : 'bg-primary/10'} flex items-center justify-center shrink-0`}>
+                            {isDone ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            ) : (
+                              <ClipboardList className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{form.name}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {isDone && submission?.submittedAt && (
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(submission.submittedAt), 'dd MMM yyyy, h:mm a')}
+                                </span>
+                              )}
+                              {required && (
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Lock className="h-3 w-3" />
+                                  Required to close
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {isDone ? (
+                          <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" />Done</Badge>
+                        ) : (
+                          <Badge variant="outline">Not started</Badge>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {view === 'form' && selectedForm && (
             <FormRenderer
               form={selectedForm}
               jobId={jobId}
               existingSubmission={existingSubmission || undefined}
-              onSubmit={() => setShowFormDialog(false)}
-              onCancel={() => setShowFormDialog(false)}
+              onSubmit={() => setView('list')}
+              onCancel={() => setView('list')}
             />
           )}
         </DialogContent>
       </Dialog>
-    </Card>
+    </>
   );
 }
 
