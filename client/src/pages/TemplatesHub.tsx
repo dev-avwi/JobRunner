@@ -1687,7 +1687,6 @@ function FormsTab() {
   const [complianceFormsOpen, setComplianceFormsOpen] = useState(true);
   const [inspectionFormsOpen, setInspectionFormsOpen] = useState(true);
   const [swmsTemplatesOpen, setSwmsTemplatesOpen] = useState(true);
-  const [mySwmsDocsOpen, setMySwmsDocsOpen] = useState(true);
   const [, setLocation] = useLocation();
   const [selectedForm, setSelectedForm] = useState<FormItem | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -2112,57 +2111,124 @@ function FormsTab() {
               "card-inspection-forms"
             )}
 
-            <Card data-testid="card-swms-templates">
+            <Card data-testid="card-swms">
               <CardHeader className="pb-2 cursor-pointer" onClick={() => setSwmsTemplatesOpen(!swmsTemplatesOpen)}>
                 <CardTitle className="text-sm font-medium flex items-center justify-between gap-4">
                   <span className="flex items-center gap-2">
                     <Shield className="h-5 w-5" style={{ color: "hsl(var(--trade))" }} />
                     <div>
-                      <div>SWMS Templates</div>
-                      <div className="text-xs font-normal text-muted-foreground">Safe Work Method Statement templates for high-risk work</div>
+                      <div>SWMS</div>
+                      <div className="text-xs font-normal text-muted-foreground">Safe Work Method Statements for high-risk work</div>
                     </div>
                   </span>
-                  <Badge variant="secondary" className="text-xs">{swmsTemplates.length}</Badge>
+                  <Badge variant="secondary" className="text-xs">{mySwmsDocs.length + swmsTemplates.length}</Badge>
                 </CardTitle>
               </CardHeader>
               {swmsTemplatesOpen && (
-                <CardContent className="pt-0 space-y-1">
-                  {swmsTemplates.map((template: any) => (
-                    <div
-                      key={template.id}
-                      className="flex items-center justify-between gap-3 p-2 rounded-md hover-elevate cursor-pointer"
-                      onClick={() => setSelectedForm({
-                        id: `swms-${template.id}`,
-                        name: template.title,
-                        description: template.description || '',
-                        formType: 'safety',
-                        fields: (template.hazards || []).map((h: any, i: number) => ({
-                          id: `hazard-${i}`,
-                          type: 'text',
-                          label: `${h.activityTask}: ${h.hazard}`,
-                          required: false,
-                        })),
-                        settings: {},
-                        requiresSignature: true,
-                        isActive: true,
-                        userId: '',
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                        isSystemTemplate: true,
-                        templateKey: template.id,
-                        _swmsTemplate: template,
-                      } as any)}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Shield className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="text-sm truncate">{template.title}</span>
-                        <Badge variant="default" className="text-xs shrink-0">SWMS</Badge>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-muted-foreground">{template.hazards?.length || 0} hazards</span>
+                <CardContent className="pt-0 space-y-5">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-2 pb-1">Your SWMS</p>
+                    {mySwmsDocs.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-2 px-2">
+                        No SWMS yet. Pick a template below and customise it to create your first one.
+                      </p>
+                    ) : (
+                      mySwmsDocs.map((doc: any) => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center justify-between gap-3 p-2 rounded-md hover-elevate cursor-pointer"
+                          onClick={() => setSelectedForm({
+                            id: `swms-doc-${doc.id}`,
+                            name: doc.title,
+                            description: doc.description || '',
+                            formType: 'safety',
+                            fields: [],
+                            settings: {},
+                            requiresSignature: true,
+                            isActive: true,
+                            userId: doc.userId,
+                            createdAt: doc.createdAt,
+                            updatedAt: doc.updatedAt,
+                          } as any)}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <span className="text-sm truncate">{doc.title}</span>
+                            <Badge variant={doc.status === 'active' ? 'default' : 'secondary'} className="text-xs shrink-0 capitalize">{doc.status || 'draft'}</Badge>
+                            {doc.hazardCount > 0 && (
+                              <span className="text-xs text-muted-foreground shrink-0">{doc.hazardCount} hazards</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSwmsBuilderSwmsId(doc.id);
+                                setSwmsBuilderTitle(doc.title);
+                                setSwmsBuilderOpen(true);
+                              }}
+                              data-testid={`button-edit-swms-${doc.id}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSwmsToDelete(doc);
+                                setSwmsDeleteConfirmOpen(true);
+                              }}
+                              data-testid={`button-delete-swms-${doc.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-2 pb-1">Start from a template</p>
+                    {swmsTemplates.map((template: any) => (
+                      <div
+                        key={template.id}
+                        className="flex items-center justify-between gap-3 p-2 rounded-md hover-elevate cursor-pointer"
+                        onClick={() => setSelectedForm({
+                          id: `swms-${template.id}`,
+                          name: template.title,
+                          description: template.description || '',
+                          formType: 'safety',
+                          fields: (template.hazards || []).map((h: any, i: number) => ({
+                            id: `hazard-${i}`,
+                            type: 'text',
+                            label: `${h.activityTask}: ${h.hazard}`,
+                            required: false,
+                          })),
+                          settings: {},
+                          requiresSignature: true,
+                          isActive: true,
+                          userId: '',
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                          isSystemTemplate: true,
+                          templateKey: template.id,
+                          _swmsTemplate: template,
+                        } as any)}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Shield className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm truncate">{template.title}</span>
+                          <span className="text-xs text-muted-foreground shrink-0">{template.hazards?.length || 0} hazards</span>
+                        </div>
                         <Button
-                          size="icon"
-                          variant="ghost"
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             swmsCreateFromTemplateMutation.mutate(template);
@@ -2173,93 +2239,15 @@ function FormsTab() {
                           {swmsCreateFromTemplateMutation.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <Pencil className="h-4 w-4" />
+                            <>
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Customise
+                            </>
                           )}
                         </Button>
                       </div>
-                    </div>
-                  ))}
-                </CardContent>
-              )}
-            </Card>
-
-            <Card data-testid="card-my-swms-docs">
-              <CardHeader className="pb-2 cursor-pointer" onClick={() => setMySwmsDocsOpen(!mySwmsDocsOpen)}>
-                <CardTitle className="text-sm font-medium flex items-center justify-between gap-4">
-                  <span className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" style={{ color: "hsl(var(--trade))" }} />
-                    <div>
-                      <div>My SWMS Documents</div>
-                      <div className="text-xs font-normal text-muted-foreground">Your saved and customised SWMS documents</div>
-                    </div>
-                  </span>
-                  <Badge variant="secondary" className="text-xs">{mySwmsDocs.length}</Badge>
-                </CardTitle>
-              </CardHeader>
-              {mySwmsDocsOpen && (
-                <CardContent className="pt-0 space-y-1">
-                  {mySwmsDocs.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-3 text-center">
-                      No SWMS documents yet. Use a template above to get started.
-                    </p>
-                  ) : (
-                    mySwmsDocs.map((doc: any) => (
-                      <div
-                        key={doc.id}
-                        className="flex items-center justify-between gap-3 p-2 rounded-md hover-elevate cursor-pointer"
-                        onClick={() => setSelectedForm({
-                          id: `swms-doc-${doc.id}`,
-                          name: doc.title,
-                          description: doc.description || '',
-                          formType: 'safety',
-                          fields: [],
-                          settings: {},
-                          requiresSignature: true,
-                          isActive: true,
-                          userId: doc.userId,
-                          createdAt: doc.createdAt,
-                          updatedAt: doc.updatedAt,
-                        } as any)}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className="text-sm truncate">{doc.title}</span>
-                          <Badge variant={doc.status === 'active' ? 'default' : 'secondary'} className="text-xs shrink-0 capitalize">{doc.status || 'draft'}</Badge>
-                          {doc.hazardCount > 0 && (
-                            <span className="text-xs text-muted-foreground shrink-0">{doc.hazardCount} hazards</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSwmsBuilderSwmsId(doc.id);
-                              setSwmsBuilderTitle(doc.title);
-                              setSwmsBuilderOpen(true);
-                            }}
-                            data-testid={`button-edit-swms-${doc.id}`}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSwmsToDelete(doc);
-                              setSwmsDeleteConfirmOpen(true);
-                            }}
-                            data-testid={`button-delete-swms-${doc.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                    ))}
+                  </div>
                 </CardContent>
               )}
             </Card>
