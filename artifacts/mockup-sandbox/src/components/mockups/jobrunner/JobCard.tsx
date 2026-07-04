@@ -1,24 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  ChevronLeft, MoreVertical, MapPin, Clock, Camera, 
-  CheckCircle2, Circle, ImagePlus, ChevronDown, ChevronUp,
-  Building2, Navigation, AlertCircle, Check
+import {
+  ChevronLeft, MoreVertical, Clock, Camera,
+  CheckCircle2, Circle, ChevronDown, ChevronUp,
+  Building2, Navigation, Check, ArrowRight
 } from 'lucide-react';
 
-// --- Data Models ---
-type ChecklistItem = {
-  id: string;
-  label: string;
-  checked: boolean;
-};
-
-type Section = {
-  id: string;
-  title: string;
-  items: ChecklistItem[];
-  note: string;
-  photoCount: number;
-};
+type ChecklistItem = { id: string; label: string; checked: boolean };
+type Section = { id: string; title: string; items: ChecklistItem[]; note: string; photoCount: number };
 
 const INITIAL_SECTIONS: Section[] = [
   {
@@ -80,241 +68,198 @@ const INITIAL_SECTIONS: Section[] = [
 
 export default function JobCard() {
   const [sections, setSections] = useState<Section[]>(INITIAL_SECTIONS);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['service', 'pft'])
-  );
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['service', 'pft']));
 
   const toggleSection = (id: string) => {
     const next = new Set(expandedSections);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    if (next.has(id)) next.delete(id); else next.add(id);
     setExpandedSections(next);
   };
 
   const toggleCheck = (sectionId: string, itemId: string) => {
-    setSections(prev => prev.map(sec => {
-      if (sec.id !== sectionId) return sec;
-      return {
-        ...sec,
-        items: sec.items.map(item => 
-          item.id === itemId ? { ...item, checked: !item.checked } : item
-        )
-      };
+    setSections(prev => prev.map(sec => sec.id !== sectionId ? sec : {
+      ...sec,
+      items: sec.items.map(item => item.id === itemId ? { ...item, checked: !item.checked } : item),
     }));
   };
 
-  // Compute progress
   const totalItems = sections.reduce((acc, sec) => acc + sec.items.length, 0);
   const completedItems = sections.reduce((acc, sec) => acc + sec.items.filter(i => i.checked).length, 0);
   const progressPercent = Math.round((completedItems / totalItems) * 100) || 0;
+  const sectionsComplete = sections.filter(s => s.items.every(i => i.checked)).length;
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100 p-4 font-sans text-slate-900">
-      <style>{`
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        /* Custom scrollbar for photos */
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+    <div className="flex items-center justify-center min-h-screen bg-slate-200 p-4 font-sans">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .font-sans { font-family: 'Inter', system-ui, sans-serif; }
+        @keyframes pulse-slow { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .animate-pulse-slow { animation: pulse-slow 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+        .hide-scrollbar::-webkit-scrollbar { display:none; }
+        .hide-scrollbar { -ms-overflow-style:none; scrollbar-width:none; }
+      `}} />
 
-      {/* Mobile Device Frame */}
-      <div className="w-[390px] h-[844px] bg-slate-50 relative overflow-hidden flex flex-col rounded-[40px] border-[8px] border-slate-900 shadow-2xl shrink-0">
-        
-        {/* Top Navigation Bar */}
-        <div className="flex items-center justify-between px-4 pt-12 pb-3 bg-white border-b border-slate-200 shrink-0 z-10 relative">
-          <button className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors">
-            <ChevronLeft className="w-6 h-6 text-slate-700" />
+      {/* Device frame */}
+      <div className="w-[390px] h-[844px] bg-background text-foreground relative overflow-hidden flex flex-col rounded-[40px] border-[10px] border-slate-900 shadow-2xl shrink-0">
+
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-3 pt-11 pb-3 bg-background border-b border-border shrink-0 z-10">
+          <button className="p-2 -ml-1 rounded-full hover-elevate">
+            <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <div className="flex flex-col items-center">
-            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">JOB CARD</span>
-            <span className="text-lg font-bold text-slate-900">#52734</span>
+            <span className="ios-label">Job Card</span>
+            <span className="text-[17px] font-bold tracking-tight">#52734</span>
           </div>
-          <button className="p-2 -mr-2 rounded-full hover:bg-slate-100 transition-colors">
-            <MoreVertical className="w-6 h-6 text-slate-700" />
+          <button className="p-2 -mr-1 rounded-full hover-elevate">
+            <MoreVertical className="w-6 h-6 text-foreground" />
           </button>
         </div>
 
-        {/* Scrollable Content */}
+        {/* Scroll */}
         <div className="flex-1 overflow-y-auto hide-scrollbar pb-32">
-          
-          {/* Header Context Area */}
-          <div className="bg-white px-5 pt-5 pb-6 border-b border-slate-200 shadow-sm relative z-0">
-            {/* Status Pills Row */}
+
+          {/* Context header */}
+          <div className="bg-card px-5 pt-4 pb-5 border-b border-border">
             <div className="flex items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse-slow"></span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-status-in-progress/10 text-status-in-progress border border-status-in-progress/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-status-in-progress animate-pulse-slow" />
                 In Progress
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium tracking-tight font-mono">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-muted text-muted-foreground border border-border tabular-nums">
                 <Clock className="w-3 h-3" />
                 02:14:37
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium ml-auto">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-status-completed/10 text-status-completed border border-status-completed/20 ml-auto">
                 <Navigation className="w-3 h-3" />
                 On site
               </span>
             </div>
 
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 leading-tight mb-3">
-              Service Inspection <span className="text-slate-400 font-normal">—</span> A25 Shutter
+            <h1 className="ios-section-title leading-tight mb-3">
+              Service Inspection <span className="text-muted-foreground font-normal">·</span> A25 Shutter
             </h1>
 
-            <div className="flex items-start gap-3 mb-5 p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
-                <Building2 className="w-4 h-4 text-blue-600" />
+            <div className="flex items-start gap-3 mb-5 p-3 bg-muted/60 rounded-xl">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                   style={{ backgroundColor: 'hsl(var(--trade) / 0.12)' }}>
+                <Building2 className="w-4 h-4" style={{ color: 'hsl(var(--trade))' }} />
               </div>
               <div className="flex flex-col">
-                <span className="font-semibold text-sm text-slate-900">Coastline Facilities</span>
-                <span className="text-sm text-slate-500 leading-snug">14 Warehouse Rd, Botany NSW 2019</span>
+                <span className="ios-card-title">Coastline Facilities</span>
+                <span className="ios-caption leading-snug">14 Warehouse Rd, Botany NSW 2019</span>
               </div>
             </div>
 
-            {/* Progress Bar */}
+            {/* Progress */}
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-slate-700">Completion</span>
-                <span className="font-bold text-slate-900">{progressPercent}%</span>
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="font-medium text-muted-foreground">Completion</span>
+                <span className="font-bold">{progressPercent}%</span>
               </div>
-              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-600 rounded-full transition-all duration-500 ease-out" 
-                  style={{ width: `${progressPercent}%` }}
-                />
+              <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500 ease-out"
+                     style={{ width: `${progressPercent}%`, backgroundColor: 'hsl(var(--trade))' }} />
               </div>
-              <p className="text-xs text-slate-500 mt-1">3 of 5 sections complete</p>
+              <p className="ios-caption mt-0.5">{sectionsComplete} of {sections.length} sections complete</p>
             </div>
           </div>
 
-          {/* Job Sections List */}
-          <div className="p-4 space-y-4">
+          {/* Sections */}
+          <div className="p-4 space-y-3">
             {sections.map((section) => {
               const isExpanded = expandedSections.has(section.id);
               const isCompleted = section.items.every(i => i.checked);
               const completedCount = section.items.filter(i => i.checked).length;
-              
+
               return (
-                <div 
-                  key={section.id} 
-                  className={`bg-white rounded-2xl border transition-colors shadow-sm overflow-hidden
-                    ${isCompleted ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200'}`
-                  }
-                >
-                  {/* Section Header */}
-                  <button 
-                    onClick={() => toggleSection(section.id)}
-                    className="w-full flex items-center justify-between p-4 text-left focus:outline-none"
-                  >
+                <div key={section.id} className="feed-card">
+                  {/* Section header */}
+                  <button onClick={() => toggleSection(section.id)}
+                          className="w-full flex items-center justify-between p-4 text-left hover-elevate">
                     <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors
-                        ${isCompleted ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}
-                      >
-                        {isCompleted ? <Check className="w-4 h-4" /> : <span className="text-xs font-semibold">{completedCount}</span>}
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[12px] font-semibold"
+                           style={isCompleted
+                             ? { backgroundColor: 'hsl(var(--status-completed) / 0.12)', color: 'hsl(var(--status-completed))' }
+                             : { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>
+                        {isCompleted ? <Check className="w-4 h-4" /> : completedCount}
                       </div>
                       <div className="flex flex-col">
-                        <span className={`font-semibold text-base ${isCompleted ? 'text-emerald-900' : 'text-slate-900'}`}>
-                          {section.title}
-                        </span>
+                        <span className="ios-card-title">{section.title}</span>
                         {!isExpanded && (
-                          <span className="text-xs text-slate-500">
-                            {completedCount} / {section.items.length} tasks • {section.photoCount} photos
+                          <span className="ios-caption">
+                            {completedCount}/{section.items.length} tasks · {section.photoCount} photos
                           </span>
                         )}
                       </div>
                     </div>
-                    {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-slate-400" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-slate-400" />
-                    )}
+                    {isExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
                   </button>
 
-                  {/* Section Body (Expanded) */}
+                  {/* Body */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="h-px w-full bg-slate-100 mb-4" />
-                      
+                    <div className="px-4 pb-4">
+                      <div className="h-px w-full bg-border mb-3" />
+
                       {/* Checklist */}
-                      <div className="space-y-1 mb-5">
+                      <div className="space-y-0.5 mb-4">
                         {section.items.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => toggleCheck(section.id, item.id)}
-                            className="w-full flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
-                          >
+                          <button key={item.id} onClick={() => toggleCheck(section.id, item.id)}
+                                  className="w-full flex items-start gap-3 p-2.5 rounded-xl hover-elevate text-left">
                             <div className="mt-0.5 shrink-0">
-                              {item.checked ? (
-                                <CheckCircle2 className="w-6 h-6 text-blue-600" />
-                              ) : (
-                                <Circle className="w-6 h-6 text-slate-300" />
-                              )}
+                              {item.checked
+                                ? <CheckCircle2 className="w-5 h-5" style={{ color: 'hsl(var(--trade))' }} />
+                                : <Circle className="w-5 h-5 text-muted-foreground/40" />}
                             </div>
-                            <span className={`text-base leading-snug ${item.checked ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
+                            <span className={`ios-body ${item.checked ? 'text-muted-foreground line-through' : ''}`}>
                               {item.label}
                             </span>
                           </button>
                         ))}
                       </div>
 
-                      {/* Notes Field */}
-                      <div className="mb-5">
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
-                          Notes
-                        </label>
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[80px]">
-                          <p className={`text-sm ${section.note ? 'text-slate-700' : 'text-slate-400 italic'}`}>
+                      {/* Notes */}
+                      <div className="mb-4">
+                        <p className="ios-label mb-2 px-0.5">Notes</p>
+                        <div className="bg-muted/60 border border-border rounded-xl p-3 min-h-[70px]">
+                          <p className={`text-[14px] ${section.note ? 'text-foreground' : 'text-muted-foreground italic'}`}>
                             {section.note || 'Tap to add notes...'}
                           </p>
                         </div>
                       </div>
 
-                      {/* Photos Row */}
+                      {/* Photos */}
                       <div>
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
-                          Evidence Photos
-                        </label>
-                        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 px-1">
-                          <button className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center gap-1 text-slate-500 hover:bg-slate-100 transition-colors">
+                        <p className="ios-label mb-2 px-0.5">Evidence Photos</p>
+                        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1 px-0.5">
+                          <button className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-border bg-muted/40 flex flex-col items-center justify-center gap-1 text-muted-foreground hover-elevate">
                             <Camera className="w-5 h-5" />
                             <span className="text-[10px] font-semibold">Add</span>
                           </button>
-                          
-                          {/* Mock thumbnails based on photoCount */}
                           {Array.from({ length: section.photoCount }).map((_, i) => (
-                            <div key={i} className="w-20 h-20 shrink-0 rounded-xl bg-slate-200 border border-slate-200 overflow-hidden relative group">
-                              <div className="absolute inset-0 bg-gradient-to-tr from-slate-300 to-slate-200" />
-                              <div className="absolute bottom-1 right-1 bg-black/40 rounded px-1.5 py-0.5">
-                                <span className="text-[9px] text-white font-medium">10:42 AM</span>
+                            <div key={i} className="w-20 h-20 shrink-0 rounded-xl bg-muted border border-border overflow-hidden relative">
+                              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, hsl(var(--trade) / 0.15), hsl(var(--muted)))' }} />
+                              <div className="absolute bottom-1 right-1 bg-black/50 rounded px-1.5 py-0.5">
+                                <span className="text-[9px] text-white font-medium">10:42</span>
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
-
                     </div>
                   )}
                 </div>
               );
             })}
           </div>
-
         </div>
 
-        {/* Sticky Bottom Action Bar */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-200 pb-8">
-          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-4 rounded-2xl shadow-[0_8px_16px_-6px_rgba(37,99,235,0.4)] transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+        {/* Sticky action bar */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 pb-7 bg-card/85 backdrop-blur-md border-t border-border">
+          <button className="w-full text-primary-foreground font-semibold text-[16px] py-3.5 rounded-2xl press-scale flex items-center justify-center gap-2 shadow-lg"
+                  style={{ backgroundColor: 'hsl(var(--trade))' }}>
             Submit for approval
-            <ChevronLeft className="w-5 h-5 rotate-180" />
+            <ArrowRight className="w-5 h-5" />
           </button>
         </div>
 
