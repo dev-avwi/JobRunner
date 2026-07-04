@@ -138,6 +138,10 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   
   // Custom Forms - owner/manager only (redirects to /templates)
   { path: '/custom-forms', label: 'Forms', allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie'], showInNav: false },
+
+  // Form/Job Card builder pages (create + edit) - same access as Templates Hub
+  { path: '/forms/new', label: 'Form Builder', allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie'], showInNav: false },
+  { path: '/forms/:id/edit', label: 'Form Builder', allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie'], showInNav: false },
   
   // Templates Hub - owner/manager, staff can access for safety forms
   { path: '/templates', label: 'Templates', allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie'], showInNav: true },
