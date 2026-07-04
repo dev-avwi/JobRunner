@@ -1544,6 +1544,142 @@ interface FormItem extends CustomForm {
   templateKey?: string;
 }
 
+function JobCardsTab() {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<CustomForm | null>(null);
+
+  const { data: customForms = [], isLoading } = useQuery<CustomForm[]>({
+    queryKey: ["/api/custom-forms"],
+  });
+
+  const jobCards = customForms.filter(f => (f as any).isJobCard && f.isActive);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/custom-forms/${id}`),
+    onSuccess: () => {
+      toast({ title: "Job card deleted" });
+      setDeleteOpen(false);
+      setToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/custom-forms"] });
+    },
+    onError: () => toast({ title: "Failed to delete job card", variant: "destructive" }),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-lg font-semibold">Job Cards</h2>
+          <p className="text-sm text-muted-foreground max-w-xl">
+            A job card is a checklist that appears on every job. Your team fills it in on site, and you can require it before a job can be marked done.
+          </p>
+        </div>
+        <Button size="sm" onClick={() => setLocation('/forms/new?jobCard=1&returnTab=job-cards')} data-testid="button-create-job-card">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Job Card
+        </Button>
+      </div>
+
+      {jobCards.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center text-center py-12">
+            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+              <ClipboardCheck className="h-6 w-6 text-primary" />
+            </div>
+            <p className="font-medium">No job cards yet</p>
+            <p className="text-sm text-muted-foreground max-w-sm mt-1">
+              Create a job card to add a standard checklist to every job — like site checks, sign-off, or photos.
+            </p>
+            <Button size="sm" className="mt-4" onClick={() => setLocation('/forms/new?jobCard=1&returnTab=job-cards')} data-testid="button-create-job-card-empty">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Job Card
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {jobCards.map((card) => {
+            const fieldCount = Array.isArray((card as any).fields) ? (card as any).fields.length : 0;
+            const blocks = !!(card as any).blockJobCompletion;
+            return (
+              <Card
+                key={card.id}
+                className="hover-elevate cursor-pointer"
+                onClick={() => setLocation(`/forms/${card.id}/edit?returnTab=job-cards`)}
+                data-testid={`card-job-card-${card.id}`}
+              >
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <ClipboardCheck className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium truncate">{card.name}</p>
+                      {blocks && <Badge variant="outline">Required to close</Badge>}
+                    </div>
+                    {card.description && (
+                      <p className="text-sm text-muted-foreground truncate">{card.description}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}
+                    </p>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => { e.stopPropagation(); setLocation(`/forms/${card.id}/edit?returnTab=job-cards`); }}
+                    data-testid={`button-edit-job-card-${card.id}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => { e.stopPropagation(); setToDelete(card); setDeleteOpen(true); }}
+                    data-testid={`button-delete-job-card-${card.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete job card?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{toDelete?.name}" will be removed from all jobs. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => toDelete && deleteMutation.mutate(toDelete.id)}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 function FormsTab() {
   const { data: business } = useBusinessSettings();
   const { toast } = useToast();
@@ -3411,7 +3547,7 @@ export default function TemplatesHub() {
   const search = useSearch();
   const [, setLocation] = useLocation();
   const tabParam = new URLSearchParams(search).get('tab');
-  const activeTab = ['styles', 'quote-templates', 'components', 'sms-templates', 'forms'].includes(tabParam || '')
+  const activeTab = ['styles', 'quote-templates', 'components', 'sms-templates', 'job-cards', 'forms'].includes(tabParam || '')
     ? (tabParam as string)
     : 'styles';
   return (
@@ -3445,9 +3581,13 @@ export default function TemplatesHub() {
               <MessageSquare className="h-4 w-4" />
               Messaging
             </TabsTrigger>
+            <TabsTrigger value="job-cards" className="gap-2">
+              <ClipboardCheck className="h-4 w-4" />
+              Job Cards
+            </TabsTrigger>
             <TabsTrigger value="forms" className="gap-2">
               <FileText className="h-4 w-4" />
-              Forms
+              Forms & Safety
             </TabsTrigger>
           </TabsList>
           
@@ -3465,6 +3605,10 @@ export default function TemplatesHub() {
           
           <TabsContent value="sms-templates">
             <MessagingTemplatesTab />
+          </TabsContent>
+          
+          <TabsContent value="job-cards">
+            <JobCardsTab />
           </TabsContent>
           
           <TabsContent value="forms">

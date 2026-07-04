@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearch, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest, getAuthHeaders} from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -283,12 +284,23 @@ interface FormBuilderProps {
 export function FormBuilder({ formId, onBack }: FormBuilderProps) {
   const { toast } = useToast();
   const isEditing = !!formId;
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const initialJobCard = !isEditing && new URLSearchParams(search).get('jobCard') === '1';
+  const returnTab = new URLSearchParams(search).get('returnTab');
+  const handleBack = () => {
+    if (returnTab) {
+      navigate(`/templates?tab=${returnTab}`);
+    } else {
+      onBack();
+    }
+  };
 
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formType, setFormType] = useState("general");
   const [requiresSignature, setRequiresSignature] = useState(false);
-  const [isJobCard, setIsJobCard] = useState(false);
+  const [isJobCard, setIsJobCard] = useState(initialJobCard);
   const [blockJobCompletion, setBlockJobCompletion] = useState(false);
   const [taskRules, setTaskRules] = useState<Array<{ fieldId: string; operator: string; value: string; taskTitle: string }>>([]);
   const [fields, setFields] = useState<FormField[]>([]);
@@ -324,7 +336,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-forms'] });
       toast({ title: "Form created", description: "Your custom form has been saved." });
-      onBack();
+      handleBack();
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -338,7 +350,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-forms'] });
       toast({ title: "Form updated", description: "Your changes have been saved." });
-      onBack();
+      handleBack();
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -498,7 +510,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
           <div className="space-y-6 max-w-3xl">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <Button type="button" variant="ghost" size="icon" onClick={onBack} className="rounded-xl" data-testid="button-back">
+                <Button type="button" variant="ghost" size="icon" onClick={handleBack} className="rounded-xl" data-testid="button-back">
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <h1 className="ios-title text-xl font-semibold">{isEditing ? 'Edit Form' : 'New Form'}</h1>
