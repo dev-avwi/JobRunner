@@ -38470,9 +38470,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.get("/api/custom-forms", requireAuth, async (req: any, res) => {
     try {
       const ctx = await getUserContext(req.userId!);
-      const ownerId = ctx.effectiveUserId;
       const { tradeType } = req.query;
-      const forms = await storage.getCustomForms(ownerId, tradeType as string | undefined);
+      // Members see the shared business pool (owner) + their own personal templates.
+      const forms = await storage.getCustomFormsVisibleTo(ctx.effectiveUserId, req.userId!, tradeType as string | undefined);
       res.json(forms);
     } catch (error: any) {
       console.error('Error fetching custom forms:', error);
@@ -38484,10 +38484,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.get("/api/custom-forms/:id", requireAuth, async (req: any, res) => {
     try {
       const ctx = await getUserContext(req.userId!);
-      const ownerId = ctx.effectiveUserId;
       const { id } = req.params;
       
-      const form = await storage.getCustomForm(id, ownerId);
+      // Shared business template, or the member's own personal template.
+      let form = await storage.getCustomForm(id, ctx.effectiveUserId);
+      if (!form && ctx.effectiveUserId !== req.userId) {
+        form = await storage.getCustomForm(id, req.userId!);
+      }
       
       if (!form) {
         return res.status(404).json({ error: 'Form not found' });
@@ -38501,10 +38504,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create custom form
-  app.post("/api/custom-forms", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
+  app.post("/api/custom-forms", requireAuth, async (req: any, res) => {
     try {
       const ctx = await getUserContext(req.userId!);
-      const ownerId = ctx.effectiveUserId;
+      // Owners/managers create shared business templates (stored under the owner).
+      // Workers may also create their own personal templates (stored under themselves).
+      const canManage = hasPermission(ctx, PERMISSIONS.MANAGE_TEMPLATES);
+      const ownerId = canManage ? ctx.effectiveUserId : req.userId!;
       
       const { insertCustomFormSchema } = await import('@shared/schema');
       const form = await storage.createCustomForm({
@@ -38512,8 +38518,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         userId: ownerId,
       });
       
-      // Broadcast form change for cross-device sync (templates are business-wide)
-      const businessId = ownerId;
+      // Broadcast form change for cross-device sync. Business members listen on
+      // the owner channel; a worker's own device is in that business too.
+      const businessId = ctx.effectiveUserId;
       const { broadcastFormChange } = await import('./websocket');
       broadcastFormChange(businessId, 'created', {
         formId: form.id,
@@ -38529,22 +38536,39 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Update custom form
-  app.patch("/api/custom-forms/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
+  app.patch("/api/custom-forms/:id", requireAuth, async (req: any, res) => {
     try {
       const ctx = await getUserContext(req.userId!);
-      const ownerId = ctx.effectiveUserId;
       const { id } = req.params;
+      const canManage = hasPermission(ctx, PERMISSIONS.MANAGE_TEMPLATES);
+      
+      // A shared business template requires MANAGE_TEMPLATES to edit; a member's
+      // own personal template is editable by its creator.
+      let scopeId: string | null = null;
+      const shared = await storage.getCustomForm(id, ctx.effectiveUserId);
+      if (shared) {
+        if (!canManage) {
+          return res.status(403).json({ error: 'You do not have permission to edit this template' });
+        }
+        scopeId = ctx.effectiveUserId;
+      } else if (ctx.effectiveUserId !== req.userId) {
+        const own = await storage.getCustomForm(id, req.userId!);
+        if (own) scopeId = req.userId!;
+      }
+      if (!scopeId) {
+        return res.status(404).json({ error: 'Form not found' });
+      }
       
       const patchData = { ...req.body };
       delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
-      const form = await storage.updateCustomForm(id, ownerId, patchData);
+      const form = await storage.updateCustomForm(id, scopeId, patchData);
       
       if (!form) {
         return res.status(404).json({ error: 'Form not found' });
       }
       
-      // Broadcast form change for cross-device sync (templates are business-wide)
-      const businessId = ownerId;
+      // Broadcast form change for cross-device sync.
+      const businessId = ctx.effectiveUserId;
       const { broadcastFormChange } = await import('./websocket');
       broadcastFormChange(businessId, 'updated', {
         formId: form.id,
@@ -38560,20 +38584,37 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Delete custom form
-  app.delete("/api/custom-forms/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
+  app.delete("/api/custom-forms/:id", requireAuth, async (req: any, res) => {
     try {
       const ctx = await getUserContext(req.userId!);
-      const ownerId = ctx.effectiveUserId;
       const { id } = req.params;
+      const canManage = hasPermission(ctx, PERMISSIONS.MANAGE_TEMPLATES);
       
-      const deleted = await storage.deleteCustomForm(id, ownerId);
+      // A shared business template requires MANAGE_TEMPLATES to delete; a member's
+      // own personal template is deletable by its creator.
+      let scopeId: string | null = null;
+      const shared = await storage.getCustomForm(id, ctx.effectiveUserId);
+      if (shared) {
+        if (!canManage) {
+          return res.status(403).json({ error: 'You do not have permission to delete this template' });
+        }
+        scopeId = ctx.effectiveUserId;
+      } else if (ctx.effectiveUserId !== req.userId) {
+        const own = await storage.getCustomForm(id, req.userId!);
+        if (own) scopeId = req.userId!;
+      }
+      if (!scopeId) {
+        return res.status(404).json({ error: 'Form not found' });
+      }
+      
+      const deleted = await storage.deleteCustomForm(id, scopeId);
       
       if (!deleted) {
         return res.status(404).json({ error: 'Form not found' });
       }
       
-      // Broadcast form change for cross-device sync (templates are business-wide)
-      const businessId = ownerId;
+      // Broadcast form change for cross-device sync.
+      const businessId = ctx.effectiveUserId;
       const { broadcastFormChange } = await import('./websocket');
       broadcastFormChange(businessId, 'deleted', {
         formId: id,
@@ -38644,7 +38685,11 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       if (!payload.formId) {
         return res.status(400).json({ error: 'formId is required' });
       }
-      const form = await storage.getCustomForm(payload.formId, userContext.effectiveUserId);
+      // Shared business form, or the submitter's own personal form.
+      let form = await storage.getCustomForm(payload.formId, userContext.effectiveUserId);
+      if (!form && userContext.effectiveUserId !== userId) {
+        form = await storage.getCustomForm(payload.formId, userId);
+      }
       if (!form) {
         return res.status(404).json({ error: 'Form not found' });
       }

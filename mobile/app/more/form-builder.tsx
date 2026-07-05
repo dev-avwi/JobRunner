@@ -23,6 +23,8 @@ import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, iconSizes, sizes, componentStyles, usePageShell } from '../../src/lib/design-tokens';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import { useUserRole } from '../../src/hooks/use-user-role';
+import { useAuthStore } from '../../src/lib/store';
 
 type FormType = 'general' | 'safety' | 'compliance' | 'inspection';
 type FieldType = 'text' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'date' | 'photo' | 'signature';
@@ -55,6 +57,7 @@ interface CustomForm {
   blockJobCompletion?: boolean;
   isDefault?: boolean;
   createdAt?: string;
+  userId?: string;
 }
 
 const FORM_TYPE_CONFIG: Record<FormType, { label: string; icon: keyof typeof Feather.glyphMap; color: string; bgColor: string }> = {
@@ -645,6 +648,13 @@ export default function FormBuilderScreen() {
   const confirm = useConfirmDialog();
   const responsiveShell = usePageShell();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isOwner, isManager } = useUserRole();
+  const myUserId = useAuthStore((s) => s.user?.id);
+  const isOwnerOrManager = isOwner || isManager;
+  const canManageForm = useCallback(
+    (form?: CustomForm | null) => isOwnerOrManager || (!!form?.userId && form.userId === myUserId),
+    [isOwnerOrManager, myUserId],
+  );
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('forms');
   const [forms, setForms] = useState<CustomForm[]>([]);
@@ -670,6 +680,7 @@ export default function FormBuilderScreen() {
   const [showPreview, setShowPreview] = useState(false);
   const [showConditionalPicker, setShowConditionalPicker] = useState(false);
   const [conditionalFieldIndex, setConditionalFieldIndex] = useState<number | null>(null);
+  const [readOnly, setReadOnly] = useState(false);
 
   const fetchForms = useCallback(async () => {
     try {
@@ -708,6 +719,7 @@ export default function FormBuilderScreen() {
     setEditingForm(null);
     setEditingFieldIndex(null);
     setShowPreview(false);
+    setReadOnly(false);
   };
 
   const openCreate = () => {
@@ -724,6 +736,21 @@ export default function FormBuilderScreen() {
     setBlockJobCompletion(form.blockJobCompletion || false);
     setFields(form.fields || []);
     setEditingForm(form);
+    setReadOnly(false);
+    setShowFormModal(true);
+  };
+
+  const openView = (form: CustomForm) => {
+    setFormName(form.name);
+    setFormDescription(form.description || '');
+    setFormType((form.formType as FormType) || 'general');
+    setRequiresSignature(form.requiresSignature || false);
+    setIsJobCard(form.isJobCard || false);
+    setBlockJobCompletion(form.blockJobCompletion || false);
+    setFields(form.fields || []);
+    setEditingForm(form);
+    setReadOnly(true);
+    setShowPreview(true);
     setShowFormModal(true);
   };
 
@@ -863,7 +890,7 @@ export default function FormBuilderScreen() {
     return (
       <PressableRow
         style={styles.formCard}
-        onPress={() => openEdit(item)}
+        onPress={() => (canManageForm(item) ? openEdit(item) : openView(item))}
 
       >
         <View style={styles.formCardHeader}>
@@ -876,9 +903,11 @@ export default function FormBuilderScreen() {
               <Text style={styles.formDescription} numberOfLines={1}>{item.description}</Text>
             ) : null}
           </View>
-          <TouchableOpacity onPress={() => handleDelete(item)} activeOpacity={0.7} style={{ padding: spacing.xs }}>
-            <Feather name="trash-2" size={iconSizes.lg} color={colors.mutedForeground} />
-          </TouchableOpacity>
+          {canManageForm(item) ? (
+            <TouchableOpacity onPress={() => handleDelete(item)} activeOpacity={0.7} style={{ padding: spacing.xs }}>
+              <Feather name="trash-2" size={iconSizes.lg} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         <View style={styles.formMeta}>
@@ -1104,14 +1133,18 @@ export default function FormBuilderScreen() {
           <TouchableOpacity onPress={() => { setShowFormModal(false); resetFormState(); }} activeOpacity={0.7}>
             <Feather name="x" size={24} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>{editingForm ? 'Edit Form' : 'New Form'}</Text>
-          <TouchableOpacity onPress={handleSave} disabled={isSaving} activeOpacity={0.7}>
-            {isSaving ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Text style={styles.modalSaveText}>Save</Text>
-            )}
-          </TouchableOpacity>
+          <Text style={styles.modalTitle}>{readOnly ? 'View Form' : editingForm ? 'Edit Form' : 'New Form'}</Text>
+          {readOnly ? (
+            <View style={{ width: 24 }} />
+          ) : (
+            <TouchableOpacity onPress={handleSave} disabled={isSaving} activeOpacity={0.7}>
+              {isSaving ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={styles.modalSaveText}>Save</Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
 
         <ScrollView style={styles.modalContent} contentContainerStyle={{ paddingBottom: 40 + insets.bottom }} keyboardShouldPersistTaps="handled">
@@ -1119,9 +1152,11 @@ export default function FormBuilderScreen() {
             <View>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
                 <Text style={styles.sectionTitle}>Preview</Text>
-                <TouchableOpacity onPress={() => setShowPreview(false)} activeOpacity={0.7}>
-                  <Text style={{ ...typography.body, color: colors.primary }}>Edit</Text>
-                </TouchableOpacity>
+                {readOnly ? null : (
+                  <TouchableOpacity onPress={() => setShowPreview(false)} activeOpacity={0.7}>
+                    <Text style={{ ...typography.body, color: colors.primary }}>Edit</Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <View style={styles.previewContainer}>
                 <Text style={{ ...typography.cardTitle, color: colors.foreground, marginBottom: spacing.xs }}>{formName || 'Untitled Form'}</Text>

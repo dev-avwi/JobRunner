@@ -7,6 +7,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { spacing, radius, shadows, iconSizes } from '../../src/lib/design-tokens';
+import { useUserRole } from '../../src/hooks/use-user-role';
 
 type HubItem = {
   title: string;
@@ -14,6 +15,7 @@ type HubItem = {
   icon: keyof typeof Feather.glyphMap;
   color: string;
   path: string;
+  ownerOnly?: boolean;
 };
 
 type HubSection = {
@@ -43,6 +45,7 @@ const buildSections = (colors: ThemeColors): HubSection[] => [
         icon: 'file-text',
         color: colors.info,
         path: '/more/templates',
+        ownerOnly: true,
       },
     ],
   },
@@ -55,6 +58,7 @@ const buildSections = (colors: ThemeColors): HubSection[] => [
         icon: 'message-square',
         color: colors.success,
         path: '/more/business-templates',
+        ownerOnly: true,
       },
     ],
   },
@@ -78,7 +82,16 @@ export default function TemplatesHubScreen() {
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const sections = useMemo(() => buildSections(colors), [colors]);
+  const { isOwner, isManager } = useUserRole();
+  const canManage = isOwner || isManager;
+  const sections = useMemo(() => {
+    return buildSections(colors)
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => canManage || !item.ownerOnly),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [colors, canManage]);
 
   return (
     <View style={styles.container}>

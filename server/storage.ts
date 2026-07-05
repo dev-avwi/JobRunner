@@ -909,6 +909,7 @@ export interface IStorage {
 
   // Custom Forms
   getCustomForms(userId: string, tradeType?: string): Promise<CustomForm[]>;
+  getCustomFormsVisibleTo(ownerId: string, memberId: string, tradeType?: string): Promise<CustomForm[]>;
   getCustomForm(id: string, userId: string): Promise<CustomForm | undefined>;
   createCustomForm(form: InsertCustomForm & { userId: string }): Promise<CustomForm>;
   updateCustomForm(id: string, userId: string, form: Partial<InsertCustomForm>): Promise<CustomForm | undefined>;
@@ -5360,6 +5361,26 @@ export class PostgresStorage implements IStorage {
       .where(and(eq(customForms.id, id), eq(customForms.userId, userId)))
       .limit(1);
     return result[0];
+  }
+
+  // Returns the templates a member can see: the shared business pool (stored
+  // under the owner id) plus the member's own personal templates.
+  async getCustomFormsVisibleTo(ownerId: string, memberId: string, tradeType?: string): Promise<CustomForm[]> {
+    const ids = ownerId === memberId ? [ownerId] : [ownerId, memberId];
+    const scope = inArray(customForms.userId, ids);
+    if (tradeType) {
+      const tradeCondition = or(
+        eq(customForms.tradeType, tradeType),
+        eq(customForms.tradeType, 'general'),
+        eq(customForms.isDefault, false) // User-created forms always included
+      );
+      return await db.select().from(customForms)
+        .where(and(scope, tradeCondition))
+        .orderBy(desc(customForms.createdAt));
+    }
+    return await db.select().from(customForms)
+      .where(scope)
+      .orderBy(desc(customForms.createdAt));
   }
 
   async createCustomForm(form: InsertCustomForm & { userId: string }): Promise<CustomForm> {

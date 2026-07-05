@@ -33,7 +33,11 @@ export function registerCustomFormsRoutes(app: Express): void {
       const { formId } = req.params;
       const { data, jobId } = req.body;
 
-      const form = await storage.getCustomForm(formId, userContext.effectiveUserId);
+      // Shared business form, or the submitter's own personal form.
+      let form = await storage.getCustomForm(formId, userContext.effectiveUserId);
+      if (!form && userContext.effectiveUserId !== req.userId) {
+        form = await storage.getCustomForm(formId, req.userId);
+      }
       if (!form) return res.status(404).json({ error: "Form not found" });
 
       const fields = (form.fields as any[]) || [];
@@ -93,7 +97,7 @@ export function registerCustomFormsRoutes(app: Express): void {
       const submission = await storage.createFormSubmission({
         formId,
         jobId: jobId || null,
-        submittedBy: userContext.effectiveUserId,
+        submittedBy: req.userId,
         submittedAt: new Date(),
         submissionData: data,
         status: 'submitted',
