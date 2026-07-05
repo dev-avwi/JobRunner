@@ -1571,7 +1571,9 @@ function JobCardsTab() {
     queryKey: ["/api/job-card-templates"],
   });
 
-  const jobCards = customForms.filter(f => (f as any).isJobCard && f.isActive);
+  const jobCards = customForms
+    .filter(f => (f as any).isJobCard && f.isActive)
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   const myTrade = (business as any)?.tradeType as string | undefined;
 
@@ -1614,6 +1616,22 @@ function JobCardsTab() {
     },
     onError: () => toast({ title: "Failed to create job card", variant: "destructive" }),
   });
+
+  // Prevent accidental duplicates: if a job card from this template already
+  // exists, open the existing one instead of creating another identical copy.
+  const handleCustomise = (template: JobCardTemplate) => {
+    const norm = (s?: string | null) => (s || '').trim().toLowerCase();
+    const existing = jobCards.find(c => norm(c.name) === norm(template.name));
+    if (existing) {
+      toast({
+        title: "You already have this job card",
+        description: "Opening it so you can edit instead of making a copy.",
+      });
+      setLocation(`/forms/${existing.id}/edit?returnTab=job-cards`);
+      return;
+    }
+    createFromTemplateMutation.mutate(template);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => apiRequest("DELETE", `/api/custom-forms/${id}`),
@@ -1755,7 +1773,7 @@ function JobCardsTab() {
                         size="sm"
                         variant="outline"
                         className="shrink-0"
-                        onClick={() => createFromTemplateMutation.mutate(template)}
+                        onClick={() => handleCustomise(template)}
                         disabled={createFromTemplateMutation.isPending}
                         data-testid={`button-customize-job-card-${template.id}`}
                       >
