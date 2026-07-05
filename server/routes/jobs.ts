@@ -721,8 +721,17 @@ import { logSystemEvent } from "../systemEventService";
       if (!job) return res.status(404).json({ error: "Job not found" });
 
       const forms = await storage.getCustomForms(userId);
-      const jobCards = forms.filter((f: any) => f.isJobCard);
+      let jobCards = forms.filter((f: any) => f.isJobCard);
       const submissions = await storage.getFormSubmissionsByJob(jobId, userId);
+
+      // Optional single-card export: ?formId=<id> limits the PDF to one job card section.
+      const formId = req.query.formId as string | undefined;
+      if (formId) {
+        jobCards = jobCards.filter((f: any) => f.id === formId);
+        if (jobCards.length === 0) {
+          return res.status(404).json({ error: "Job card not found" });
+        }
+      }
 
       const businessSettings = await storage.getBusinessSettings(userId);
       const client = job.clientId ? await storage.getClient(job.clientId, userId) : undefined;
@@ -730,7 +739,10 @@ import { logSystemEvent } from "../systemEventService";
       const { generateJobCardHTML, generatePDFBuffer } = await import('../pdfService');
       const html = generateJobCardHTML({ job, jobCards, submissions, businessSettings, client });
       const pdfBuffer = await generatePDFBuffer(html);
-      const fileName = `job-card-${jobId}.pdf`;
+      const cardSlug = formId
+        ? (jobCards[0]?.name || 'section').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        : null;
+      const fileName = cardSlug ? `job-card-${cardSlug}-${jobId}.pdf` : `job-card-${jobId}.pdf`;
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);

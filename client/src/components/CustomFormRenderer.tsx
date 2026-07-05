@@ -735,6 +735,7 @@ export function JobCardSection({ jobId }: JobCardSectionProps) {
   const [selectedForm, setSelectedForm] = useState<CustomForm | null>(null);
   const [existingSubmission, setExistingSubmission] = useState<FormSubmission | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   const isLoading = loadingSubmissions || loadingForms;
   const jobCards = (forms || []).filter(f => f.isActive && (f as any).isJobCard);
@@ -774,6 +775,35 @@ export function JobCardSection({ jobId }: JobCardSectionProps) {
       });
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleExportSingle = async (formId: string, formName: string) => {
+    setExportingId(formId);
+    try {
+      const response = await fetch(`/api/jobs/${jobId}/job-card-pdf?formId=${encodeURIComponent(formId)}`, {
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error('Failed to generate PDF');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const slug = formName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'section';
+      a.href = url;
+      a.download = `job-card-${slug}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: 'Could not generate the PDF. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setExportingId(null);
     }
   };
 
@@ -927,11 +957,29 @@ export function JobCardSection({ jobId }: JobCardSectionProps) {
                             </div>
                           </div>
                         </div>
-                        {isDone ? (
-                          <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" />Done</Badge>
-                        ) : (
-                          <Badge variant="outline">Not started</Badge>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isDone ? (
+                            <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" />Done</Badge>
+                          ) : (
+                            <Badge variant="outline">Not started</Badge>
+                          )}
+                          {isDone && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={(e) => { e.stopPropagation(); handleExportSingle(form.id, form.name); }}
+                              disabled={exportingId === form.id}
+                              title="Export this card as PDF"
+                              data-testid={`button-export-card-${form.id}`}
+                            >
+                              {exportingId === form.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FileDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </Card>
                   );
