@@ -19,7 +19,7 @@ import { PressableRow } from '@/components/ui/PressableRow';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, iconSizes, sizes, componentStyles, usePageShell } from '../../src/lib/design-tokens';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
@@ -51,6 +51,8 @@ interface CustomForm {
   fields: FormField[];
   requiresSignature: boolean;
   isActive: boolean;
+  isJobCard?: boolean;
+  blockJobCompletion?: boolean;
   isDefault?: boolean;
   createdAt?: string;
 }
@@ -658,6 +660,8 @@ export default function FormBuilderScreen() {
   const [formDescription, setFormDescription] = useState('');
   const [formType, setFormType] = useState<FormType>('general');
   const [requiresSignature, setRequiresSignature] = useState(false);
+  const [isJobCard, setIsJobCard] = useState(false);
+  const [blockJobCompletion, setBlockJobCompletion] = useState(false);
   const [fields, setFields] = useState<FormField[]>([]);
 
   const [showTypePicker, setShowTypePicker] = useState(false);
@@ -698,6 +702,8 @@ export default function FormBuilderScreen() {
     setFormDescription('');
     setFormType('general');
     setRequiresSignature(false);
+    setIsJobCard(false);
+    setBlockJobCompletion(false);
     setFields([]);
     setEditingForm(null);
     setEditingFieldIndex(null);
@@ -714,6 +720,8 @@ export default function FormBuilderScreen() {
     setFormDescription(form.description || '');
     setFormType((form.formType as FormType) || 'general');
     setRequiresSignature(form.requiresSignature || false);
+    setIsJobCard(form.isJobCard || false);
+    setBlockJobCompletion(form.blockJobCompletion || false);
     setFields(form.fields || []);
     setEditingForm(form);
     setShowFormModal(true);
@@ -724,6 +732,8 @@ export default function FormBuilderScreen() {
     setFormDescription(template.description);
     setFormType(template.formType);
     setRequiresSignature(template.requiresSignature);
+    setIsJobCard(false);
+    setBlockJobCompletion(false);
     setFields(template.fields.map(f => ({ ...f, id: generateId() })));
     setEditingForm(null);
     setShowFormModal(true);
@@ -741,6 +751,8 @@ export default function FormBuilderScreen() {
         description: formDescription.trim() || undefined,
         formType,
         requiresSignature,
+        isJobCard,
+        blockJobCompletion: isJobCard ? blockJobCompletion : false,
         fields,
         isActive: true,
       };
@@ -873,6 +885,11 @@ export default function FormBuilderScreen() {
           <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor }]}>
             <Text style={[styles.typeBadgeText, { color: typeConfig.color }]}>{typeConfig.label}</Text>
           </View>
+          {item.isJobCard && (
+            <View style={[styles.typeBadge, { backgroundColor: colorWithOpacity(colors.primary, 0.12) }]}>
+              <Text style={[styles.typeBadgeText, { color: colors.primary }]}>Job Card</Text>
+            </View>
+          )}
           <View style={styles.formMetaItem}>
             <Feather name="layers" size={iconSizes.sm} color={colors.mutedForeground} />
             <Text style={styles.formMetaText}>{fieldCount} field{fieldCount !== 1 ? 's' : ''}</Text>
@@ -1183,6 +1200,32 @@ export default function FormBuilderScreen() {
                   trackColor={{ false: colors.border, true: colors.primary }}
                 />
               </View>
+
+              <View style={styles.switchRow}>
+                <View style={{ flex: 1, paddingRight: spacing.md }}>
+                  <Text style={styles.switchLabel}>Show as Job Card</Text>
+                  <Text style={styles.switchDescription}>Appears as a tab on the job so workers can fill it on site</Text>
+                </View>
+                <Switch
+                  value={isJobCard}
+                  onValueChange={setIsJobCard}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                />
+              </View>
+
+              {isJobCard && (
+                <View style={styles.switchRow}>
+                  <View style={{ flex: 1, paddingRight: spacing.md }}>
+                    <Text style={styles.switchLabel}>Require Before Completing Job</Text>
+                    <Text style={styles.switchDescription}>Job can't be marked done until this card is filled in</Text>
+                  </View>
+                  <Switch
+                    value={blockJobCompletion}
+                    onValueChange={setBlockJobCompletion}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                  />
+                </View>
+              )}
 
               <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>
                 Fields ({fields.length})
