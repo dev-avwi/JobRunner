@@ -240,17 +240,18 @@ function PreviewField({ field, allFields, formData }: { field: FormField; allFie
   );
 }
 
-function FormPreview({ fields, formName, requiresSignature }: { 
+function FormPreview({ fields, formName, requiresSignature, isJobCard }: { 
   fields: FormField[], 
   formName: string, 
-  requiresSignature: boolean 
+  requiresSignature: boolean,
+  isJobCard?: boolean
 }) {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-md mx-auto">
         <Card className="rounded-2xl overflow-visible shadow-lg">
           <CardHeader className="pb-4">
-            <h2 className="text-lg font-semibold">{formName || 'Untitled Form'}</h2>
+            <h2 className="text-lg font-semibold">{formName || (isJobCard ? 'Untitled Job Card' : 'Untitled Form')}</h2>
           </CardHeader>
           <CardContent className="space-y-4">
             {fields.length === 0 ? (
@@ -311,6 +312,9 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  const entityLabel = isJobCard ? 'Job Card' : 'Form';
+  const entityLabelLower = isJobCard ? 'job card' : 'form';
+
   const { data: existingForm, isLoading } = useQuery<CustomForm>({
     queryKey: ['/api/custom-forms', formId],
     enabled: isEditing,
@@ -335,7 +339,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-forms'] });
-      toast({ title: "Form created", description: "Your custom form has been saved." });
+      toast({ title: `${entityLabel} created`, description: `Your ${entityLabelLower} has been saved.` });
       handleBack();
     },
     onError: (error: any) => {
@@ -349,7 +353,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-forms'] });
-      toast({ title: "Form updated", description: "Your changes have been saved." });
+      toast({ title: `${entityLabel} updated`, description: "Your changes have been saved." });
       handleBack();
     },
     onError: (error: any) => {
@@ -359,7 +363,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
 
   const handleSave = () => {
     if (!formName.trim()) {
-      toast({ title: "Name required", description: "Please enter a form name.", variant: "destructive" });
+      toast({ title: "Name required", description: `Please enter a ${entityLabelLower} name.`, variant: "destructive" });
       return;
     }
     if (fields.length === 0) {
@@ -513,7 +517,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                 <Button type="button" variant="ghost" size="icon" onClick={handleBack} className="rounded-xl" data-testid="button-back">
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
-                <h1 className="ios-title text-xl font-semibold">{isEditing ? 'Edit Form' : 'New Form'}</h1>
+                <h1 className="ios-title text-xl font-semibold">{isEditing ? `Edit ${entityLabel}` : `New ${entityLabel}`}</h1>
               </div>
               <Badge 
                 className="px-3 py-1.5 text-xs font-semibold" 
@@ -527,11 +531,11 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <FileText className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                  Form Details
+                  {entityLabel} Details
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="form-name">Form Name</Label>
+                    <Label htmlFor="form-name">{entityLabel} Name</Label>
                     <Input
                       id="form-name"
                       placeholder="e.g., Site Safety Checklist"
@@ -542,7 +546,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="form-type">Form Type</Label>
+                    <Label htmlFor="form-type">{entityLabel} Type</Label>
                     <Select value={formType} onValueChange={setFormType}>
                       <SelectTrigger className="h-12 rounded-xl" data-testid="select-form-type">
                         <SelectValue />
@@ -564,7 +568,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                   <Label htmlFor="form-description">Description (Optional)</Label>
                   <Textarea
                     id="form-description"
-                    placeholder="Brief description of when to use this form..."
+                    placeholder={`Brief description of when to use this ${entityLabelLower}...`}
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     rows={2}
@@ -586,7 +590,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
                   <div className="space-y-0.5">
                     <Label>Use as Job Card</Label>
-                    <p className="text-xs text-muted-foreground">Show this form as a Job Card tab on every job</p>
+                    <p className="text-xs text-muted-foreground">Show this as a Job Card tab on every job</p>
                   </div>
                   <Switch
                     checked={isJobCard}
@@ -706,7 +710,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <ClipboardList className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                    Form Fields
+                    {entityLabel} Fields
                   </div>
                   <Sheet open={addFieldSheetOpen} onOpenChange={setAddFieldSheetOpen}>
                     <SheetTrigger asChild>
@@ -749,7 +753,7 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">No fields yet</p>
-                    <p className="text-sm text-muted-foreground">Add fields to build your form</p>
+                    <p className="text-sm text-muted-foreground">Add fields to build your {entityLabelLower}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -869,14 +873,14 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                 data-testid="button-save-form"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {createMutation.isPending || updateMutation.isPending ? 'Saving...' : 'Save Form'}
+                {createMutation.isPending || updateMutation.isPending ? 'Saving...' : `Save ${entityLabel}`}
               </Button>
             </div>
           </div>
         </div>
 
         <div className={`xl:w-[400px] border-l bg-muted/30 overflow-auto ${mobileView === 'edit' ? 'hidden xl:block' : ''}`}>
-          <FormPreview fields={fields} formName={formName} requiresSignature={requiresSignature} />
+          <FormPreview fields={fields} formName={formName} requiresSignature={requiresSignature} isJobCard={isJobCard} />
         </div>
       </div>
 
