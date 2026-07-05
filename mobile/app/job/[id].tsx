@@ -1986,6 +1986,7 @@ export default function JobDetailScreen() {
   const [jobExpenses, setJobExpenses] = useState<JobExpense[]>([]);
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const [availableForms, setAvailableForms] = useState<any[]>([]);
+  const [hasJobCardForms, setHasJobCardForms] = useState(false);
   const [formSubmissions, setFormSubmissions] = useState<any[]>([]);
   
   // Automation settings for photo gates
@@ -6431,14 +6432,17 @@ export default function JobDetailScreen() {
       {/* Job Progress Bar - Visual workflow indicator */}
       <JobProgressBar status={job.status} />
 
-      {/* Job Card Section - primary view, leads the Job Card tab */}
-      <View style={styles.photosCard}>
+      {/* Job Card Section - primary view, leads the Job Card tab.
+          The card container only shows when a job card form actually exists,
+          otherwise JobForms renders nothing and we'd be left with an empty card. */}
+      <View style={hasJobCardForms ? styles.photosCard : undefined}>
         <JobForms
           jobId={job.id}
           jobCardMode
           readOnly={job.status === 'invoiced'}
           onExport={handleExportJobCard}
           isExporting={isExportingJobCard}
+          onFormsChange={(forms) => setHasJobCardForms(forms.some((f: any) => f.isJobCard))}
         />
       </View>
 
