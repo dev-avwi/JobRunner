@@ -123,7 +123,9 @@ export default function TemplatesHubScreen() {
                   <Text style={styles.cardTitle}>{item.title}</Text>
                   <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
                 </View>
-                <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+                <View style={styles.chevronWrap}>
+                  <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+                </View>
               </PressableRow>
             ))}
           </View>
@@ -164,6 +166,14 @@ const createStyles = (colors: ThemeColors) =>
       width: 44,
       height: 44,
       borderRadius: radius.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    chevronWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.muted,
       alignItems: 'center',
       justifyContent: 'center',
     },

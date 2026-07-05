@@ -162,28 +162,33 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.muted,
+    borderRadius: radius.lg,
+    padding: 4,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
   tab: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
   },
   activeTab: {
-    borderBottomColor: colors.primary,
+    backgroundColor: colors.primary,
+    ...shadows.sm,
   },
   tabText: {
-    ...typography.caption,
-    fontWeight: '500',
-    color: colors.mutedForeground,
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.foreground,
   },
   activeTabText: {
-    color: colors.primary,
-    fontWeight: '600',
+    color: colors.primaryForeground,
   },
   formCard: {
     backgroundColor: colors.card,
@@ -316,6 +321,36 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...typography.body,
     fontWeight: '600',
     color: colors.primary,
+  },
+  modalSegment: {
+    flexDirection: 'row',
+    backgroundColor: colors.muted,
+    borderRadius: radius.lg,
+    padding: 4,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
+  },
+  modalSegmentItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    gap: spacing.xs,
+  },
+  modalSegmentItemActive: {
+    backgroundColor: colors.primary,
+    ...shadows.sm,
+  },
+  modalSegmentText: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  modalSegmentTextActive: {
+    color: colors.primaryForeground,
   },
   modalContent: {
     flex: 1,
@@ -1129,15 +1164,15 @@ export default function FormBuilderScreen() {
         style={styles.modalContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={() => { setShowFormModal(false); resetFormState(); }} activeOpacity={0.7}>
+        <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
+          <TouchableOpacity onPress={() => { setShowFormModal(false); resetFormState(); }} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Feather name="x" size={24} color={colors.foreground} />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>{readOnly ? 'View Form' : editingForm ? 'Edit Form' : 'New Form'}</Text>
           {readOnly ? (
             <View style={{ width: 24 }} />
           ) : (
-            <TouchableOpacity onPress={handleSave} disabled={isSaving} activeOpacity={0.7}>
+            <TouchableOpacity onPress={handleSave} disabled={isSaving} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               {isSaving ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
@@ -1147,17 +1182,30 @@ export default function FormBuilderScreen() {
           )}
         </View>
 
+        {!readOnly && (
+          <View style={styles.modalSegment}>
+            <TouchableOpacity
+              style={[styles.modalSegmentItem, !showPreview && styles.modalSegmentItemActive]}
+              onPress={() => setShowPreview(false)}
+              activeOpacity={0.8}
+            >
+              <Feather name="edit-2" size={iconSizes.md} color={!showPreview ? colors.primaryForeground : colors.foreground} />
+              <Text style={[styles.modalSegmentText, !showPreview && styles.modalSegmentTextActive]}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalSegmentItem, showPreview && styles.modalSegmentItemActive]}
+              onPress={() => setShowPreview(true)}
+              activeOpacity={0.8}
+            >
+              <Feather name="eye" size={iconSizes.md} color={showPreview ? colors.primaryForeground : colors.foreground} />
+              <Text style={[styles.modalSegmentText, showPreview && styles.modalSegmentTextActive]}>Preview</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <ScrollView style={styles.modalContent} contentContainerStyle={{ paddingBottom: 40 + insets.bottom }} keyboardShouldPersistTaps="handled">
           {showPreview ? (
             <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
-                <Text style={styles.sectionTitle}>Preview</Text>
-                {readOnly ? null : (
-                  <TouchableOpacity onPress={() => setShowPreview(false)} activeOpacity={0.7}>
-                    <Text style={{ ...typography.body, color: colors.primary }}>Edit</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
               <View style={styles.previewContainer}>
                 <Text style={{ ...typography.cardTitle, color: colors.foreground, marginBottom: spacing.xs }}>{formName || 'Untitled Form'}</Text>
                 {formDescription ? (
@@ -1177,17 +1225,7 @@ export default function FormBuilderScreen() {
             </View>
           ) : (
             <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
-                <Text style={styles.sectionTitle}>Form Details</Text>
-                {fields.length > 0 && (
-                  <TouchableOpacity onPress={() => setShowPreview(true)} activeOpacity={0.7}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                      <Feather name="eye" size={iconSizes.md} color={colors.primary} />
-                      <Text style={{ ...typography.body, color: colors.primary }}>Preview</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-              </View>
+              <Text style={[styles.sectionTitle, { marginBottom: spacing.sm }]}>Form Details</Text>
 
               <Text style={styles.fieldLabel}>Name *</Text>
               <TextInput
@@ -1470,15 +1508,17 @@ export default function FormBuilderScreen() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'forms' && styles.activeTab]}
           onPress={() => setActiveTab('forms')}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
+          <Feather name="file-text" size={iconSizes.md} color={activeTab === 'forms' ? colors.primaryForeground : colors.foreground} />
           <Text style={[styles.tabText, activeTab === 'forms' && styles.activeTabText]}>My Forms</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'templates' && styles.activeTab]}
           onPress={() => setActiveTab('templates')}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
+          <Feather name="grid" size={iconSizes.md} color={activeTab === 'templates' ? colors.primaryForeground : colors.foreground} />
           <Text style={[styles.tabText, activeTab === 'templates' && styles.activeTabText]}>Templates</Text>
         </TouchableOpacity>
       </View>
