@@ -38469,9 +38469,10 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // Get all custom forms for user (with optional trade type filtering)
   app.get("/api/custom-forms", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.userId!;
+      const ctx = await getUserContext(req.userId!);
+      const ownerId = ctx.effectiveUserId;
       const { tradeType } = req.query;
-      const forms = await storage.getCustomForms(userId, tradeType as string | undefined);
+      const forms = await storage.getCustomForms(ownerId, tradeType as string | undefined);
       res.json(forms);
     } catch (error: any) {
       console.error('Error fetching custom forms:', error);
@@ -38482,10 +38483,11 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // Get single custom form
   app.get("/api/custom-forms/:id", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.userId!;
+      const ctx = await getUserContext(req.userId!);
+      const ownerId = ctx.effectiveUserId;
       const { id } = req.params;
       
-      const form = await storage.getCustomForm(id, userId);
+      const form = await storage.getCustomForm(id, ownerId);
       
       if (!form) {
         return res.status(404).json({ error: 'Form not found' });
@@ -38501,18 +38503,17 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // Create custom form
   app.post("/api/custom-forms", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
-      const userId = req.userId!;
+      const ctx = await getUserContext(req.userId!);
+      const ownerId = ctx.effectiveUserId;
       
       const { insertCustomFormSchema } = await import('@shared/schema');
       const form = await storage.createCustomForm({
         ...insertCustomFormSchema.parse(req.body),
-        userId,
+        userId: ownerId,
       });
       
-      // Broadcast form change for cross-device sync
-      // Get business owner ID (for team members, use owner's ID; for owners, use their own ID)
-      const teamMembership = await storage.getTeamMembershipByMemberId(userId);
-      const businessId = teamMembership?.businessOwnerId || userId;
+      // Broadcast form change for cross-device sync (templates are business-wide)
+      const businessId = ownerId;
       const { broadcastFormChange } = await import('./websocket');
       broadcastFormChange(businessId, 'created', {
         formId: form.id,
@@ -38528,23 +38529,22 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Update custom form
-  app.patch("/api/custom-forms/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/custom-forms/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
-      const userId = req.userId!;
+      const ctx = await getUserContext(req.userId!);
+      const ownerId = ctx.effectiveUserId;
       const { id } = req.params;
       
       const patchData = { ...req.body };
       delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
-      const form = await storage.updateCustomForm(id, userId, patchData);
+      const form = await storage.updateCustomForm(id, ownerId, patchData);
       
       if (!form) {
         return res.status(404).json({ error: 'Form not found' });
       }
       
-      // Broadcast form change for cross-device sync
-      // Get business owner ID (for team members, use owner's ID; for owners, use their own ID)
-      const teamMembership = await storage.getTeamMembershipByMemberId(userId);
-      const businessId = teamMembership?.businessOwnerId || userId;
+      // Broadcast form change for cross-device sync (templates are business-wide)
+      const businessId = ownerId;
       const { broadcastFormChange } = await import('./websocket');
       broadcastFormChange(businessId, 'updated', {
         formId: form.id,
@@ -38560,21 +38560,20 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Delete custom form
-  app.delete("/api/custom-forms/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/custom-forms/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
     try {
-      const userId = req.userId!;
+      const ctx = await getUserContext(req.userId!);
+      const ownerId = ctx.effectiveUserId;
       const { id } = req.params;
       
-      const deleted = await storage.deleteCustomForm(id, userId);
+      const deleted = await storage.deleteCustomForm(id, ownerId);
       
       if (!deleted) {
         return res.status(404).json({ error: 'Form not found' });
       }
       
-      // Broadcast form change for cross-device sync
-      // Get business owner ID (for team members, use owner's ID; for owners, use their own ID)
-      const teamMembership = await storage.getTeamMembershipByMemberId(userId);
-      const businessId = teamMembership?.businessOwnerId || userId;
+      // Broadcast form change for cross-device sync (templates are business-wide)
+      const businessId = ownerId;
       const { broadcastFormChange } = await import('./websocket');
       broadcastFormChange(businessId, 'deleted', {
         formId: id,

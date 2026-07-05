@@ -6397,7 +6397,7 @@ export default function JobDetailScreen() {
   const clientInitials = client?.name ? client.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
 
   const TAB_CONFIG = [
-    { id: 'overview' as const, label: 'Job Card', icon: 'briefcase' as const },
+    { id: 'overview' as const, label: 'Overview', icon: 'briefcase' as const },
     { id: 'documents' as const, label: 'Docs', icon: 'file-text' as const },
     { id: 'chat' as const, label: 'Chat', icon: 'message-circle' as const },
     ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'manage' as const, label: 'More', icon: 'settings' as const }] : []),
