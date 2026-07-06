@@ -39306,6 +39306,21 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.json({ received: true, ignored: true });
       }
 
+      // Drop errors thrown inside automation/headless-browser injected scripts
+      // (Playwright/Puppeteer bots, uptime monitors, scrapers). These come from
+      // scripts the tool injects into the page (UtilityScript.evaluate /
+      // addScriptContent / *_evaluation_script), never from our app bundle, and
+      // affect no real end user. They were spamming email alerts.
+      const stackStr = String(stack || '');
+      if (
+        stackStr.includes('UtilityScript') ||
+        stackStr.includes('addScriptContent') ||
+        stackStr.includes('puppeteer_evaluation_script') ||
+        stackStr.includes('__playwright')
+      ) {
+        return res.json({ received: true, ignored: true });
+      }
+
       const userId = req.session?.userId || null;
       logger.error('frontend', `Client error: ${String(message).substring(0, 500)}`, {
         userId,
