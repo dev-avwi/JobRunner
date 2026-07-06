@@ -357,7 +357,41 @@ export default function SmsConversationScreen() {
   const clientName = resolvedClientName || (name ? decodeURIComponent(name) : 'Unknown');
   const clientFirstName = clientName.split(' ')[0] !== 'Unknown' ? clientName.split(' ')[0] : '';
   const senderName = user?.firstName || businessSettings?.businessName || '';
-  const quickReplies = useMemo(() => buildQuickReplies(clientFirstName, senderName), [clientFirstName, senderName]);
+  const [savedTemplates, setSavedTemplates] = useState<{ id: string; label: string; message: string }[]>([]);
+
+  const applyMergeFields = useCallback((body: string) => {
+    const clientFull = clientName && clientName !== 'Unknown' ? clientName : '';
+    const businessName = businessSettings?.businessName || '';
+    return body
+      .replace(/\{client_first_name\}/gi, clientFirstName || 'there')
+      .replace(/\{first_name\}/gi, clientFirstName || 'there')
+      .replace(/\{client_name\}/gi, clientFull || 'there')
+      .replace(/\{name\}/gi, clientFull || 'there')
+      .replace(/\{business_name\}/gi, businessName)
+      .replace(/\{sender_name\}/gi, senderName)
+      .replace(/\{sender\}/gi, senderName);
+  }, [clientName, clientFirstName, senderName, businessSettings?.businessName]);
+
+  const builtInReplies = useMemo(() => buildQuickReplies(clientFirstName, senderName), [clientFirstName, senderName]);
+  const quickReplies = useMemo(() => [
+    ...savedTemplates.map((t) => ({ id: t.id, label: t.label, icon: 'message-square' as const, message: applyMergeFields(t.message) })),
+    ...builtInReplies,
+  ], [savedTemplates, builtInReplies, applyMergeFields]);
+
+  useEffect(() => {
+    let active = true;
+    api.get<any[]>('/api/message-templates?channel=sms')
+      .then((res) => {
+        if (!active || res.error || !Array.isArray(res.data)) return;
+        setSavedTemplates(
+          res.data
+            .filter((t) => t && t.body && t.name)
+            .map((t) => ({ id: String(t.id), label: t.name, message: t.body }))
+        );
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (id) {

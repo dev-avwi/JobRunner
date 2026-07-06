@@ -305,6 +305,21 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '500',
       color: colors.foreground,
     },
+    templateButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 8,
+      paddingVertical: 12,
+      borderRadius: 12,
+      backgroundColor: colors.primaryLight,
+    },
+    templateButtonText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.primary,
+    },
     catalogButton: {
       flex: 1,
       height: 48,
@@ -616,6 +631,10 @@ export default function NewQuoteScreen() {
   const [showQuickAddClient, setShowQuickAddClient] = useState(false);
   const [quickAddForm, setQuickAddForm] = useState({ name: '', email: '', phone: '' });
   const [isCreatingClient, setIsCreatingClient] = useState(false);
+  const [showQuoteTemplates, setShowQuoteTemplates] = useState(false);
+  const [quoteTemplates, setQuoteTemplates] = useState<any[]>([]);
+  const [isLoadingQuoteTemplates, setIsLoadingQuoteTemplates] = useState(false);
+  const [quoteTemplateSearch, setQuoteTemplateSearch] = useState('');
   
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [jobId, setJobId] = useState<string | null>(params.jobId || null);
@@ -1094,6 +1113,38 @@ export default function NewQuoteScreen() {
     setShowCatalog(false);
   };
 
+  const handleOpenQuoteTemplates = async () => {
+    setShowQuoteTemplates(true);
+    setIsLoadingQuoteTemplates(true);
+    try {
+      const response = await api.get<any[]>('/api/quote-templates');
+      if (!response.error && Array.isArray(response.data)) {
+        setQuoteTemplates(response.data);
+      }
+    } catch {
+      showToast({ type: 'error', message: 'Failed to load templates' });
+    }
+    setIsLoadingQuoteTemplates(false);
+  };
+
+  const applyQuoteTemplate = (template: any) => {
+    const items = Array.isArray(template.items) ? template.items : [];
+    const newItems: LineItem[] = items
+      .filter((item: any) => item.description || item.label)
+      .map((item: any) => ({
+        id: Date.now().toString() + Math.random(),
+        description: item.description || item.label || '',
+        quantity: String(item.quantity || item.qty || item.defaultQty || 1),
+        unitPrice: String(item.unitPrice || item.estimatedPrice || item.price || 0),
+      }));
+    if (newItems.length > 0) {
+      setLineItems((prev) => [...prev, ...newItems]);
+      showToast({ type: 'success', message: `Added ${newItems.length} ${newItems.length === 1 ? 'item' : 'items'} from "${template.name}"` });
+    }
+    setShowQuoteTemplates(false);
+    setQuoteTemplateSearch('');
+  };
+
   const businessInfo = {
     businessName: businessSettings?.businessName || user?.businessName || 'Your Business',
     abn: businessSettings?.abn,
@@ -1392,6 +1443,11 @@ export default function NewQuoteScreen() {
                     <Feather name="zap" size={16} color={colors.primary} />
                   </PressableRow>
                 </View>
+
+                <PressableRow style={styles.templateButton} onPress={handleOpenQuoteTemplates} >
+                  <Feather name="clipboard" size={16} color={colors.primary} />
+                  <Text style={styles.templateButtonText}>Use a Saved Template</Text>
+                </PressableRow>
               </View>
 
               {/* Totals Card */}
@@ -1901,6 +1957,133 @@ export default function NewQuoteScreen() {
                       <Feather name="plus" size={20} color={colors.primary} />
                     </PressableRow>
                   ))}
+                </View>
+              ));
+            })()}
+          </ScrollView>
+        </View>
+      </AppBottomSheet>
+
+      <AppBottomSheet
+        visible={showQuoteTemplates}
+        onDismiss={() => { setShowQuoteTemplates(false); setQuoteTemplateSearch(''); }}
+        snapPoints={['90%']}
+        scrollable={false}
+        contentPadding={0}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Quote Templates</Text>
+            <PressableRow onPress={() => { setShowQuoteTemplates(false); setQuoteTemplateSearch(''); }}>
+              <Feather name="x" size={24} color={colors.foreground} />
+            </PressableRow>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.muted,
+              borderRadius: 10,
+              paddingHorizontal: 12,
+              gap: 8,
+            }}>
+              <Feather name="search" size={16} color={colors.mutedForeground} />
+              <TextInput
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  fontSize: 15,
+                  color: colors.foreground,
+                }}
+                value={quoteTemplateSearch}
+                onChangeText={setQuoteTemplateSearch}
+                placeholder="Search templates..."
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {quoteTemplateSearch.length > 0 && (
+                <PressableRow onPress={() => setQuoteTemplateSearch('')}>
+                  <Feather name="x-circle" size={16} color={colors.mutedForeground} />
+                </PressableRow>
+              )}
+            </View>
+          </View>
+          <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
+            {isLoadingQuoteTemplates ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : (() => {
+              const searchLower = quoteTemplateSearch.toLowerCase().trim();
+              const filtered = searchLower
+                ? quoteTemplates.filter(t =>
+                    (t.name || '').toLowerCase().includes(searchLower) ||
+                    (t.description || '').toLowerCase().includes(searchLower) ||
+                    (t.tradeType || '').toLowerCase().includes(searchLower)
+                  )
+                : quoteTemplates;
+
+              if (filtered.length === 0) {
+                return (
+                  <View style={styles.emptyState}>
+                    <Feather name={quoteTemplateSearch ? 'search' : 'clipboard'} size={48} color={colors.mutedForeground} />
+                    <Text style={styles.emptyStateText}>
+                      {quoteTemplateSearch ? 'No templates match your search' : 'No quote templates found'}
+                    </Text>
+                    {!quoteTemplateSearch && (
+                      <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: 'center' }}>
+                        Create templates in the web app
+                      </Text>
+                    )}
+                  </View>
+                );
+              }
+
+              const grouped: Record<string, any[]> = {};
+              filtered.forEach(t => {
+                const trade = t.tradeType || 'general';
+                if (!grouped[trade]) grouped[trade] = [];
+                grouped[trade].push(t);
+              });
+              const tradeKeys = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+              return tradeKeys.map(trade => (
+                <View key={trade}>
+                  <View style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 4,
+                    marginTop: 8,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                  }}>
+                    <Text style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: colors.mutedForeground,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                    }}>
+                      {trade}
+                    </Text>
+                  </View>
+                  {grouped[trade].map((template: any) => {
+                    const itemCount = Array.isArray(template.items) ? template.items.length : 0;
+                    return (
+                      <PressableRow key={template.id} style={styles.clientOption} onPress={() => applyQuoteTemplate(template)} >
+                        <View style={[styles.clientOptionAvatar, { backgroundColor: colors.muted }]}>
+                          <Feather name="clipboard" size={18} color={colors.foreground} />
+                        </View>
+                        <View style={styles.clientOptionInfo}>
+                          <Text style={styles.clientOptionName}>{template.name}</Text>
+                          <Text style={styles.clientOptionEmail}>
+                            {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                            {template.description ? ` · ${template.description}` : ''}
+                          </Text>
+                        </View>
+                        <Feather name="plus" size={20} color={colors.primary} />
+                      </PressableRow>
+                    );
+                  })}
                 </View>
               ));
             })()}
