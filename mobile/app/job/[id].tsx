@@ -2375,6 +2375,10 @@ export default function JobDetailScreen() {
   const navActionFiredRef = useRef<string | null>(null);
   useEffect(() => {
     if (!job || isLoading || !navAction) return;
+    // For the complete action we must know the user's assignment before
+    // choosing worker vs owner mode — otherwise an assigned worker gets the
+    // owner "Complete Job" flow, which the server rejects (NOT_LEAD_WORKER).
+    if (navAction === 'complete' && !assignmentsLoaded) return;
     if (navActionFiredRef.current === navAction) return;
     navActionFiredRef.current = navAction;
     // Wait for the stack-transition animation + initial layout to finish
@@ -2387,11 +2391,21 @@ export default function JobDetailScreen() {
       } else if (navAction === 'invoice') {
         router.replace(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`);
       } else if (navAction === 'complete') {
+        // Same worker-vs-owner decision as the main CTA: assigned workers
+        // (who don't own the job) mark their OWN part complete.
+        const mine = jobAssignments.find((a: any) => a.userId === user?.id);
+        const hasMine = !!mine && mine.isActive !== false;
+        const ownsJob = !!user && !!job.userId && job.userId === user.id;
+        if (!ownsJob && hasMine && mine?.completedAt) {
+          showToast({ type: 'info', message: 'Already done', description: 'Your part of this job is already marked complete.' });
+          return;
+        }
+        setCompletionMode(!ownsJob && hasMine ? 'worker' : 'owner');
         setShowCompletionModal(true);
       }
     });
     return () => handle.cancel();
-  }, [job, isLoading, navAction, client]);
+  }, [job, isLoading, navAction, client, assignmentsLoaded, jobAssignments, user]);
 
   useEffect(() => {
     if (timerError) {
@@ -5635,6 +5649,13 @@ export default function JobDetailScreen() {
         await loadTimeEntries();
       }
       const success = await updateJobStatus(job.id, 'done');
+      if (!success) {
+        // The store reverts silently on server rejection (safety gate, time
+        // entry validation, lead-worker gate) — surface the reason here.
+        const errMsg = useJobsStore.getState().error || 'Failed to complete the job. Please try again.';
+        showToast({ type: 'error', message: 'Could not complete job', description: errMsg });
+        return;
+      }
       if (success) {
         setJob({ ...job, status: 'done' });
         LiveActivity.end().catch(() => {});
