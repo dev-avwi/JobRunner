@@ -457,12 +457,17 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
   const isJobCardForm = (f: CustomForm) => !!(f as any).isJobCard;
   const displayForms = jobCardMode ? forms.filter(isJobCardForm) : forms.filter(f => !isJobCardForm(f));
   const displaySubmissions = submissions.filter(s => {
-    const form = forms.find(f => f.id === s.formId);
-    const isJC = form ? isJobCardForm(form) : false;
+    // Fall back to the form embedded on the submission (covers forms that
+    // were deactivated/deleted after the card was filled out).
+    const form = forms.find(f => f.id === s.formId) || (s as any).form;
+    // If we can't resolve the form at all, still show the submission in the
+    // Job Card section rather than hiding the worker's completed work.
+    if (!form) return jobCardMode;
+    const isJC = isJobCardForm(form);
     return jobCardMode ? isJC : !isJC;
   });
 
-  if (jobCardMode && displayForms.length === 0) {
+  if (jobCardMode && displayForms.length === 0 && displaySubmissions.length === 0) {
     // Don't flash anything while loading
     if (isLoading) return null;
     // No job card form set up yet — show a prompt instead of hiding the section
@@ -514,6 +519,14 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
 
       {displaySubmissions.length > 0 && (
         <View style={styles.submissions}>
+          {jobCardMode && (
+            <View style={styles.completedLabelRow}>
+              <Feather name="check-circle" size={14} color={colors.success} />
+              <Text style={styles.completedLabelText}>
+                {displaySubmissions.length === 1 ? 'Completed job card' : `${displaySubmissions.length} completed job cards`}
+              </Text>
+            </View>
+          )}
           {displaySubmissions.map(renderSubmission)}
         </View>
       )}
@@ -688,6 +701,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   submissions: {
     gap: spacing.sm,
     marginBottom: spacing.md,
+  },
+  completedLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  completedLabelText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.success,
   },
   submissionCard: {
     backgroundColor: colors.background,

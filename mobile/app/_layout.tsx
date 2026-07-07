@@ -14,7 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import * as Updates from 'expo-updates';
-import { useAuthStore, useTimeTrackingStore } from '../src/lib/store';
+import { useAuthStore, useTimeTrackingStore, useJobsStore } from '../src/lib/store';
 import "../global.css";
 import { useNotifications, useOfflineStorage, useLocationTracking, useStripeTerminal } from '../src/hooks/useServices';
 import { isTapToPayAvailable } from '../src/lib/stripe-terminal';
@@ -232,6 +232,74 @@ function ServicesInitializer() {
   const runningLateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastRunningLateJobRef = useRef<string | null>(null);
   const geofenceListenerRef = useRef(false);
+  const lastExitPromptAtRef = useRef(0);
+
+  // Shared "you've left the site but your timer is running" prompt.
+  // Used by both the geofence exit event and the foreground fallback check.
+  const showLeftSitePrompt = (jobId: string, jobTitle: string) => {
+    const now = Date.now();
+    if (now - lastExitPromptAtRef.current < 10 * 60 * 1000) return; // don't spam
+    lastExitPromptAtRef.current = now;
+    Alert.alert(
+      'Are you finished at the job?',
+      `You've left ${jobTitle} but your timer is still running.`,
+      [
+        {
+          text: 'Finish Job',
+          onPress: () => {
+            router.push(`/job/${jobId}?action=complete` as any);
+          },
+        },
+        {
+          text: 'On Break',
+          onPress: async () => {
+            const ok = await useTimeTrackingStore.getState().pauseTimer();
+            if (!ok) Alert.alert('Error', 'Could not switch to break — check Time Tracking.');
+          },
+        },
+        { text: 'Continue Timer', style: 'cancel' },
+      ]
+    );
+  };
+
+  // Fallback: geofence events can be missed (OS throttling, app killed, no
+  // background location). When the app comes to the foreground with a work
+  // timer still running, check how far we are from the job site and show the
+  // same prompt if we're clearly off-site.
+  const checkTimerVsLocation = async () => {
+    try {
+      const tt = useTimeTrackingStore.getState();
+      const timer = tt.activeTimer;
+      if (!timer || timer.isBreak || !timer.jobId) return;
+      const job = useJobsStore.getState().jobs.find((j) => j.id === timer.jobId);
+      if (!job || job.latitude == null || job.longitude == null) return;
+
+      const Location = await import('expo-location');
+      const perm = await Location.getForegroundPermissionsAsync();
+      if (!perm.granted) return;
+      let pos = await Location.getLastKnownPositionAsync({ maxAge: 2 * 60 * 1000 });
+      if (!pos) {
+        pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      }
+      if (!pos) return;
+
+      // Haversine distance in metres
+      const toRad = (d: number) => (d * Math.PI) / 180;
+      const R = 6371000;
+      const dLat = toRad(pos.coords.latitude - Number(job.latitude));
+      const dLon = toRad(pos.coords.longitude - Number(job.longitude));
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(Number(job.latitude))) * Math.cos(toRad(pos.coords.latitude)) * Math.sin(dLon / 2) ** 2;
+      const dist = 2 * R * Math.asin(Math.sqrt(a));
+
+      if (dist > 150) {
+        showLeftSitePrompt(timer.jobId, job.title || 'the job site');
+      }
+    } catch (err) {
+      if (__DEV__) console.log('[App] Timer/location check failed:', err);
+    }
+  };
 
   useEffect(() => {
     async function initServices() {
@@ -411,20 +479,7 @@ function ServicesInitializer() {
                 const tt = useTimeTrackingStore.getState();
                 const timer = tt.activeTimer;
                 if (timer && timer.jobId === jobId && !timer.isBreak && AppState.currentState === 'active') {
-                  Alert.alert(
-                    'Are you finished at the job?',
-                    `You've left ${jobTitle} but your timer is still running.`,
-                    [
-                      {
-                        text: 'On Break',
-                        onPress: async () => {
-                          const ok = await useTimeTrackingStore.getState().pauseTimer();
-                          if (!ok) Alert.alert('Error', 'Could not switch to break — check Time Tracking.');
-                        },
-                      },
-                      { text: 'Continue Timer', style: 'cancel' },
-                    ]
-                  );
+                  showLeftSitePrompt(jobId, jobTitle);
                   // The in-app prompt replaces the passive notification.
                   return;
                 }
@@ -509,6 +564,8 @@ function ServicesInitializer() {
       // work hours have opened (or stops if they've closed) while backgrounded.
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         void useLocationStore.getState().applyTrackingSchedule();
+        // Catch missed geofence exits: timer running but user is off-site.
+        void checkTimerVsLocation();
       }
 
       if (
