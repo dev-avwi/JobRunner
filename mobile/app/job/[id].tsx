@@ -9293,7 +9293,10 @@ export default function JobDetailScreen() {
                   }
                   
                   try {
-                    await api.patch(`/api/jobs/${job.id}/geofence`, { geofenceEnabled: value });
+                    const resp = await api.patch(`/api/jobs/${job.id}/geofence`, { geofenceEnabled: value });
+                    // api.patch doesn't throw on HTTP errors — surface them so
+                    // the toggle doesn't silently look saved when it wasn't.
+                    if (resp?.error) throw new Error(resp.error);
                   } catch (e: any) {
                     if (e.message?.includes('Network') || e.code === 'ECONNABORTED') {
                       await offlineStorage.updateJobOffline(job.id, { geofenceEnabled: value });
