@@ -761,14 +761,15 @@ export default function FormBuilderScreen() {
     fetchForms();
   }, [fetchForms]);
 
-  // Deep link from the job screen: open the create flow with "Show as Job Card" pre-enabled
+  // Deep link from the job screen: land on Templates so they can start from one,
+  // with "Show as Job Card" pre-enabled whichever way they create the form
+  const [jobCardIntent, setJobCardIntent] = useState(false);
   const jobCardIntentHandled = useRef(false);
   useEffect(() => {
     if (params.createJobCard === '1' && !jobCardIntentHandled.current) {
       jobCardIntentHandled.current = true;
-      resetFormState();
-      setIsJobCard(true);
-      setShowFormModal(true);
+      setJobCardIntent(true);
+      setActiveTab('templates');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.createJobCard]);
@@ -804,6 +805,7 @@ export default function FormBuilderScreen() {
 
   const openCreate = () => {
     resetFormState();
+    if (jobCardIntent) setIsJobCard(true);
     setShowFormModal(true);
   };
 
@@ -839,7 +841,7 @@ export default function FormBuilderScreen() {
     setFormDescription(template.description);
     setFormType(template.formType);
     setRequiresSignature(template.requiresSignature);
-    setIsJobCard(false);
+    setIsJobCard(jobCardIntent);
     setBlockJobCompletion(false);
     setFields(template.fields.map(f => ({ ...f, id: generateId() })));
     setEditingForm(null);
@@ -1621,7 +1623,9 @@ export default function FormBuilderScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ padding: responsiveShell.paddingHorizontal, paddingBottom: spacing.lg + insets.bottom }}>
           <Text style={{ ...typography.caption, color: colors.mutedForeground, marginBottom: spacing.md }}>
-            Start with a pre-built template and customize it to your needs.
+            {jobCardIntent
+              ? 'Pick a template for your job card, or switch to My Forms and tap + to start from scratch.'
+              : 'Start with a pre-built template and customize it to your needs.'}
           </Text>
           {SAFETY_TEMPLATES.map((template, index) => renderTemplateCard(template, index))}
         </ScrollView>
