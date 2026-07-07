@@ -902,10 +902,10 @@ export default function CollectScreen() {
         api.get<any[]>('/api/receipts?limit=10'),
         api.get<any[]>('/api/payment-requests?limit=15')
       ]);
-      if (receiptsResponse.data) {
+      if (!receiptsResponse.error && Array.isArray(receiptsResponse.data)) {
         setRecentReceipts(receiptsResponse.data);
       }
-      if (requestsResponse.data) {
+      if (!requestsResponse.error && Array.isArray(requestsResponse.data)) {
         // Sort payment requests by createdAt desc and limit to 15 for performance
         const sortedRequests = [...requestsResponse.data]
           .sort((a, b) => {
@@ -1085,7 +1085,7 @@ export default function CollectScreen() {
   
   // Calculate collected this week from recent receipts
   const collectedThisWeek = useMemo(() => {
-    return recentReceipts
+    return (Array.isArray(recentReceipts) ? recentReceipts : [])
       .filter(r => {
         try {
           const receiptDate = r.createdAt ? parseISO(r.createdAt) : null;
