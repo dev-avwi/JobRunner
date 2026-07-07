@@ -233,6 +233,10 @@ function ServicesInitializer() {
   const lastRunningLateJobRef = useRef<string | null>(null);
   const geofenceListenerRef = useRef(false);
   const lastExitPromptAtRef = useRef(0);
+  const offSiteIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Per-job "no coords found" cache so the 5-min interval doesn't hammer the
+  // API for jobs that were never geocoded. Cleared when the timer's job changes.
+  const jobCoordMissRef = useRef<{ jobId: string; at: number } | null>(null);
 
   // Shared "you've left the site but your timer is running" prompt.
   // Used by both the geofence exit event and the foreground fallback check.
@@ -271,8 +275,21 @@ function ServicesInitializer() {
       const tt = useTimeTrackingStore.getState();
       const timer = tt.activeTimer;
       if (!timer || timer.isBreak || !timer.jobId) return;
-      const job = useJobsStore.getState().jobs.find((j) => j.id === timer.jobId);
-      if (!job || job.latitude == null || job.longitude == null) return;
+      let job: any = useJobsStore.getState().jobs.find((j) => j.id === timer.jobId);
+      if (!job || job.latitude == null || job.longitude == null) {
+        // Don't re-fetch a job we recently confirmed has no coords.
+        const miss = jobCoordMissRef.current;
+        if (miss && miss.jobId === timer.jobId && Date.now() - miss.at < 30 * 60 * 1000) return;
+        // Store copy may be missing coords (list payloads are slim) — fetch
+        // the full job so the off-site check works for any geocoded job.
+        const resp = await api.get<any>(`/api/jobs/${timer.jobId}`);
+        if (!resp.error && resp.data) job = resp.data;
+      }
+      if (!job || job.latitude == null || job.longitude == null) {
+        jobCoordMissRef.current = { jobId: timer.jobId, at: Date.now() };
+        return;
+      }
+      jobCoordMissRef.current = null;
 
       const Location = await import('expo-location');
       const perm = await Location.getForegroundPermissionsAsync();
@@ -567,6 +584,14 @@ function ServicesInitializer() {
         // Catch missed geofence exits: timer running but user is off-site.
         void checkTimerVsLocation();
       }
+      if (nextAppState === 'active' && !offSiteIntervalRef.current) {
+        offSiteIntervalRef.current = setInterval(() => {
+          if (AppState.currentState === 'active') void checkTimerVsLocation();
+        }, 5 * 60 * 1000);
+      } else if (nextAppState !== 'active' && offSiteIntervalRef.current) {
+        clearInterval(offSiteIntervalRef.current);
+        offSiteIntervalRef.current = null;
+      }
 
       if (
         appState.current.match(/inactive|background/) &&
@@ -583,11 +608,23 @@ function ServicesInitializer() {
       appState.current = nextAppState;
     });
 
+    // App usually mounts already active — start the off-site check now
+    // rather than waiting for a background/foreground cycle.
+    if (!offSiteIntervalRef.current) {
+      offSiteIntervalRef.current = setInterval(() => {
+        if (AppState.currentState === 'active') void checkTimerVsLocation();
+      }, 5 * 60 * 1000);
+    }
+
     return () => {
       subscription.remove();
       if (runningLateIntervalRef.current) {
         clearInterval(runningLateIntervalRef.current);
         runningLateIntervalRef.current = null;
+      }
+      if (offSiteIntervalRef.current) {
+        clearInterval(offSiteIntervalRef.current);
+        offSiteIntervalRef.current = null;
       }
     };
   }, []);
