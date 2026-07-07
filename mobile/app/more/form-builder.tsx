@@ -1221,7 +1221,7 @@ export default function FormBuilderScreen() {
           <TouchableOpacity onPress={() => { setShowFormModal(false); resetFormState(); }} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Feather name="x" size={24} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>{readOnly ? 'View Form' : editingForm ? 'Edit Form' : 'New Form'}</Text>
+          <Text style={styles.modalTitle}>{readOnly ? 'View Form' : editingForm ? 'Edit Form' : (jobCardIntent && isJobCard) ? 'New Job Card' : 'New Form'}</Text>
           {readOnly ? (
             <View style={{ width: 24 }} />
           ) : (
@@ -1327,17 +1327,27 @@ export default function FormBuilderScreen() {
                 />
               </View>
 
-              <View style={styles.switchRow}>
-                <View style={{ flex: 1, paddingRight: spacing.md }}>
-                  <Text style={styles.switchLabel}>Show as Job Card</Text>
-                  <Text style={styles.switchDescription}>Appears as a tab on the job so workers can fill it on site</Text>
+              {jobCardIntent && !editingForm ? (
+                <View style={[styles.switchRow, { backgroundColor: colors.primaryLight, borderRadius: radius.lg, paddingHorizontal: spacing.md }]}>
+                  <Feather name="clipboard" size={iconSizes.lg} color={colors.primary} style={{ marginRight: spacing.md }} />
+                  <View style={{ flex: 1, paddingRight: spacing.md }}>
+                    <Text style={[styles.switchLabel, { color: colors.primary }]}>Job Card</Text>
+                    <Text style={styles.switchDescription}>This will show on your jobs as the job card</Text>
+                  </View>
                 </View>
-                <Switch
-                  value={isJobCard}
-                  onValueChange={setIsJobCard}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                />
-              </View>
+              ) : (
+                <View style={styles.switchRow}>
+                  <View style={{ flex: 1, paddingRight: spacing.md }}>
+                    <Text style={styles.switchLabel}>Show as Job Card</Text>
+                    <Text style={styles.switchDescription}>Appears as a tab on the job so workers can fill it on site</Text>
+                  </View>
+                  <Switch
+                    value={isJobCard}
+                    onValueChange={setIsJobCard}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                  />
+                </View>
+              )}
 
               {isJobCard && (
                 <View style={styles.switchRow}>
