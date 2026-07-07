@@ -2194,6 +2194,8 @@ export default function JobDetailScreen() {
   const [isGeneratingProofPack, setIsGeneratingProofPack] = useState(false);
   const [isExportingProofPackTsv, setIsExportingProofPackTsv] = useState(false);
   const [isExportingJobCard, setIsExportingJobCard] = useState(false);
+  const [jobCardPreviewHtml, setJobCardPreviewHtml] = useState<string | null>(null);
+  const [showJobCardPreview, setShowJobCardPreview] = useState(false);
   const [showProofPackModal, setShowProofPackModal] = useState(false);
   const [proofPackSections, setProofPackSections] = useState({
     timeline: true,
@@ -4477,7 +4479,32 @@ export default function JobDetailScreen() {
     }
   };
 
+  // Preview-first: load the job card as HTML in a modal (same flow as the
+  // Proof Pack) so the user sees it before downloading the PDF.
   const handleExportJobCard = async () => {
+    if (!job) return;
+    setIsExportingJobCard(true);
+    try {
+      const token = await api.getToken();
+      const previewUrl = `${API_URL}/api/jobs/${job.id}/job-card-pdf/preview`;
+      const response = await fetch(previewUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (response.ok) {
+        const html = await response.text();
+        setJobCardPreviewHtml(html);
+        setShowJobCardPreview(true);
+      } else {
+        showToast({ type: 'error', message: 'Failed to load job card preview' });
+      }
+    } catch (error: any) {
+      showToast({ type: 'error', message: error.message || 'Failed to load job card preview' });
+    } finally {
+      setIsExportingJobCard(false);
+    }
+  };
+
+  const handleDownloadJobCard = async () => {
     if (!job) return;
     setIsExportingJobCard(true);
     try {
@@ -12179,6 +12206,64 @@ export default function JobDetailScreen() {
               style={{ flex: 1, backgroundColor: '#ffffff' }}
               scalesPageToFit
               javaScriptEnabled
+            />
+          ) : (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          )}
+        </View>
+      </AppBottomSheet>
+
+      {/* Job Card Preview Modal */}
+      <AppBottomSheet
+        visible={showJobCardPreview}
+        onDismiss={() => setShowJobCardPreview(false)}
+        title="Job Card Preview"
+        showCloseButton
+        snapPoints={['90%']}
+        scrollable={false}
+        contentPadding={0}
+        footer={(
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.sm,
+              backgroundColor: colors.primary,
+              paddingVertical: spacing.md,
+              borderRadius: radius.lg,
+              opacity: isExportingJobCard ? 0.5 : 1,
+              minHeight: 44,
+            }}
+            onPress={() => {
+              setShowJobCardPreview(false);
+              handleDownloadJobCard();
+            }}
+            activeOpacity={0.8}
+            disabled={isExportingJobCard}
+          >
+            {isExportingJobCard ? (
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
+            ) : (
+              <>
+                <Feather name="download" size={16} color={colors.primaryForeground} />
+                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>
+                  Download & Share
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+      >
+        <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+          {jobCardPreviewHtml ? (
+            <WebView
+              source={{ html: jobCardPreviewHtml }}
+              style={{ flex: 1, backgroundColor: '#ffffff' }}
+              scalesPageToFit
+              javaScriptEnabled={false}
             />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

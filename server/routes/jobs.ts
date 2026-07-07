@@ -826,33 +826,59 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
+  // Shared data builder for job card PDF + preview so both render identically.
+  const buildJobCardHtml = async (req: any): Promise<{ html: string; jobCards: any[]; jobId: string } | { error: string; status: number }> => {
+    const userContext = await getUserContext(req.userId);
+    const jobId = req.params.jobId;
+    const userId = userContext.effectiveUserId;
+
+    const job = await storage.getJob(jobId, userId);
+    if (!job) return { error: "Job not found", status: 404 };
+
+    const forms = await storage.getCustomForms(userId);
+    let jobCards = forms.filter((f: any) => f.isJobCard);
+    const submissions = await storage.getFormSubmissionsByJob(jobId, userId);
+
+    // Optional single-card export: ?formId=<id> limits the PDF to one job card section.
+    const formId = req.query.formId as string | undefined;
+    if (formId) {
+      jobCards = jobCards.filter((f: any) => f.id === formId);
+      if (jobCards.length === 0) {
+        return { error: "Job card not found", status: 404 };
+      }
+    }
+
+    let businessSettings = await storage.getBusinessSettings(userId);
+    const client = job.clientId ? await storage.getClient(job.clientId, userId) : undefined;
+
+    const { generateJobCardHTML, resolveBusinessLogoForPdf } = await import('../pdfService');
+    if (businessSettings) {
+      businessSettings = await resolveBusinessLogoForPdf(businessSettings as any);
+    }
+    const html = generateJobCardHTML({ job, jobCards, submissions, businessSettings, client });
+    return { html, jobCards, jobId };
+  };
+
+  app.get("/api/jobs/:jobId/job-card-pdf/preview", requireAuth, async (req: any, res) => {
+    try {
+      const result = await buildJobCardHtml(req);
+      if ('error' in result) return res.status(result.status).json({ error: result.error });
+      res.setHeader('Content-Type', 'text/html');
+      res.send(result.html);
+    } catch (error: any) {
+      console.error("Error generating job card preview:", error);
+      res.status(500).json({ error: "Failed to generate job card preview" });
+    }
+  });
+
   app.get("/api/jobs/:jobId/job-card-pdf", requireAuth, pdfPerUserLimiter, async (req: any, res) => {
     try {
-      const userContext = await getUserContext(req.userId);
-      const jobId = req.params.jobId;
-      const userId = userContext.effectiveUserId;
-
-      const job = await storage.getJob(jobId, userId);
-      if (!job) return res.status(404).json({ error: "Job not found" });
-
-      const forms = await storage.getCustomForms(userId);
-      let jobCards = forms.filter((f: any) => f.isJobCard);
-      const submissions = await storage.getFormSubmissionsByJob(jobId, userId);
-
-      // Optional single-card export: ?formId=<id> limits the PDF to one job card section.
+      const result = await buildJobCardHtml(req);
+      if ('error' in result) return res.status(result.status).json({ error: result.error });
+      const { html, jobCards, jobId } = result;
       const formId = req.query.formId as string | undefined;
-      if (formId) {
-        jobCards = jobCards.filter((f: any) => f.id === formId);
-        if (jobCards.length === 0) {
-          return res.status(404).json({ error: "Job card not found" });
-        }
-      }
 
-      const businessSettings = await storage.getBusinessSettings(userId);
-      const client = job.clientId ? await storage.getClient(job.clientId, userId) : undefined;
-
-      const { generateJobCardHTML, generatePDFBuffer } = await import('../pdfService');
-      const html = generateJobCardHTML({ job, jobCards, submissions, businessSettings, client });
+      const { generatePDFBuffer } = await import('../pdfService');
       const pdfBuffer = await generatePDFBuffer(html);
       const cardSlug = formId
         ? (jobCards[0]?.name || 'section').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')

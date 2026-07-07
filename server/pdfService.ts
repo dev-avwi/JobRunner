@@ -5284,13 +5284,24 @@ interface JobCardPdfData {
 export function generateJobCardHTML(data: JobCardPdfData): string {
   const { job, jobCards, submissions, businessSettings, client } = data;
 
-  const businessName = ensureDisplayName(businessSettings?.name, 'Business');
-  const rawBrand = (businessSettings?.brandColor || '').trim();
-  const brandColor = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(rawBrand) ? rawBrand : '#1e3a5f';
+  const businessName = ensureDisplayName((businessSettings as any)?.businessName || businessSettings?.name, 'Business');
+  // Match the Job Proof Pack: same template + accent colour resolution.
+  const { template, accentColor } = getTemplateFromBusinessSettings((businessSettings || {}) as { documentTemplate?: string | null; documentTemplateSettings?: unknown });
+  const brandColor = accentColor;
+  const logoHtml = (businessSettings as any)?.logoUrl
+    ? `<img src="${(businessSettings as any).logoUrl}" class="logo" alt="${escapeHtml(businessName)}" />`
+    : '';
 
   const fmtDate = (d: any) => {
     if (!d) return '';
     try { return new Date(d).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return ''; }
+  };
+
+  // Strict allowlist so submitted values can't break out of the src attribute
+  // (stored XSS guard — this HTML is also rendered in the mobile preview WebView).
+  const safeImageSrc = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    return /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(value) ? value : null;
   };
 
   const renderFieldValue = (field: any, value: any): string => {
@@ -5298,8 +5309,9 @@ export function generateJobCardHTML(data: JobCardPdfData): string {
       return '<span style="color:#9ca3af;">—</span>';
     }
     if (field.type === 'photo' || field.type === 'signature') {
-      if (typeof value === 'string' && value.startsWith('data:image')) {
-        return `<img src="${value}" style="max-width:280px;max-height:200px;border:1px solid #e5e7eb;border-radius:6px;" />`;
+      const src = safeImageSrc(value);
+      if (src) {
+        return `<img src="${src}" style="max-width:280px;max-height:200px;border:1px solid #e5e7eb;border-radius:6px;" />`;
       }
       return '<span style="color:#9ca3af;">—</span>';
     }
@@ -5337,8 +5349,8 @@ export function generateJobCardHTML(data: JobCardPdfData): string {
           </tr>`;
       }).join('');
 
-      const sig = answers['_signature'];
-      const sigHtml = sig && typeof sig === 'string' && sig.startsWith('data:image')
+      const sig = safeImageSrc(answers['_signature']);
+      const sigHtml = sig
         ? `<tr><td class="field-label">Signature</td><td class="field-value"><img src="${sig}" style="max-width:280px;max-height:150px;border:1px solid #e5e7eb;border-radius:6px;" /></td></tr>`
         : '';
 
@@ -5357,45 +5369,103 @@ export function generateJobCardHTML(data: JobCardPdfData): string {
     ? jobCards.map(renderCard).join('')
     : '<div class="card"><p style="color:#9ca3af;margin:0;">No job cards configured.</p></div>';
 
+  const statusLabelMap: Record<string, string> = { pending: 'Pending', scheduled: 'Scheduled', in_progress: 'In Progress', done: 'Completed', invoiced: 'Invoiced', cancelled: 'Cancelled' };
+  const statusColorMap: Record<string, string> = { pending: '#f59e0b', scheduled: '#3b82f6', in_progress: '#8b5cf6', done: '#22c55e', invoiced: '#06b6d4', cancelled: '#ef4444' };
+  const jobStatus = String(job.status || '');
+
   return `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8" />
         <style>
-          * { box-sizing: border-box; }
-          body { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 32px; font-size: 13px; }
-          .header { border-bottom: 3px solid ${brandColor}; padding-bottom: 16px; margin-bottom: 20px; }
-          .header h1 { margin: 0 0 4px; font-size: 22px; color: ${brandColor}; }
-          .header .sub { color: #6b7280; font-size: 12px; }
-          .meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
-          .meta-item { min-width: 160px; }
-          .meta-item label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 2px; }
-          .meta-item span { font-size: 13px; font-weight: 500; }
-          .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; page-break-inside: avoid; }
-          .card-title { font-size: 15px; font-weight: 600; color: ${brandColor}; margin-bottom: 4px; }
-          .submitted-at { color: #9ca3af; font-size: 11px; margin: 0 0 10px; }
-          table.fields { width: 100%; border-collapse: collapse; }
-          table.fields td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
-          .field-label { width: 40%; color: #6b7280; font-weight: 500; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: ${template.fontFamily};
+            font-size: ${template.baseFontSize};
+            font-weight: ${template.bodyWeight};
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #fff;
+          }
+          .document { max-width: 800px; margin: 0 auto; padding: 15px 20px; }
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            ${template.showHeaderDivider ? `border-bottom: ${template.headerBorderWidth} solid ${brandColor};` : 'border-bottom: none;'}
+          }
+          .company-info { flex: 1; }
+          .company-name { font-size: 22px; font-weight: ${template.headingWeight}; color: ${brandColor}; margin-bottom: 4px; }
+          .logo { max-width: 140px; max-height: 55px; object-fit: contain; margin-bottom: 8px; }
+          .document-type { text-align: right; }
+          .document-title { font-size: 24px; font-weight: ${template.headingWeight}; color: ${brandColor}; text-transform: uppercase; letter-spacing: 1.5px; }
+          .job-meta { margin-top: 6px; font-size: 11px; color: #555; }
+          .job-meta p { margin: 2px 0; }
+          .status-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; color: white; }
+          .info-section { display: flex; justify-content: space-between; margin-bottom: 14px; gap: 20px; }
+          .info-block { flex: 1; }
+          .info-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 4px; font-weight: 600; }
+          .info-value { color: #1a1a1a; line-height: 1.5; font-size: 11px; }
+          .card { margin-bottom: 18px; page-break-inside: avoid; }
+          .card-title {
+            font-size: 14px;
+            font-weight: ${template.headingWeight};
+            color: ${brandColor};
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            ${template.id === 'minimal' ? 'border-bottom: 1px solid #e5e7eb;' : `border-bottom: 1px solid ${brandColor}40;`}
+          }
+          .submitted-at { color: #888; font-size: 10px; margin: 0 0 8px; font-style: italic; }
+          table.fields { width: 100%; ${template.id === 'modern' ? 'border-collapse: separate; border-spacing: 0;' : 'border-collapse: collapse;'} margin-bottom: 4px; }
+          table.fields td { padding: 6px 8px; font-size: 11px; vertical-align: top; }
+          ${template.tableStyle === 'striped' ? `
+          table.fields td { border-bottom: none; }
+          table.fields tr:nth-child(odd) td { background: #f9fafb; }
+          ` : template.tableStyle === 'minimal' ? `
+          table.fields td { border-bottom: 1px solid #e5e7eb; }
+          ` : `
+          table.fields td { border-bottom: 1px solid #eee; }
+          `}
+          .field-label { width: 40%; color: #666; font-weight: 600; }
           .field-value { width: 60%; }
-          .section-row { font-weight: 600; background: #f9fafb; color: #374151; padding-top: 12px; }
-          .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 10px; text-align: center; }
+          .section-row { font-weight: ${template.headingWeight}; background: ${brandColor}10; color: ${brandColor}; padding-top: 10px; }
+          .empty-message { color: #888; font-style: italic; padding: 12px; background: ${template.id === 'minimal' ? 'transparent; border: 1px solid #e5e7eb;' : '#f9fafb;'} border-radius: 6px; text-align: center; font-size: 11px; }
+          .footer {
+            margin-top: 20px;
+            padding-top: 12px;
+            ${template.id === 'minimal' ? 'border-top: 1px solid #e5e7eb;' : `border-top: 2px solid ${brandColor};`}
+            text-align: center;
+            color: #888;
+            font-size: 10px;
+          }
         </style>
       </head>
       <body>
-        <div class="header">
-          <h1>Job Card</h1>
-          <div class="sub">${escapeHtml(businessName)}</div>
+        <div class="document">
+          <div class="header">
+            <div class="company-info">
+              ${logoHtml}
+              <div class="company-name">${escapeHtml(businessName)}</div>
+            </div>
+            <div class="document-type">
+              <div class="document-title">Job Card</div>
+              <div class="job-meta">
+                ${job.number ? `<p>Job #${escapeHtml(String(job.number))}</p>` : ''}
+                <p><span class="status-badge" style="background:${statusColorMap[jobStatus] || '#6b7280'}">${escapeHtml(statusLabelMap[jobStatus] || jobStatus)}</span></p>
+              </div>
+            </div>
+          </div>
+          <div class="info-section">
+            <div class="info-block"><div class="info-label">Job</div><div class="info-value">${escapeHtml(job.title || '')}</div></div>
+            ${client ? `<div class="info-block"><div class="info-label">Client</div><div class="info-value">${escapeHtml(ensureDisplayName(client.name, 'Client'))}</div></div>` : ''}
+            ${job.address ? `<div class="info-block"><div class="info-label">Address</div><div class="info-value">${escapeHtml(job.address)}</div></div>` : ''}
+          </div>
+          ${cardsHtml}
+          <div class="footer">Generated ${escapeHtml(fmtDate(new Date()))} • ${escapeHtml(businessName)}</div>
         </div>
-        <div class="meta">
-          <div class="meta-item"><label>Job</label><span>${escapeHtml(job.number ? `#${job.number}` : '')} ${escapeHtml(job.title || '')}</span></div>
-          ${client ? `<div class="meta-item"><label>Client</label><span>${escapeHtml(ensureDisplayName(client.name, 'Client'))}</span></div>` : ''}
-          ${job.address ? `<div class="meta-item"><label>Address</label><span>${escapeHtml(job.address)}</span></div>` : ''}
-          <div class="meta-item"><label>Status</label><span>${escapeHtml(job.status || '')}</span></div>
-        </div>
-        ${cardsHtml}
-        <div class="footer">Generated ${escapeHtml(fmtDate(new Date()))} • ${escapeHtml(businessName)}</div>
       </body>
     </html>
   `;
