@@ -2240,7 +2240,7 @@ export default function JobDetailView({
             onSchedule={() => onEditJob?.(jobId)}
             onStart={() => updateJobMutation.mutate({ status: 'in_progress' })}
             onComplete={onCompleteJob ? () => onCompleteJob(jobId) : handleCompleteJob}
-            onCreateInvoice={() => onCreateInvoice?.(jobId)}
+            onCreateInvoice={!isTradie ? () => onCreateInvoice?.(jobId) : undefined}
             onViewInvoice={() => linkedInvoice && navigate(`/invoices/${linkedInvoice.id}`)}
             onStatusChange={(newStatus) => {
               setRollbackTargetStatus(newStatus);

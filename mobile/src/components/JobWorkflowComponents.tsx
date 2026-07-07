@@ -553,6 +553,7 @@ function getNextAction(props: NextActionCardProps): NextAction | null {
 
     case 'done':
       if (!hasInvoice) {
+        if (!props.onCreateInvoice) return null;
         return {
           title: 'Create Invoice',
           subtitle: 'Job is done - time to get paid!',

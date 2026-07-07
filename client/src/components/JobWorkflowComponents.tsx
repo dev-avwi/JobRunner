@@ -417,6 +417,7 @@ export function NextActionCard({
 
       case 'done':
         if (!hasInvoice) {
+          if (!onCreateInvoice) return null;
           return {
             title: "Create Invoice",
             description: "Job is done - time to get paid!",

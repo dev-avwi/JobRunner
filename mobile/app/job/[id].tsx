@@ -7036,7 +7036,7 @@ export default function JobDetailScreen() {
         businessName={businessSettings?.businessName}
         tradieName={user?.firstName || user?.name?.split(' ')[0]}
         workerStatus={job.workerStatus}
-        onCreateInvoice={() => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
+        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`) : undefined}
         onCreateQuote={() => router.push(`/more/quote/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
         onSendQuote={async () => {
           if (quote?.id && client?.email) {
@@ -7632,7 +7632,7 @@ export default function JobDetailScreen() {
         onViewInvoice={handleViewInvoice}
         onViewReceipt={(receiptId) => router.push(`/more/receipt/${receiptId}`)}
         onCreateQuote={() => router.push(`/more/quote/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
-        onCreateInvoice={() => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
+        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`) : undefined}
       />
       )}
 
@@ -9009,7 +9009,7 @@ export default function JobDetailScreen() {
         onViewInvoice={handleViewInvoice}
         onViewReceipt={(receiptId) => router.push(`/more/receipt/${receiptId}`)}
         onCreateQuote={() => router.push(`/more/quote/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
-        onCreateInvoice={() => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
+        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`) : undefined}
       />
       )}
 
