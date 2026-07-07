@@ -467,9 +467,17 @@ export default function SmsConversationScreen() {
     api.get<any[]>('/api/message-templates?channel=sms')
       .then((res) => {
         if (!active || res.error || !Array.isArray(res.data)) return;
+        // Dedupe by name — some accounts have double-seeded default templates
+        const seen = new Set<string>();
         setSavedTemplates(
           res.data
             .filter((t) => t && t.body && t.name)
+            .filter((t) => {
+              const key = String(t.name).trim().toLowerCase();
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
             .map((t) => ({ id: String(t.id), label: t.name, message: t.body }))
         );
       })

@@ -6053,13 +6053,21 @@ export class PostgresStorage implements IStorage {
   }
 
   async ensureDefaultTemplates(userId: string): Promise<void> {
-    const existing = await db.select().from(messageTemplates)
-      .where(eq(messageTemplates.userId, userId))
-      .limit(1);
-    
-    if (existing.length > 0) {
-      return;
-    }
+    // Advisory lock keyed to the user prevents concurrent first-load requests
+    // from double-seeding the defaults (observed in prod: every default twice)
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${'msg_tpl_seed:' + userId}))`);
+      const existing = await tx.select().from(messageTemplates)
+        .where(eq(messageTemplates.userId, userId))
+        .limit(1);
+      if (existing.length > 0) {
+        return;
+      }
+      await this.seedDefaultTemplatesTx(tx, userId);
+    });
+  }
+
+  private async seedDefaultTemplatesTx(tx: any, userId: string): Promise<void> {
 
     const defaultTemplates: InsertMessageTemplate[] = [
       // Email templates
@@ -6132,7 +6140,7 @@ export class PostgresStorage implements IStorage {
       },
     ];
 
-    await db.insert(messageTemplates).values(defaultTemplates);
+    await tx.insert(messageTemplates).values(defaultTemplates);
   }
 
   // Quick Replies (Chat Hub canned responses)

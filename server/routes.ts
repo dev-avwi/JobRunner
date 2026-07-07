@@ -25057,7 +25057,18 @@ Be specific about materials, colors, and features that would be included.`
       // Ensure user has default templates
       await storage.ensureDefaultTemplates(req.userId);
       const templates = await storage.getMessageTemplates(req.userId, channel);
-      res.json(templates);
+      // Defensive dedupe: earlier double-seed race left duplicate default rows
+      // in some accounts. Keep the first (oldest) of any default with the same
+      // name+channel; user-created templates are never dropped.
+      const seenDefaults = new Set<string>();
+      const deduped = templates.filter((t: any) => {
+        if (!t.isDefault) return true;
+        const key = `${t.channel}::${(t.name || '').trim().toLowerCase()}`;
+        if (seenDefaults.has(key)) return false;
+        seenDefaults.add(key);
+        return true;
+      });
+      res.json(deduped);
     } catch (error) {
       console.error('Error fetching message templates:', error);
       res.status(500).json({ error: 'Failed to fetch message templates' });
