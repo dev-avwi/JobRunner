@@ -702,6 +702,13 @@ export default function JobChatScreen() {
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [showAttachModal, setShowAttachModal] = useState(false);
+  // Pixel widths — percentage widths collapse inside PressableRow on iOS
+  const [attachGridWidth, setAttachGridWidth] = useState(0);
+  const attachItemWidthStyle = useMemo(() => {
+    if (!attachGridWidth) return { width: '30%' as const };
+    const inner = attachGridWidth - spacing.md * 2; // grid padding
+    return { width: Math.floor((inner - spacing.md * 2) / 3) };
+  }, [attachGridWidth]);
   const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const [documentType, setDocumentType] = useState<'photos' | 'quotes' | 'invoices' | null>(null);
   const [jobPhotos, setJobPhotos] = useState<JobPhoto[]>([]);
@@ -1424,38 +1431,38 @@ export default function JobChatScreen() {
                 <Feather name="x" size={24} color={colors.foreground} />
               </PressableRow>
             </View>
-            <View style={styles.attachmentGrid}>
-              <PressableRow style={styles.attachmentOption} onPress={handleTakePhoto}>
+            <View style={styles.attachmentGrid} onLayout={(e) => setAttachGridWidth(e.nativeEvent.layout.width)}>
+              <PressableRow style={[styles.attachmentOption, attachItemWidthStyle]} onPress={handleTakePhoto}>
                 <View style={[styles.attachmentOptionIcon, { backgroundColor: colors.primaryLight }]}>
                   <Feather name="camera" size={24} color={colors.primary} />
                 </View>
                 <Text style={styles.attachmentOptionText}>Camera</Text>
               </PressableRow>
-              <PressableRow style={styles.attachmentOption} onPress={handleAttachPhoto}>
+              <PressableRow style={[styles.attachmentOption, attachItemWidthStyle]} onPress={handleAttachPhoto}>
                 <View style={[styles.attachmentOptionIcon, { backgroundColor: colors.successLight }]}>
                   <Feather name="image" size={24} color={colors.success} />
                 </View>
                 <Text style={styles.attachmentOptionText}>Gallery</Text>
               </PressableRow>
-              <PressableRow style={styles.attachmentOption} onPress={() => handleShareDocument('photos')}>
+              <PressableRow style={[styles.attachmentOption, attachItemWidthStyle]} onPress={() => handleShareDocument('photos')}>
                 <View style={[styles.attachmentOptionIcon, { backgroundColor: colors.warningLight }]}>
                   <Feather name="folder" size={24} color={colors.warning} />
                 </View>
                 <Text style={styles.attachmentOptionText}>Job Photos</Text>
               </PressableRow>
-              <PressableRow style={styles.attachmentOption} onPress={() => handleShareDocument('quotes')}>
+              <PressableRow style={[styles.attachmentOption, attachItemWidthStyle]} onPress={() => handleShareDocument('quotes')}>
                 <View style={[styles.attachmentOptionIcon, { backgroundColor: colors.infoLight }]}>
                   <Feather name="file-text" size={24} color={colors.info} />
                 </View>
                 <Text style={styles.attachmentOptionText}>Quotes</Text>
               </PressableRow>
-              <PressableRow style={styles.attachmentOption} onPress={() => handleShareDocument('invoices')}>
+              <PressableRow style={[styles.attachmentOption, attachItemWidthStyle]} onPress={() => handleShareDocument('invoices')}>
                 <View style={[styles.attachmentOptionIcon, { backgroundColor: colors.destructiveLight }]}>
                   <Feather name="dollar-sign" size={24} color={colors.destructive} />
                 </View>
                 <Text style={styles.attachmentOptionText}>Invoices</Text>
               </PressableRow>
-              <PressableRow style={styles.attachmentOption} onPress={() => { setShowAttachModal(false); router.push(`/job/${jobId}` as any); }} >
+              <PressableRow style={[styles.attachmentOption, attachItemWidthStyle]} onPress={() => { setShowAttachModal(false); router.push(`/job/${jobId}` as any); }} >
                 <View style={[styles.attachmentOptionIcon, { backgroundColor: colors.muted }]}>
                   <Feather name="briefcase" size={24} color={colors.mutedForeground} />
                 </View>
