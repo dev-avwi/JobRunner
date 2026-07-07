@@ -32711,6 +32711,28 @@ Respond with JSON in this format:
         }
       }
       
+      // ========== 2b. AUTO-ARRIVAL STATUS TRANSITION ==========
+      // If the worker was en route to THIS job, a geofence ENTER means they've
+      // arrived: flip the assignment to 'arrived' (client SMS + portal step +
+      // worker state) so the owner and client aren't stuck on "On the Way".
+      if (action === 'enter' && job.workerStatus === 'on_my_way') {
+        try {
+          const arrivalAssignment = await storage.getJobAssignmentForUser(jobId, userId);
+          if (arrivalAssignment && arrivalAssignment.assignmentStatus !== 'arrived') {
+            const { handleWorkerStatusChange } = await import('./services/assignmentWorkflowService');
+            await handleWorkerStatusChange({
+              jobId,
+              assignmentId: arrivalAssignment.id,
+              actorUserId: userId,
+              status: 'arrived',
+              baseUrl: getProductionBaseUrl(req),
+            });
+          }
+        } catch (arrivalErr) {
+          console.error('[Geofence] Auto-arrival transition failed:', arrivalErr);
+        }
+      }
+
       let timeEntryAction = null;
       
       // ========== 3. AUTO CLOCK-IN WITH ACTIVE TIMER CHECK ==========

@@ -5608,6 +5608,86 @@ import { logSystemEvent } from "../systemEventService";
         await storage.updateJob(req.params.id, effectiveUserId, {
           workerEtaMinutes: etaMinutes,
         });
+
+        // Auto-arrival: when the worker's live pings show them within ~100m of
+        // the job site while still on_my_way, flip the assignment to "arrived"
+        // (client SMS + portal step + worker state) and notify the owner. This
+        // is one-shot: handleWorkerStatusChange sets workerStatus='arrived',
+        // and this endpoint rejects further pings once status leaves on_my_way.
+        if (distanceKm <= 0.1) {
+          try {
+            const assignment = await storage.getJobAssignmentForUser(req.params.id, req.userId);
+            if (!assignment) {
+              // No assignment row (job-level On My Way, e.g. solo owner): flip
+              // the job's workerStatus directly so the portal moves to Arrived.
+              await storage.updateJob(req.params.id, effectiveUserId, {
+                workerStatus: 'arrived',
+                workerStatusUpdatedAt: new Date(),
+                workerEtaMinutes: 0,
+              });
+              try {
+                const { clearWorkerTravelLocation } = await import('../websocket');
+                clearWorkerTravelLocation(req.params.id);
+              } catch {}
+              const { sendPushNotification } = await import('../pushNotifications');
+              if (effectiveUserId !== req.userId) {
+                sendPushNotification({
+                  userId: effectiveUserId,
+                  type: 'job_update',
+                  title: 'Worker arrived on site',
+                  body: `A worker has arrived at "${job.title}".`,
+                  data: { jobId: req.params.id, event: 'worker_arrived' },
+                }).catch(() => {});
+              }
+              sendPushNotification({
+                userId: req.userId,
+                type: 'job_update',
+                title: "You've arrived",
+                body: `You're at "${job.title}". Tap to start your timer.`,
+                data: { jobId: req.params.id, event: 'arrival_start_timer' },
+              }).catch(() => {});
+              return res.json({ success: true, etaMinutes: 0, arrived: true });
+            }
+            if (assignment && assignment.assignmentStatus !== 'arrived') {
+              const { handleWorkerStatusChange } = await import('../services/assignmentWorkflowService');
+              const baseUrl = getProductionBaseUrl(req);
+              const result = await handleWorkerStatusChange({
+                jobId: req.params.id,
+                assignmentId: assignment.id,
+                actorUserId: req.userId,
+                status: 'arrived',
+                baseUrl,
+              });
+              if (result.success) {
+                const { sendPushNotification } = await import('../pushNotifications');
+                const worker = await storage.getUser(req.userId);
+                const workerName = assignment.workerDisplayNameSnapshot ||
+                  (worker ? [worker.firstName, worker.lastName].filter(Boolean).join(' ') : 'A worker');
+                // Notify the business owner (skip if the worker IS the owner)
+                if (effectiveUserId !== req.userId) {
+                  sendPushNotification({
+                    userId: effectiveUserId,
+                    type: 'job_update',
+                    title: 'Worker arrived on site',
+                    body: `${workerName} has arrived at "${job.title}".`,
+                    data: { jobId: req.params.id, event: 'worker_arrived' },
+                  }).catch(() => {});
+                }
+                // Prompt the worker to start their timer
+                sendPushNotification({
+                  userId: req.userId,
+                  type: 'job_update',
+                  title: "You've arrived",
+                  body: `You're at "${job.title}". Tap to start your timer.`,
+                  data: { jobId: req.params.id, event: 'arrival_start_timer' },
+                }).catch(() => {});
+                return res.json({ success: true, etaMinutes: 0, arrived: true });
+              }
+            }
+          } catch (arrivalError) {
+            console.error('[AutoArrival] Failed to auto-mark arrived:', arrivalError);
+          }
+        }
       }
       
       res.json({ success: true, etaMinutes });
