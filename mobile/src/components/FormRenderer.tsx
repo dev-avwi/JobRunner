@@ -467,14 +467,16 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
     if (isLoading) return null;
     // No job card form set up yet — show a prompt instead of hiding the section
     return (
-      <View style={[styles.container, { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border }]}>
+      <View style={[styles.container, { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg, borderWidth: 1, borderColor: colors.border }]}>
         <View style={styles.header}>
           <View style={[styles.headerIcon, { backgroundColor: `${colors.primary}15` }]}>
             <Feather name="clipboard" size={iconSizes.lg} color={colors.primary} />
           </View>
           <Text style={styles.headerLabel}>Job Card</Text>
         </View>
-        <Text style={styles.emptyText}>No job card form set up yet</Text>
+        <Text style={[styles.emptyText, { textAlign: 'center', marginTop: spacing.xs, marginBottom: spacing.lg }]}>
+          No job card form set up yet
+        </Text>
         <PressableRow style={styles.addFormButton} onPress={() => router.push('/more/form-builder' as any)}>
           <Feather name="plus" size={18} color={colors.primaryForeground} />
           <Text style={styles.addFormButtonText}>Create Job Card</Text>
