@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient, recordLocalChange, isRemoteChange } from "@/lib/queryClient";
+import { apiRequest, queryClient, recordLocalChange, isRemoteChange, getAuthHeaders } from "@/lib/queryClient";
 import {
   Palette,
   Plus,
@@ -54,6 +54,7 @@ import {
   Calendar,
   MessageSquare,
   Mail,
+  Download,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1836,6 +1837,12 @@ function FormsTab() {
   const [swmsBuilderTitle, setSwmsBuilderTitle] = useState<string>('');
   const [swmsDeleteConfirmOpen, setSwmsDeleteConfirmOpen] = useState(false);
   const [swmsToDelete, setSwmsToDelete] = useState<any>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportFormId, setExportFormId] = useState<string>('all');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'tsv'>('csv');
+  const [exportFrom, setExportFrom] = useState('');
+  const [exportTo, setExportTo] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   // Fetch custom forms
   const { data: customForms = [], isLoading: isLoadingCustomForms } = useQuery<CustomForm[]>({
@@ -1968,6 +1975,43 @@ function FormsTab() {
       toast({ title: "Failed to create form from template", variant: "destructive" });
     },
   });
+
+  const handleExportSubmissions = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (exportFormId && exportFormId !== 'all') params.append('formId', exportFormId);
+      if (exportFrom) params.append('from', exportFrom);
+      if (exportTo) params.append('to', exportTo);
+      params.append('format', exportFormat);
+      const response = await fetch(`/api/form-submissions/export?${params.toString()}`, {
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.message || err?.error || 'Export failed');
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match?.[1] || `submissions.${exportFormat}`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setExportDialogOpen(false);
+      toast({ title: 'Export downloaded' });
+    } catch (e: any) {
+      toast({ title: 'Export failed', description: e?.message, variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleEditForm = (form: FormItem) => {
     if (!form.isSystemTemplate) {
@@ -2183,10 +2227,16 @@ function FormsTab() {
               Safety, compliance, and inspection forms
             </p>
           </div>
-          <Button size="sm" data-testid="button-create-form" onClick={() => setLocation('/forms/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Form
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" variant="outline" data-testid="button-export-submissions" onClick={() => setExportDialogOpen(true)}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button size="sm" data-testid="button-create-form" onClick={() => setLocation('/forms/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Form
+            </Button>
+          </div>
         </div>
 
         {totalForms === 0 && !formSearch ? (
@@ -2586,6 +2636,66 @@ function FormsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Export Submissions
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Form</Label>
+              <Select value={exportFormId} onValueChange={setExportFormId}>
+                <SelectTrigger data-testid="select-export-form">
+                  <SelectValue placeholder="Select a form" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All job cards</SelectItem>
+                  {customForms.filter(f => f.isActive).map(f => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>From (optional)</Label>
+                <Input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} data-testid="input-export-from" />
+              </div>
+              <div className="space-y-2">
+                <Label>To (optional)</Label>
+                <Input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} data-testid="input-export-to" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Format</Label>
+              <Select value={exportFormat} onValueChange={(v) => setExportFormat(v as 'csv' | 'tsv')}>
+                <SelectTrigger data-testid="select-export-format">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="csv">CSV (Excel)</SelectItem>
+                  <SelectItem value="tsv">TSV (tab-separated)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleExportSubmissions}
+              disabled={exporting}
+              data-testid="button-download-export"
+            >
+              {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+              Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={swmsDeleteConfirmOpen} onOpenChange={setSwmsDeleteConfirmOpen}>
         <AlertDialogContent>

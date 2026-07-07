@@ -924,6 +924,16 @@ export interface IStorage {
   createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission>;
   updateFormSubmission(id: string, userId: string, submission: Partial<InsertFormSubmission>): Promise<FormSubmission | undefined>;
   deleteFormSubmission(id: string, userId: string): Promise<boolean>;
+  getFormSubmissionsForExport(ownerUserId: string, opts?: { formId?: string; from?: Date; to?: Date }): Promise<Array<{
+    submission: FormSubmission;
+    formId: string;
+    formName: string;
+    formFields: any;
+    jobTitle: string | null;
+    clientName: string | null;
+    submitterName: string | null;
+    submitterEmail: string | null;
+  }>>;
   createTask(task: InsertTask): Promise<Task>;
   getTasks(userId: string, jobId?: string): Promise<Task[]>;
   getTask(id: string, userId: string): Promise<Task | undefined>;
@@ -5518,6 +5528,57 @@ export class PostgresStorage implements IStorage {
       .where(eq(formSubmissions.id, id))
       .returning();
     return result.length > 0;
+  }
+
+  async getFormSubmissionsForExport(ownerUserId: string, opts?: { formId?: string; from?: Date; to?: Date }): Promise<Array<{
+    submission: FormSubmission;
+    formId: string;
+    formName: string;
+    formFields: any;
+    jobTitle: string | null;
+    clientName: string | null;
+    submitterName: string | null;
+    submitterEmail: string | null;
+  }>> {
+    const conds = [eq(customForms.userId, ownerUserId)];
+    if (opts?.formId) {
+      conds.push(eq(customForms.id, opts.formId));
+    } else {
+      // "All job cards" export — restrict to forms flagged as job cards
+      conds.push(eq(customForms.isJobCard, true));
+    }
+    if (opts?.from) conds.push(gte(formSubmissions.submittedAt, opts.from));
+    if (opts?.to) conds.push(lte(formSubmissions.submittedAt, opts.to));
+
+    const rows = await db.select({
+      submission: formSubmissions,
+      formId: customForms.id,
+      formName: customForms.name,
+      formFields: customForms.fields,
+      jobTitle: jobs.title,
+      clientName: clients.name,
+      submitterFirstName: users.firstName,
+      submitterLastName: users.lastName,
+      submitterEmail: users.email,
+    })
+      .from(formSubmissions)
+      .innerJoin(customForms, eq(formSubmissions.formId, customForms.id))
+      .leftJoin(jobs, eq(formSubmissions.jobId, jobs.id))
+      .leftJoin(clients, eq(jobs.clientId, clients.id))
+      .leftJoin(users, eq(formSubmissions.submittedBy, users.id))
+      .where(and(...conds))
+      .orderBy(asc(customForms.name), desc(formSubmissions.submittedAt));
+
+    return rows.map(r => ({
+      submission: r.submission,
+      formId: r.formId,
+      formName: r.formName,
+      formFields: r.formFields,
+      jobTitle: r.jobTitle,
+      clientName: r.clientName,
+      submitterName: [r.submitterFirstName, r.submitterLastName].filter(Boolean).join(' ') || null,
+      submitterEmail: r.submitterEmail,
+    }));
   }
 
   // Follow-up Tasks

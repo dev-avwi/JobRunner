@@ -23,6 +23,8 @@ import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, iconSizes, sizes, componentStyles, usePageShell } from '../../src/lib/design-tokens';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import { useAuthStore } from '../../src/lib/store';
 
@@ -485,6 +487,23 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  exportButtonText: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '500',
+  },
   pickerOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -741,6 +760,51 @@ export default function FormBuilderScreen() {
   const [showConditionalPicker, setShowConditionalPicker] = useState(false);
   const [conditionalFieldIndex, setConditionalFieldIndex] = useState<number | null>(null);
   const [readOnly, setReadOnly] = useState(false);
+
+  const [showExportPicker, setShowExportPicker] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportSubmissions = useCallback(async (formId: string | null) => {
+    setShowExportPicker(false);
+    setIsExporting(true);
+    try {
+      const token = await api.getToken();
+      const params = new URLSearchParams();
+      if (formId) params.append('formId', formId);
+      params.append('format', 'csv');
+      const res = await fetch(`${api.getBaseUrl()}/api/form-submissions/export?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) {
+        let msg = 'Export failed';
+        try {
+          const body = await res.json();
+          msg = body?.message || body?.error || msg;
+        } catch {}
+        throw new Error(msg);
+      }
+      const csvText = await res.text();
+      const disposition = res.headers.get('content-disposition') || '';
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match?.[1] || 'form-submissions.csv';
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      await FileSystem.writeAsStringAsync(fileUri, csvText, { encoding: FileSystem.EncodingType.UTF8 });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Export form submissions',
+          UTI: 'public.comma-separated-values-text',
+        });
+      } else {
+        Alert.alert('Export saved', `Saved to ${fileUri}`);
+      }
+    } catch (err: any) {
+      Alert.alert('Export failed', err?.message || 'Could not export submissions.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, []);
 
   const fetchForms = useCallback(async () => {
     try {
@@ -1608,6 +1672,24 @@ export default function FormBuilderScreen() {
         </TouchableOpacity>
       </View>
 
+      {activeTab === 'forms' && isOwnerOrManager && forms.length > 0 && (
+        <View style={{ paddingHorizontal: responsiveShell.paddingHorizontal, paddingTop: spacing.sm }}>
+          <TouchableOpacity
+            style={styles.exportButton}
+            onPress={() => setShowExportPicker(true)}
+            disabled={isExporting}
+            activeOpacity={0.7}
+          >
+            {isExporting ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Feather name="download" size={iconSizes.md} color={colors.primary} />
+            )}
+            <Text style={styles.exportButtonText}>{isExporting ? 'Exporting…' : 'Export submissions (CSV)'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {activeTab === 'forms' && forms.length > 0 && (
         <View style={styles.searchBar}>
           <Feather name="search" size={iconSizes.md} color={colors.mutedForeground} />
@@ -1694,6 +1776,38 @@ export default function FormBuilderScreen() {
           <Feather name="plus" size={iconSizes['2xl']} color={colors.primaryForeground} />
         </TouchableOpacity>
       )}
+
+      <Modal visible={showExportPicker} transparent animationType="fade" onRequestClose={() => setShowExportPicker(false)}>
+        <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setShowExportPicker(false)}>
+          <View style={styles.pickerContainer}>
+            <Text style={styles.pickerTitle}>Export Submissions</Text>
+            <ScrollView style={{ maxHeight: 360 }}>
+              <TouchableOpacity
+                style={styles.pickerOption}
+                onPress={() => handleExportSubmissions(null)}
+                activeOpacity={0.7}
+              >
+                <Feather name="clipboard" size={iconSizes.lg} color={colors.primary} />
+                <Text style={styles.pickerOptionText}>All job cards</Text>
+              </TouchableOpacity>
+              {forms.filter((f) => f.isActive !== false).map((f) => (
+                <TouchableOpacity
+                  key={f.id}
+                  style={styles.pickerOption}
+                  onPress={() => handleExportSubmissions(f.id)}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="file-text" size={iconSizes.lg} color={colors.mutedForeground} />
+                  <Text style={styles.pickerOptionText} numberOfLines={1}>{f.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={styles.pickerCancel} onPress={() => setShowExportPicker(false)} activeOpacity={0.7}>
+              <Text style={styles.pickerCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {renderFormModal()}
     </View>

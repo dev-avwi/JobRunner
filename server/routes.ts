@@ -38871,6 +38871,138 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
   // Create form submission for a specific job (checklist)
 
+  // Export form submissions as CSV/TSV (owner/manager only).
+  // Must be registered BEFORE /api/form-submissions/:id so "export" isn't matched as an id.
+  app.get("/api/form-submissions/export", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const ownerUserId = req.effectiveUserId || req.userId;
+      const { formId, from, to } = req.query as { formId?: string; from?: string; to?: string };
+      const format = (req.query.format === 'tsv') ? 'tsv' : 'csv';
+
+      const parseDate = (v?: string): Date | undefined => {
+        if (!v) return undefined;
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? undefined : d;
+      };
+      const fromDate = parseDate(from);
+      let toDate = parseDate(to);
+      // Make the "to" date inclusive when a plain date (no time) is supplied
+      if (toDate && to && !to.includes('T')) {
+        toDate = new Date(toDate.getTime() + 24 * 60 * 60 * 1000 - 1);
+      }
+
+      const rows = await storage.getFormSubmissionsForExport(ownerUserId, {
+        formId: formId || undefined,
+        from: fromDate,
+        to: toDate,
+      });
+
+      // Stable column order: base columns, then one column per form field.
+      // For multi-form ("all job cards") exports, prefix field headers with the form name.
+      const formsInExport = new Map<string, { name: string; fields: any[] }>();
+      for (const r of rows) {
+        if (!formsInExport.has(r.formId)) {
+          formsInExport.set(r.formId, { name: r.formName, fields: Array.isArray(r.formFields) ? r.formFields : [] });
+        }
+      }
+      // Single-form export with zero submissions: still emit that form's field headers
+      if (formId && formsInExport.size === 0) {
+        const form = await storage.getCustomForm(formId, ownerUserId);
+        if (!form) return res.status(404).json({ error: 'Form not found' });
+        formsInExport.set(form.id, { name: form.name, fields: Array.isArray(form.fields) ? form.fields : [] });
+      }
+
+      const multiForm = formsInExport.size > 1;
+      const fieldColumns: Array<{ formId: string; fieldId: string; header: string; type: string }> = [];
+      for (const [fid, f] of formsInExport) {
+        for (const field of f.fields) {
+          if (!field || !field.id) continue;
+          if (field.type === 'section') continue;
+          const label = field.label || field.id;
+          fieldColumns.push({
+            formId: fid,
+            fieldId: field.id,
+            header: multiForm ? `${f.name} - ${label}` : label,
+            type: field.type || 'text',
+          });
+        }
+      }
+
+      const baseHeaders = ['Form', 'Job', 'Client', 'Submitted By', 'Submitted At', 'Status'];
+      const headers = [...baseHeaders, ...fieldColumns.map(c => c.header)];
+
+      const formatValue = (type: string, value: any): string => {
+        if (value === undefined || value === null || value === '') return '';
+        switch (type) {
+          case 'checkbox':
+            if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+            if (value === 'true' || value === 'yes' || value === 'checked' || value === 1) return 'Yes';
+            if (value === 'false' || value === 'no' || value === 0) return 'No';
+            if (Array.isArray(value)) return value.join('; ');
+            return String(value);
+          case 'photo': {
+            if (Array.isArray(value)) return `${value.length} photo${value.length !== 1 ? 's' : ''}`;
+            return typeof value === 'string' && value.length > 200 ? '1 photo' : String(value);
+          }
+          case 'signature':
+            return 'Signed';
+          default:
+            if (Array.isArray(value)) return value.join('; ');
+            if (typeof value === 'object') return JSON.stringify(value);
+            return String(value);
+        }
+      };
+
+      const dataRows = rows.map(r => {
+        const sub = r.submission;
+        const data = (sub.submissionData || {}) as Record<string, any>;
+        const submittedAt = sub.submittedAt ? new Date(sub.submittedAt).toISOString() : '';
+        const base = [
+          r.formName,
+          r.jobTitle || '',
+          r.clientName || '',
+          r.submitterName || r.submitterEmail || '',
+          submittedAt,
+          sub.status || '',
+        ];
+        const fieldVals = fieldColumns.map(c => {
+          if (c.formId !== r.formId) return '';
+          return formatValue(c.type, data[c.fieldId]);
+        });
+        return [...base, ...fieldVals];
+      });
+
+      const sep = format === 'tsv' ? '\t' : ',';
+      const escapeCell = (v: string): string => {
+        const s = String(v ?? '');
+        // Guard against spreadsheet formula injection
+        const guarded = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+        if (format === 'tsv') {
+          return guarded.replace(/[\t\r\n]/g, ' ');
+        }
+        if (/[",\r\n]/.test(guarded)) {
+          return `"${guarded.replace(/"/g, '""')}"`;
+        }
+        return guarded;
+      };
+
+      const lines = [headers, ...dataRows].map(row => row.map(escapeCell).join(sep));
+      const body = lines.join('\r\n');
+
+      const singleForm = formsInExport.size === 1 ? [...formsInExport.values()][0].name : 'all-job-cards';
+      const safeName = singleForm.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'submissions';
+      const datePart = new Date().toISOString().slice(0, 10);
+      const ext = format === 'tsv' ? 'tsv' : 'csv';
+      res.setHeader('Content-Type', format === 'tsv' ? 'text/tab-separated-values; charset=utf-8' : 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${safeName}-submissions-${datePart}.${ext}"`);
+      // UTF-8 BOM so Excel opens it correctly
+      res.send('\ufeff' + body);
+    } catch (error: any) {
+      console.error('Error exporting form submissions:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Get single form submission
   app.get("/api/form-submissions/:id", requireAuth, async (req: any, res) => {
     try {
