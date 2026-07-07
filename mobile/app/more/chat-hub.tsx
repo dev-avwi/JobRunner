@@ -1094,22 +1094,23 @@ export default function ChatHubScreen() {
   };
 
   const showQuickActions = (item: ConversationItem) => {
-    const buttons: { text: string; onPress: () => void; style?: string }[] = [];
-
-    SMS_QUICK_ACTIONS.forEach(action => {
-      buttons.push({
-        text: action.label,
-        onPress: () => handleQuickActionSend(item, action.id),
-      });
-    });
-    buttons.push({
-      text: 'Send Photo',
-      onPress: () => handleSendPhoto(item),
-    });
     showActionSheet({
       title: 'Quick SMS',
       message: 'Send a quick message:',
-      actions: buttons.map(b => ({ label: b.text, onPress: b.onPress })),
+      actions: [
+        ...SMS_QUICK_ACTIONS.map(action => ({
+          label: action.label,
+          icon: action.icon,
+          description: action.message,
+          onPress: () => handleQuickActionSend(item, action.id),
+        })),
+        {
+          label: 'Send Photo',
+          icon: 'camera' as const,
+          description: 'Snap or pick a photo to send via MMS',
+          onPress: () => handleSendPhoto(item),
+        },
+      ],
     });
   };
 
