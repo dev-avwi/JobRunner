@@ -87,6 +87,7 @@ const SAFETY_TEMPLATES = [
     description: 'Pre-work safety assessment for job sites',
     formType: 'safety' as FormType,
     requiresSignature: true,
+    jobCard: true,
     fields: [
       { id: 'hazards', type: 'textarea' as FieldType, label: 'Identified Hazards', required: true, placeholder: 'List any hazards observed' },
       { id: 'ppe', type: 'checkbox' as FieldType, label: 'PPE Available and Worn', required: true },
@@ -117,6 +118,7 @@ const SAFETY_TEMPLATES = [
     description: 'Document completed work and sign-off',
     formType: 'general' as FormType,
     requiresSignature: true,
+    jobCard: true,
     fields: [
       { id: 'work_summary', type: 'textarea' as FieldType, label: 'Work Completed', required: true, placeholder: 'Describe the work performed' },
       { id: 'materials_used', type: 'textarea' as FieldType, label: 'Materials Used', placeholder: 'List materials and quantities' },
@@ -784,6 +786,21 @@ export default function FormBuilderScreen() {
     );
   }, [forms, searchQuery]);
 
+  const formListData = useMemo(() => {
+    const jobCards = filteredForms.filter((f) => f.isJobCard);
+    const others = filteredForms.filter((f) => !f.isJobCard);
+    const items: Array<CustomForm | { headerId: string; title: string }> = [];
+    if (jobCards.length > 0) {
+      items.push({ headerId: 'header-jobcards', title: 'Job Cards' });
+      items.push(...jobCards);
+    }
+    if (others.length > 0) {
+      if (jobCards.length > 0) items.push({ headerId: 'header-forms', title: 'Forms' });
+      items.push(...others);
+    }
+    return items;
+  }, [filteredForms]);
+
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     fetchForms();
@@ -841,7 +858,7 @@ export default function FormBuilderScreen() {
     setFormDescription(template.description);
     setFormType(template.formType);
     setRequiresSignature(template.requiresSignature);
-    setIsJobCard(jobCardIntent);
+    setIsJobCard(jobCardIntent || !!(template as any).jobCard);
     setBlockJobCompletion(false);
     setFields(template.fields.map(f => ({ ...f, id: generateId() })));
     setEditingForm(null);
@@ -1514,6 +1531,11 @@ export default function FormBuilderScreen() {
           <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor }]}>
             <Text style={[styles.typeBadgeText, { color: typeConfig.color }]}>{typeConfig.label}</Text>
           </View>
+          {(template as any).jobCard && (
+            <View style={[styles.typeBadge, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.typeBadgeText, { color: colors.primary }]}>Job Card</Text>
+            </View>
+          )}
         </View>
         <Text style={styles.templateName}>{template.name}</Text>
         <Text style={styles.templateDescription}>{template.description}</Text>
@@ -1616,8 +1638,17 @@ export default function FormBuilderScreen() {
           </ScrollView>
         ) : (
           <FlatList
-            data={filteredForms}
-            renderItem={renderFormCard}
+            data={formListData}
+            renderItem={({ item }) =>
+              'headerId' in item ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, marginTop: item.headerId === 'header-forms' ? spacing.md : 0 }}>
+                  <Feather name={item.headerId === 'header-jobcards' ? 'clipboard' : 'file-text'} size={iconSizes.md} color={item.headerId === 'header-jobcards' ? colors.primary : colors.mutedForeground} />
+                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>{item.title}</Text>
+                </View>
+              ) : (
+                renderFormCard({ item })
+              )
+            }
             ListEmptyComponent={
               <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
                 <Text style={{ ...typography.body, color: colors.mutedForeground }}>
@@ -1625,7 +1656,7 @@ export default function FormBuilderScreen() {
                 </Text>
               </View>
             }
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => ('headerId' in item ? item.headerId : item.id)}
             contentContainerStyle={{ padding: responsiveShell.paddingHorizontal, paddingBottom: sizes.fabSize + spacing.xl }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
           />
@@ -1637,7 +1668,24 @@ export default function FormBuilderScreen() {
               ? 'Pick a template for your job card, or switch to My Forms and tap + to start from scratch.'
               : 'Start with a pre-built template and customize it to your needs.'}
           </Text>
-          {SAFETY_TEMPLATES.map((template, index) => renderTemplateCard(template, index))}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+            <Feather name="clipboard" size={iconSizes.md} color={colors.primary} />
+            <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>Job Card Templates</Text>
+          </View>
+          <Text style={{ ...typography.captionSmall, color: colors.mutedForeground, marginBottom: spacing.md }}>
+            These show on the job so workers can fill them in on site.
+          </Text>
+          {SAFETY_TEMPLATES.filter((t: any) => t.jobCard).map((template, index) => renderTemplateCard(template, index))}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.sm }}>
+            <Feather name="file-text" size={iconSizes.md} color={colors.mutedForeground} />
+            <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>Form Templates</Text>
+          </View>
+          <Text style={{ ...typography.captionSmall, color: colors.mutedForeground, marginBottom: spacing.md }}>
+            {jobCardIntent
+              ? 'You can use these too — they will be set up as your job card.'
+              : 'Standalone forms for checks and compliance.'}
+          </Text>
+          {SAFETY_TEMPLATES.filter((t: any) => !t.jobCard).map((template, index) => renderTemplateCard(template, index + 100))}
         </ScrollView>
       )}
 
