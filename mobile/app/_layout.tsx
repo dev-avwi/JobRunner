@@ -14,7 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import * as Updates from 'expo-updates';
-import { useAuthStore } from '../src/lib/store';
+import { useAuthStore, useTimeTrackingStore } from '../src/lib/store';
 import "../global.css";
 import { useNotifications, useOfflineStorage, useLocationTracking, useStripeTerminal } from '../src/hooks/useServices';
 import { isTapToPayAvailable } from '../src/lib/stripe-terminal';
@@ -404,6 +404,30 @@ function ServicesInitializer() {
               } else {
                 title = 'Left Job Site';
                 body = `You've left ${jobTitle}. Don't forget to log your time.`;
+
+                // If the worker's timer is still running for this job, ask
+                // them directly what's going on instead of silently letting
+                // the clock run (grabbing materials vs finished vs break).
+                const tt = useTimeTrackingStore.getState();
+                const timer = tt.activeTimer;
+                if (timer && timer.jobId === jobId && !timer.isBreak && AppState.currentState === 'active') {
+                  Alert.alert(
+                    'Are you finished at the job?',
+                    `You've left ${jobTitle} but your timer is still running.`,
+                    [
+                      {
+                        text: 'On Break',
+                        onPress: async () => {
+                          const ok = await useTimeTrackingStore.getState().pauseTimer();
+                          if (!ok) Alert.alert('Error', 'Could not switch to break — check Time Tracking.');
+                        },
+                      },
+                      { text: 'Continue Timer', style: 'cancel' },
+                    ]
+                  );
+                  // The in-app prompt replaces the passive notification.
+                  return;
+                }
               }
             }
 

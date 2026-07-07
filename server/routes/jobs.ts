@@ -8191,7 +8191,11 @@ import { logSystemEvent } from "../systemEventService";
       const userId = req.userId!;
       const { jobId } = req.params;
       
-      const submissions = await storage.getFormSubmissionsByJob(jobId, userId);
+      // Resolve to the business owner's id — workers submit against the
+      // owner's job, so scoping by the raw worker id returned [] and their
+      // own completed job cards never showed up.
+      const userContext = await getUserContext(userId);
+      const submissions = await storage.getFormSubmissionsByJob(jobId, userContext.effectiveUserId);
       res.json(submissions);
     } catch (error: any) {
       console.error('Error fetching job form submissions:', error);
