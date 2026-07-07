@@ -8361,7 +8361,7 @@ Be specific about materials, colors, and features that would be included.`
         const form = await storage.getCustomForm(sub.formId, userId);
         if (!form) continue;
         const formType = form.formType || 'general';
-        if (!['safety', 'inspection', 'compliance'].includes(formType)) continue;
+        const isJobCardForm = !!(form as any).isJobCard;
         const fields = (form.fields || []) as Array<{id: string; label: string; type: string}>;
         const data = (sub.submissionData || {}) as Record<string, any>;
         const responses: Array<{label: string; value: string; type: string}> = [];
@@ -8373,13 +8373,21 @@ Be specific about materials, colors, and features that would be included.`
           if (Array.isArray(val)) displayVal = val.join(', ');
           responses.push({ label: field.label, value: displayVal, type: field.type || 'text' });
         }
+        let submittedByName: string | undefined;
+        if (sub.submittedBy) {
+          try {
+            const subUser = await storage.getUser(sub.submittedBy);
+            if (subUser) submittedByName = [subUser.firstName, subUser.lastName].filter(Boolean).join(' ') || subUser.email || undefined;
+          } catch {}
+        }
         safetyForms.push({
           formName: form.name,
           formType,
+          isJobCard: isJobCardForm,
           description: form.description || undefined,
           status: sub.status || 'submitted',
           submittedAt: sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('en-AU', { timeZone: 'Australia/Sydney' }) : '-',
-          submittedBy: sub.submittedBy || undefined,
+          submittedBy: submittedByName || undefined,
           notes: sub.notes || undefined,
           responses,
         });

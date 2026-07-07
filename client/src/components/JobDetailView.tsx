@@ -4835,6 +4835,17 @@ export default function JobDetailView({
             <Button variant="outline" onClick={() => setProofPackPreviewOpen(false)}>
               Close
             </Button>
+            <Button variant="outline" data-testid="button-proof-pack-tsv" onClick={() => {
+              const params = new URLSearchParams();
+              Object.entries(proofPackSections).forEach(([key, val]) => {
+                if (!val) params.set(`hide_${key}`, '1');
+              });
+              params.set('format', 'tsv');
+              window.open(`/api/jobs/${jobId}/proof-pack/export?${params.toString()}`, '_blank');
+            }}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Export for Excel
+            </Button>
             <Button onClick={() => {
               const params = new URLSearchParams();
               Object.entries(proofPackSections).forEach(([key, val]) => {

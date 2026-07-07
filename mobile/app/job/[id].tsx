@@ -2192,6 +2192,7 @@ export default function JobDetailScreen() {
   const [sendModalDefaultTab, setSendModalDefaultTab] = useState<'email' | 'sms'>('email');
 
   const [isGeneratingProofPack, setIsGeneratingProofPack] = useState(false);
+  const [isExportingProofPackTsv, setIsExportingProofPackTsv] = useState(false);
   const [isExportingJobCard, setIsExportingJobCard] = useState(false);
   const [showProofPackModal, setShowProofPackModal] = useState(false);
   const [proofPackSections, setProofPackSections] = useState({
@@ -4432,6 +4433,46 @@ export default function JobDetailScreen() {
       showToast({ type: 'error', message: error.message || 'Failed to generate Proof Pack' });
     } finally {
       setIsGeneratingProofPack(false);
+    }
+  };
+
+  const handleExportProofPackTsv = async () => {
+    if (!job) return;
+    setIsExportingProofPackTsv(true);
+    try {
+      const token = await api.getToken();
+      const hiddenParts: string[] = [];
+      Object.entries(proofPackSections).forEach(([key, val]) => {
+        if (!val) hiddenParts.push(`hide_${key}=1`);
+      });
+      hiddenParts.push('format=tsv');
+      const tsvUrl = `${API_URL}/api/jobs/${job.id}/proof-pack/export?${hiddenParts.join('&')}`;
+      const filename = `proof-pack-${job.title.replace(/[^a-zA-Z0-9]/g, '_')}.tsv`;
+      const localUri = `${FileSystem.cacheDirectory}${filename}`;
+
+      const downloadResult = await FileSystem.downloadAsync(tsvUrl, localUri, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (downloadResult.status === 200) {
+        setShowProofPackModal(false);
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: 'text/tab-separated-values',
+            dialogTitle: 'Share Proof Pack Export',
+          });
+        } else {
+          showToast({ type: 'success', message: 'Proof Pack export downloaded' });
+        }
+      } else {
+        showToast({ type: 'error', message: 'Failed to export Proof Pack' });
+      }
+    } catch (error: any) {
+      console.error('Proof pack TSV export error:', error);
+      showToast({ type: 'error', message: error.message || 'Failed to export Proof Pack' });
+    } finally {
+      setIsExportingProofPackTsv(false);
     }
   };
 
@@ -11890,6 +11931,7 @@ export default function JobDetailScreen() {
         showCloseButton
         snapPoints={['90%']}
         footer={(
+          <View style={{ gap: spacing.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <TouchableOpacity
               onPress={() => setShowProofPackModal(false)}
@@ -11952,6 +11994,35 @@ export default function JobDetailScreen() {
                 </>
               )}
             </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.sm,
+              paddingVertical: spacing.md,
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: colors.border,
+              opacity: isExportingProofPackTsv || !Object.values(proofPackSections).some(Boolean) ? 0.5 : 1,
+              minHeight: 44,
+            }}
+            onPress={handleExportProofPackTsv}
+            activeOpacity={0.8}
+            disabled={isExportingProofPackTsv || !Object.values(proofPackSections).some(Boolean)}
+          >
+            {isExportingProofPackTsv ? (
+              <ActivityIndicator size="small" color={colors.foreground} />
+            ) : (
+              <>
+                <Feather name="grid" size={15} color={colors.foreground} />
+                <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>
+                  Export for Excel (TSV)
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
           </View>
         )}>
         <View>

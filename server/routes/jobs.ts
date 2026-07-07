@@ -711,6 +711,115 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
+  app.get("/api/jobs/:jobId/proof-pack/export", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const jobId = req.params.jobId;
+      const userId = userContext.effectiveUserId;
+
+      const format = req.query.format === 'csv' ? 'csv' : 'tsv';
+      const delim = format === 'csv' ? ',' : '\t';
+      const esc = (val: any): string => {
+        if (val === undefined || val === null) return '';
+        let str = String(val).replace(/\r?\n/g, ' ');
+        if (/^\s*[=+\-@]/.test(str)) str = "'" + str;
+        if (format === 'csv') {
+          if (str.includes(',') || str.includes('"')) str = '"' + str.replace(/"/g, '""') + '"';
+        } else {
+          str = str.replace(/\t/g, ' ');
+        }
+        return str;
+      };
+      const row = (cells: any[]) => cells.map(esc).join(delim);
+
+      const data = await buildProofPackData(jobId, userId, req.query);
+      const lines: string[] = [];
+
+      lines.push(row(['JOB PROOF PACK']));
+      lines.push(row(['Job', data.job.title || data.job.number || jobId]));
+      lines.push(row(['Job Number', data.job.number || '']));
+      lines.push(row(['Client', (data.client as any)?.name || '']));
+      lines.push(row(['Address', data.job.address || '']));
+      lines.push(row(['Status', data.job.status || '']));
+      lines.push(row(['Exported', new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })]));
+      lines.push('');
+
+      lines.push(row(['TIME ENTRIES']));
+      lines.push(row(['Worker', 'Start', 'End', 'Duration (min)', 'Billable', 'Clock-in Address', 'Clock-out Address']));
+      for (const e of data.timeEntries) {
+        lines.push(row([e.workerName, e.startTime, e.endTime || '', e.duration, e.billable ? 'Yes' : 'No', e.clockInAddress || '', e.clockOutAddress || '']));
+      }
+      lines.push('');
+
+      if (data.materials.length > 0) {
+        lines.push(row(['MATERIALS']));
+        lines.push(row(['Name', 'Quantity', 'Unit Cost', 'Total Cost', 'Supplier', 'Status']));
+        for (const m of data.materials) {
+          lines.push(row([m.name, m.quantity || '', m.unitCost || '', m.totalCost || '', m.supplier || '', m.status || '']));
+        }
+        lines.push('');
+      }
+
+      if (data.photos.length > 0) {
+        lines.push(row(['PHOTOS']));
+        lines.push(row(['Category', 'Caption', 'Taken At', 'Location']));
+        for (const ph of data.photos) {
+          lines.push(row([ph.category, ph.caption || '', ph.createdAt || '', ph.address || (ph.latitude != null ? `${ph.latitude}, ${ph.longitude}` : '')]));
+        }
+        lines.push('');
+      }
+
+      if (data.swmsList.length > 0) {
+        lines.push(row(['SWMS SIGN-OFFS']));
+        lines.push(row(['SWMS Title', 'Status', 'Worker', 'Signed At', 'Location']));
+        for (const sw of data.swmsList) {
+          if (sw.signatures.length === 0) {
+            lines.push(row([sw.title, sw.status, '(no signatures)', '', '']));
+          } else {
+            for (const sig of sw.signatures) {
+              lines.push(row([sw.title, sw.status, sig.name, sig.signedAt, sig.location || '']));
+            }
+          }
+        }
+        lines.push('');
+      }
+
+      if (data.safetyForms.length > 0) {
+        lines.push(row(['JOB CARDS & FORMS']));
+        lines.push(row(['Form', 'Type', 'Completed By', 'Submitted At', 'Status', 'Item', 'Response']));
+        for (const f of data.safetyForms) {
+          const typeLabel = (f as any).isJobCard ? 'Job Card' : (f.formType === 'safety' ? 'Safety Form' : f.formType === 'inspection' ? 'Inspection' : f.formType === 'compliance' ? 'Compliance Check' : 'Form');
+          if (f.responses.length === 0) {
+            lines.push(row([f.formName, typeLabel, f.submittedBy || '', f.submittedAt, f.status, '', '']));
+          } else {
+            for (const r of f.responses) {
+              lines.push(row([f.formName, typeLabel, f.submittedBy || '', f.submittedAt, f.status, r.label, r.value]));
+            }
+          }
+          if (f.notes) lines.push(row([f.formName, typeLabel, f.submittedBy || '', f.submittedAt, f.status, 'Notes', f.notes]));
+        }
+        lines.push('');
+      }
+
+      if (data.invoice) {
+        lines.push(row(['INVOICE']));
+        lines.push(row(['Number', 'Date', 'Total', 'GST', 'Status']));
+        lines.push(row([data.invoice.number, data.invoice.date, data.invoice.total, data.invoice.gstAmount, data.invoice.status]));
+      }
+
+      const content = '\ufeff' + lines.join('\r\n');
+      const ext = format === 'csv' ? 'csv' : 'tsv';
+      const fileName = `proof-pack-${data.job.number || jobId}.${ext}`;
+      res.setHeader('Content-Type', format === 'csv' ? 'text/csv; charset=utf-8' : 'text/tab-separated-values; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(content);
+    } catch (error: any) {
+      console.error("Error exporting proof pack:", error);
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      res.status(500).json({ error: "Failed to export proof pack" });
+    }
+  });
+
   app.get("/api/jobs/:jobId/job-card-pdf", requireAuth, pdfPerUserLimiter, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);

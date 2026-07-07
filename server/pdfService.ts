@@ -3698,7 +3698,7 @@ export const generateJobProofPackPDF = (data: {
   subcontractors?: Array<{name: string; status: string; invitedAt?: string | null; acceptedAt?: string | null; lastAccessed?: string | null; source: string}>;
   variations?: Array<{number: string; title: string; description?: string; reason?: string; additionalAmount: string; gstAmount: string; totalAmount: string; status: string; approvedByName?: string; approvedAt?: string; createdAt?: string}>;
   swmsList?: Array<{title: string; status: string; siteAddress?: string; workActivity?: string; ppe: string[]; hazards: Array<{activity: string; hazard: string; riskBefore: string; controlMeasures?: string; riskAfter: string}>; signatures: Array<{name: string; signedAt: string; location?: string | null}>; createdAt: string}>;
-  safetyForms?: Array<{formName: string; formType: string; description?: string; status: string; submittedAt: string; submittedBy?: string; notes?: string; responses: Array<{label: string; value: string; type: string}>}>;
+  safetyForms?: Array<{formName: string; formType: string; isJobCard?: boolean; description?: string; status: string; submittedAt: string; submittedBy?: string; notes?: string; responses: Array<{label: string; value: string; type: string}>}>;
   hideSections?: {timeline?: boolean; attendance?: boolean; gpsProof?: boolean; materials?: boolean; photos?: boolean; invoice?: boolean; compliance?: boolean; subcontractors?: boolean; swms?: boolean; variations?: boolean};
   accentColor?: string;
 }): string => {
@@ -4309,7 +4309,7 @@ export const generateJobProofPackPDF = (data: {
     </div>` : ''}
 
     ${!(hideSections as any).swms && (swmsList.length > 0 || safetyForms.length > 0) ? `<div class="section">
-      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '10' : '9'}. Safety &amp; SWMS</div>
+      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '10' : '9'}. Safety, SWMS &amp; Job Cards</div>
       ${swmsList.length > 0 ? `
       <div style="margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;color:${brandColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0">Safe Work Method Statements</div>
@@ -4341,16 +4341,16 @@ export const generateJobProofPackPDF = (data: {
       </div>` : ''}
       ${safetyForms.length > 0 ? `
       <div style="margin-bottom:8px">
-        <div style="font-size:11px;font-weight:700;color:${brandColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0">Safety Inspections &amp; Checklists</div>
+        <div style="font-size:11px;font-weight:700;color:${brandColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0">Job Cards, Forms &amp; Checklists</div>
         ${safetyForms.map(f => {
-          const typeLabels: Record<string, string> = { safety: 'Safety Form', inspection: 'Inspection', compliance: 'Compliance Check' };
-          const typeLabel = typeLabels[f.formType] || 'Form';
+          const typeLabels: Record<string, string> = { safety: 'Safety Form', inspection: 'Inspection', compliance: 'Compliance Check', general: 'Form' };
+          const typeLabel = f.isJobCard ? 'Job Card' : (typeLabels[f.formType] || 'Form');
           return `
           <div style="margin-bottom:12px;border:1px solid #e2e8f0;border-radius:6px;padding:12px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
               <div>
                 <div style="font-weight:700;font-size:13px">${f.formName}</div>
-                <div style="font-size:9px;color:#888;margin-top:2px">${typeLabel} &bull; Submitted ${f.submittedAt}</div>
+                <div style="font-size:9px;color:#888;margin-top:2px">${typeLabel} &bull; Submitted ${f.submittedAt}${f.submittedBy ? ` by ${f.submittedBy}` : ''}</div>
               </div>
               <span class="status-pill" style="${f.status === 'approved' ? 'background:#dcfce7;color:#166534' : f.status === 'reviewed' ? 'background:#dbeafe;color:#1e40af' : f.status === 'rejected' ? 'background:#fee2e2;color:#991b1b' : 'background:#fef3c7;color:#92400e'}">${f.status.toUpperCase()}</span>
             </div>
