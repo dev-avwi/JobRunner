@@ -450,10 +450,17 @@ export default function SmsConversationScreen() {
   }, [clientName, clientFirstName, senderName, businessSettings?.businessName, smsContext]);
 
   const builtInReplies = useMemo(() => buildQuickReplies(clientFirstName, senderName), [clientFirstName, senderName]);
-  const quickReplies = useMemo(() => [
-    ...savedTemplates.map((t) => ({ id: t.id, label: t.label, icon: 'message-square' as const, message: applyMergeFields(t.message) })),
-    ...builtInReplies.map((r) => ({ ...r, message: applyMergeFields(r.message) })),
-  ], [savedTemplates, builtInReplies, applyMergeFields]);
+  const quickReplies = useMemo(() => {
+    const savedNames = new Set(savedTemplates.map((t) => t.label.trim().toLowerCase()));
+    return [
+      ...savedTemplates.map((t) => ({ id: t.id, label: t.label, icon: 'message-square' as const, message: applyMergeFields(t.message) })),
+      // Skip built-ins whose name matches a saved template (server seeds defaults
+      // with the same names, so showing both duplicates every chip)
+      ...builtInReplies
+        .filter((r) => !savedNames.has(r.label.trim().toLowerCase()))
+        .map((r) => ({ ...r, message: applyMergeFields(r.message) })),
+    ];
+  }, [savedTemplates, builtInReplies, applyMergeFields]);
 
   useEffect(() => {
     let active = true;

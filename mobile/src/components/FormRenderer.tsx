@@ -15,6 +15,7 @@ import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import api from '../lib/api';
 import { useTheme, ThemeColors } from '../lib/theme';
 import { AppBottomSheet } from './ui/AppBottomSheet';
@@ -461,7 +462,26 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
     return jobCardMode ? isJC : !isJC;
   });
 
-  if (jobCardMode && displayForms.length === 0) return null;
+  if (jobCardMode && displayForms.length === 0) {
+    // Don't flash anything while loading
+    if (isLoading) return null;
+    // No job card form set up yet — show a prompt instead of hiding the section
+    return (
+      <View style={[styles.container, { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border }]}>
+        <View style={styles.header}>
+          <View style={[styles.headerIcon, { backgroundColor: `${colors.primary}15` }]}>
+            <Feather name="clipboard" size={iconSizes.lg} color={colors.primary} />
+          </View>
+          <Text style={styles.headerLabel}>Job Card</Text>
+        </View>
+        <Text style={styles.emptyText}>No job card form set up yet</Text>
+        <PressableRow style={styles.addFormButton} onPress={() => router.push('/more/form-builder' as any)}>
+          <Feather name="plus" size={18} color={colors.primaryForeground} />
+          <Text style={styles.addFormButtonText}>Create Job Card</Text>
+        </PressableRow>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
