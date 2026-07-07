@@ -2747,7 +2747,12 @@ class OfflineStorageService {
         const isPermanentReject =
           (type === 'job' && action === 'update' &&
             (code === 'NOT_LEAD_WORKER' ||
-              /lead worker or owner|use clock off/i.test(response.error))) ||
+              // WHS start gates + permission rejections won't succeed on
+              // retry either (e.g. Take 5 required, expired compliance, or a
+              // queued update synced under an account without write access).
+              code === 'TAKE5_REQUIRED' ||
+              code === 'COMPLIANCE_EXPIRED' ||
+              /lead worker or owner|use clock off|access denied/i.test(response.error))) ||
           isMissingRecord;
         if (isPermanentReject) {
           if (__DEV__) console.warn(`[OfflineStorage] Dropping non-retryable ${type} ${action}: ${response.error}`);

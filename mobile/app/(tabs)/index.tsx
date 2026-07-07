@@ -3140,26 +3140,63 @@ function OwnerDashboardScreen() {
     return formatCurrencyUtil(amount, { compact: true });
   };
 
+  const doStartJob = async (jobId: string) => {
+    setIsUpdating(true);
+    try {
+      const ok = await updateJobStatus(jobId, 'in_progress');
+      if (ok === false) {
+        const serverError = useJobsStore.getState().error;
+        showToast({ type: 'error', message: 'Could not start job', description: serverError || 'Failed to start job' });
+        return;
+      }
+      router.push(`/job/${jobId}`);
+    } catch (error) {
+      showToast({ type: 'error', message: 'Error', description: 'Failed to start job' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleStartJob = async (jobId: string) => {
+    // Same WHS safety gate as the job detail screen: warn about unsigned/draft
+    // SWMS or pending safety forms before starting (skipped when offline).
+    try {
+      const { isOnline } = useOfflineStore.getState();
+      if (isOnline) {
+        const safetyRes = await api.get(`/api/jobs/${jobId}/safety-status`);
+        const safety = safetyRes.data as any;
+        const hasSafetyIssues = !safetyRes.error && safety && (
+          (safety.pendingForms && safety.pendingForms > 0) ||
+          (safety.draftSwms && safety.draftSwms > 0) ||
+          (safety.unsignedSwms && safety.unsignedSwms > 0)
+        );
+        if (hasSafetyIssues) {
+          const warnings: string[] = [];
+          if (safety.pendingForms > 0) warnings.push('Safety forms not completed');
+          if (safety.draftSwms > 0) warnings.push(`${safety.draftSwms} SWMS in draft`);
+          if (safety.unsignedSwms > 0) warnings.push(`${safety.unsignedSwms} SWMS unsigned`);
+          Alert.alert(
+            'Safety Check Required',
+            `${warnings.join(', ')}. Complete safety documentation before starting work.\n\nWHS Compliance: SWMS documents are legally required for high-risk construction work.`,
+            [
+              { text: 'View Job', onPress: () => router.push(`/job/${jobId}`) },
+              { text: 'Start Anyway', style: 'destructive', onPress: () => doStartJob(jobId) },
+              { text: 'Cancel', style: 'cancel' },
+            ]
+          );
+          return;
+        }
+      }
+    } catch (e) {
+      // Safety check is best-effort; fall through to the normal confirm.
+    }
+
     Alert.alert(
       'Start Job?',
       'This will mark the job as in progress and start the time tracker.',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Start Job',
-          onPress: async () => {
-            setIsUpdating(true);
-            try {
-              await updateJobStatus(jobId, 'in_progress');
-              router.push(`/job/${jobId}`);
-            } catch (error) {
-              showToast({ type: 'error', message: 'Error', description: 'Failed to start job' });
-            } finally {
-              setIsUpdating(false);
-            }
-          }
-        }
+        { text: 'Start Job', onPress: () => doStartJob(jobId) },
       ]
     );
   };

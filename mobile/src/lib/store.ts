@@ -1044,6 +1044,18 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         const response = await api.patch<Job>(`/api/jobs/${jobId}`, { status });
         
         if (response.error) {
+          // Only queue for later sync when the request never reached the
+          // server (offline/timeout). A real server rejection (safety gate,
+          // permissions, validation) is permanent — queueing it just retries
+          // a guaranteed failure forever and leaves a stuck "tap to sync"
+          // badge. Revert and surface the server's message instead.
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            set({ jobs: previousJobs, todaysJobs: previousTodaysJobs, error: response.error });
+            return false;
+          }
           try {
             await offlineStorage.updateJobOffline(jobId, { status });
           } catch (queueErr) {
