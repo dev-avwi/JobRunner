@@ -8150,6 +8150,7 @@ Be specific about materials, colors, and features that would be included.`
       compliance: query.hide_compliance === '1',
       subcontractors: query.hide_subcontractors === '1',
       swms: query.hide_swms === '1',
+      forms: query.hide_forms === '1',
     };
 
     const rawTimeEntries = await storage.getTimeEntriesForJob(jobId);

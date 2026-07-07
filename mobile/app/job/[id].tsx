@@ -2205,6 +2205,7 @@ export default function JobDetailScreen() {
     compliance: true,
     subcontractors: true,
     swms: true,
+    forms: true,
   });
   const [portalEnabled, setPortalEnabled] = useState(false);
   const [portalLinks, setPortalLinks] = useState<{ id: string; url: string; token: string; expiresAt?: string; createdAt?: string }[]>([]);
@@ -12038,7 +12039,8 @@ export default function JobDetailScreen() {
                 { key: 'invoice' as const, label: 'Invoice Summary', icon: 'file-text' as const, desc: 'Invoice details and payment status' },
                 { key: 'compliance' as const, label: 'Compliance & Licensing', icon: 'shield' as const, desc: 'Trade licences, insurance & certifications' },
                 { key: 'subcontractors' as const, label: 'Subcontractors', icon: 'hard-hat' as const, desc: 'Subcontractor invites and activity' },
-                { key: 'swms' as const, label: 'Safety & SWMS', icon: 'alert-triangle' as const, desc: 'Safe Work Method Statements & forms' },
+                { key: 'swms' as const, label: 'Safety & SWMS', icon: 'alert-triangle' as const, desc: 'Safe Work Method Statements & safety checklists' },
+                { key: 'forms' as const, label: 'Job Cards & Forms', icon: 'clipboard' as const, desc: 'Completed job cards and forms with who filled them in' },
               ]).map(({ key, label, icon, desc }) => (
                 <TouchableOpacity
                   key={key}

@@ -184,6 +184,7 @@ export default function JobDetailView({
     invoice: true,
     compliance: true,
     swms: true,
+    forms: true,
     subcontractors: true,
   });
   const [inspectionNotesInput, setInspectionNotesInput] = useState("");
@@ -4792,6 +4793,7 @@ export default function JobDetailView({
                 { key: 'compliance' as const, label: 'Compliance & Licensing' },
                 { key: 'subcontractors' as const, label: 'Subcontractor Coordination' },
                 { key: 'swms' as const, label: 'Safety & SWMS' },
+                { key: 'forms' as const, label: 'Job Cards & Forms' },
               ].map(({ key, label }) => (
                 <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
                   <input

@@ -3699,10 +3699,12 @@ export const generateJobProofPackPDF = (data: {
   variations?: Array<{number: string; title: string; description?: string; reason?: string; additionalAmount: string; gstAmount: string; totalAmount: string; status: string; approvedByName?: string; approvedAt?: string; createdAt?: string}>;
   swmsList?: Array<{title: string; status: string; siteAddress?: string; workActivity?: string; ppe: string[]; hazards: Array<{activity: string; hazard: string; riskBefore: string; controlMeasures?: string; riskAfter: string}>; signatures: Array<{name: string; signedAt: string; location?: string | null}>; createdAt: string}>;
   safetyForms?: Array<{formName: string; formType: string; isJobCard?: boolean; description?: string; status: string; submittedAt: string; submittedBy?: string; notes?: string; responses: Array<{label: string; value: string; type: string}>}>;
-  hideSections?: {timeline?: boolean; attendance?: boolean; gpsProof?: boolean; materials?: boolean; photos?: boolean; invoice?: boolean; compliance?: boolean; subcontractors?: boolean; swms?: boolean; variations?: boolean};
+  hideSections?: {timeline?: boolean; attendance?: boolean; gpsProof?: boolean; materials?: boolean; photos?: boolean; invoice?: boolean; compliance?: boolean; subcontractors?: boolean; swms?: boolean; forms?: boolean; variations?: boolean};
   accentColor?: string;
 }): string => {
   const { job, business, client, timeEntries, materials, photos, invoice, geofenceAlerts = [], complianceDocs = [], subcontractors = [], variations = [], swmsList = [], safetyForms = [], hideSections = {}, accentColor: overrideColor } = data;
+  const safetyOnlyForms = safetyForms.filter(f => !f.isJobCard && ['safety', 'inspection', 'compliance'].includes(f.formType));
+  const jobCardForms = safetyForms.filter(f => f.isJobCard || !['safety', 'inspection', 'compliance'].includes(f.formType));
 
   const { template, accentColor: templateColor } = getTemplateFromBusinessSettings(business);
   const brandColor = overrideColor || templateColor;
@@ -4308,8 +4310,8 @@ export const generateJobProofPackPDF = (data: {
       ${subcontractorsHtml}
     </div>` : ''}
 
-    ${!(hideSections as any).swms && (swmsList.length > 0 || safetyForms.length > 0) ? `<div class="section">
-      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '10' : '9'}. Safety, SWMS &amp; Job Cards</div>
+    ${!(hideSections as any).swms && (swmsList.length > 0 || safetyOnlyForms.length > 0) ? `<div class="section">
+      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '10' : '9'}. Safety &amp; SWMS</div>
       ${swmsList.length > 0 ? `
       <div style="margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;color:${brandColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0">Safe Work Method Statements</div>
@@ -4339,10 +4341,10 @@ export const generateJobProofPackPDF = (data: {
           </div>
         `).join('')}
       </div>` : ''}
-      ${safetyForms.length > 0 ? `
+      ${safetyOnlyForms.length > 0 ? `
       <div style="margin-bottom:8px">
-        <div style="font-size:11px;font-weight:700;color:${brandColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0">Job Cards, Forms &amp; Checklists</div>
-        ${safetyForms.map(f => {
+        <div style="font-size:11px;font-weight:700;color:${brandColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0">Safety Inspections &amp; Checklists</div>
+        ${safetyOnlyForms.map(f => {
           const typeLabels: Record<string, string> = { safety: 'Safety Form', inspection: 'Inspection', compliance: 'Compliance Check', general: 'Form' };
           const typeLabel = f.isJobCard ? 'Job Card' : (typeLabels[f.formType] || 'Form');
           return `
@@ -4371,7 +4373,38 @@ export const generateJobProofPackPDF = (data: {
           </div>`;
         }).join('')}
       </div>` : ''}
-      ${swmsList.length === 0 && safetyForms.length === 0 ? '<p style="font-size:10px;color:#888">No safety documents recorded for this job</p>' : ''}
+      ${swmsList.length === 0 && safetyOnlyForms.length === 0 ? '<p style="font-size:10px;color:#888">No safety documents recorded for this job</p>' : ''}
+    </div>` : ''}
+
+    ${!(hideSections as any).forms && jobCardForms.length > 0 ? `<div class="section">
+      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '11' : '10'}. Job Cards &amp; Forms</div>
+      ${jobCardForms.map(f => {
+        const typeLabel = f.isJobCard ? 'Job Card' : 'Form';
+        return `
+        <div style="margin-bottom:12px;border:1px solid #e2e8f0;border-radius:6px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div>
+              <div style="font-weight:700;font-size:13px">${f.formName}</div>
+              <div style="font-size:9px;color:#888;margin-top:2px">${typeLabel} &bull; Submitted ${f.submittedAt}${f.submittedBy ? ` by ${f.submittedBy}` : ''}</div>
+            </div>
+            <span class="status-pill" style="${f.status === 'approved' ? 'background:#dcfce7;color:#166534' : f.status === 'reviewed' ? 'background:#dbeafe;color:#1e40af' : f.status === 'rejected' ? 'background:#fee2e2;color:#991b1b' : 'background:#fef3c7;color:#92400e'}">${f.status.toUpperCase()}</span>
+          </div>
+          ${f.description ? `<p style="font-size:10px;color:#555;margin:0 0 8px 0">${f.description}</p>` : ''}
+          ${f.responses.length > 0 ? `
+          <table class="proof-table" style="margin-bottom:4px">
+            <thead><tr><th style="width:40%">Item</th><th>Response</th></tr></thead>
+            <tbody>${f.responses.map(r => {
+              const isPassFail = r.value === 'Yes' || r.value === 'No' || r.value === 'Pass' || r.value === 'Fail' || r.value === 'N/A';
+              const pillStyle = r.value === 'Yes' || r.value === 'Pass' ? 'background:#dcfce7;color:#166534' : r.value === 'No' || r.value === 'Fail' ? 'background:#fee2e2;color:#991b1b' : r.value === 'N/A' ? 'background:#f3f4f6;color:#6b7280' : '';
+              return `<tr>
+                <td style="font-weight:500">${r.label}</td>
+                <td>${isPassFail ? `<span class="status-pill" style="${pillStyle}">${r.value}</span>` : r.value}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>` : '<p style="font-size:10px;color:#888">No responses recorded</p>'}
+          ${f.notes ? `<p style="font-size:9px;color:#666;margin:4px 0"><strong>Notes:</strong> ${f.notes}</p>` : ''}
+        </div>`;
+      }).join('')}
     </div>` : ''}
 
     <div class="footer">

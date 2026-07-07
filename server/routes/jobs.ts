@@ -744,14 +744,16 @@ import { logSystemEvent } from "../systemEventService";
       lines.push(row(['Exported', new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })]));
       lines.push('');
 
+      if (!data.hideSections.attendance) {
       lines.push(row(['TIME ENTRIES']));
       lines.push(row(['Worker', 'Start', 'End', 'Duration (min)', 'Billable', 'Clock-in Address', 'Clock-out Address']));
       for (const e of data.timeEntries) {
         lines.push(row([e.workerName, e.startTime, e.endTime || '', e.duration, e.billable ? 'Yes' : 'No', e.clockInAddress || '', e.clockOutAddress || '']));
       }
       lines.push('');
+      }
 
-      if (data.materials.length > 0) {
+      if (!data.hideSections.materials && data.materials.length > 0) {
         lines.push(row(['MATERIALS']));
         lines.push(row(['Name', 'Quantity', 'Unit Cost', 'Total Cost', 'Supplier', 'Status']));
         for (const m of data.materials) {
@@ -760,7 +762,7 @@ import { logSystemEvent } from "../systemEventService";
         lines.push('');
       }
 
-      if (data.photos.length > 0) {
+      if (!data.hideSections.photos && data.photos.length > 0) {
         lines.push(row(['PHOTOS']));
         lines.push(row(['Category', 'Caption', 'Taken At', 'Location']));
         for (const ph of data.photos) {
@@ -769,7 +771,7 @@ import { logSystemEvent } from "../systemEventService";
         lines.push('');
       }
 
-      if (data.swmsList.length > 0) {
+      if (!data.hideSections.swms && data.swmsList.length > 0) {
         lines.push(row(['SWMS SIGN-OFFS']));
         lines.push(row(['SWMS Title', 'Status', 'Worker', 'Signed At', 'Location']));
         for (const sw of data.swmsList) {
@@ -784,11 +786,12 @@ import { logSystemEvent } from "../systemEventService";
         lines.push('');
       }
 
-      if (data.safetyForms.length > 0) {
-        lines.push(row(['JOB CARDS & FORMS']));
+      const pushFormRows = (title: string, forms: any[]) => {
+        if (forms.length === 0) return;
+        lines.push(row([title]));
         lines.push(row(['Form', 'Type', 'Completed By', 'Submitted At', 'Status', 'Item', 'Response']));
-        for (const f of data.safetyForms) {
-          const typeLabel = (f as any).isJobCard ? 'Job Card' : (f.formType === 'safety' ? 'Safety Form' : f.formType === 'inspection' ? 'Inspection' : f.formType === 'compliance' ? 'Compliance Check' : 'Form');
+        for (const f of forms) {
+          const typeLabel = f.isJobCard ? 'Job Card' : (f.formType === 'safety' ? 'Safety Form' : f.formType === 'inspection' ? 'Inspection' : f.formType === 'compliance' ? 'Compliance Check' : 'Form');
           if (f.responses.length === 0) {
             lines.push(row([f.formName, typeLabel, f.submittedBy || '', f.submittedAt, f.status, '', '']));
           } else {
@@ -799,9 +802,12 @@ import { logSystemEvent } from "../systemEventService";
           if (f.notes) lines.push(row([f.formName, typeLabel, f.submittedBy || '', f.submittedAt, f.status, 'Notes', f.notes]));
         }
         lines.push('');
-      }
+      };
+      const isSafetyType = (f: any) => !f.isJobCard && ['safety', 'inspection', 'compliance'].includes(String(f.formType || '').toLowerCase());
+      if (!data.hideSections.swms) pushFormRows('SAFETY FORMS & CHECKLISTS', (data.safetyForms as any[]).filter(isSafetyType));
+      if (!(data.hideSections as any).forms) pushFormRows('JOB CARDS & FORMS', (data.safetyForms as any[]).filter((f: any) => !isSafetyType(f)));
 
-      if (data.invoice) {
+      if (!data.hideSections.invoice && data.invoice) {
         lines.push(row(['INVOICE']));
         lines.push(row(['Number', 'Date', 'Total', 'GST', 'Status']));
         lines.push(row([data.invoice.number, data.invoice.date, data.invoice.total, data.invoice.gstAmount, data.invoice.status]));
