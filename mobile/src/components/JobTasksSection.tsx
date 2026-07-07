@@ -15,11 +15,12 @@ interface JobTask {
 }
 
 interface JobTasksSectionProps {
+  containerStyle?: any;
   jobId: string;
   readOnly?: boolean;
 }
 
-export function JobTasksSection({ jobId, readOnly }: JobTasksSectionProps) {
+export function JobTasksSection({ jobId, readOnly, containerStyle }: JobTasksSectionProps) {
   const { colors } = useTheme();
   const [tasks, setTasks] = useState<JobTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,7 +139,7 @@ export function JobTasksSection({ jobId, readOnly }: JobTasksSectionProps) {
   });
 
   return (
-    <View>
+    <View style={containerStyle}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Feather name="check-square" size={18} color={colors.foreground} />

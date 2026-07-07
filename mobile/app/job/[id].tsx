@@ -9014,12 +9014,11 @@ export default function JobDetailScreen() {
       )}
 
       {/* Follow-up Tasks - spawned by form task rules, plus manual (owner-managed) */}
-      <View style={styles.photosCard}>
-        <JobTasksSection
-          jobId={job.id}
-          readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
-        />
-      </View>
+      <JobTasksSection
+        jobId={job.id}
+        readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
+        containerStyle={styles.photosCard}
+      />
 
       {/* Job Checklist Section - available for all job statuses */}
       <View style={styles.photosCard}>
