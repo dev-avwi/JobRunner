@@ -25077,7 +25077,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.post("/api/message-templates", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.post("/api/message-templates", requireAuth, /* per-user templates: workers may manage their own */ async (req: any, res) => {
     try {
       const { insertMessageTemplateSchema } = await import('@shared/schema');
       const validated = insertMessageTemplateSchema.parse({
@@ -25095,7 +25095,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.patch("/api/message-templates/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.patch("/api/message-templates/:id", requireAuth, /* per-user templates: workers may manage their own */ async (req: any, res) => {
     try {
       const { updateMessageTemplateSchema } = await import('@shared/schema');
       const validated = updateMessageTemplateSchema.parse(req.body);
@@ -25113,7 +25113,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.delete("/api/message-templates/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+  app.delete("/api/message-templates/:id", requireAuth, /* per-user templates: workers may manage their own */ async (req: any, res) => {
     try {
       const success = await storage.deleteMessageTemplate(req.params.id, req.userId);
       if (!success) {
@@ -25755,7 +25755,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.post("/api/quote-templates", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
+  app.post("/api/quote-templates", requireAuth, /* per-user templates: workers may manage their own */ async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { insertQuoteTemplateSchema } = await import('@shared/schema');
@@ -25770,7 +25770,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.patch("/api/quote-templates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
+  app.patch("/api/quote-templates/:id", requireAuth, /* per-user templates: workers may manage their own */ async (req: any, res) => {
     try {
       const template = await storage.getQuoteTemplate(req.params.id);
       if (!template) {
@@ -25789,7 +25789,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.delete("/api/quote-templates/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_TEMPLATES), async (req: any, res) => {
+  app.delete("/api/quote-templates/:id", requireAuth, /* per-user templates: workers may manage their own */ async (req: any, res) => {
     try {
       const template = await storage.getQuoteTemplate(req.params.id);
       if (!template) {
@@ -35393,6 +35393,67 @@ Respond with JSON in this format:
     return assigned.some((j: any) => j.id === conversation.jobId);
   };
 
+  // Find or create an SMS conversation for a client phone number, so the
+  // mobile job card can open the SMS composer (with templates) directly.
+  app.post("/api/sms/conversations/find-or-create", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext?.effectiveUserId || req.userId;
+      const { phone, clientId, clientName, jobId } = req.body || {};
+      if (!phone || typeof phone !== 'string' || !phone.trim()) {
+        return res.status(400).json({ error: 'Phone number is required' });
+      }
+      const cleanPhone = phone.trim();
+
+      // Only allow linking to a job/client this business owns
+      let job: any = null;
+      if (jobId) {
+        job = await storage.getJob(jobId, effectiveUserId);
+        if (!job) return res.status(404).json({ error: 'Job not found' });
+      }
+      let client: any = null;
+      if (clientId) {
+        client = await storage.getClient(clientId, effectiveUserId);
+        if (!client) return res.status(404).json({ error: 'Client not found' });
+      }
+
+      // Guard relational consistency: a supplied job must belong to the supplied client
+      if (job && client && job.clientId && job.clientId !== client.id) {
+        return res.status(400).json({ error: 'Job does not belong to this client' });
+      }
+
+      let conversation = await storage.getSmsConversationByPhone(effectiveUserId, cleanPhone);
+      if (!conversation) {
+        conversation = await storage.createSmsConversation({
+          businessOwnerId: effectiveUserId,
+          clientPhone: cleanPhone,
+          clientId: client?.id || null,
+          clientName: (typeof clientName === 'string' && clientName.trim()) ? clientName.trim() : (client?.name || null),
+          jobId: job?.id || null,
+        } as any);
+        if (!(await workerCanAccessConversation(req.userId, userContext, conversation))) {
+          return res.status(403).json({ error: 'Not authorized to access this conversation' });
+        }
+      } else {
+        // Authorize against the conversation AS IT EXISTS before any mutation —
+        // a worker must not be able to "claim" an unrelated conversation by
+        // linking one of their own jobs to it.
+        if (!(await workerCanAccessConversation(req.userId, userContext, conversation))) {
+          return res.status(403).json({ error: 'Not authorized to access this conversation' });
+        }
+        if (job && !(conversation as any).jobId) {
+          // Link the active job so composer context (tracking link etc) resolves
+          await storage.updateSmsConversation((conversation as any).id, { jobId: job.id } as any).catch(() => {});
+        }
+      }
+
+      res.json(conversation);
+    } catch (error: any) {
+      console.error('Error finding/creating SMS conversation:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/sms/conversations/:id", requireAuth, async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -35476,6 +35537,148 @@ Respond with JSON in this format:
   });
   
   // Get client insights for a conversation (for ServiceM8-style sidebar)
+  // Live merge-field context for the SMS composer: the client's latest unpaid
+  // invoice, pending quote and active job — including real public links — so
+  // message templates resolve to real data instead of raw placeholders.
+  app.get("/api/sms/conversations/:id/context", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const conversation = await storage.getSmsConversation(id);
+      if (!conversation) {
+        return res.status(404).json({ error: 'Conversation not found' });
+      }
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext?.effectiveUserId || req.userId;
+      if ((conversation as any).businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
+      if (!(await workerCanAccessConversation(req.userId, userContext, conversation))) {
+        return res.status(403).json({ error: 'Not authorized to access this conversation' });
+      }
+
+      const clientId = (conversation as any).clientId || null;
+      const baseUrl = getProductionBaseUrl(req);
+
+      // Latest unpaid invoice for this client (sent/overdue first, newest first)
+      let invoiceCtx: any = null;
+      if (clientId) {
+        const invoicesList = await storage.getInvoices(effectiveUserId);
+        const unpaid = (invoicesList || [])
+          .filter((inv: any) => inv.clientId === clientId && ['sent', 'overdue', 'draft'].includes(inv.status))
+          .sort((a: any, b: any) => {
+            const rank = (st: string) => (st === 'overdue' ? 0 : st === 'sent' ? 1 : 2);
+            if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
+            return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+          });
+        const inv = unpaid[0];
+        if (inv) {
+          let paymentToken = inv.paymentToken;
+          if (!paymentToken) {
+            const { nanoid } = await import('nanoid');
+            paymentToken = nanoid(12);
+            await storage.updateInvoice(inv.id, effectiveUserId, { paymentToken });
+          }
+          invoiceCtx = {
+            id: inv.id,
+            number: inv.number,
+            total: inv.total,
+            dueDate: inv.dueDate,
+            status: inv.status,
+            url: getInvoicePublicUrl(paymentToken, req),
+          };
+        }
+      }
+
+      // Latest pending quote for this client (sent, not yet accepted/declined)
+      let quoteCtx: any = null;
+      if (clientId) {
+        const quotesList = await storage.getQuotes(effectiveUserId);
+        const pending = (quotesList || [])
+          .filter((q: any) => q.clientId === clientId && ['sent', 'draft'].includes(q.status))
+          .sort((a: any, b: any) => {
+            const rank = (st: string) => (st === 'sent' ? 0 : 1);
+            if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
+            return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+          });
+        const q = pending[0];
+        if (q) {
+          let acceptanceToken = q.acceptanceToken;
+          if (!acceptanceToken) {
+            const { nanoid } = await import('nanoid');
+            acceptanceToken = nanoid(12);
+            await storage.updateQuote(q.id, effectiveUserId, { acceptanceToken });
+          }
+          quoteCtx = {
+            id: q.id,
+            number: q.number,
+            total: q.total,
+            status: q.status,
+            url: getQuotePublicUrl(acceptanceToken, req),
+          };
+        }
+      }
+
+      // Active job: prefer the conversation's linked job, else the client's
+      // most recent job that isn't finished. Includes a live tracking link.
+      let jobCtx: any = null;
+      let job: any = null;
+      if ((conversation as any).jobId) {
+        job = await storage.getJob((conversation as any).jobId, effectiveUserId);
+      }
+      if (!job && clientId) {
+        const jobsList = await storage.getJobs(effectiveUserId);
+        const active = (jobsList || [])
+          .filter((j: any) => j.clientId === clientId && ['new', 'scheduled', 'in_progress'].includes(j.status))
+          .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        job = active[0] || null;
+      }
+      if (job) {
+        let portalUrl: string | null = null;
+        try {
+          let activeToken = await storage.getActiveJobPortalToken(job.id);
+          if (!activeToken) {
+            const cryptoModule = await import('crypto');
+            const token = cryptoModule.randomBytes(32).toString('hex');
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 30);
+            activeToken = await storage.createJobPortalToken({
+              jobId: job.id,
+              userId: effectiveUserId,
+              token,
+              expiresAt,
+              createdBy: req.userId,
+            });
+            await storage.updateJob(job.id, effectiveUserId, { portalEnabled: true });
+          }
+          portalUrl = `${baseUrl}/p/${activeToken.token}`;
+        } catch (e) {
+          console.error('SMS context: failed to build job portal link:', e);
+        }
+        jobCtx = {
+          id: job.id,
+          title: job.title,
+          address: job.address,
+          scheduledDate: job.scheduledDate,
+          status: job.status,
+          url: portalUrl,
+        };
+      }
+
+      res.json({
+        client: {
+          id: clientId,
+          name: (conversation as any).clientName || null,
+        },
+        invoice: invoiceCtx,
+        quote: quoteCtx,
+        job: jobCtx,
+      });
+    } catch (error: any) {
+      console.error('Error fetching SMS conversation context:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/sms/conversations/:id/client-insights", requireAuth, async (req: any, res) => {
     try {
       const { id } = req.params;

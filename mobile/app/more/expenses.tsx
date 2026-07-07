@@ -255,7 +255,7 @@ export default function ExpensesScreen() {
         const base64Image = `data:image/jpeg;base64,${base64}`;
         const scanRes = await api.post<any>('/api/expenses/scan-receipt', { image: base64Image });
 
-        if (scanRes.data) {
+        if (!scanRes.error && scanRes.data && typeof scanRes.data === 'object') {
           const data = scanRes.data;
           if (data.total) {
             const totalStr = String(data.total);
@@ -721,54 +721,7 @@ export default function ExpensesScreen() {
               )}
             </View>
           </View>
-        </AppBottomSheet>
-
-        <AppBottomSheet
-        visible={showCategoryModal}
-        onDismiss={() => setShowCategoryModal(false)}
-        snapPoints={['90%']}
-        scrollable={false}
-        contentPadding={0}
-      >
-          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
-              <PressableRow onPress={() => setShowCategoryModal(false)}>
-                <Text style={[styles.modalCancel, { color: colors.primary }]}>Cancel</Text>
-              </PressableRow>
-              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Add Category</Text>
-              <PressableRow onPress={handleCreateCategory} disabled={isSubmitting}>
-                <Text style={[styles.modalSave, { color: isSubmitting ? colors.mutedForeground : colors.primary }]}>
-                  {isSubmitting ? 'Saving...' : 'Save'}
-                </Text>
-              </PressableRow>
-            </View>
-            <View style={styles.modalScrollContent}>
-              <View style={styles.formSection}>
-                <Text style={[styles.formLabel, { color: colors.foreground }]}>Category Name *</Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.foreground }]}
-                  placeholder="e.g., Materials, Fuel, Tools"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={newCategoryName}
-                  onChangeText={setNewCategoryName}
-                />
-              </View>
-              <View style={styles.formSection}>
-                <Text style={[styles.formLabel, { color: colors.foreground }]}>Description (Optional)</Text>
-                <TextInput
-                  style={[styles.formInput, styles.textArea, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.foreground }]}
-                  placeholder="Describe what this category covers..."
-                  placeholderTextColor={colors.mutedForeground}
-                  value={newCategoryDescription}
-                  onChangeText={setNewCategoryDescription}
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-            </View>
-          </View>
-        </AppBottomSheet>
-
+        
         <AppBottomSheet
         visible={showCategoryPicker}
         onDismiss={() => setShowCategoryPicker(false)}
@@ -851,6 +804,103 @@ export default function ExpensesScreen() {
             </ScrollView>
           </View>
         </AppBottomSheet>
+
+        <AppBottomSheet
+        visible={showCategoryModal && showExpenseModal}
+        onDismiss={() => setShowCategoryModal(false)}
+        snapPoints={['90%']}
+        scrollable={false}
+        contentPadding={0}
+      >
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
+              <PressableRow onPress={() => setShowCategoryModal(false)}>
+                <Text style={[styles.modalCancel, { color: colors.primary }]}>Cancel</Text>
+              </PressableRow>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Add Category</Text>
+              <PressableRow onPress={handleCreateCategory} disabled={isSubmitting}>
+                <Text style={[styles.modalSave, { color: isSubmitting ? colors.mutedForeground : colors.primary }]}>
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </Text>
+              </PressableRow>
+            </View>
+            <View style={styles.modalScrollContent}>
+              <View style={styles.formSection}>
+                <Text style={[styles.formLabel, { color: colors.foreground }]}>Category Name *</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.foreground }]}
+                  placeholder="e.g., Materials, Fuel, Tools"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={newCategoryName}
+                  onChangeText={setNewCategoryName}
+                />
+              </View>
+              <View style={styles.formSection}>
+                <Text style={[styles.formLabel, { color: colors.foreground }]}>Description (Optional)</Text>
+                <TextInput
+                  style={[styles.formInput, styles.textArea, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.foreground }]}
+                  placeholder="Describe what this category covers..."
+                  placeholderTextColor={colors.mutedForeground}
+                  value={newCategoryDescription}
+                  onChangeText={setNewCategoryDescription}
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+            </View>
+          </View>
+        </AppBottomSheet>
+        </AppBottomSheet>
+
+        <AppBottomSheet
+        visible={showCategoryModal && !showExpenseModal}
+        onDismiss={() => setShowCategoryModal(false)}
+        snapPoints={['90%']}
+        scrollable={false}
+        contentPadding={0}
+      >
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
+              <PressableRow onPress={() => setShowCategoryModal(false)}>
+                <Text style={[styles.modalCancel, { color: colors.primary }]}>Cancel</Text>
+              </PressableRow>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Add Category</Text>
+              <PressableRow onPress={handleCreateCategory} disabled={isSubmitting}>
+                <Text style={[styles.modalSave, { color: isSubmitting ? colors.mutedForeground : colors.primary }]}>
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </Text>
+              </PressableRow>
+            </View>
+            <View style={styles.modalScrollContent}>
+              <View style={styles.formSection}>
+                <Text style={[styles.formLabel, { color: colors.foreground }]}>Category Name *</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.foreground }]}
+                  placeholder="e.g., Materials, Fuel, Tools"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={newCategoryName}
+                  onChangeText={setNewCategoryName}
+                />
+              </View>
+              <View style={styles.formSection}>
+                <Text style={[styles.formLabel, { color: colors.foreground }]}>Description (Optional)</Text>
+                <TextInput
+                  style={[styles.formInput, styles.textArea, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.foreground }]}
+                  placeholder="Describe what this category covers..."
+                  placeholderTextColor={colors.mutedForeground}
+                  value={newCategoryDescription}
+                  onChangeText={setNewCategoryDescription}
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+            </View>
+          </View>
+        </AppBottomSheet>
+
+        
+
+        
       </View>
     </>
   );

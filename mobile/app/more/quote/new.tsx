@@ -1127,6 +1127,31 @@ export default function NewQuoteScreen() {
     setIsLoadingQuoteTemplates(false);
   };
 
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const handleSaveAsTemplate = async () => {
+    if (lineItems.length === 0 || isSavingTemplate) return;
+    setIsSavingTemplate(true);
+    try {
+      const res = await api.post<any>('/api/quote-templates', {
+        name: form.title.trim() || 'My Quote Template',
+        description: form.description?.trim() || null,
+        items: lineItems.map((item) => ({
+          description: item.description,
+          quantity: String(item.quantity || 1),
+          unitPrice: String(item.unitPrice || 0),
+        })),
+      });
+      if (!res.error) {
+        showToast({ type: 'success', message: 'Template Saved', description: 'Find it under "Use a Saved Template" next time.' });
+      } else {
+        showToast({ type: 'error', message: 'Could not save template', description: res.error });
+      }
+    } catch {
+      showToast({ type: 'error', message: 'Could not save template' });
+    }
+    setIsSavingTemplate(false);
+  };
+
   const applyQuoteTemplate = (template: any) => {
     const items = Array.isArray(template.items) ? template.items : [];
     const newItems: LineItem[] = items
@@ -1448,6 +1473,13 @@ export default function NewQuoteScreen() {
                   <Feather name="clipboard" size={16} color={colors.primary} />
                   <Text style={styles.templateButtonText}>Use a Saved Template</Text>
                 </PressableRow>
+
+                {lineItems.length > 0 && (
+                  <PressableRow style={styles.templateButton} onPress={handleSaveAsTemplate} >
+                    <Feather name="save" size={16} color={colors.primary} />
+                    <Text style={styles.templateButtonText}>{isSavingTemplate ? 'Saving Template...' : 'Save Items as Template'}</Text>
+                  </PressableRow>
+                )}
               </View>
 
               {/* Totals Card */}

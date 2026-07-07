@@ -359,10 +359,46 @@ export default function SmsConversationScreen() {
   const senderName = user?.firstName || businessSettings?.businessName || '';
   const [savedTemplates, setSavedTemplates] = useState<{ id: string; label: string; message: string }[]>([]);
 
+  // Live context (latest unpaid invoice, pending quote, active job + real public
+  // links) so templates resolve real numbers/amounts/links instead of raw
+  // {invoice_number}-style placeholders.
+  type SmsContext = {
+    invoice?: { number?: string; total?: string; dueDate?: string; url?: string } | null;
+    quote?: { number?: string; total?: string; url?: string } | null;
+    job?: { title?: string; address?: string; scheduledDate?: string; url?: string | null } | null;
+  };
+  const [smsContext, setSmsContext] = useState<SmsContext | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    api.get<SmsContext>(`/api/sms/conversations/${id}/context`)
+      .then((res) => {
+        if (!active || res.error || !res.data || typeof res.data !== 'object') return;
+        setSmsContext(res.data);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [id]);
+
   const applyMergeFields = useCallback((body: string) => {
     const clientFull = clientName && clientName !== 'Unknown' ? clientName : '';
     const businessName = businessSettings?.businessName || '';
-    return body
+    const inv = smsContext?.invoice;
+    const qt = smsContext?.quote;
+    const jb = smsContext?.job;
+
+    const money = (v?: string) => {
+      const n = parseFloat(v || '');
+      return isNaN(n) ? '' : n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    const dateStr = (v?: string) => {
+      if (!v) return '';
+      const d = new Date(v);
+      return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    let out = body
       .replace(/\{client_first_name\}/gi, clientFirstName || 'there')
       .replace(/\{first_name\}/gi, clientFirstName || 'there')
       .replace(/\{client_name\}/gi, clientFull || 'there')
@@ -370,12 +406,53 @@ export default function SmsConversationScreen() {
       .replace(/\{business_name\}/gi, businessName)
       .replace(/\{sender_name\}/gi, senderName)
       .replace(/\{sender\}/gi, senderName);
-  }, [clientName, clientFirstName, senderName, businessSettings?.businessName]);
+
+    // Invoice fields — only substitute when we have a real invoice; otherwise
+    // the raw placeholder stays visible so the sender knows to fix it.
+    if (inv) {
+      out = out
+        .replace(/\{invoice_number\}/gi, inv.number || '')
+        .replace(/\{invoice_total\}/gi, money(inv.total))
+        .replace(/\{amount\}/gi, money(inv.total))
+        .replace(/\{due_date\}/gi, dateStr(inv.dueDate))
+        .replace(/\{invoice_link\}/gi, inv.url || '')
+        .replace(/\{payment_link\}/gi, inv.url || '');
+    }
+    if (qt) {
+      out = out
+        .replace(/\{quote_number\}/gi, qt.number || '')
+        .replace(/\{quote_total\}/gi, money(qt.total))
+        .replace(/\{quote_amount\}/gi, money(qt.total))
+        .replace(/\{quote_link\}/gi, qt.url || '');
+    }
+    if (jb) {
+      out = out
+        .replace(/\{job_title\}/gi, jb.title || '')
+        .replace(/\{job_address\}/gi, jb.address || '')
+        .replace(/\{job_date\}/gi, dateStr(jb.scheduledDate))
+        .replace(/\{tracking_link\}/gi, jb.url || '')
+        .replace(/\{job_link\}/gi, jb.url || '');
+    }
+
+    // Auto-append the right real link when the message clearly needs one but
+    // the template didn't include a link placeholder.
+    const hasUrl = /https?:\/\//i.test(out);
+    if (!hasUrl) {
+      if (inv?.url && /invoice|pay/i.test(out)) {
+        out = `${out.trimEnd()}\n\nPay securely here:\n${inv.url}`;
+      } else if (qt?.url && /quote/i.test(out)) {
+        out = `${out.trimEnd()}\n\nView & accept your quote:\n${qt.url}`;
+      } else if (jb?.url && /(on my way|heading to you|running (a bit )?(late|behind)|track|eta|arriv)/i.test(out)) {
+        out = `${out.trimEnd()}\n\nTrack your job:\n${jb.url}`;
+      }
+    }
+    return out;
+  }, [clientName, clientFirstName, senderName, businessSettings?.businessName, smsContext]);
 
   const builtInReplies = useMemo(() => buildQuickReplies(clientFirstName, senderName), [clientFirstName, senderName]);
   const quickReplies = useMemo(() => [
     ...savedTemplates.map((t) => ({ id: t.id, label: t.label, icon: 'message-square' as const, message: applyMergeFields(t.message) })),
-    ...builtInReplies,
+    ...builtInReplies.map((r) => ({ ...r, message: applyMergeFields(r.message) })),
   ], [savedTemplates, builtInReplies, applyMergeFields]);
 
   useEffect(() => {
@@ -663,6 +740,10 @@ export default function SmsConversationScreen() {
                     <Text style={styles.quickChipText}>{template.label}</Text>
                   </PressableRow>
                 ))}
+                <PressableRow key="edit-templates" style={styles.quickChip} onPress={() => router.push('/more/business-templates?tab=sms' as any)}>
+                  <Feather name="edit-2" size={12} color={colors.mutedForeground} />
+                  <Text style={[styles.quickChipText, { color: colors.mutedForeground }]}>Edit templates</Text>
+                </PressableRow>
               </ScrollView>
             </View>
           )}

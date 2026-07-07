@@ -3642,21 +3642,22 @@ export default function JobDetailScreen() {
 
             case 'send_sms':
               if (client?.phone) {
-                const smsMsg = `Re: ${job.title}`;
+                // Open the in-app SMS composer so the worker can pick a
+                // template rather than firing a canned message blind.
                 try {
-                  const smsResp = await api.post('/api/sms/send', {
-                    clientPhone: client.phone,
-                    message: smsMsg,
+                  const convRes = await api.post<any>('/api/sms/conversations/find-or-create', {
+                    phone: client.phone,
                     clientId: client.id,
+                    clientName: client.name,
                     jobId: job.id,
                   });
-                  if (smsResp.error) {
-                    fallbackToNativeSms(client.phone, smsMsg);
-                  } else {
-                    showToast({ type: 'success', message: 'SMS Sent', description: `Message sent to ${client.name || client.phone}` });
+                  if (!convRes.error && convRes.data?.id) {
+                    router.push(`/more/sms-conversation?id=${convRes.data.id}&phone=${encodeURIComponent(client.phone)}&name=${encodeURIComponent(client.name || '')}&jobId=${job.id}` as any);
+                    return true;
                   }
+                  fallbackToNativeSms(client.phone, `Re: ${job.title}`);
                 } catch {
-                  fallbackToNativeSms(client.phone, smsMsg);
+                  fallbackToNativeSms(client.phone, `Re: ${job.title}`);
                 }
               }
               return true;
@@ -4912,13 +4913,26 @@ export default function JobDetailScreen() {
     });
   };
 
-  const handleSMS = () => {
-    if (client?.phone) {
-      const phone = client.phone.replace(/\s/g, '');
-      const message = `Hi${client.name ? ` ${client.name.split(' ')[0]}` : ''}, just reaching out about ${job?.title || 'your job'}.`;
-      const url = `sms:${phone}${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`;
-      Linking.openURL(url).catch(() => showToast({ type: 'error', message: 'Could not open SMS app' }));
-    }
+  const handleSMS = async () => {
+    if (!client?.phone) return;
+    // Open the in-app SMS composer (with saved templates + real merge fields)
+    // linked to this job. Falls back to the native SMS app if that fails.
+    try {
+      const res = await api.post<any>('/api/sms/conversations/find-or-create', {
+        phone: client.phone,
+        clientId: client.id,
+        clientName: client.name,
+        jobId: job?.id,
+      });
+      if (!res.error && res.data?.id) {
+        router.push(`/more/sms-conversation?id=${res.data.id}&phone=${encodeURIComponent(client.phone)}&name=${encodeURIComponent(client.name || '')}&jobId=${job?.id || ''}` as any);
+        return;
+      }
+    } catch {}
+    const phone = client.phone.replace(/\s/g, '');
+    const message = `Hi${client.name ? ` ${client.name.split(' ')[0]}` : ''}, just reaching out about ${job?.title || 'your job'}.`;
+    const url = `sms:${phone}${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`;
+    Linking.openURL(url).catch(() => showToast({ type: 'error', message: 'Could not open SMS app' }));
   };
 
   const handleSendPhotoSms = async () => {
