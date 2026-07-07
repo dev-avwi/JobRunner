@@ -4310,7 +4310,7 @@ export const generateJobProofPackPDF = (data: {
       ${subcontractorsHtml}
     </div>` : ''}
 
-    ${!(hideSections as any).swms && (swmsList.length > 0 || safetyOnlyForms.length > 0) ? `<div class="section">
+    ${!(hideSections as any).swms ? `<div class="section">
       <div class="section-title">${!hideSections.variations && variations.length > 0 ? '10' : '9'}. Safety &amp; SWMS</div>
       ${swmsList.length > 0 ? `
       <div style="margin-bottom:16px">
@@ -4376,8 +4376,9 @@ export const generateJobProofPackPDF = (data: {
       ${swmsList.length === 0 && safetyOnlyForms.length === 0 ? '<p style="font-size:10px;color:#888">No safety documents recorded for this job</p>' : ''}
     </div>` : ''}
 
-    ${!(hideSections as any).forms && jobCardForms.length > 0 ? `<div class="section">
+    ${!(hideSections as any).forms ? `<div class="section">
       <div class="section-title">${!hideSections.variations && variations.length > 0 ? '11' : '10'}. Job Cards &amp; Forms</div>
+      ${jobCardForms.length === 0 ? '<p style="font-size:10px;color:#888">No job cards or forms submitted for this job</p>' : ''}
       ${jobCardForms.map(f => {
         const typeLabel = f.isJobCard ? 'Job Card' : 'Form';
         return `
