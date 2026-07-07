@@ -77,19 +77,42 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
       const response = await api.post<{ secret: string }>('/api/stripe/terminal-connection-token');
       
       if (response.error || !response.data?.secret) {
-        throw new Error('Failed to fetch connection token');
+        throw new Error(response.error || 'Failed to fetch connection token');
       }
       
       return response.data.secret;
     } catch (error) {
-      if (__DEV__) console.error('[StripeTerminal] Connection token fetch failed:', error);
+      // warn (not error) so a missing Stripe Connect setup doesn't spam
+      // full-screen red LogBox errors in dev builds.
+      if (__DEV__) console.warn('[StripeTerminal] Connection token fetch failed:', error);
       throw error;
     }
   }, []);
 
   useEffect(() => {
-    // Only mark ready when user is authenticated
-    setIsReady(isAuthenticated && !!user);
+    // Only initialize the Terminal SDK when the user is authenticated AND
+    // their business actually has Stripe Connect set up. Mounting the SDK
+    // without it makes the SDK immediately call the token provider, which is
+    // guaranteed to fail (400 "Stripe Connect account not set up") and spams
+    // console errors on every launch.
+    let cancelled = false;
+    if (!isAuthenticated || !user) {
+      setIsReady(false);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await api.get<{ connected: boolean; chargesEnabled?: boolean }>('/api/stripe-connect/status');
+        const ok = !res.error && !!res.data?.connected && res.data?.chargesEnabled !== false;
+        if (!cancelled) {
+          setIsReady(ok);
+          if (__DEV__ && !ok) console.log('[StripeTerminal] Skipping Terminal init — Stripe Connect not ready');
+        }
+      } catch (e) {
+        if (!cancelled) setIsReady(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [isAuthenticated, user]);
 
   // If SDK is not available (Expo Go), just render children
