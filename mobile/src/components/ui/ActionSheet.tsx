@@ -26,6 +26,8 @@ export interface ActionSheetOptions {
    *           below, centered). Best for a small set (2-4) of short sources.
    */
   layout?: 'list' | 'grid';
+  /** Max columns per row for 'grid' layout (wraps to multiple rows). Default: up to 4 in one row. */
+  gridColumns?: number;
 }
 
 interface ActionSheetContextType {
@@ -94,7 +96,10 @@ export function ActionSheetProvider({ children }: { children: ReactNode }) {
   // flex:1 / '%', which silently bunch to flex-start in this ScrollView) + minWidth:0
   // (so a long label can't grow its cell), and space-between so columns reach both
   // edges symmetrically even with a pixel of rounding slack.
-  const gridColumns = Math.min(Math.max(primaryActions.length, 1), 4);
+  const gridColumns = Math.min(
+    Math.max(primaryActions.length, 1),
+    opts?.gridColumns && opts.gridColumns > 0 ? opts.gridColumns : 4
+  );
   const fallbackGridWidth = Math.max(0, windowWidth - spacing.lg * 2);
   const effectiveGridWidth = gridWidth > 0 ? gridWidth : fallbackGridWidth;
   const gridItemWidth = Math.floor(effectiveGridWidth / gridColumns);
@@ -265,6 +270,7 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     // Fill the sheet's real content box (measured via onLayout) instead of a

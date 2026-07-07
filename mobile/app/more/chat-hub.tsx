@@ -1097,6 +1097,8 @@ export default function ChatHubScreen() {
     showActionSheet({
       title: 'Quick SMS',
       message: 'Send a quick message:',
+      layout: 'grid',
+      gridColumns: 2,
       actions: [
         ...SMS_QUICK_ACTIONS.map(action => ({
           label: action.label,
