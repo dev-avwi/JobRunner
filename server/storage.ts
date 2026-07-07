@@ -6008,11 +6008,11 @@ export class PostgresStorage implements IStorage {
           eq(messageTemplates.userId, userId),
           eq(messageTemplates.channel, channel)
         ))
-        .orderBy(asc(messageTemplates.name));
+        .orderBy(asc(messageTemplates.name), asc(messageTemplates.createdAt));
     }
     return db.select().from(messageTemplates)
       .where(eq(messageTemplates.userId, userId))
-      .orderBy(asc(messageTemplates.name));
+      .orderBy(asc(messageTemplates.name), asc(messageTemplates.createdAt));
   }
 
   async getMessageTemplate(id: string, userId: string): Promise<MessageTemplate | null> {

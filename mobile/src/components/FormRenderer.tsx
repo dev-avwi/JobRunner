@@ -477,7 +477,7 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
         <Text style={[styles.emptyText, { textAlign: 'center', marginTop: spacing.xs, marginBottom: spacing.lg }]}>
           No job card form set up yet
         </Text>
-        <PressableRow style={styles.addFormButton} onPress={() => router.push('/more/form-builder' as any)}>
+        <PressableRow style={styles.addFormButton} onPress={() => router.push('/more/form-builder?createJobCard=1' as any)}>
           <Feather name="plus" size={18} color={colors.primaryForeground} />
           <Text style={styles.addFormButtonText}>Create Job Card</Text>
         </PressableRow>

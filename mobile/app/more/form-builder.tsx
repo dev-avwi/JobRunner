@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
@@ -189,6 +189,27 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   activeTabText: {
     color: colors.primaryForeground,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    minHeight: 44,
+  },
+  searchInput: {
+    flex: 1,
+    ...typography.body,
+    color: colors.foreground,
+    paddingVertical: spacing.sm,
+    letterSpacing: 0,
+    textAlign: 'left',
   },
   formCard: {
     backgroundColor: colors.card,
@@ -691,8 +712,10 @@ export default function FormBuilderScreen() {
     [isOwnerOrManager, myUserId],
   );
 
+  const params = useLocalSearchParams<{ createJobCard?: string }>();
   const [activeTab, setActiveTab] = useState<ActiveTab>('forms');
   const [forms, setForms] = useState<CustomForm[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -737,6 +760,28 @@ export default function FormBuilderScreen() {
   useEffect(() => {
     fetchForms();
   }, [fetchForms]);
+
+  // Deep link from the job screen: open the create flow with "Show as Job Card" pre-enabled
+  const jobCardIntentHandled = useRef(false);
+  useEffect(() => {
+    if (params.createJobCard === '1' && !jobCardIntentHandled.current) {
+      jobCardIntentHandled.current = true;
+      resetFormState();
+      setIsJobCard(true);
+      setShowFormModal(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.createJobCard]);
+
+  const filteredForms = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return forms;
+    return forms.filter((f) =>
+      f.name.toLowerCase().includes(q) ||
+      (f.description || '').toLowerCase().includes(q) ||
+      (f.formType || '').toLowerCase().includes(q)
+    );
+  }, [forms, searchQuery]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -832,11 +877,17 @@ export default function FormBuilderScreen() {
           Alert.alert('Error', res.error);
           return;
         }
-        Alert.alert('Success', 'Form created.');
+        Alert.alert('Success', isJobCard && params.createJobCard === '1'
+          ? 'Job card created. It now shows on your jobs.'
+          : 'Form created.');
       }
       setShowFormModal(false);
       resetFormState();
       fetchForms();
+      if (!editingForm && params.createJobCard === '1') {
+        // Came from a job screen — take them back to see the job card
+        if (router.canGoBack()) router.back();
+      }
     } catch (err) {
       Alert.alert('Error', 'Failed to save form.');
     } finally {
@@ -1523,6 +1574,26 @@ export default function FormBuilderScreen() {
         </TouchableOpacity>
       </View>
 
+      {activeTab === 'forms' && forms.length > 0 && (
+        <View style={styles.searchBar}>
+          <Feather name="search" size={iconSizes.md} color={colors.mutedForeground} />
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search forms..."
+            placeholderTextColor={colors.mutedForeground}
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="x" size={iconSizes.md} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {activeTab === 'forms' ? (
         forms.length === 0 ? (
           <ScrollView
@@ -1533,8 +1604,15 @@ export default function FormBuilderScreen() {
           </ScrollView>
         ) : (
           <FlatList
-            data={forms}
+            data={filteredForms}
             renderItem={renderFormCard}
+            ListEmptyComponent={
+              <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
+                <Text style={{ ...typography.body, color: colors.mutedForeground }}>
+                  No forms match "{searchQuery.trim()}"
+                </Text>
+              </View>
+            }
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ padding: responsiveShell.paddingHorizontal, paddingBottom: sizes.fabSize + spacing.xl }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
