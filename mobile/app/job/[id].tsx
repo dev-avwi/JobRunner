@@ -3753,6 +3753,27 @@ export default function JobDetailScreen() {
     try {
       const response = await api.get<Job>(`/api/jobs/${id}`);
       if (response.error) {
+        // Offline fallback ONLY: when the device has no connection, the job
+        // may be in the local SQLite cache (job lists cache every job they
+        // load). Never fall back on real server errors (401/403/404) — that
+        // would show cached data the server just denied.
+        if (response.isOffline) {
+          try {
+            const cached = await offlineStorage.getCachedJob(id);
+            if (cached) {
+              setJob(cached as unknown as Job);
+              setEditedNotes(cached.notes || '');
+              setSliderRadius(cached.geofenceRadius || 100);
+              setPortalEnabled(false);
+              if (cached.clientId) {
+                const cachedClient = await offlineStorage.getCachedClient(cached.clientId);
+                if (cachedClient) setClient(cachedClient as unknown as Client);
+              }
+              setIsLoading(false);
+              return;
+            }
+          } catch {}
+        }
         setLoadError(response.error);
         setIsLoading(false);
         return;
