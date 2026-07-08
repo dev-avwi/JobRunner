@@ -66,6 +66,12 @@ export function OfflineIndicator() {
   if (isOnline && pendingSyncCount === 0 && !showSyncMessage) {
     return null;
   }
+
+  // Offline is handled by the single slim OfflineBanner pill — don't stack a
+  // second "Offline mode" indicator underneath it.
+  if (!isOnline) {
+    return null;
+  }
   
   // Show sync success message
   if (showSyncMessage && isOnline && pendingSyncCount === 0) {
@@ -112,34 +118,15 @@ export function OfflineIndicator() {
 
 export function OfflineBanner() {
   const { isOnline, pendingSyncCount } = useOfflineStore();
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
-  
-  useEffect(() => {
-    const fetchMessage = async () => {
-      if (pendingSyncCount > 0) {
-        const message = await offlineStorage.getPendingUploadsMessage();
-        setPendingMessage(message);
-      } else {
-        setPendingMessage(null);
-      }
-    };
-    fetchMessage();
-  }, [pendingSyncCount]);
-  
+
   if (isOnline) return null;
-  
+
   return (
     <View style={styles.banner}>
-      <Ionicons name="cloud-offline" size={18} color={staticColors.white} />
-      <View style={styles.bannerTextContainer}>
-        <Text style={styles.bannerTitle}>You're offline</Text>
-        <Text style={styles.bannerSubtitle}>
-          {pendingMessage 
-            ? `Pending: ${pendingMessage}`
-            : 'Changes will sync when you\'re back online'
-          }
-        </Text>
-      </View>
+      <Ionicons name="cloud-offline-outline" size={14} color={staticColors.white} />
+      <Text style={styles.bannerTitle}>
+        Offline{pendingSyncCount > 0 ? ` \u00B7 ${pendingSyncCount} pending` : ''}
+      </Text>
     </View>
   );
 }
@@ -268,22 +255,17 @@ const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#6b7280',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 12,
-  },
-  bannerTextContainer: {
-    flex: 1,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(55, 65, 81, 0.92)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 6,
   },
   bannerTitle: {
     color: staticColors.white,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  bannerSubtitle: {
-    color: '#d1d5db',
     fontSize: 12,
+    fontWeight: '500',
   },
   syncStatus: {
     backgroundColor: '#ffffff',
