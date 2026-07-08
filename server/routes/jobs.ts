@@ -6768,6 +6768,72 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
+  // AI summary of a voice note's transcription (persisted on the voice note)
+  app.post("/api/jobs/:jobId/voice-notes/:voiceNoteId/summarize", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId, voiceNoteId } = req.params;
+
+      if (isBackpressure(aiQueue)) {
+        return send429(res, 'AI is busy right now — try again shortly.');
+      }
+
+      const userContext = await getUserContext(userId);
+      const { summarizeVoiceNote } = await import('../voiceNoteService');
+      const result = await aiQueue.run(() => summarizeVoiceNote(voiceNoteId, userContext.effectiveUserId, jobId));
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+      res.json({ success: true, summary: result.summary });
+    } catch (error: any) {
+      console.error('Error summarising voice note:', error);
+      res.status(500).json({ error: 'Failed to summarise voice note' });
+    }
+  });
+
+  // AI summary of the job's notes (returned, not persisted)
+  app.post("/api/jobs/:jobId/notes/summarize", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId } = req.params;
+
+      if (isBackpressure(aiQueue)) {
+        return send429(res, 'AI is busy right now — try again shortly.');
+      }
+
+      const userContext = await getUserContext(userId);
+      const job = await storage.getJob(jobId, userContext.effectiveUserId);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+
+      // Notes live in two places: the legacy jobs.notes field and the
+      // structured job_notes table. Combine both for the summary.
+      const structuredNotes = await storage.getJobNotes(jobId, userContext.effectiveUserId);
+      const parts: string[] = [];
+      if (job.notes && job.notes.trim()) parts.push(job.notes.trim());
+      for (const n of structuredNotes) {
+        if (n.content && n.content.trim()) parts.push(n.content.trim());
+      }
+      const combined = parts.join('\n\n');
+      if (!combined) {
+        return res.status(400).json({ error: 'This job has no notes to summarise' });
+      }
+
+      const { summarizeTextForOwner } = await import('../voiceNoteService');
+      const result = await aiQueue.run(() => summarizeTextForOwner(combined, 'job_notes'));
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+      res.json({ success: true, summary: result.summary });
+    } catch (error: any) {
+      console.error('Error summarising job notes:', error);
+      res.status(500).json({ error: 'Failed to summarise notes' });
+    }
+  });
+
   app.post("/api/jobs/:jobId/voice-notes/:voiceNoteId/confirm-action", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;

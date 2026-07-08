@@ -3203,6 +3203,7 @@ export const voiceNotes = pgTable("voice_notes", {
   duration: integer("duration"), // Duration in seconds
   title: text("title"), // Optional title/label for the note
   transcription: text("transcription"), // AI transcription of the audio
+  summary: text("summary"), // AI key-point summary of the transcription
   detectedActions: jsonb("detected_actions"), // AI-detected action items from transcription
   recordedBy: varchar("recorded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),

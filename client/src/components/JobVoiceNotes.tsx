@@ -22,6 +22,7 @@ interface VoiceNote {
   duration: number | null;
   title: string | null;
   transcription: string | null;
+  summary?: string | null;
   createdAt: string | null;
   signedUrl?: string;
   detectedActions?: DetectedAction[] | null;
@@ -132,6 +133,26 @@ export function JobVoiceNotes({ jobId, canUpload = true, existingNotes, onNotesU
       toast({
         title: 'Transcription failed',
         description: error.message || 'Failed to transcribe voice note.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const summarizeMutation = useMutation({
+    mutationFn: async (voiceNoteId: string) => {
+      return apiRequest('POST', `/api/jobs/${jobId}/voice-notes/${voiceNoteId}/summarize`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'voice-notes'] });
+      toast({
+        title: 'Summary ready',
+        description: 'Key points extracted from the voice note.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Summary failed',
+        description: error.message || 'Failed to summarise voice note.',
         variant: 'destructive',
       });
     },
@@ -420,7 +441,46 @@ export function JobVoiceNotes({ jobId, canUpload = true, existingNotes, onNotesU
                               <Edit className="h-3 w-3 mr-1" />
                               Edit
                             </Button>
+                            {!note.summary && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => summarizeMutation.mutate(note.id)}
+                                disabled={summarizeMutation.isPending}
+                                data-testid={`button-summarize-${note.id}`}
+                              >
+                                {summarizeMutation.isPending && summarizeMutation.variables === note.id ? (
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                ) : (
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                )}
+                                Summarise
+                              </Button>
+                            )}
                           </div>
+                          {note.summary && (
+                            <div className="mt-3 pt-3 border-t">
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <Sparkles className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground">AI Summary</span>
+                              </div>
+                              <p className="text-sm leading-relaxed whitespace-pre-line" data-testid={`summary-${note.id}`}>
+                                {note.summary}
+                              </p>
+                              <div className="flex gap-2 flex-wrap mt-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleAddToNotes(note.id, note.summary!)}
+                                  disabled={addingNoteId === note.id}
+                                  data-testid={`button-add-summary-to-notes-${note.id}`}
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add to Notes
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>

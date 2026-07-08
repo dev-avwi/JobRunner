@@ -247,6 +247,7 @@ interface VoiceNote {
   duration: number | null;
   title: string | null;
   transcription: string | null;
+  summary?: string | null;
   createdAt: string | null;
   signedUrl?: string;
 }
@@ -1943,6 +1944,8 @@ export default function JobDetailScreen() {
   const [elapsedTime, setElapsedTime] = useState(0);
   
   const [showNotesModal, setShowNotesModal] = useState(false);
+  const [notesSummary, setNotesSummary] = useState<string | null>(null);
+  const [isSummarizingNotes, setIsSummarizingNotes] = useState(false);
   const [showPhotosModal, setShowPhotosModal] = useState(false);
   const [showAIAnalysisModal, setShowAIAnalysisModal] = useState(false);
   const [editedNotes, setEditedNotes] = useState('');
@@ -9372,6 +9375,46 @@ export default function JobDetailScreen() {
             <Text style={{ ...typography.caption, color: colors.mutedForeground, textAlign: 'center' }}>
               Tap to add job notes, instructions, or reminders
             </Text>
+          </View>
+        )}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md }}>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, backgroundColor: `${colors.primary}10` }}
+            disabled={isSummarizingNotes}
+            onPress={async (e: any) => {
+              e?.stopPropagation?.();
+              setIsSummarizingNotes(true);
+              try {
+                const res = await api.post<{ summary: string }>(`/api/jobs/${job.id}/notes/summarize`);
+                if (res.error) {
+                  showToast({ type: 'error', message: 'Summary failed', description: res.error });
+                } else if (res.data?.summary) {
+                  setNotesSummary(res.data.summary);
+                }
+              } catch {
+                showToast({ type: 'error', message: 'Failed to summarise notes' });
+              } finally {
+                setIsSummarizingNotes(false);
+              }
+            }}
+          >
+            {isSummarizingNotes ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Feather name="zap" size={14} color={colors.primary} />
+            )}
+            <Text style={{ fontSize: 13, fontWeight: '500', color: colors.primary }}>
+              {isSummarizingNotes ? 'Summarising...' : 'Summarise'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {notesSummary && (
+          <View style={{ marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs }}>
+              <Feather name="zap" size={14} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 12, fontWeight: '500', color: colors.mutedForeground }}>AI Summary</Text>
+            </View>
+            <Text style={styles.notesText}>{notesSummary}</Text>
           </View>
         )}
       </TouchableOpacity>

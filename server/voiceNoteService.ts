@@ -433,6 +433,81 @@ export async function detectActionsFromTranscription(
   }
 }
 
+// Summarise free text (voice note transcript or job notes) into concise key points
+export async function summarizeTextForOwner(
+  text: string,
+  context: 'voice_note' | 'job_notes'
+): Promise<{ success: boolean; summary?: string; error?: string }> {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'AI summarisation is not configured' };
+    }
+    const trimmed = (text || '').trim();
+    if (!trimmed) {
+      return { success: false, error: 'Nothing to summarise' };
+    }
+    if (trimmed.length < 40) {
+      // Too short to be worth an AI call — just return it as-is
+      return { success: true, summary: trimmed };
+    }
+
+    const openai = new OpenAI({ apiKey });
+    const contextLine = context === 'voice_note'
+      ? 'This is a transcribed voice note recorded on-site by a worker for an Australian trade business.'
+      : 'These are the running job notes for an Australian trade business job.';
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-5-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `${contextLine} Summarise it for the business owner as short bullet points covering ALL key information: work done, problems found, materials needed, client requests, follow-ups, times/dates, and anything affecting cost or safety. Use plain Australian English, one bullet per point, each starting with "- ". No preamble, no headings — just the bullets. If there is genuinely nothing meaningful, reply with a single bullet stating that.`
+        },
+        { role: 'user', content: trimmed.slice(0, 24000) }
+      ],
+      max_completion_tokens: 2000,
+    });
+
+    const summary = response.choices[0]?.message?.content?.trim();
+    if (!summary) {
+      return { success: false, error: 'AI returned an empty summary' };
+    }
+    return { success: true, summary };
+  } catch (error: unknown) {
+    console.error('[VoiceNoteService] Error summarising text:', getErrorMessage(error));
+    return { success: false, error: 'Failed to generate summary' };
+  }
+}
+
+// Summarise a voice note's transcription and persist the summary on the record
+export async function summarizeVoiceNote(
+  voiceNoteId: string,
+  userId: string,
+  expectedJobId?: string
+): Promise<{ success: boolean; summary?: string; error?: string }> {
+  const voiceNote = await dbStorage.getVoiceNote(voiceNoteId, userId);
+  if (!voiceNote) {
+    return { success: false, error: 'Voice note not found' };
+  }
+  if (expectedJobId && voiceNote.jobId !== expectedJobId) {
+    return { success: false, error: 'Voice note not found' };
+  }
+  if (!voiceNote.transcription) {
+    return { success: false, error: 'Transcribe the voice note first' };
+  }
+  const result = await summarizeTextForOwner(voiceNote.transcription, 'voice_note');
+  if (result.success && result.summary) {
+    try {
+      await dbStorage.updateVoiceNote(voiceNoteId, userId, { summary: result.summary } as any);
+    } catch (e) {
+      console.error('[VoiceNoteService] Failed to persist summary:', getErrorMessage(e));
+      return { success: false, error: 'Failed to save the summary — try again' };
+    }
+  }
+  return result;
+}
+
 // Download voice note file from object storage
 async function downloadVoiceNoteFile(objectStorageKey: string): Promise<Buffer | null> {
   if (!objectStorageKey || !BUCKET_ID) {

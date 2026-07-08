@@ -600,8 +600,10 @@ interface VoiceNotePlayerProps {
   duration?: number;
   createdAt?: string;
   transcription?: string | null;
+  summary?: string | null;
   onDelete?: () => void;
   onTranscriptionUpdate?: (transcription: string) => void;
+  onSummaryUpdate?: (summary: string) => void;
   onAddToNotes?: (text: string) => void;
   jobId?: string;
 }
@@ -614,8 +616,10 @@ export function VoiceNotePlayer({
   duration, 
   createdAt,
   transcription: initialTranscription,
+  summary: initialSummary,
   onDelete,
   onTranscriptionUpdate,
+  onSummaryUpdate,
   onAddToNotes,
   jobId,
 }: VoiceNotePlayerProps) {
@@ -629,6 +633,8 @@ export function VoiceNotePlayer({
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcription, setTranscription] = useState<string | null>(initialTranscription || null);
   const [showTranscription, setShowTranscription] = useState(!!initialTranscription);
+  const [summary, setSummary] = useState<string | null>(initialSummary || null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
 
   // Cleanup sound on unmount
   useEffect(() => {
@@ -887,6 +893,37 @@ export function VoiceNotePlayer({
     }
   };
 
+  const handleSummarize = async () => {
+    if (!noteId || !jobId) {
+      Alert.alert('Error', 'Cannot summarise - voice note or job ID missing');
+      return;
+    }
+    setIsSummarizing(true);
+    try {
+      const response = await api.post<{ summary: string }>(`/api/jobs/${jobId}/voice-notes/${noteId}/summarize`);
+      if (response.error) {
+        Alert.alert('Summary Failed', response.error || 'Could not summarise voice note');
+        return;
+      }
+      if (response.data?.summary) {
+        setSummary(response.data.summary);
+        onSummaryUpdate?.(response.data.summary);
+      }
+    } catch (error) {
+      if (__DEV__) console.error('Summarise error:', error);
+      Alert.alert('Error', 'Failed to summarise voice note');
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const handleAddSummaryToNotes = () => {
+    if (!summary) return;
+    if (onAddToNotes) {
+      onAddToNotes(summary);
+    }
+  };
+
   const handleCopyTranscription = async () => {
     if (!transcription) return;
     try {
@@ -991,7 +1028,34 @@ export function VoiceNotePlayer({
                   <Ionicons name="copy-outline" size={16} color={theme.colors.primary} />
                   <Text style={styles.actionButtonText}>Copy</Text>
                 </TouchableOpacity>
+                {noteId && jobId && !summary && (
+                  <TouchableOpacity style={styles.actionButton} onPress={handleSummarize} disabled={isSummarizing}>
+                    {isSummarizing ? (
+                      <ActivityIndicator size="small" color={theme.colors.primary} />
+                    ) : (
+                      <Ionicons name="sparkles-outline" size={16} color={theme.colors.primary} />
+                    )}
+                    <Text style={styles.actionButtonText}>{isSummarizing ? 'Summarising...' : 'Summarise'}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
+              {summary && (
+                <View style={styles.summaryContainer}>
+                  <View style={styles.transcriptionHeader}>
+                    <Ionicons name="sparkles-outline" size={14} color={theme.colors.mutedForeground} />
+                    <Text style={styles.transcriptionLabel}>AI Summary</Text>
+                  </View>
+                  <Text style={styles.transcriptionText}>{summary}</Text>
+                  {onAddToNotes && (
+                    <View style={styles.transcriptionActions}>
+                      <TouchableOpacity style={styles.actionButton} onPress={handleAddSummaryToNotes}>
+                        <Ionicons name="add-circle-outline" size={16} color={theme.colors.primary} />
+                        <Text style={styles.actionButtonText}>Add to Notes</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
             </>
           )}
         </View>
@@ -1199,9 +1263,16 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   },
   transcriptionActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginTop: 12,
     paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  summaryContainer: {
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },

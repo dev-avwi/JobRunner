@@ -27,6 +27,7 @@ interface VoiceNote {
   duration: number | null;
   title: string | null;
   transcription: string | null;
+  summary?: string | null;
   createdAt: string | null;
   signedUrl?: string;
 }
@@ -289,10 +290,16 @@ export function PhotosSection(props: PhotosSectionProps) {
                 duration={note.duration || undefined}
                 createdAt={note.createdAt || undefined}
                 transcription={note.transcription}
+                summary={note.summary}
                 onDelete={() => handleDeleteVoiceNote(note.id)}
                 onTranscriptionUpdate={(text) => {
                   setVoiceNotes(prev => prev.map(v =>
                     v.id === note.id ? { ...v, transcription: text } : v
+                  ));
+                }}
+                onSummaryUpdate={(text) => {
+                  setVoiceNotes(prev => prev.map(v =>
+                    v.id === note.id ? { ...v, summary: text } : v
                   ));
                 }}
                 onAddToNotes={async (text) => {
@@ -313,8 +320,15 @@ export function PhotosSection(props: PhotosSectionProps) {
                       await offlineStorage.updateJobOffline(job!.id, { notes: newNotes });
                       showToast({ type: 'info', message: 'Saved Offline', description: 'Transcription added to notes - will sync when online' });
                     } else {
-                      await api.patch(`/api/jobs/${job?.id}`, { notes: newNotes });
-                      showToast({ type: 'success', message: 'Transcription added to job notes' });
+                      const res = await api.post(`/api/jobs/${job?.id}/notes`, { content: `[Voice Note Transcription]\n${text}` });
+                      if (res.error) {
+                        if (job) {
+                          setJob({ ...job, notes: previousNotes || '' });
+                        }
+                        showToast({ type: 'error', message: 'Failed to add transcription to notes' });
+                      } else {
+                        showToast({ type: 'success', message: 'Transcription added to job notes' });
+                      }
                     }
                   } catch (error: any) {
                     if (job) {
