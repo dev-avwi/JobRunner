@@ -1,0 +1,38 @@
+# EAS Build archive ignore (repo root). Keeps the upload small when building
+# from the Replit workspace. NOTE: when this file exists, .gitignore files are
+# NOT used by EAS CLI, so everything to exclude must be listed here.
+
+# Version control / agent state
+.git
+.local
+.cache
+.agents
+.config
+.upm
+
+# Dependencies (node_modules is ignored by default, listed for safety)
+node_modules
+mobile/node_modules
+
+# Large non-mobile assets and project dirs not needed for a mobile build
+attached_assets
+artifacts
+docs
+tests
+exports
+screenshots
+uploads
+
+# Build outputs
+dist
+mobile/dist
+client/dist
+build
+
+# Env / secrets
+.env
+.env.*
+
+# Misc
+*.log
+tmp
