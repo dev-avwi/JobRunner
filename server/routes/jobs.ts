@@ -401,6 +401,29 @@ import { logSystemEvent } from "../systemEventService";
     return job.assignedTo === userId;
   }
 
+  // Job total time runs from the FIRST worker's clock-in to the LAST worker's
+  // clock-out. When a job is marked done, use the latest time-entry end as the
+  // completion timestamp (instead of "now") so a late Complete tap by the lead
+  // doesn't inflate the job's total duration. Falls back to `now` when the job
+  // has no ended time entries or any timer is still running.
+  async function resolveJobCompletionTime(jobId: string, now: Date): Promise<Date> {
+    try {
+      const entries = await storage.getTimeEntriesForJob(jobId);
+      if (entries.some(e => !e.endTime && !e.isBreak)) return now;
+      let latest: Date | null = null;
+      for (const e of entries) {
+        if (!e.endTime) continue;
+        const end = new Date(e.endTime);
+        if (!latest || end > latest) latest = end;
+      }
+      if (latest && latest <= now) return latest;
+      return now;
+    } catch (err) {
+      console.error('[resolveJobCompletionTime] failed, using now:', err);
+      return now;
+    }
+  }
+
   // Shared "all timers stopped / time entries sane" precondition for marking a
   // job done. Returns a list of human-readable problems (empty = OK to complete).
   async function getJobCompletionErrors(jobId: string, effectiveUserId?: string): Promise<string[]> {
@@ -2915,7 +2938,7 @@ import { logSystemEvent } from "../systemEventService";
             if (status === 'in_progress' && !existingJob.startedAt) {
               updateData.startedAt = now;
             } else if (status === 'done' && !existingJob.completedAt) {
-              updateData.completedAt = now;
+              updateData.completedAt = await resolveJobCompletionTime(existingJob.id, now);
             } else if (status === 'invoiced' && !existingJob.invoicedAt) {
               updateData.invoicedAt = now;
             }
@@ -3115,7 +3138,7 @@ import { logSystemEvent } from "../systemEventService";
         if (data.status === 'in_progress' && !existingJob.startedAt) {
           updateData.startedAt = now;
         } else if (data.status === 'done' && !existingJob.completedAt) {
-          updateData.completedAt = now;
+          updateData.completedAt = await resolveJobCompletionTime(existingJob.id, now);
         } else if (data.status === 'invoiced' && !existingJob.invoicedAt) {
           updateData.invoicedAt = now;
         }
@@ -3417,7 +3440,7 @@ import { logSystemEvent } from "../systemEventService";
         if (status === 'in_progress' && !existingJob.startedAt) {
           updateData.startedAt = now;
         } else if (status === 'done' && !existingJob.completedAt) {
-          updateData.completedAt = now;
+          updateData.completedAt = await resolveJobCompletionTime(existingJob.id, now);
         } else if (status === 'invoiced' && !existingJob.invoicedAt) {
           updateData.invoicedAt = now;
         }
