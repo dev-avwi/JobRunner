@@ -5,7 +5,7 @@ import { PressableRow } from '../ui/PressableRow';
 import { VoiceRecorder, VoiceNotePlayer } from '../VoiceRecorder';
 import { spacing, iconSizes, typography } from '../../lib/design-tokens';
 import api from '../../lib/api';
-import offlineStorage, { useOfflineStore } from '../../lib/offline-storage';
+import { useOfflineStore } from '../../lib/offline-storage';
 import { showToast } from '../../lib/toast';
 
 interface JobPhoto {
@@ -67,6 +67,7 @@ export interface PhotosSectionProps {
   isUploadingVoiceNote: boolean;
   handleUploadVoiceNote: (uri: string, duration: number) => void;
   handleDeleteVoiceNote: (id: string) => void;
+  onNotesChanged?: () => void;
 }
 
 export function PhotosSection(props: PhotosSectionProps) {
@@ -303,43 +304,25 @@ export function PhotosSection(props: PhotosSectionProps) {
                   ));
                 }}
                 onAddToNotes={async (text) => {
-                  const currentNotes = job?.notes || '';
-                  const newNotes = currentNotes
-                    ? `${currentNotes}\n\n[Voice Note Transcription]\n${text}`
-                    : `[Voice Note Transcription]\n${text}`;
-
+                  if (!job) return;
+                  // Notes live in the structured job_notes table — the legacy
+                  // jobs.notes field is ignored by the server on PATCH, so an
+                  // offline queue via updateJobOffline would silently lose data.
                   const { isOnline } = useOfflineStore.getState();
-                  const previousNotes = job?.notes;
-
-                  if (job) {
-                    setJob({ ...job, notes: newNotes });
+                  if (!isOnline) {
+                    showToast({ type: 'error', message: 'No connection', description: 'Reconnect to add the transcription to job notes' });
+                    return;
                   }
-
                   try {
-                    if (!isOnline) {
-                      await offlineStorage.updateJobOffline(job!.id, { notes: newNotes });
-                      showToast({ type: 'info', message: 'Saved Offline', description: 'Transcription added to notes - will sync when online' });
-                    } else {
-                      const res = await api.post(`/api/jobs/${job?.id}/notes`, { content: `[Voice Note Transcription]\n${text}` });
-                      if (res.error) {
-                        if (job) {
-                          setJob({ ...job, notes: previousNotes || '' });
-                        }
-                        showToast({ type: 'error', message: 'Failed to add transcription to notes' });
-                      } else {
-                        showToast({ type: 'success', message: 'Transcription added to job notes' });
-                      }
-                    }
-                  } catch (error: any) {
-                    if (job) {
-                      setJob({ ...job, notes: previousNotes || '' });
-                    }
-                    if (error.message?.includes('Network')) {
-                      await offlineStorage.updateJobOffline(job!.id, { notes: newNotes });
-                      showToast({ type: 'info', message: 'Saved Offline', description: 'Will sync when connection is restored' });
-                    } else {
+                    const res = await api.post(`/api/jobs/${job.id}/notes`, { content: `[Voice Note Transcription]\n${text}` });
+                    if (res.error) {
                       showToast({ type: 'error', message: 'Failed to add transcription to notes' });
+                    } else {
+                      showToast({ type: 'success', message: 'Transcription added to job notes' });
+                      props.onNotesChanged?.();
                     }
+                  } catch {
+                    showToast({ type: 'error', message: 'Failed to add transcription to notes' });
                   }
                 }}
               />

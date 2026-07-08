@@ -80,6 +80,14 @@ import { ChatSection } from '../../src/components/jobDetail/ChatSection';
 import { MaterialsSection } from '../../src/components/jobDetail/MaterialsSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 
+interface JobNoteItem {
+  id: string;
+  content: string;
+  createdBy?: string;
+  createdByName?: string;
+  createdAt: string;
+}
+
 interface Job {
   id: string;
   userId?: string;
@@ -1946,6 +1954,7 @@ export default function JobDetailScreen() {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notesSummary, setNotesSummary] = useState<string | null>(null);
   const [isSummarizingNotes, setIsSummarizingNotes] = useState(false);
+  const [jobNotes, setJobNotes] = useState<JobNoteItem[]>([]);
   const [showPhotosModal, setShowPhotosModal] = useState(false);
   const [showAIAnalysisModal, setShowAIAnalysisModal] = useState(false);
   const [editedNotes, setEditedNotes] = useState('');
@@ -2245,9 +2254,6 @@ export default function JobDetailScreen() {
   const [rollbackTargetStatus, setRollbackTargetStatus] = useState<string | null>(null);
   
   const { updateJobStatus } = useJobsStore();
-  const updateJobNotes = async (jobId: string, notes: string): Promise<void> => {
-    await api.patch(`/api/jobs/${jobId}`, { notes });
-  };
   const { businessSettings, roleInfo, user, hasPermission, logout } = useAuthStore();
   const [showWorkspaceSwitcher, setShowWorkspaceSwitcher] = useState(false);
   const { isSmsReady } = useIntegrationHealth();
@@ -2338,10 +2344,12 @@ export default function JobDetailScreen() {
   const appStateRef = useRef(AppState.currentState);
 
   useEffect(() => {
+    setJobNotes([]);
     loadJob();
     fetchActiveTimer();
     loadPhotos();
     loadVoiceNotes();
+    loadJobNotes();
     loadSignatures();
     loadRelatedDocuments();
     loadTimeEntries();
@@ -3796,7 +3804,6 @@ export default function JobDetailScreen() {
         const cached = await offlineStorage.getCachedJob(id);
         if (cached) {
           setJob(cached as unknown as Job);
-          setEditedNotes(cached.notes || '');
           setSliderRadius(cached.geofenceRadius || 100);
           setPortalEnabled(false);
           if (cached.clientId) {
@@ -3812,7 +3819,6 @@ export default function JobDetailScreen() {
         const response = await api.get<Job>(`/api/jobs/${id}`);
         if (response.data) {
           setJob(response.data);
-          setEditedNotes(response.data.notes || '');
           setSliderRadius(response.data.geofenceRadius || 100);
           setPortalEnabled(!!response.data.portalEnabled);
         } else {
@@ -3833,7 +3839,6 @@ export default function JobDetailScreen() {
             const cached = await offlineStorage.getCachedJob(id);
             if (cached) {
               setJob(cached as unknown as Job);
-              setEditedNotes(cached.notes || '');
               setSliderRadius(cached.geofenceRadius || 100);
               setPortalEnabled(false);
               if (cached.clientId) {
@@ -3851,7 +3856,6 @@ export default function JobDetailScreen() {
       }
       if (response.data) {
         setJob(response.data);
-        setEditedNotes(response.data.notes || '');
         setSliderRadius(response.data.geofenceRadius || 100);
         setPortalEnabled(!!response.data.portalEnabled);
         if (response.data.clientId) {
@@ -3943,6 +3947,17 @@ export default function JobDetailScreen() {
     }
   };
 
+  const loadJobNotes = async () => {
+    try {
+      const response = await api.get<JobNoteItem[]>(`/api/jobs/${id}/notes`);
+      if (!response.error && Array.isArray(response.data)) {
+        setJobNotes(response.data);
+      }
+    } catch (error) {
+      if (__DEV__) console.log('No job notes or error loading:', error);
+    }
+  };
+
   const loadVoiceNotes = async () => {
     try {
       const response = await api.get<VoiceNote[]>(`/api/jobs/${id}/voice-notes`);
@@ -4025,21 +4040,15 @@ export default function JobDetailScreen() {
               v.id === noteId ? { ...v, transcription: transcribedText } : v
             ));
             
-            const currentNotes = job.notes || '';
-            const newNotes = currentNotes 
-              ? `${currentNotes}\n\n[Voice Note]\n${transcribedText}`
-              : `[Voice Note]\n${transcribedText}`;
-            
-            setJob({ ...job, notes: newNotes });
-            
-            const { isOnline } = useOfflineStore.getState();
-            if (!isOnline) {
-              await offlineStorage.updateJobOffline(job.id, { notes: newNotes });
+            // Save the transcription as a structured job note (the legacy
+            // jobs.notes field is ignored by the server on PATCH).
+            const noteRes = await api.post(`/api/jobs/${job.id}/notes`, { content: `[Voice Note]\n${transcribedText}` });
+            if (!noteRes.error) {
+              await loadJobNotes();
+              showToast({ type: 'info', message: 'Voice Note Saved', description: 'Recording transcribed and added to job notes.' });
             } else {
-              await api.patch(`/api/jobs/${job.id}`, { notes: newNotes });
+              showToast({ type: 'info', message: 'Voice Note Saved', description: 'Transcribed, but could not add to job notes.' });
             }
-            
-            showToast({ type: 'info', message: 'Voice Note Saved', description: 'Recording transcribed and added to job notes.' });
           } else {
             showToast({ type: 'info', message: 'Voice Note Saved', description: 'Recording saved. Transcription unavailable.' });
           }
@@ -4439,6 +4448,7 @@ export default function JobDetailScreen() {
       loadJob(), 
       loadPhotos(), 
       loadVoiceNotes(),
+      loadJobNotes(),
       loadSignatures(),
       loadRelatedDocuments(),
       loadTimeEntries(),
@@ -5911,42 +5921,25 @@ export default function JobDetailScreen() {
 
   const handleSaveNotes = async () => {
     if (!job) return;
-    
+    const content = editedNotes.trim();
+    if (!content) return;
+
     setIsSavingNotes(true);
-    const { isOnline } = useOfflineStore.getState();
-    const previousNotes = job.notes;
-    
-    // Optimistic UI update
-    setJob({ ...job, notes: editedNotes });
-    setShowNotesModal(false);
-    
-    if (!isOnline) {
-      await offlineStorage.updateJobOffline(job.id, { notes: editedNotes });
-      showToast({ type: 'info', message: 'Saved Offline', description: 'Notes will sync when online' });
-      setIsSavingNotes(false);
-      return;
-    }
-    
     try {
-      const response = await api.patch(`/api/jobs/${job.id}`, { notes: editedNotes });
-      if (response.data) {
-        showToast({ type: 'success', message: 'Notes updated successfully' });
+      // Notes are stored as individual entries (job_notes) — the legacy
+      // jobs.notes field is ignored by the server on PATCH, so always POST
+      // a structured note here.
+      const response = await api.post<JobNoteItem>(`/api/jobs/${job.id}/notes`, { content });
+      if (!response.error && response.data?.id) {
+        setEditedNotes('');
+        setShowNotesModal(false);
+        showToast({ type: 'success', message: 'Note added' });
+        await loadJobNotes();
       } else {
-        // Revert on failure
-        setJob({ ...job, notes: previousNotes });
-        setShowNotesModal(true);
-        showToast({ type: 'error', message: 'Failed to save notes' });
+        showToast({ type: 'error', message: 'Failed to save note', description: response.isOffline ? 'You are offline — try again when connected' : response.error });
       }
     } catch (error: any) {
-      if (error.message?.includes('Network') || error.code === 'ECONNABORTED') {
-        await offlineStorage.updateJobOffline(job.id, { notes: editedNotes });
-        showToast({ type: 'info', message: 'Saved Offline', description: 'Notes will sync when connection is restored' });
-      } else {
-        // Revert on error
-        setJob({ ...job, notes: previousNotes });
-        setShowNotesModal(true);
-        showToast({ type: 'error', message: 'Failed to save notes. Please try again.' });
-      }
+      showToast({ type: 'error', message: 'Failed to save note. Please try again.' });
     }
     setIsSavingNotes(false);
   };
@@ -7495,7 +7488,7 @@ export default function JobDetailScreen() {
       )}
 
       {/* Description & Notes Card */}
-      {(job.description || job.notes) && (
+      {(job.description || job.notes || jobNotes.length > 0) && (
         <View style={{
           backgroundColor: colors.card,
           borderRadius: radius.xl,
@@ -7506,7 +7499,7 @@ export default function JobDetailScreen() {
           ...shadows.sm,
         }}>
           {job.description && (
-            <View style={{ marginBottom: job.notes ? spacing.md : 0 }}>
+            <View style={{ marginBottom: (job.notes || jobNotes.length > 0) ? spacing.md : 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
                 <Feather name="align-left" size={14} color={colors.mutedForeground} />
                 <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>Description</Text>
@@ -7514,22 +7507,27 @@ export default function JobDetailScreen() {
               <Text style={{ fontSize: 14, color: colors.foreground, lineHeight: 20 }}>{job.description}</Text>
             </View>
           )}
-          {job.notes && (
+          {(jobNotes.length > 0 || job.notes) && (
             <TouchableOpacity
-              onPress={() => setShowNotesModal(true)}
+              onPress={() => { setEditedNotes(''); setShowNotesModal(true); }}
               activeOpacity={0.7}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
                 <Feather name="edit-3" size={14} color={colors.mutedForeground} />
                 <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>Notes</Text>
-                <Feather name="edit-2" size={12} color={colors.primary} style={{ marginLeft: 'auto' }} />
+                <Feather name="plus" size={12} color={colors.primary} style={{ marginLeft: 'auto' }} />
               </View>
-              <Text style={{ fontSize: 14, color: colors.mutedForeground, lineHeight: 20 }} numberOfLines={3}>{job.notes}</Text>
+              <Text style={{ fontSize: 14, color: colors.mutedForeground, lineHeight: 20 }} numberOfLines={3}>
+                {jobNotes.length > 0 ? jobNotes[jobNotes.length - 1].content : job.notes}
+              </Text>
+              {jobNotes.length > 1 && (
+                <Text style={{ fontSize: 12, color: colors.primary, marginTop: 4 }}>+{jobNotes.length - 1} more note{jobNotes.length - 1 === 1 ? '' : 's'}</Text>
+              )}
             </TouchableOpacity>
           )}
-          {!job.notes && (
+          {!job.notes && jobNotes.length === 0 && (
             <TouchableOpacity
-              onPress={() => setShowNotesModal(true)}
+              onPress={() => { setEditedNotes(''); setShowNotesModal(true); }}
               activeOpacity={0.7}
               style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: job.description ? spacing.md : 0, borderTopWidth: job.description ? 1 : 0, borderTopColor: colors.border }}
             >
@@ -7539,11 +7537,10 @@ export default function JobDetailScreen() {
           )}
         </View>
       )}
-      {!job.description && !job.notes && (
+      {!job.description && !job.notes && jobNotes.length === 0 && (
         <PressableRow
           style={styles.card}
-          onPress={() => setShowNotesModal(true)}
-
+          onPress={() => { setEditedNotes(''); setShowNotesModal(true); }}
         >
           <View style={[styles.cardIconContainer, { backgroundColor: `${colors.primary}15` }]}>
             <Feather name="edit-3" size={iconSizes.xl} color={colors.primary} />
@@ -9341,6 +9338,7 @@ export default function JobDetailScreen() {
         isUploadingVoiceNote={isUploadingVoiceNote}
         handleUploadVoiceNote={handleUploadVoiceNote}
         handleDeleteVoiceNote={handleDeleteVoiceNote}
+        onNotesChanged={() => loadJobNotes()}
       />
     );
   
@@ -9350,7 +9348,7 @@ export default function JobDetailScreen() {
       <TouchableOpacity 
         style={styles.notesCard}
         onPress={() => {
-          setEditedNotes(job.notes || '');
+          setEditedNotes('');
           setShowNotesModal(true);
         }}
         activeOpacity={0.7}
@@ -9360,10 +9358,27 @@ export default function JobDetailScreen() {
             <Feather name="file-text" size={iconSizes.lg} color={colors.primary} />
           </View>
           <Text style={styles.notesLabel}>Notes</Text>
-          <Feather name="edit-2" size={iconSizes.sm} color={colors.mutedForeground} />
+          <Feather name="plus" size={iconSizes.sm} color={colors.mutedForeground} />
         </View>
-        {job.notes ? (
-          <Text style={styles.notesText}>{job.notes}</Text>
+        {(jobNotes.length > 0 || job.notes) ? (
+          <View style={{ gap: spacing.sm }}>
+            {jobNotes.map((note) => (
+              <View key={note.id} style={{ paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <Text style={styles.notesText}>{note.content}</Text>
+                <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4 }}>
+                  {note.createdByName ? `${note.createdByName} · ` : ''}{new Date(note.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} {new Date(note.createdAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                </Text>
+              </View>
+            ))}
+            {job.notes ? (
+              <View>
+                {jobNotes.length > 0 && (
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>Earlier notes</Text>
+                )}
+                <Text style={styles.notesText}>{job.notes}</Text>
+              </View>
+            ) : null}
+          </View>
         ) : (
           <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
             <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md }}>
@@ -10484,15 +10499,15 @@ export default function JobDetailScreen() {
       <AppBottomSheet
         visible={showNotesModal}
         onDismiss={() => setShowNotesModal(false)}
-        title="Job Notes"
+        title="Add Note"
         showCloseButton
         footer={(
           <SheetButton
             fullWidth
             loading={isSavingNotes}
-            disabled={isSavingNotes}
+            disabled={isSavingNotes || !editedNotes.trim()}
             onPress={handleSaveNotes}
-            label="Save Notes"
+            label="Add Note"
           />
         )}
       >
@@ -10501,7 +10516,7 @@ export default function JobDetailScreen() {
             style={styles.notesInput}
             value={editedNotes}
             onChangeText={setEditedNotes}
-            placeholder="Add notes about this job..."
+            placeholder="Add a note about this job..."
             placeholderTextColor={colors.mutedForeground}
             multiline
             autoFocus
@@ -10755,8 +10770,8 @@ export default function JobDetailScreen() {
           onClose={() => setShowAIAnalysisModal(false)}
           jobId={job.id}
           photos={photos}
-          existingNotes={job.notes || ''}
-          onNotesUpdated={() => loadJob()}
+          existingNotes={jobNotes.length > 0 ? jobNotes.map(n => n.content).join('\n') : (job.notes || '')}
+          onNotesUpdated={() => { loadJob(); loadJobNotes(); }}
           aiEnabled={businessSettings?.aiEnabled !== false}
           aiPhotoAnalysisEnabled={businessSettings?.aiPhotoAnalysisEnabled !== false}
         />
@@ -11040,29 +11055,35 @@ export default function JobDetailScreen() {
               </View>
 
               {/* Notes Section */}
-              <View style={styles.completionSection}>
-                <View style={styles.completionSectionHeader}>
-                  <View style={[styles.completionSectionIcon, { backgroundColor: (job.notes && job.notes.trim()) ? colors.success + '15' : colors.destructive + '15' }]}>
-                    <Feather name="file-text" size={18} color={(job.notes && job.notes.trim()) ? colors.success : colors.destructive} />
+              {(() => {
+                const hasAnyNotes = jobNotes.length > 0 || !!(job.notes && job.notes.trim());
+                const latestNoteText = jobNotes.length > 0 ? jobNotes[jobNotes.length - 1].content : (job.notes || '');
+                return (
+                  <View style={styles.completionSection}>
+                    <View style={styles.completionSectionHeader}>
+                      <View style={[styles.completionSectionIcon, { backgroundColor: hasAnyNotes ? colors.success + '15' : colors.destructive + '15' }]}>
+                        <Feather name="file-text" size={18} color={hasAnyNotes ? colors.success : colors.destructive} />
+                      </View>
+                      <Text style={styles.completionSectionTitle}>Notes</Text>
+                      <View style={styles.completionSectionStatus}>
+                        <Feather 
+                          name={hasAnyNotes ? 'check-circle' : 'x-circle'} 
+                          size={18} 
+                          color={hasAnyNotes ? colors.success : colors.destructive} 
+                        />
+                        <Text style={[styles.completionStatusText, { color: hasAnyNotes ? colors.success : colors.destructive }]}>
+                          {hasAnyNotes ? 'Added' : 'None'}
+                        </Text>
+                      </View>
+                    </View>
+                    {hasAnyNotes && (
+                      <Text style={[styles.completionSectionDetail, { marginTop: spacing.xs }]} numberOfLines={3}>
+                        {latestNoteText}
+                      </Text>
+                    )}
                   </View>
-                  <Text style={styles.completionSectionTitle}>Notes</Text>
-                  <View style={styles.completionSectionStatus}>
-                    <Feather 
-                      name={(job.notes && job.notes.trim()) ? 'check-circle' : 'x-circle'} 
-                      size={18} 
-                      color={(job.notes && job.notes.trim()) ? colors.success : colors.destructive} 
-                    />
-                    <Text style={[styles.completionStatusText, { color: (job.notes && job.notes.trim()) ? colors.success : colors.destructive }]}>
-                      {(job.notes && job.notes.trim()) ? 'Added' : 'None'}
-                    </Text>
-                  </View>
-                </View>
-                {job.notes && job.notes.trim() && (
-                  <Text style={[styles.completionSectionDetail, { marginTop: spacing.xs }]} numberOfLines={3}>
-                    {job.notes}
-                  </Text>
-                )}
-              </View>
+                );
+              })()}
 
               {/* Time Tracked Section - per worker breakdown */}
               <View style={styles.completionSection}>

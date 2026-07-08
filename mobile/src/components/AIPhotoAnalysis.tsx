@@ -187,23 +187,13 @@ export function AIPhotoAnalysisModal({
     
     setIsAddingToNotes(true);
     try {
-      const token = await api.getToken();
-      const baseUrl = api.getBaseUrl();
-      
-      const newNotes = existingNotes 
-        ? `${existingNotes}\n\n--- AI Photo Analysis ---\n${analysisText}`
-        : `--- AI Photo Analysis ---\n${analysisText}`;
-      
-      const response = await fetch(`${baseUrl}/api/jobs/${jobId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ notes: newNotes }),
+      // Notes live in the structured job_notes table — the legacy jobs.notes
+      // field is ignored by the server on PATCH.
+      const res = await api.post(`/api/jobs/${jobId}/notes`, {
+        content: `--- AI Photo Analysis ---\n${analysisText}`,
       });
 
-      if (!response.ok) {
+      if (res.error) {
         throw new Error('Failed to update notes');
       }
 
