@@ -178,7 +178,7 @@
         "monochromeImage": "./assets/adaptive-icon-monochrome.png"
       },
       "package": "com.jobrunner.app",
-      "versionCode": 47,
+      "versionCode": 48,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCxuTz7CF7fuLq4pD85tuquilZFyIleHeU"
