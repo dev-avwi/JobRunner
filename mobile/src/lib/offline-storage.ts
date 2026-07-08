@@ -3030,7 +3030,17 @@ class OfflineStorageService {
       DELETE FROM sync_queue;
       DELETE FROM metadata;
     `);
-    
+
+    // Account-scoped side tables — cleared separately so a missing table in an
+    // older on-device schema can't abort the whole logout wipe above.
+    for (const table of ['subscription_cache', 'chat_messages', 'form_submissions_local', 'geofence_events_local']) {
+      try {
+        await this.db.execAsync(`DELETE FROM ${table};`);
+      } catch (e) {
+        if (__DEV__) console.warn(`[OfflineStorage] clearCache skipped ${table}:`, (e as any)?.message);
+      }
+    }
+
     await this.updatePendingSyncCount();
     useOfflineStore.getState().setLastSyncTime(null);
     

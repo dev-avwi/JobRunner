@@ -186,6 +186,9 @@ interface JobChatMessage {
   chatType?: string;
 }
 
+// TTL for offline snapshots of job sub-resources (materials, team, assignments)
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
 interface Client {
   id: string;
   name: string;
@@ -2498,7 +2501,15 @@ export default function JobDetailScreen() {
     setIsLoadingMaterials(true);
     try {
       const res = await api.get<JobMaterial[]>(`/api/jobs/${id}/materials`);
-      setMaterials(Array.isArray(res.data) ? res.data : []);
+      if (Array.isArray(res.data)) {
+        setMaterials(res.data);
+        offlineStorage.cacheSubscriptionData(`job_materials_${id}`, res.data, SEVEN_DAYS_MS).catch(() => {});
+      } else if (res.isOffline) {
+        const cached = await offlineStorage.getCachedSubscriptionData<JobMaterial[]>(`job_materials_${id}`);
+        setMaterials(Array.isArray(cached) ? cached : []);
+      } else {
+        setMaterials([]);
+      }
     } catch (e) {
       console.error('Error loading materials:', e);
     } finally {
@@ -2509,7 +2520,15 @@ export default function JobDetailScreen() {
   const loadTeamMembers = useCallback(async () => {
     try {
       const res = await api.get<TeamMember[]>('/api/team/members');
-      setTeamMembers(Array.isArray(res.data) ? res.data : []);
+      if (Array.isArray(res.data)) {
+        setTeamMembers(res.data);
+        offlineStorage.cacheSubscriptionData('team_members', res.data, SEVEN_DAYS_MS).catch(() => {});
+      } else if (res.isOffline) {
+        const cached = await offlineStorage.getCachedSubscriptionData<TeamMember[]>('team_members');
+        setTeamMembers(Array.isArray(cached) ? cached : []);
+      } else {
+        setTeamMembers([]);
+      }
     } catch (e) {
       console.error('Error loading team members:', e);
     }
@@ -2610,7 +2629,15 @@ export default function JobDetailScreen() {
     setIsLoadingMessages(true);
     try {
       const res = await api.get<JobChatMessage[]>(`/api/jobs/${id}/chat`);
-      setJobMessages(Array.isArray(res.data) ? res.data : []);
+      if (Array.isArray(res.data)) {
+        setJobMessages(res.data);
+        offlineStorage.cacheChatMessages('job', id as string, res.data).catch(() => {});
+      } else if (res.isOffline) {
+        const cached = await offlineStorage.getChatMessagesOffline('job', id as string);
+        setJobMessages(Array.isArray(cached) ? (cached as JobChatMessage[]) : []);
+      } else {
+        setJobMessages([]);
+      }
     } catch (e) {
       console.error('Error loading job chat:', e);
     } finally {
@@ -3337,8 +3364,16 @@ export default function JobDetailScreen() {
     if (!id) return;
     try {
       const response = await api.get(`/api/jobs/${id}/assignments`);
-      const assignments = Array.isArray(response.data) ? response.data : [];
-      setJobAssignments(assignments.filter((a: any) => a.isActive));
+      if (Array.isArray(response.data)) {
+        const active = response.data.filter((a: any) => a.isActive);
+        setJobAssignments(active);
+        offlineStorage.cacheSubscriptionData(`job_assignments_${id}`, active, SEVEN_DAYS_MS).catch(() => {});
+      } else if (response.isOffline) {
+        const cached = await offlineStorage.getCachedSubscriptionData<any[]>(`job_assignments_${id}`);
+        setJobAssignments(Array.isArray(cached) ? cached : []);
+      } else {
+        setJobAssignments([]);
+      }
     } catch (e) {
       setJobAssignments([]);
     } finally {
@@ -3751,6 +3786,39 @@ export default function JobDetailScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
+      // Jobs created offline have a "local_" id the server doesn't know about
+      // (it gets swapped for a real id when the sync queue runs). Load them
+      // straight from the local cache — a server fetch would always 404.
+      if (id.startsWith('local_')) {
+        const cached = await offlineStorage.getCachedJob(id);
+        if (cached) {
+          setJob(cached as unknown as Job);
+          setEditedNotes(cached.notes || '');
+          setSliderRadius(cached.geofenceRadius || 100);
+          setPortalEnabled(false);
+          if (cached.clientId) {
+            const cachedClient = await offlineStorage.getCachedClient(cached.clientId);
+            if (cachedClient) setClient(cachedClient as unknown as Client);
+          }
+          setIsLoading(false);
+          return;
+        }
+        // Not in cache under the local id — the sync queue may have already
+        // swapped it for a server id. Fall through to the normal fetch; if the
+        // server also doesn't know it, show a friendly syncing message.
+        const response = await api.get<Job>(`/api/jobs/${id}`);
+        if (response.data) {
+          setJob(response.data);
+          setEditedNotes(response.data.notes || '');
+          setSliderRadius(response.data.geofenceRadius || 100);
+          setPortalEnabled(!!response.data.portalEnabled);
+        } else {
+          setLoadError('This job is still syncing. Go back and reopen it from the jobs list.');
+        }
+        setIsLoading(false);
+        return;
+      }
+
       const response = await api.get<Job>(`/api/jobs/${id}`);
       if (response.error) {
         // Offline fallback ONLY: when the device has no connection, the job
