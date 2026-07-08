@@ -7239,7 +7239,7 @@ import { logSystemEvent } from "../systemEventService";
     }
   });
 
-  app.delete("/api/jobs/:jobId/notes/:noteId", requireAuth, async (req: any, res) => {
+  app.delete("/api/jobs/:jobId/notes/:noteId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { jobId, noteId } = req.params;

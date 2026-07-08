@@ -1962,6 +1962,7 @@ export default function JobDetailScreen() {
   const [newJobTitle, setNewJobTitle] = useState('');
   const [isSavingTitle, setIsSavingTitle] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [editingNote, setEditingNote] = useState<JobNoteItem | null>(null);
   
   const [photos, setPhotos] = useState<JobPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<JobPhoto | null>(null);
@@ -5927,13 +5928,16 @@ export default function JobDetailScreen() {
     setIsSavingNotes(true);
     try {
       // Notes are stored as individual entries (job_notes) — the legacy
-      // jobs.notes field is ignored by the server on PATCH, so always POST
-      // a structured note here.
-      const response = await api.post<JobNoteItem>(`/api/jobs/${job.id}/notes`, { content });
+      // jobs.notes field is ignored by the server on PATCH of the job, so
+      // always write structured notes here.
+      const response = editingNote
+        ? await api.patch<JobNoteItem>(`/api/jobs/${job.id}/notes/${editingNote.id}`, { content })
+        : await api.post<JobNoteItem>(`/api/jobs/${job.id}/notes`, { content });
       if (!response.error && response.data?.id) {
         setEditedNotes('');
         setShowNotesModal(false);
-        showToast({ type: 'success', message: 'Note added' });
+        showToast({ type: 'success', message: editingNote ? 'Note updated' : 'Note added' });
+        setEditingNote(null);
         await loadJobNotes();
       } else {
         showToast({ type: 'error', message: 'Failed to save note', description: response.isOffline ? 'You are offline — try again when connected' : response.error });
@@ -5942,6 +5946,24 @@ export default function JobDetailScreen() {
       showToast({ type: 'error', message: 'Failed to save note. Please try again.' });
     }
     setIsSavingNotes(false);
+  };
+
+  const handleDeleteNote = (note: JobNoteItem) => {
+    confirm({
+      title: 'Delete Note',
+      message: 'Delete this note? This cannot be undone.',
+      confirmText: 'Delete',
+      destructive: true,
+    }).then(async (ok) => {
+      if (!ok || !job) return;
+      const res = await api.delete(`/api/jobs/${job.id}/notes/${note.id}`);
+      if (res.error) {
+        showToast({ type: 'error', message: 'Failed to delete note', description: res.isOffline ? 'You are offline — try again when connected' : res.error });
+      } else {
+        showToast({ type: 'success', message: 'Note deleted' });
+        await loadJobNotes();
+      }
+    });
   };
 
   const handleSiteUpdateTakePhoto = async () => {
@@ -7509,7 +7531,7 @@ export default function JobDetailScreen() {
           )}
           {(jobNotes.length > 0 || job.notes) && (
             <TouchableOpacity
-              onPress={() => { setEditedNotes(''); setShowNotesModal(true); }}
+              onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
               activeOpacity={0.7}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
@@ -7527,7 +7549,7 @@ export default function JobDetailScreen() {
           )}
           {!job.notes && jobNotes.length === 0 && (
             <TouchableOpacity
-              onPress={() => { setEditedNotes(''); setShowNotesModal(true); }}
+              onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
               activeOpacity={0.7}
               style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: job.description ? spacing.md : 0, borderTopWidth: job.description ? 1 : 0, borderTopColor: colors.border }}
             >
@@ -7540,7 +7562,7 @@ export default function JobDetailScreen() {
       {!job.description && !job.notes && jobNotes.length === 0 && (
         <PressableRow
           style={styles.card}
-          onPress={() => { setEditedNotes(''); setShowNotesModal(true); }}
+          onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
         >
           <View style={[styles.cardIconContainer, { backgroundColor: `${colors.primary}15` }]}>
             <Feather name="edit-3" size={iconSizes.xl} color={colors.primary} />
@@ -9348,6 +9370,7 @@ export default function JobDetailScreen() {
       <TouchableOpacity 
         style={styles.notesCard}
         onPress={() => {
+          setEditingNote(null);
           setEditedNotes('');
           setShowNotesModal(true);
         }}
@@ -9365,9 +9388,31 @@ export default function JobDetailScreen() {
             {jobNotes.map((note) => (
               <View key={note.id} style={{ paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                 <Text style={styles.notesText}>{note.content}</Text>
-                <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4 }}>
-                  {note.createdByName ? `${note.createdByName} · ` : ''}{new Date(note.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} {new Date(note.createdAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 4 }}>
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground, flex: 1 }}>
+                    {note.createdByName ? `${note.createdByName} · ` : ''}{new Date(note.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} {new Date(note.createdAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                  </Text>
+                  <TouchableOpacity
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    onPress={(e: any) => {
+                      e?.stopPropagation?.();
+                      setEditingNote(note);
+                      setEditedNotes(note.content);
+                      setShowNotesModal(true);
+                    }}
+                  >
+                    <Feather name="edit-2" size={15} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    onPress={(e: any) => {
+                      e?.stopPropagation?.();
+                      handleDeleteNote(note);
+                    }}
+                  >
+                    <Feather name="trash-2" size={15} color={colors.destructive} />
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
             {job.notes ? (
@@ -10498,8 +10543,8 @@ export default function JobDetailScreen() {
       {/* Notes Modal */}
       <AppBottomSheet
         visible={showNotesModal}
-        onDismiss={() => setShowNotesModal(false)}
-        title="Add Note"
+        onDismiss={() => { setShowNotesModal(false); setEditingNote(null); }}
+        title={editingNote ? 'Edit Note' : 'Add Note'}
         showCloseButton
         footer={(
           <SheetButton
@@ -10507,7 +10552,7 @@ export default function JobDetailScreen() {
             loading={isSavingNotes}
             disabled={isSavingNotes || !editedNotes.trim()}
             onPress={handleSaveNotes}
-            label="Add Note"
+            label={editingNote ? 'Save Changes' : 'Add Note'}
           />
         )}
       >
