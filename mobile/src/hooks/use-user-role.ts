@@ -126,7 +126,7 @@ const isBusinessOwner = (settings: any, userId: string | undefined): boolean => 
 };
 
 export function useUserRole() {
-  const { user, businessSettings } = useAuthStore();
+  const { user, businessSettings, roleInfo: persistedRoleInfo } = useAuthStore();
   const userId: string | undefined = user?.id;
   const { isOnline } = useOfflineStore();
   // Authoritative owner signal from /api/auth/me. The server computes this
@@ -189,6 +189,41 @@ export function useUserRole() {
     
     return () => clearInterval(interval);
   }, [userId, isOnline]);
+
+  // Offline cold start: the in-memory roleCache is empty after an app relaunch
+  // with no connection, so the role would stay 'loading' forever and every
+  // role-gated screen (the whole More menu) renders a permanent skeleton.
+  // Seed the cache from the persisted roleInfo (restored from cached_auth by
+  // the auth store) with timestamp 0, so it is readable immediately but
+  // treated as stale and refetched the moment we're back online.
+  useEffect(() => {
+    if (!userId || isOnline) return;
+    if (roleCache.get(userId)) return;
+    const info: any = persistedRoleInfo;
+    if (!info) return;
+
+    const perms = Array.isArray(info.permissions) ? info.permissions : [];
+    let role = getRoleFromTeamInfo(info);
+    if (role === 'owner') {
+      const settings = businessSettings as any;
+      const teamSize = settings?.teamSize || settings?.team_size || 'solo';
+      if (teamSize === '1' || teamSize === 'solo') role = 'solo_owner';
+    }
+
+    roleCache.set(userId, {
+      role,
+      permissions: perms,
+      teamMemberInfo: {
+        roleId: info.roleId,
+        roleName: info.roleName,
+        permissions: perms,
+        teamMemberId: info.teamMemberId,
+        isOwner: info.isOwner === true,
+      } as any,
+      timestamp: 0,
+    });
+    setFetchVersion(v => v + 1);
+  }, [userId, isOnline, persistedRoleInfo, businessSettings]);
 
   // Fetch role info when userId changes or cache is stale
   // Only fetch when online to avoid repeated network errors
