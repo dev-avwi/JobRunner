@@ -32760,6 +32760,34 @@ Respond with JSON in this format:
           }));
           await autoUpdateWorkerState(userId, 'on_job', jobId);
           timeEntryAction = { type: 'clock_in', entryId: newEntry.id };
+
+          // Auto-start the job itself — mirrors the manual timer-start route:
+          // a running timer means work has begun, so a Scheduled job moves to
+          // In Progress (and broadcasts so open apps update live).
+          try {
+            const { broadcastJobStatusChange, broadcastTimerEvent } = await import('./websocket');
+            if (job.status === 'scheduled') {
+              await storage.updateJob(jobId, effectiveUserId, {
+                status: 'in_progress',
+                startedAt: new Date(),
+              });
+              broadcastJobStatusChange(effectiveUserId, {
+                jobId,
+                status: 'in_progress',
+                title: job.title,
+                updatedBy: userId,
+              });
+              console.info('[Geofence] Auto job-start: scheduled -> in_progress:', JSON.stringify(logContext));
+            }
+            broadcastTimerEvent(effectiveUserId, {
+              jobId,
+              userId,
+              action: 'started',
+              timeEntryId: newEntry.id,
+            });
+          } catch (statusErr) {
+            console.error('[Geofence] Auto job-start failed (timer still running):', statusErr);
+          }
         } else if (activeEntry.jobId === jobId) {
           // Already on this job, no action needed
           console.info('[Geofence] Already clocked in to same job:', JSON.stringify({
