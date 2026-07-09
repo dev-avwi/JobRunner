@@ -199,12 +199,15 @@ export function useStripeTerminal() {
       const locationId = locationIdRef.current || 'tml_simulated';
 
       if (sdkHook) {
-        // Real SDK: Discover readers using localMobile (Tap to Pay)
+        // Real SDK: Discover readers using tapToPay (Tap to Pay on iPhone).
+        // NOTE: this SDK version renamed 'localMobile' -> 'tapToPay'; an unknown
+        // method silently falls back to Bluetooth scanning, which abort()s the
+        // whole app because we don't ship Bluetooth permissions.
         // On simulators/emulators there is no NFC hardware — asking Stripe for a
         // real Tap to Pay reader makes the native SDK abort() the whole app.
         // Use Stripe's simulated reader there instead.
         const { error: discoverError } = await sdkHook.discoverReaders({
-          discoveryMethod: 'localMobile',
+          discoveryMethod: 'tapToPay',
           simulated: !Device.isDevice,
         });
 
@@ -224,8 +227,10 @@ export function useStripeTerminal() {
         const targetReader = discoveredReaders[0];
         setStatus('connecting');
 
-        // Connect to the reader
-        const { reader: connectedReader, error: connectError } = await sdkHook.connectLocalMobileReader({
+        // Connect to the reader (connectLocalMobileReader was removed in this
+        // SDK version; connectReader with discoveryMethod 'tapToPay' replaces it)
+        const { reader: connectedReader, error: connectError } = await sdkHook.connectReader({
+          discoveryMethod: 'tapToPay',
           reader: targetReader,
           locationId,
         });
