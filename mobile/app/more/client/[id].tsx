@@ -630,20 +630,24 @@ export default function ClientDetailScreen() {
         options={{ 
           headerShown: false,
           title: 'Client Details',
-          headerRight: () => (
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <PressableRow onPress={handleEdit} style={styles.headerButton}>
-                <Feather name="edit-2" size={20} color={colors.primary} />
-              </PressableRow>
-              <PressableRow onPress={handleDelete} style={styles.headerButton} data-testid="button-delete-client">
-                <Feather name="trash-2" size={20} color={colors.destructive} />
-              </PressableRow>
-            </View>
-          ),
         }} 
       />
       <ScrollView style={[styles.container, { paddingTop: insets.top }]} contentContainerStyle={{ paddingBottom: bottomNavHeight + 24 }}>
         <View style={styles.content}>
+          {/* In-content header row — native stack header is hidden on this
+              screen, so back/edit/delete live here. */}
+          <View style={styles.topBar}>
+            <PressableRow onPress={() => router.back()} style={styles.headerButton} data-testid="button-back">
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </PressableRow>
+            <View style={{ flex: 1 }} />
+            <PressableRow onPress={handleEdit} style={styles.headerButton} data-testid="button-edit-client">
+              <Feather name="edit-2" size={20} color={colors.primary} />
+            </PressableRow>
+            <PressableRow onPress={handleDelete} style={styles.headerButton} data-testid="button-delete-client">
+              <Feather name="trash-2" size={20} color={colors.destructive} />
+            </PressableRow>
+          </View>
           {/* Profile Header Card */}
           <View style={styles.profileCard}>
             <TeamAvatar
@@ -804,6 +808,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   headerButton: {
     padding: spacing.sm,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
   },
   profileCard: {
     alignItems: 'center',
