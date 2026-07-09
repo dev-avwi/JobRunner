@@ -858,7 +858,7 @@ function TapPreparingOverlay({ colors, isDark }: { colors: ThemeColors; isDark: 
     <Animated.View
       style={{
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: isDark ? 'rgba(2,6,14,0.72)' : 'rgba(15,23,42,0.45)',
+        backgroundColor: isDark ? 'rgba(2,6,14,0.72)' : 'rgba(245,247,250,0.92)',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 999,
@@ -876,9 +876,9 @@ function TapPreparingOverlay({ colors, isDark }: { colors: ThemeColors; isDark: 
           borderWidth: 1,
           borderColor: colors.cardBorder,
           transform: [{ scale: cardScale }],
-          shadowColor: '#000',
+          shadowColor: isDark ? '#000' : '#64748b',
           shadowOffset: { width: 0, height: 12 },
-          shadowOpacity: isDark ? 0.5 : 0.18,
+          shadowOpacity: isDark ? 0.5 : 0.22,
           shadowRadius: 28,
           elevation: 12,
         }}>
