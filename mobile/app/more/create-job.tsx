@@ -1314,8 +1314,13 @@ export default function CreateJobScreen() {
         onClose={() => setShowClientPicker(false)}
         colors={colors}
         onQuickAdd={() => {
+          // Close the picker modal FIRST and wait for it to fully unmount
+          // (close animation + safety unmount ~280ms) before presenting the
+          // quick-add modal. Opening a second native Modal while the first is
+          // still dismissing collides on iOS and leaves an invisible backdrop
+          // that freezes the whole screen.
           setShowClientPicker(false);
-          setShowQuickAddClient(true);
+          setTimeout(() => setShowQuickAddClient(true), 350);
         }}
       />
 
