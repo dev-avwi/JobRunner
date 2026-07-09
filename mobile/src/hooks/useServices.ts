@@ -58,6 +58,11 @@ export function useStripeTerminal() {
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const locationIdRef = useRef<string | null>(null);
+  // Readers reported by the SDK's discovery event. Kept in a ref because
+  // reading `sdkHook.discoveredReaders` inside connectReader sees a stale
+  // closure snapshot from render time (always []) — the hook state updates
+  // on re-render, but the captured object never does.
+  const discoveredReadersRef = useRef<any[]>([]);
 
   // Auth gate: the real StripeTerminalProvider only mounts the SDK provider
   // once the user is authenticated (see StripeTerminalProvider.tsx). Before
@@ -77,10 +82,13 @@ export function useStripeTerminal() {
     isTerminalProviderMounted,
   );
   const providerReady = isStripeTerminalSDKAvailable() && isAuthenticated && !!user && providerMounted;
+  const onUpdateDiscoveredReaders = useCallback((readers: any[]) => {
+    discoveredReadersRef.current = readers ?? [];
+  }, []);
   let sdkHookValue: any = null;
   if (useStripeTerminalSDK) {
     try {
-      sdkHookValue = useStripeTerminalSDK();
+      sdkHookValue = useStripeTerminalSDK({ onUpdateDiscoveredReaders });
     } catch {
       sdkHookValue = null;
     }
@@ -206,6 +214,7 @@ export function useStripeTerminal() {
         // On simulators/emulators there is no NFC hardware — asking Stripe for a
         // real Tap to Pay reader makes the native SDK abort() the whole app.
         // Use Stripe's simulated reader there instead.
+        discoveredReadersRef.current = [];
         const { error: discoverError } = await sdkHook.discoverReaders({
           discoveryMethod: 'tapToPay',
           simulated: !Device.isDevice,
@@ -215,11 +224,16 @@ export function useStripeTerminal() {
           throw new Error(discoverError.message);
         }
 
-        // Wait for readers to be discovered
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait for the discovery event to deliver the reader. The event
+        // usually arrives right around when discoverReaders resolves, but
+        // first-time Tap to Pay setup on a device can take noticeably longer.
+        const deadline = Date.now() + 30000;
+        while (discoveredReadersRef.current.length === 0 && Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
 
-        const discoveredReaders = sdkHook.discoveredReaders || [];
-        
+        const discoveredReaders = discoveredReadersRef.current;
+
         if (discoveredReaders.length === 0) {
           throw new Error('No Tap to Pay reader found');
         }

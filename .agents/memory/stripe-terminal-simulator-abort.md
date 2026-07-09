@@ -12,4 +12,7 @@ Two distinct hard-crashes (SIGABRT on `com.meta.react.turbomodulemanager.queue`,
 **Why:** the wrapper never rejects unknown methods; it defaults to Bluetooth, so a rename becomes a native crash, not an error.
 **How to apply:** use `discoveryMethod: 'tapToPay'` and `connectReader({discoveryMethod:'tapToPay', reader, locationId})` (`connectLocalMobileReader` was removed). After any @stripe/stripe-terminal-react-native version change, re-verify the method strings against `lib/typescript/src/types/index.d.ts` in node_modules — a mismatch aborts the whole app.
 
+**3. "No Tap to Pay reader found" despite clean discovery.** Reading `sdkHook.discoveredReaders` inside an async callback is a stale closure snapshot from render time (always []).
+**How to apply:** capture readers via `useStripeTerminal({ onUpdateDiscoveredReaders })` into a ref, clear the ref before discovery, then poll the ref (250ms up to 30s — first-time Tap to Pay setup/ToS can be slow) instead of a fixed 1s sleep.
+
 **Crash-log recipe:** get the `.ips` file — simulator: Mac `~/Library/Logs/DiagnosticReports/JobRunner-*.ips`; device: Settings → Privacy & Security → Analytics Data → AirDrop. Faulting-thread frames name the exact native call.
