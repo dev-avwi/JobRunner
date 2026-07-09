@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { PressableRow } from './ui/PressableRow';
 import { Feather } from '@expo/vector-icons';
@@ -420,7 +421,9 @@ export function getJobSmartActions(job: any, client: any, linkedQuote?: any, lin
           amount: `$${(amountDue / 100).toFixed(2)}`,
           recipient: clientName,
         },
-        aiSuggestion: 'Use Tap to Pay for quick contactless payment',
+        aiSuggestion: Platform.OS === 'ios'
+          ? 'Use Tap to Pay for quick contactless payment'
+          : 'Send a payment link or QR code to collect quickly',
         requirements: ['Invoice created', 'Payment amount due'],
       });
     }

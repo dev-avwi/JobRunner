@@ -909,12 +909,27 @@ function TapPreparingOverlay({ colors, isDark }: { colors: ThemeColors; isDark: 
           />
           <View
             style={{
+              position: 'absolute',
+              width: 96,
+              height: 96,
+              borderRadius: 48,
+              backgroundColor: colors.primary,
+              opacity: isDark ? 0.16 : 0.08,
+            }}
+          />
+          <View
+            style={{
               width: 72,
               height: 72,
               borderRadius: 36,
               backgroundColor: colors.primary,
               alignItems: 'center',
               justifyContent: 'center',
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.35,
+              shadowRadius: 14,
+              elevation: 8,
             }}>
             <Feather name="smartphone" size={30} color={colors.primaryForeground} />
           </View>
@@ -922,9 +937,24 @@ function TapPreparingOverlay({ colors, isDark }: { colors: ThemeColors; isDark: 
         <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, letterSpacing: -0.3, marginBottom: spacing.xs }}>
           Preparing Tap to Pay
         </Text>
-        <Text style={{ fontSize: 13, fontWeight: '500', color: colors.mutedForeground, textAlign: 'center', lineHeight: 19 }}>
+        <Text style={{ fontSize: 13, fontWeight: '500', color: colors.mutedForeground, textAlign: 'center', lineHeight: 19, marginBottom: spacing.md }}>
           Have the customer's card ready.{'\n'}The first tap can take a few seconds.
         </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.04)',
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 999,
+          }}>
+          <Feather name="lock" size={11} color={colors.mutedForeground} />
+          <Text style={{ fontSize: 11, fontWeight: '600', color: colors.mutedForeground, letterSpacing: 0.2 }}>
+            Secured by Stripe
+          </Text>
+        </View>
       </Animated.View>
     </Animated.View>
   );

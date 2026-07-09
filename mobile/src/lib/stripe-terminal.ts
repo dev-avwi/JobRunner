@@ -92,8 +92,8 @@ export const isTapToPayAvailable = (): boolean => {
     return version >= 17.6;
   }
   if (Platform.OS === 'android') {
-    // Android 8.0 (API 26) minimum for Tap to Pay
-    return Platform.Version >= 26;
+    // Tap to Pay is not offered on Android — hide the option entirely
+    return false;
   }
   return false;
 };

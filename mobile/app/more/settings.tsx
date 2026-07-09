@@ -3001,22 +3001,26 @@ export default function SettingsScreen() {
                 <Feather name="play-circle" size={18} color={colors.primary} />
               </PressableRow>
 
-              <Text style={styles.sectionLabel}>TAP TO PAY ON IPHONE</Text>
+              {Platform.OS === 'ios' && (
+                <>
+                  <Text style={styles.sectionLabel}>TAP TO PAY ON IPHONE</Text>
 
-              <View 
-                style={[styles.settingsCard, { opacity: 0.6 }]}
-              >
-                <View style={styles.settingsCardHeader}>
-                  <Feather name="radio" size={20} color={colors.mutedForeground} />
-                  <View style={styles.settingsCardInfo}>
-                    <Text style={styles.settingsCardTitle}>Tap to Pay</Text>
-                    <Text style={styles.settingsCardSubtitle}>Accept contactless card payments on your iPhone. Coming soon in a future update.</Text>
+                  <View 
+                    style={[styles.settingsCard, { opacity: 0.6 }]}
+                  >
+                    <View style={styles.settingsCardHeader}>
+                      <Feather name="radio" size={20} color={colors.mutedForeground} />
+                      <View style={styles.settingsCardInfo}>
+                        <Text style={styles.settingsCardTitle}>Tap to Pay</Text>
+                        <Text style={styles.settingsCardSubtitle}>Accept contactless card payments on your iPhone. Coming soon in a future update.</Text>
+                      </View>
+                    </View>
+                    <View style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                      <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>SOON</Text>
+                    </View>
                   </View>
-                </View>
-                <View style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                  <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>SOON</Text>
-                </View>
-              </View>
+                </>
+              )}
 
               <Text style={styles.sectionLabel}>SUPPORT</Text>
 
