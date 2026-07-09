@@ -1206,7 +1206,7 @@ export default function CollectScreen() {
     );
     return activeJobs.map(job => {
       const client = clients.find(c => c.id === job.clientId);
-      const jobInvoices = invoices.filter(i => i.jobId === job.id && (i.status === 'sent' || i.status === 'overdue'));
+      const jobInvoices = invoices.filter(i => i.jobId === job.id && (i.status === 'draft' || i.status === 'sent' || i.status === 'overdue'));
       const totalDue = jobInvoices.reduce((sum, inv) => {
         const total = typeof inv.total === 'string' ? parseFloat(inv.total) : (inv.total || 0);
         const paid = typeof inv.amountPaid === 'string' ? parseFloat(inv.amountPaid) : (inv.amountPaid || 0);
@@ -1226,6 +1226,9 @@ export default function CollectScreen() {
   }, [jobs, invoices, clients]);
 
   const pendingInvoices = invoices.filter(i => i.status === 'sent' || i.status === 'overdue');
+  // Collectible = anything unpaid, including drafts (tradies often collect on
+  // the spot before sending the invoice). Stats above stay sent/overdue only.
+  const collectibleInvoices = invoices.filter(i => i.status === 'draft' || i.status === 'sent' || i.status === 'overdue');
   const overdueInvoices = invoices.filter(i => i.status === 'overdue');
   const totalPending = pendingInvoices.reduce((sum, i) => {
     const total = typeof i.total === 'string' ? parseFloat(i.total) : (i.total || 0);
@@ -2048,7 +2051,7 @@ export default function CollectScreen() {
 
   // Get unpaid invoices, optionally filtered by client
   const getFilteredInvoices = () => {
-    let filtered = invoices.filter(i => i.status === 'sent' || i.status === 'overdue');
+    let filtered = invoices.filter(i => i.status === 'draft' || i.status === 'sent' || i.status === 'overdue');
     if (recordClientId) {
       filtered = filtered.filter(i => i.clientId === recordClientId);
     }
@@ -2064,7 +2067,7 @@ export default function CollectScreen() {
     }
     
     // If no pending invoices AND no active jobs, show custom amount directly
-    if (pendingInvoices.length === 0 && collectibleJobs.length === 0) {
+    if (collectibleInvoices.length === 0 && collectibleJobs.length === 0) {
       setPendingPaymentMethod(method);
       setCustomAmountValue('');
       setCustomAmountDescription('');
@@ -3048,7 +3051,7 @@ export default function CollectScreen() {
              (j.clientName || '').toLowerCase().includes(searchLower) ||
              (j.address || '').toLowerCase().includes(searchLower);
     });
-    const filteredInvoices = pendingInvoices.filter(inv => {
+    const filteredInvoices = collectibleInvoices.filter(inv => {
       if (!pickerSearch) return true;
       const clientName = getClientName(inv.clientId);
       return (inv.invoiceNumber || '').toLowerCase().includes(searchLower) ||
@@ -3223,7 +3226,7 @@ export default function CollectScreen() {
                   <View style={styles.invoicePickerEmpty}>
                     <Feather name="file-text" size={40} color={colors.mutedForeground} />
                     <Text style={styles.invoicePickerEmptyText}>
-                      {pickerSearch ? 'No matching invoices found' : 'No pending invoices'}
+                      {pickerSearch ? 'No matching invoices found' : 'No unpaid invoices'}
                     </Text>
                   </View>
                 ) : (
@@ -3258,6 +3261,9 @@ export default function CollectScreen() {
                             )}
                             {isPartiallyPaid && !isOverdue && (
                               <Badge variant="warning">Partial</Badge>
+                            )}
+                            {invoice.status === 'draft' && !isPartiallyPaid && (
+                              <Badge variant="secondary">Draft</Badge>
                             )}
                           </View>
                           <Text style={styles.invoicePickerItemClient} numberOfLines={1}>{getClientName(invoice.clientId)}</Text>
