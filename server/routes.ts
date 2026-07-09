@@ -24015,7 +24015,141 @@ Be specific about materials, colors, and features that would be included.`
         }
       }
       
-      // Update the terminal payment record
+      // Process invoice side effects BEFORE marking the terminal payment
+      // succeeded — if anything critical fails, the record stays pending and
+      // a retry of this endpoint re-runs the work (the alreadyPaid
+      // short-circuit above only fires once we've fully succeeded).
+      // If linked to an invoice, record the payment against it (supports
+      // partial payments), lock it when fully paid, mark the job invoiced,
+      // and cancel any still-open payment links for the same invoice.
+      let invoiceFullyPaid = false;
+      let autoReceipt = false;
+      if (existingPayment.invoiceId) {
+        const invoice = await storage.getInvoice(existingPayment.invoiceId, req.userId);
+        if (invoice) {
+          const paymentAmount = parseFloat(String(existingPayment.amount || '0'));
+
+          // Idempotency: skip the ledger entry + amountPaid increment if this
+          // payment intent was already recorded (partial earlier attempt).
+          const existingRecords = await storage.getPaymentRecords(invoice.id);
+          const alreadyRecorded = existingRecords.some((r: any) => r.reference === paymentIntentId);
+
+          const invoiceTotal = parseFloat(String(invoice.total || '0'));
+          const retentionAmount = parseFloat(String(invoice.retentionAmount || '0'));
+          const previouslyPaid = parseFloat(String(invoice.amountPaid || '0'));
+          const newTotalPaid = alreadyRecorded ? previouslyPaid : previouslyPaid + paymentAmount;
+          const effectiveTotal = invoiceTotal - retentionAmount;
+          invoiceFullyPaid = Math.round(newTotalPaid * 100) >= Math.round(effectiveTotal * 100);
+
+          if (!alreadyRecorded) {
+            // Payment ledger entry (same shape as manual record-payment).
+            // Deliberately NOT swallowed: if this or the invoice update fails,
+            // the request 500s and the client/retry can re-run it.
+            await storage.createPaymentRecord({
+              invoiceId: invoice.id,
+              userId: req.userId,
+              amount: paymentAmount.toFixed(2),
+              method: 'card',
+              reference: paymentIntentId,
+              note: 'Tap to Pay contactless payment',
+              recordedBy: req.userId,
+              paidAt: new Date(),
+            });
+
+            const updateData: any = {
+              amountPaid: newTotalPaid.toFixed(2),
+              paymentMethod: 'card',
+              paymentReference: paymentIntentId,
+            };
+            if (invoiceFullyPaid) {
+              updateData.status = 'paid';
+              updateData.paidAt = new Date();
+              updateData.lockedAt = new Date();
+              updateData.lockedReason = 'payment_received';
+            } else if (newTotalPaid > 0) {
+              updateData.status = 'partially_paid';
+            }
+            await storage.updateInvoice(invoice.id, req.userId, updateData);
+          }
+
+          if (invoiceFullyPaid) {
+            // Mark the linked job as invoiced (paid on site)
+            if (invoice.jobId) {
+              try {
+                const job = await storage.getJob(invoice.jobId, req.userId);
+                if (job && job.status !== 'invoiced') {
+                  await storage.updateJob(invoice.jobId, req.userId, { status: 'invoiced' });
+                }
+              } catch (jobErr) {
+                console.log('[Terminal] Job status update skipped:', jobErr);
+              }
+            }
+
+            // Cancel any still-open payment links / requests for this invoice —
+            // the customer already paid in person.
+            try {
+              const openRequests = (await storage.getPaymentRequests(req.userId))
+                .filter((pr: any) => pr.invoiceId === invoice.id && pr.status === 'pending');
+              for (const pr of openRequests) {
+                await storage.updatePaymentRequest(pr.id, req.userId, { status: 'cancelled' } as any);
+                if (pr.stripePaymentIntentId && !String(pr.stripePaymentIntentId).startsWith('demo_pi_')) {
+                  try {
+                    const stripeForCancel = await getUncachableStripeClient();
+                    if (stripeForCancel) {
+                      await stripeForCancel.paymentIntents.cancel(pr.stripePaymentIntentId);
+                    }
+                  } catch (piCancelErr: any) {
+                    // Already-succeeded/cancelled intents can't be cancelled — fine.
+                    console.log('[Terminal] Payment link intent cancel skipped:', piCancelErr?.message);
+                  }
+                }
+              }
+              if (openRequests.length > 0) {
+                console.log(`[Terminal] Cancelled ${openRequests.length} open payment link(s) for invoice ${invoice.number || invoice.id}`);
+              }
+            } catch (cancelErr) {
+              console.error('[Terminal] Failed to cancel open payment links:', cancelErr);
+            }
+
+            processPaymentReceivedAutomation(req.userId, invoice.id)
+              .catch(err => console.error('[Automations] Error processing payment received:', err));
+          }
+
+          // Push notification + real-time broadcast to the business
+          try {
+            const amountInCents = Math.round(paymentAmount * 100);
+            await notifyPaymentReceived(req.userId, amountInCents, invoice.number || `INV-${invoice.id}`, invoice.id);
+            const { broadcastPaymentReceived } = await import('./websocket');
+            let clientName: string | undefined;
+            if (invoice.clientId) {
+              const payClient = await storage.getClientById(invoice.clientId);
+              clientName = payClient?.name || undefined;
+            }
+            broadcastPaymentReceived(req.userId, {
+              amount: amountInCents,
+              invoiceNumber: invoice.number,
+              clientName,
+              paymentMethod: 'card_present',
+            });
+          } catch (notifyErr) {
+            console.error('[Terminal] Payment notification failed:', notifyErr);
+          }
+
+          autoReceipt = true;
+          autoSendReceiptAfterPayment(
+            req.userId,
+            invoice.id,
+            paymentAmount,
+            'card_present',
+            paymentIntentId,
+            'Tap to Pay payment',
+            req,
+          ).catch(err => console.error('[Terminal] Auto-receipt failed:', err));
+        }
+      }
+
+      // All critical side effects done — now mark the terminal payment
+      // succeeded so future calls short-circuit as alreadyPaid.
       const updatedPayment = await storage.updateTerminalPaymentByIntent(paymentIntentId, {
         status: 'succeeded',
         cardBrand,
@@ -24023,36 +24157,12 @@ Be specific about materials, colors, and features that would be included.`
         completedAt: new Date(),
         paymentMethod: 'card_present',
       });
-      
-      if (!updatedPayment) {
-        return res.status(404).json({ error: "Terminal payment not found" });
-      }
-      
-      // If linked to an invoice, update invoice status and lock it
-      if (updatedPayment.invoiceId) {
-        await storage.updateInvoice(updatedPayment.invoiceId, req.userId, {
-          status: 'paid',
-          paidAt: new Date(),
-          lockedAt: new Date(),
-          lockedReason: 'payment_received',
-          amountPaid: updatedPayment.amount,
-        });
 
-        const paymentAmount = parseFloat(String(updatedPayment.amount || '0'));
-        autoSendReceiptAfterPayment(
-          req.userId,
-          updatedPayment.invoiceId,
-          paymentAmount,
-          'card_present',
-          paymentIntentId,
-          'Tap to Pay payment',
-          req,
-        ).catch(err => console.error('[Terminal] Auto-receipt failed:', err));
-      }
-      
       res.json({ 
         success: true, 
-        payment: updatedPayment 
+        payment: updatedPayment || existingPayment,
+        invoiceFullyPaid,
+        autoReceipt,
       });
     } catch (error: any) {
       console.error("Error confirming terminal payment:", error);
@@ -32065,8 +32175,31 @@ Respond with JSON in this format:
       
       const { amount, description, currency = 'aud', invoiceId, jobId } = req.body;
       
-      if (!amount || amount < 500) {
-        return res.status(400).json({ error: 'Minimum amount is $5.00 (500 cents)' });
+      if (!amount || amount < 50) {
+        return res.status(400).json({ error: 'Minimum amount is $0.50 (50 cents)' });
+      }
+
+      // Demo business: simulated test transaction — no real Stripe charge.
+      // The demo_pi_ prefix is only honoured by /api/terminal/payment-success
+      // when the receiving business is the demo account (server-verified).
+      const ttpOwner = await storage.getUser(userId);
+      const isDemoTtpBusiness = ttpOwner?.email === DEMO_USER.email || ttpOwner?.email === VISITOR_USER.email || ttpOwner?.email === TRY_DEMO_USER.email;
+      if (isDemoTtpBusiness) {
+        const demoPiId = `demo_pi_${randomUUID().replace(/-/g, '')}`;
+        await storage.createTerminalPayment({
+          userId,
+          stripePaymentIntentId: demoPiId,
+          amount: (amount / 100).toFixed(2),
+          description: description || 'Tap to Pay payment (demo)',
+          invoiceId: invoiceId || null,
+          jobId: jobId || null,
+          status: 'pending',
+        });
+        return res.json({
+          clientSecret: `${demoPiId}_secret_demo`,
+          paymentIntentId: demoPiId,
+          isDemo: true,
+        });
       }
 
       const settings = await storage.getBusinessSettings(userId);
@@ -32096,6 +32229,22 @@ Respond with JSON in this format:
           destination: settings.stripeConnectAccountId,
         },
       });
+      
+      // Store terminal payment record so /api/terminal/payment-success can
+      // verify and complete the payment (invoice update, receipts, links).
+      try {
+        await storage.createTerminalPayment({
+          userId,
+          stripePaymentIntentId: paymentIntent.id,
+          amount: (amount / 100).toFixed(2),
+          description: description || 'Tap to Pay payment',
+          invoiceId: invoiceId || null,
+          jobId: jobId || null,
+          status: 'pending',
+        });
+      } catch (recordErr) {
+        console.error('[Terminal] Failed to store terminal payment record:', recordErr);
+      }
       
       res.json({ 
         clientSecret: paymentIntent.client_secret,

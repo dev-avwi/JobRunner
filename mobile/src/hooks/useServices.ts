@@ -30,14 +30,13 @@ import { isStripeTerminalSDKAvailable } from '../providers/StripeTerminalProvide
 import api from '../lib/api';
 
 let useStripeTerminalSDK: any = null;
-const TAP_TO_PAY_ENABLED = __DEV__;
+// Apple Tap to Pay entitlement granted (Case-ID 20927765) — enabled in all builds.
+const TAP_TO_PAY_ENABLED = true;
 try {
   if (TAP_TO_PAY_ENABLED) {
     const sdk = require('@stripe/stripe-terminal-react-native');
     useStripeTerminalSDK = sdk.useStripeTerminal;
     if (__DEV__) console.log('[useStripeTerminal] SDK hook loaded successfully');
-  } else {
-    if (__DEV__) console.log('[useStripeTerminal] SDK disabled - pending approval');
   }
 } catch (e) {
   if (__DEV__) console.log('[useStripeTerminal] SDK not available - using simulation mode');
@@ -117,10 +116,16 @@ export function useStripeTerminal() {
         }
       }
 
-      // Get location ID from backend (required for Stripe Terminal)
-      const locationResponse = await api.get<{ locationId: string }>('/api/stripe/terminal-location');
-      if (locationResponse.data?.locationId) {
-        locationIdRef.current = locationResponse.data.locationId;
+      // Get location ID from backend (required for the real Stripe Terminal
+      // SDK). Non-fatal: businesses without Stripe Connect (e.g. the demo
+      // account) get a 400 here and fall back to the simulated location.
+      try {
+        const locationResponse = await api.get<{ locationId: string }>('/api/stripe/terminal-location');
+        if (!locationResponse.error && locationResponse.data?.locationId) {
+          locationIdRef.current = locationResponse.data.locationId;
+        }
+      } catch {
+        // Ignore — locationIdRef stays null and the simulator location is used.
       }
 
       if (sdkHook) {
@@ -232,7 +237,8 @@ export function useStripeTerminal() {
   // Collect payment using Tap to Pay
   const collectPayment = useCallback(async (
     amountInCents: number,
-    description?: string
+    description?: string,
+    options?: { invoiceId?: string; jobId?: string }
   ): Promise<PaymentIntent | null> => {
     try {
       setError(null);
@@ -244,6 +250,8 @@ export function useStripeTerminal() {
         amount: amountInCents,
         description: description || 'Tap to Pay payment',
         currency: 'aud',
+        invoiceId: options?.invoiceId,
+        jobId: options?.jobId,
       });
 
       if (intentResponse.error || !intentResponse.data?.clientSecret) {
@@ -293,9 +301,15 @@ export function useStripeTerminal() {
         setStatus('connected');
         return result;
       } else {
-        // Simulator fallback
+        // Simulator fallback — return the SERVER's payment intent id so the
+        // payment-success confirmation can find the terminal payment record.
         const result = await terminalSimulator.collectPaymentMethod(clientSecret);
-        return result.paymentIntent;
+        if (!result.paymentIntent) return null;
+        return {
+          ...result.paymentIntent,
+          id: intentResponse.data.paymentIntentId,
+          amount: amountInCents,
+        };
       }
     } catch (err: any) {
       if (__DEV__) console.error('[useStripeTerminal] Collect payment error:', err);

@@ -12339,13 +12339,13 @@ export default function JobDetailScreen() {
               ))}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md, gap: spacing.sm }}>
                 <TouchableOpacity
-                  onPress={() => setProofPackSections({ timeline: true, attendance: true, gpsProof: true, materials: true, photos: true, invoice: true, compliance: true, subcontractors: true, swms: true })}
+                  onPress={() => setProofPackSections({ timeline: true, attendance: true, gpsProof: true, materials: true, photos: true, invoice: true, compliance: true, subcontractors: true, swms: true, forms: true })}
                   style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm }}
                 >
                   <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '600' }}>Select All</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => setProofPackSections({ timeline: false, attendance: false, gpsProof: false, materials: false, photos: false, invoice: false, compliance: false, subcontractors: false, swms: false })}
+                  onPress={() => setProofPackSections({ timeline: false, attendance: false, gpsProof: false, materials: false, photos: false, invoice: false, compliance: false, subcontractors: false, swms: false, forms: false })}
                   style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm }}
                 >
                   <Text style={{ fontSize: 13, color: colors.mutedForeground, fontWeight: '600' }}>Deselect All</Text>

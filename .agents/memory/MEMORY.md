@@ -144,3 +144,4 @@
 - [Offline cache fallback gating](offline-cache-fallback-gating.md) — detail screens falling back to SQLite cache must gate on response.isOffline ONLY (api.ts sets it), never on any error, or cached data masks online 401/403/404 denials.
 - [Play foreground-service flags](play-foreground-service-flags.md) — flags come from unused deps' merged manifests (expo-audio); fix = remove dep via lockfile surgery, never npm install in mobile.
 - [Offline cold-start role seeding](offline-role-cache-seeding.md) — roleCache is in-memory only; offline relaunch left role 'loading' forever → More menu permanent skeleton. Seed from persisted cached_auth roleInfo with timestamp 0 (stale-while-revalidate).
+- [Terminal payment-success ordering](terminal-payment-success-ordering.md) — run ledger+invoice side effects BEFORE marking terminal payment succeeded (retry-safe); ledger reference=PI id is the idempotency key; cancel payment links only on full payment.

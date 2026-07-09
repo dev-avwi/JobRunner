@@ -801,6 +801,7 @@ function StatCard({
 interface SelectedInvoice {
   id: string;
   invoiceNumber: string;
+  jobId?: string;
   clientId: string;
   clientName: string;
   clientEmail?: string;
@@ -978,6 +979,7 @@ export default function CollectScreen() {
         setSelectedInvoice({
           id: invoice.id,
           invoiceNumber: invoice.invoiceNumber,
+          jobId: invoice.jobId || undefined,
           clientId: invoice.clientId,
           clientName: client?.name || 'Unknown Client',
           clientEmail: client?.email,
@@ -1017,6 +1019,7 @@ export default function CollectScreen() {
     setSelectedInvoice({
       id: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
+      jobId: invoice.jobId || undefined,
       clientId: invoice.clientId,
       clientName: client?.name || 'Unknown Client',
       clientEmail: client?.email,
@@ -1129,6 +1132,79 @@ export default function CollectScreen() {
     return isNaN(parsed) ? 0 : Math.round(parsed * 100);
   };
 
+  // After a successful tap, confirm with the server. The server verifies the
+  // charge with Stripe, records the payment against the invoice (partial or
+  // full), locks it when fully paid, marks the job invoiced, cancels any open
+  // payment links for the invoice, and auto-sends the receipt.
+  const confirmTapToPaySuccess = async (paymentIntentId: string, amountCents: number) => {
+    setLastPaymentAmount(amountCents);
+    let serverConfirmed = false;
+    let serverAutoReceipt = false;
+    try {
+      const confirmRes = await api.post<{ success: boolean; autoReceipt?: boolean }>('/api/terminal/payment-success', {
+        paymentIntentId,
+      });
+      if (confirmRes.error) {
+        showToast({ type: 'info', message: 'Recording Error', description: typeof confirmRes.error === 'string' ? confirmRes.error : 'Payment succeeded but could not be recorded. Please update the invoice manually.' });
+      } else {
+        serverConfirmed = true;
+        serverAutoReceipt = !!confirmRes.data?.autoReceipt;
+      }
+    } catch (err: any) {
+      showToast({ type: 'info', message: 'Recording Error', description: err?.message || 'Payment was successful but we could not update the invoice record. Please update it manually.' });
+    }
+    if (selectedInvoice) {
+      fetchInvoices();
+    }
+
+    // Receipts are auto-sent by the server for invoice-linked payments.
+    let autoReceiptSent = serverConfirmed && serverAutoReceipt;
+
+    // Fallback: server confirmation failed but we still have client contact
+    // details — try sending the receipt directly so the customer isn't left
+    // without one.
+    if (!autoReceiptSent && selectedInvoice) {
+      const clientEmail = selectedInvoice?.clientEmail;
+      const clientPhone = selectedInvoice?.clientPhone;
+
+      if (clientEmail) {
+        try {
+          await api.post('/api/payments/send-receipt', {
+            email: clientEmail,
+            amount: amountCents,
+            description: description || 'Payment received',
+            invoiceId: selectedInvoice?.id,
+            invoiceNumber: selectedInvoice?.invoiceNumber,
+            clientName: selectedInvoice?.clientName,
+            method: 'email',
+          });
+          autoReceiptSent = true;
+        } catch (e) {
+          console.log('Auto email receipt failed, will show manual option');
+        }
+      }
+
+      if (clientPhone && !smsStatus?.setupRequired && smsStatus?.connected) {
+        try {
+          await api.post('/api/payments/send-receipt', {
+            phone: clientPhone,
+            amount: amountCents,
+            description: description || 'Payment received',
+            invoiceId: selectedInvoice?.id,
+            invoiceNumber: selectedInvoice?.invoiceNumber,
+            clientName: selectedInvoice?.clientName,
+            method: 'sms',
+          });
+          autoReceiptSent = true;
+        } catch (e) {
+          console.log('Auto SMS receipt failed, will show manual option');
+        }
+      }
+    }
+
+    setAutoReceiptWasSent(autoReceiptSent);
+  };
+
   const handleTapToPay = async () => {
     const amountCents = getAmountInCents();
     if (amountCents < 50) {
@@ -1171,69 +1247,13 @@ export default function CollectScreen() {
       
       // When using real SDK, collectPaymentMethod will present Apple's native 
       // "Hold Here to Pay" interface automatically - no custom UI needed
-      const result = await terminal.collectPayment(amountCents, description || undefined);
+      const result = await terminal.collectPayment(amountCents, description || undefined, {
+        invoiceId: selectedInvoice?.id,
+        jobId: selectedInvoice?.jobId || undefined,
+      });
       
       if (result) {
-        setLastPaymentAmount(amountCents);
-        
-        // If paying an invoice, update the invoice payment status
-        if (selectedInvoice) {
-          try {
-            const recordRes = await api.post(`/api/invoices/${selectedInvoice.id}/record-payment`, {
-              amount: (amountCents / 100).toFixed(2),
-              paymentMethod: 'card',
-              notes: 'Tap to Pay contactless payment',
-            });
-            if (recordRes.error) {
-              showToast({ type: 'info', message: 'Recording Error', description: recordRes.error });
-            }
-            fetchInvoices();
-          } catch (err: any) {
-            const msg = err?.message || 'Payment was successful but we could not update the invoice record. Please update it manually.';
-            showToast({ type: 'info', message: 'Recording Error', description: msg });
-          }
-        }
-        
-        // Auto-send receipt if client has email or phone
-        const clientEmail = selectedInvoice?.clientEmail;
-        const clientPhone = selectedInvoice?.clientPhone;
-        let autoReceiptSent = false;
-        
-        if (clientEmail) {
-          try {
-            await api.post('/api/payments/send-receipt', {
-              email: clientEmail,
-              amount: amountCents,
-              description: description || 'Payment received',
-              invoiceId: selectedInvoice?.id,
-              invoiceNumber: selectedInvoice?.invoiceNumber,
-              clientName: selectedInvoice?.clientName,
-              method: 'email',
-            });
-            autoReceiptSent = true;
-          } catch (e) {
-            console.log('Auto email receipt failed, will show manual option');
-          }
-        }
-        
-        if (clientPhone && !smsStatus?.setupRequired && smsStatus?.connected) {
-          try {
-            await api.post('/api/payments/send-receipt', {
-              phone: clientPhone,
-              amount: amountCents,
-              description: description || 'Payment received',
-              invoiceId: selectedInvoice?.id,
-              invoiceNumber: selectedInvoice?.invoiceNumber,
-              clientName: selectedInvoice?.clientName,
-              method: 'sms',
-            });
-            autoReceiptSent = true;
-          } catch (e) {
-            console.log('Auto SMS receipt failed, will show manual option');
-          }
-        }
-        
-        setAutoReceiptWasSent(autoReceiptSent);
+        await confirmTapToPaySuccess(result.id, amountCents);
         
         if (!useNativeSDK) {
           setPaymentStep('success');
@@ -1299,67 +1319,13 @@ export default function CollectScreen() {
         setPaymentStep('waiting');
       }
       
-      const result = await terminal.collectPayment(amountCents, description || undefined);
+      const result = await terminal.collectPayment(amountCents, description || undefined, {
+        invoiceId: selectedInvoice?.id,
+        jobId: selectedInvoice?.jobId || undefined,
+      });
       
       if (result) {
-        setLastPaymentAmount(amountCents);
-        
-        if (selectedInvoice) {
-          try {
-            const recordRes = await api.post(`/api/invoices/${selectedInvoice.id}/record-payment`, {
-              amount: (amountCents / 100).toFixed(2),
-              paymentMethod: 'card',
-              notes: 'Tap to Pay contactless payment',
-            });
-            if (recordRes.error) {
-              showToast({ type: 'info', message: 'Recording Error', description: recordRes.error });
-            }
-            fetchInvoices();
-          } catch (err: any) {
-            const msg = err?.message || 'Payment was successful but we could not update the invoice record. Please update it manually.';
-            showToast({ type: 'info', message: 'Recording Error', description: msg });
-          }
-        }
-        
-        const clientEmail = selectedInvoice?.clientEmail;
-        const clientPhone = selectedInvoice?.clientPhone;
-        let autoReceiptSent = false;
-        
-        if (clientEmail) {
-          try {
-            await api.post('/api/payments/send-receipt', {
-              email: clientEmail,
-              amount: amountCents,
-              description: description || 'Payment received',
-              invoiceId: selectedInvoice?.id,
-              invoiceNumber: selectedInvoice?.invoiceNumber,
-              clientName: selectedInvoice?.clientName,
-              method: 'email',
-            });
-            autoReceiptSent = true;
-          } catch (e) {
-            console.log('Auto email receipt failed, will show manual option');
-          }
-        }
-        
-        if (clientPhone && !smsStatus?.setupRequired && smsStatus?.connected) {
-          try {
-            await api.post('/api/payments/send-receipt', {
-              phone: clientPhone,
-              amount: amountCents,
-              description: description || 'Payment received',
-              invoiceId: selectedInvoice?.id,
-              invoiceNumber: selectedInvoice?.invoiceNumber,
-              clientName: selectedInvoice?.clientName,
-              method: 'sms',
-            });
-            autoReceiptSent = true;
-          } catch (e) {
-            console.log('Auto SMS receipt failed, will show manual option');
-          }
-        }
-        
-        setAutoReceiptWasSent(autoReceiptSent);
+        await confirmTapToPaySuccess(result.id, amountCents);
 
         if (!useNativeSDK) {
           setPaymentStep('success');
@@ -1947,6 +1913,7 @@ export default function CollectScreen() {
     setSelectedInvoice({
       id: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
+      jobId: invoice.jobId || undefined,
       clientId: invoice.clientId,
       clientName: client?.name || 'Unknown Client',
       clientEmail: client?.email,

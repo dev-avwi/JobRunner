@@ -20,7 +20,8 @@ import api from '../lib/api';
 let StripeTerminalProviderSDK: any = null;
 let useStripeTerminalSDK: any = null;
 
-const TAP_TO_PAY_ENABLED = __DEV__;
+// Apple Tap to Pay entitlement granted (Case-ID 20927765) — enabled in all builds.
+const TAP_TO_PAY_ENABLED = true;
 
 // Try to import the real SDK - will fail in Expo Go
 try {
@@ -28,8 +29,6 @@ try {
     const sdk = require('@stripe/stripe-terminal-react-native');
     StripeTerminalProviderSDK = sdk.StripeTerminalProvider;
     useStripeTerminalSDK = sdk.useStripeTerminal;
-  } else {
-    if (__DEV__) console.log('[StripeTerminal] SDK disabled in production - pending Apple Tap to Pay approval');
   }
 } catch (e) {
   if (__DEV__) console.log('[StripeTerminal] SDK not available - using fallback mode');

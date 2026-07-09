@@ -61,15 +61,14 @@ export interface CollectPaymentResult {
 let StripeTerminalSDK: any = null;
 let sdkAvailable = false;
 
-const TAP_TO_PAY_ENABLED = __DEV__;
+// Apple Tap to Pay entitlement granted (Case-ID 20927765) — enabled in all builds.
+const TAP_TO_PAY_ENABLED = true;
 
 try {
   if (TAP_TO_PAY_ENABLED) {
     StripeTerminalSDK = require('@stripe/stripe-terminal-react-native');
     sdkAvailable = true;
     if (__DEV__) console.log('[StripeTerminal] SDK loaded successfully');
-  } else {
-    if (__DEV__) console.log('[StripeTerminal] SDK disabled in production - pending Apple Tap to Pay approval (Case-ID 18817353)');
   }
 } catch (e) {
   if (__DEV__) console.log('[StripeTerminal] SDK not available - using simulation mode (Expo Go or missing native module)');
