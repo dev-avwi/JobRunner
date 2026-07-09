@@ -174,7 +174,9 @@ export function useStripeTerminal() {
         return success;
       }
     } catch (err: any) {
-      if (__DEV__) console.error('[useStripeTerminal] Initialize error:', err);
+      // warn (not error) — transient failures (server busy, token fetch)
+      // shouldn't throw full-screen red LogBox errors in dev builds.
+      if (__DEV__) console.warn('[useStripeTerminal] Initialize error:', err);
       // Handle osVersionNotSupported error (Apple Requirement 1.3)
       if (err.code === 'osVersionNotSupported' || 
           err.message?.includes('osVersionNotSupported')) {

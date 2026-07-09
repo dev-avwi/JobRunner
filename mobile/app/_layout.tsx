@@ -5,7 +5,16 @@ initSentry();
 installGlobalErrorHandler();
 
 import { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, InteractionManager, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform } from 'react-native';
+import { View, Text, StyleSheet, InteractionManager, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform, LogBox } from 'react-native';
+
+// The Stripe Terminal SDK logs its own console.error internally when the
+// connection-token fetch fails (e.g. transient server backpressure). Those
+// are handled/retried by our tokenProvider — don't show full-screen red
+// LogBox overlays for them in dev builds. Kept narrow (SDK-specific message
+// only) so genuine app errors still surface.
+LogBox.ignoreLogs([
+  /Couldn't fetch connection token/,
+]);
 import { Alert } from '@/lib/alert';
 
 import { Stack } from 'expo-router';

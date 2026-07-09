@@ -93,8 +93,21 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
   // Fetch connection token from backend
   const fetchTokenProvider = useCallback(async (): Promise<string> => {
     try {
-      const response = await api.post<{ secret: string }>('/api/stripe/terminal-connection-token');
-      
+      let response = await api.post<{ secret: string }>('/api/stripe/terminal-connection-token');
+
+      // The server applies backpressure (429 + Retry-After) under load.
+      // POSTs aren't auto-retried by the api client, but the token fetch is
+      // idempotent and cheap — wait out the Retry-After and try again (2x)
+      // so a transient 429 doesn't kill Terminal initialization.
+      let retries = 0;
+      while ((response as any)?.backpressure?.code === 'BACKPRESSURE' && retries < 2) {
+        const waitSec = Math.min(15, Math.max(1, (response as any).backpressure.retryAfterSec || 5));
+        if (__DEV__) console.log(`[StripeTerminal] Token fetch backpressure, retrying in ${waitSec}s`);
+        await new Promise((r) => setTimeout(r, waitSec * 1000 + Math.floor(Math.random() * 500)));
+        response = await api.post<{ secret: string }>('/api/stripe/terminal-connection-token');
+        retries++;
+      }
+
       if (response.error || !response.data?.secret) {
         throw new Error(response.error || 'Failed to fetch connection token');
       }
