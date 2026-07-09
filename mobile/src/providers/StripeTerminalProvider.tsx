@@ -39,6 +39,26 @@ export const isStripeTerminalSDKAvailable = (): boolean => {
   return StripeTerminalProviderSDK !== null;
 };
 
+// Tracks whether the real <StripeTerminalProviderSDK> is actually mounted.
+// The provider only mounts once the user is authenticated AND Stripe Connect
+// is ready, so hooks must NOT call the SDK before this flips true — doing so
+// throws "StripeTerminalProvider component is not found".
+let providerMounted = false;
+const mountListeners = new Set<() => void>();
+function setTerminalProviderMounted(value: boolean) {
+  if (providerMounted !== value) {
+    providerMounted = value;
+    mountListeners.forEach((l) => l());
+  }
+}
+export function isTerminalProviderMounted(): boolean {
+  return providerMounted;
+}
+export function subscribeTerminalProviderMounted(listener: () => void): () => void {
+  mountListeners.add(listener);
+  return () => { mountListeners.delete(listener); };
+}
+
 // Check if Tap to Pay is supported on this device
 export const isTapToPaySupported = (): boolean => {
   if (!isStripeTerminalSDKAvailable()) {
@@ -113,6 +133,14 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
     })();
     return () => { cancelled = true; };
   }, [isAuthenticated, user]);
+
+  // Publish the actual mount state of the SDK provider so hooks elsewhere
+  // (useStripeTerminal) know whether SDK calls are safe or they should use
+  // the simulator fallback.
+  useEffect(() => {
+    setTerminalProviderMounted(!!StripeTerminalProviderSDK && isReady);
+    return () => setTerminalProviderMounted(false);
+  }, [isReady]);
 
   // If SDK is not available (Expo Go), just render children
   if (!StripeTerminalProviderSDK) {

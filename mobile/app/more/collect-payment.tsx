@@ -3261,6 +3261,18 @@ export default function CollectScreen() {
 
           <Text style={styles.sectionLabel}>Payment Methods</Text>
 
+          {tapToPaySupported && (
+            <PaymentMethodCard
+              icon={<Feather name="smartphone" size={24} color={colors.primary} />}
+              title="Tap to Pay"
+              description="Customer taps their card on your phone ~1.95% + $0.30"
+              badge="New"
+              badgeVariant="success"
+              onPress={handleTapToPay}
+              colors={colors}
+            />
+          )}
+
           <PaymentMethodCard
             icon={<Feather name="grid" size={24} color={colors.primary} />}
             title="QR Code"

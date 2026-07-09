@@ -8,7 +8,7 @@
  * - Location Tracking
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useSyncExternalStore } from 'react';
 import { Alert, Platform } from 'react-native';
 import { 
   terminalSimulator, 
@@ -26,7 +26,11 @@ import notificationService, { NotificationPayload } from '../lib/notifications';
 import offlineStorage, { useOfflineStore, CachedJob, CachedClient, CachedQuote, CachedInvoice } from '../lib/offline-storage';
 import locationTracking, { TrackingStatus, LocationUpdate, GeofenceEvent } from '../lib/location-tracking';
 import { useAuthStore } from '../lib/store';
-import { isStripeTerminalSDKAvailable } from '../providers/StripeTerminalProvider';
+import {
+  isStripeTerminalSDKAvailable,
+  isTerminalProviderMounted,
+  subscribeTerminalProviderMounted,
+} from '../providers/StripeTerminalProvider';
 import api from '../lib/api';
 
 let useStripeTerminalSDK: any = null;
@@ -62,7 +66,16 @@ export function useStripeTerminal() {
   // until the provider is ready.
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
-  const providerReady = isStripeTerminalSDKAvailable() && isAuthenticated && !!user;
+  // The real SDK provider only mounts once Stripe Connect is ready (see
+  // StripeTerminalProvider.tsx). Track its ACTUAL mount state — calling the
+  // SDK without it throws "StripeTerminalProvider component is not found".
+  // When not mounted (demo account / no Stripe Connect), we fall back to the
+  // simulator, which still creates real server-side payment intents.
+  const providerMounted = useSyncExternalStore(
+    subscribeTerminalProviderMounted,
+    isTerminalProviderMounted,
+  );
+  const providerReady = isStripeTerminalSDKAvailable() && isAuthenticated && !!user && providerMounted;
   let sdkHookValue: any = null;
   if (useStripeTerminalSDK) {
     try {
@@ -72,6 +85,19 @@ export function useStripeTerminal() {
     }
   }
   const sdkHook = providerReady ? sdkHookValue : null;
+
+  // Reset terminal state whenever we switch between the simulator and the
+  // real SDK (e.g. Stripe Connect finishes loading after a simulator init).
+  const prevProviderReady = useRef(providerReady);
+  useEffect(() => {
+    if (prevProviderReady.current !== providerReady) {
+      prevProviderReady.current = providerReady;
+      setIsInitialized(false);
+      setStatus('not_initialized');
+      setReader(null);
+      setError(null);
+    }
+  }, [providerReady]);
 
   // Setup simulator status listener
   useEffect(() => {
@@ -89,13 +115,10 @@ export function useStripeTerminal() {
         return false;
       }
 
-      // SDK is loaded but the StripeTerminalProvider isn't mounted yet
-      // (user not authenticated). Silently no-op — the call site in
-      // _layout.tsx warms Terminal pre-auth and will retry after sign-in.
-      if (useStripeTerminalSDK && isStripeTerminalSDKAvailable() && !sdkHook) {
-        return false;
-      }
-
+      // If the SDK is loaded but the StripeTerminalProvider isn't mounted
+      // (not authenticated yet, or the business has no Stripe Connect —
+      // e.g. the demo account), sdkHook is null and we fall through to the
+      // simulator path below instead of calling the unmounted SDK.
       setError(null);
       setStatus('initializing');
 
@@ -359,7 +382,11 @@ export function useStripeTerminal() {
     isInitialized,
     isAvailable: isTapToPayAvailable(),
     isSDKAvailable: isSDKAvailable(),
-    isSimulation: isSimulationMode(),
+    // Effective mode: even on a native build with the SDK compiled in, we run
+    // in simulation when the SDK provider isn't mounted (no Stripe Connect —
+    // e.g. the demo account). Call sites use this to decide whether to show
+    // the custom payment modal (simulation) or rely on Apple's native UI.
+    isSimulation: isSimulationMode() || !sdkHook,
     initialize,
     connectReader,
     collectPayment,
