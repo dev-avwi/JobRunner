@@ -24009,7 +24009,26 @@ Be specific about materials, colors, and features that would be included.`
         if (!stripe) {
           return res.status(503).json({ error: "Payment processing is not available" });
         }
-        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        // Terminal PIs are direct charges on the connected account — retrieve
+        // them in the same account context or Stripe returns "No such
+        // payment_intent". Legacy /api/terminal/payment-intent PIs live on the
+        // platform account, so fall back to a platform retrieve if the
+        // connected-account lookup misses.
+        const termSettings = await storage.getBusinessSettings(req.userId);
+        let pi;
+        if (termSettings?.stripeConnectAccountId) {
+          try {
+            pi = await stripe.paymentIntents.retrieve(paymentIntentId, { stripeAccount: termSettings.stripeConnectAccountId });
+          } catch (retrieveErr: any) {
+            if (retrieveErr?.code === 'resource_missing') {
+              pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+            } else {
+              throw retrieveErr;
+            }
+          }
+        } else {
+          pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        }
         if (pi.status !== 'succeeded') {
           return res.status(400).json({ error: "Payment has not been completed" });
         }
@@ -24178,10 +24197,36 @@ Be specific about materials, colors, and features that would be included.`
       if (!paymentIntentId) {
         return res.status(400).json({ error: "Payment intent ID is required" });
       }
-      
+
+      // Ownership: only the business that created the payment may cancel it.
+      const cancelPayment = await storage.getTerminalPaymentByIntent(paymentIntentId);
+      if (!cancelPayment || cancelPayment.userId !== req.userId) {
+        return res.status(404).json({ error: "Terminal payment not found" });
+      }
+
       const stripe = await getUncachableStripeClient();
-      if (stripe) {
-        await stripe.paymentIntents.cancel(paymentIntentId);
+      if (stripe && !String(paymentIntentId).startsWith('demo_pi_')) {
+        // Terminal PIs are direct charges on the connected account; legacy
+        // ones live on the platform — try connected first, fall back.
+        const cancelSettings = await storage.getBusinessSettings(req.userId);
+        try {
+          if (cancelSettings?.stripeConnectAccountId) {
+            try {
+              await stripe.paymentIntents.cancel(paymentIntentId, {}, { stripeAccount: cancelSettings.stripeConnectAccountId });
+            } catch (connCancelErr: any) {
+              if (connCancelErr?.code === 'resource_missing') {
+                await stripe.paymentIntents.cancel(paymentIntentId);
+              } else {
+                throw connCancelErr;
+              }
+            }
+          } else {
+            await stripe.paymentIntents.cancel(paymentIntentId);
+          }
+        } catch (cancelErr: any) {
+          // Already-cancelled/succeeded intents throw — still mark our record.
+          console.log('[Terminal] Stripe cancel skipped:', cancelErr?.message);
+        }
       }
       
       await storage.updateTerminalPaymentByIntent(paymentIntentId, {
@@ -32211,24 +32256,29 @@ Respond with JSON in this format:
       // Calculate platform fee (2.5%)
       const platformFee = Math.round(amount * 0.025);
 
-      // Create payment intent for Terminal with connected account
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency,
-        description: description || 'JobRunner Tap to Pay',
-        payment_method_types: ['card_present'],
-        capture_method: 'automatic',
-        metadata: {
-          userId,
-          invoiceId: invoiceId || '',
-          jobId: jobId || '',
-          source: 'tap_to_pay',
+      // Create the payment intent DIRECTLY on the connected account (direct
+      // charge). The Terminal SDK session runs in the connected account
+      // context (connection token is created with stripeAccount), so a
+      // platform-account PI is invisible to it — collectPaymentMethod fails
+      // with "No such payment_intent". Direct charge + application_fee_amount
+      // keeps the platform fee.
+      const paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount,
+          currency,
+          description: description || 'JobRunner Tap to Pay',
+          payment_method_types: ['card_present'],
+          capture_method: 'automatic',
+          metadata: {
+            userId,
+            invoiceId: invoiceId || '',
+            jobId: jobId || '',
+            source: 'tap_to_pay',
+          },
+          application_fee_amount: platformFee,
         },
-        application_fee_amount: platformFee,
-        transfer_data: {
-          destination: settings.stripeConnectAccountId,
-        },
-      });
+        { stripeAccount: settings.stripeConnectAccountId }
+      );
       
       // Store terminal payment record so /api/terminal/payment-success can
       // verify and complete the payment (invoice update, receipts, links).
