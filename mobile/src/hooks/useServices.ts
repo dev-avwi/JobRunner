@@ -10,6 +10,7 @@
 
 import { useEffect, useState, useCallback, useRef, useSyncExternalStore } from 'react';
 import { Alert, Platform } from 'react-native';
+import * as Device from 'expo-device';
 import { 
   terminalSimulator, 
   isSDKAvailable, 
@@ -199,9 +200,12 @@ export function useStripeTerminal() {
 
       if (sdkHook) {
         // Real SDK: Discover readers using localMobile (Tap to Pay)
+        // On simulators/emulators there is no NFC hardware — asking Stripe for a
+        // real Tap to Pay reader makes the native SDK abort() the whole app.
+        // Use Stripe's simulated reader there instead.
         const { error: discoverError } = await sdkHook.discoverReaders({
           discoveryMethod: 'localMobile',
-          simulated: false,
+          simulated: !Device.isDevice,
         });
 
         if (discoverError) {
