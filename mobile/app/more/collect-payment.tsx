@@ -15,6 +15,8 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
@@ -33,7 +35,6 @@ import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
 import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { LoadingOverlay } from '../../src/components/ui/LoadingScreen';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
 import { showToast } from '../../src/lib/toast';
@@ -812,8 +813,125 @@ interface SelectedInvoice {
   amountDue: number;
 }
 
+// Premium "Preparing Tap to Pay" overlay. Plain absolute View (NOT a Modal)
+// so it never blocks Apple's native tap sheet presentation.
+function TapPreparingOverlay({ colors, isDark }: { colors: ThemeColors; isDark: boolean }) {
+  const fade = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(0.94)).current;
+  const ring1Scale = useRef(new Animated.Value(1)).current;
+  const ring1Opacity = useRef(new Animated.Value(0.45)).current;
+  const ring2Scale = useRef(new Animated.Value(1)).current;
+  const ring2Opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 180, useNativeDriver: true }),
+      Animated.timing(cardScale, { toValue: 1, duration: 220, easing: Easing.out(Easing.back(1.4)), useNativeDriver: true }),
+    ]).start();
+
+    const pulse = (scale: Animated.Value, opacity: Animated.Value, delay: number, startOpacity: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.parallel([
+            Animated.timing(scale, { toValue: 1.55, duration: 1600, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0, duration: 1600, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+          ]),
+          Animated.parallel([
+            Animated.timing(scale, { toValue: 1, duration: 0, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: startOpacity, duration: 0, useNativeDriver: true }),
+          ]),
+        ])
+      );
+
+    const anim1 = pulse(ring1Scale, ring1Opacity, 0, 0.45);
+    const anim2 = pulse(ring2Scale, ring2Opacity, 800, 0.3);
+    anim1.start();
+    anim2.start();
+    return () => {
+      anim1.stop();
+      anim2.stop();
+    };
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: isDark ? 'rgba(2,6,14,0.72)' : 'rgba(15,23,42,0.45)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 999,
+        opacity: fade,
+      }}
+      pointerEvents="auto">
+      <Animated.View
+        style={{
+          backgroundColor: colors.card,
+          borderRadius: 24,
+          paddingVertical: spacing['2xl'],
+          paddingHorizontal: spacing['2xl'],
+          alignItems: 'center',
+          width: 300,
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          transform: [{ scale: cardScale }],
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: isDark ? 0.5 : 0.18,
+          shadowRadius: 28,
+          elevation: 12,
+        }}>
+        <View style={{ width: 120, height: 120, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg }}>
+          <Animated.View
+            style={{
+              position: 'absolute',
+              width: 88,
+              height: 88,
+              borderRadius: 44,
+              borderWidth: 2,
+              borderColor: colors.primary,
+              transform: [{ scale: ring1Scale }],
+              opacity: ring1Opacity,
+            }}
+          />
+          <Animated.View
+            style={{
+              position: 'absolute',
+              width: 88,
+              height: 88,
+              borderRadius: 44,
+              borderWidth: 1.5,
+              borderColor: colors.primary,
+              transform: [{ scale: ring2Scale }],
+              opacity: ring2Opacity,
+            }}
+          />
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              backgroundColor: colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Feather name="smartphone" size={30} color={colors.primaryForeground} />
+          </View>
+        </View>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, letterSpacing: -0.3, marginBottom: spacing.xs }}>
+          Preparing Tap to Pay
+        </Text>
+        <Text style={{ fontSize: 13, fontWeight: '500', color: colors.mutedForeground, textAlign: 'center', lineHeight: 19 }}>
+          Have the customer's card ready.{'\n'}The first tap can take a few seconds.
+        </Text>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
 export default function CollectScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
@@ -3601,10 +3719,7 @@ export default function CollectScreen() {
         {renderCustomAmountModal()}
         {renderSmsSetupModal()}
 
-        {/* Native Tap to Pay preparing overlay — branded LoadingOverlay is a
-            plain absolute View (NOT a Modal) so it never blocks Apple's
-            native tap sheet presentation. */}
-        {tapPreparing && <LoadingOverlay message="Preparing Tap to Pay..." />}
+        {tapPreparing && <TapPreparingOverlay colors={colors} isDark={isDark} />}
       </View>
     </>
   );
