@@ -33,6 +33,7 @@ import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
 import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { LoadingOverlay } from '../../src/components/ui/LoadingScreen';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
 import { showToast } from '../../src/lib/toast';
@@ -1285,7 +1286,7 @@ export default function CollectScreen() {
         }
       }
     } catch (error: any) {
-      console.error('Tap to Pay error:', error);
+      if (__DEV__) console.log('Tap to Pay error:', error?.message || error);
       if (!useNativeSDK) {
         setPaymentStep('error');
       } else {
@@ -1367,7 +1368,7 @@ export default function CollectScreen() {
         }
       }
     } catch (error: any) {
-      console.error('Tap to Pay error:', error);
+      if (__DEV__) console.log('Tap to Pay error:', error?.message || error);
       if (!useNativeSDK) {
         setPaymentStep('error');
       } else {
@@ -3600,37 +3601,10 @@ export default function CollectScreen() {
         {renderCustomAmountModal()}
         {renderSmsSetupModal()}
 
-        {/* Native Tap to Pay preparing overlay — plain absolute View (NOT a
-            Modal) so it never blocks Apple's native tap sheet presentation. */}
-        {tapPreparing && (
-          <View
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              backgroundColor: 'rgba(0,0,0,0.55)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 999,
-            }}
-            pointerEvents="auto">
-            <View
-              style={{
-                backgroundColor: colors.card,
-                borderRadius: radius.xl,
-                paddingVertical: spacing.xl,
-                paddingHorizontal: spacing.xl,
-                alignItems: 'center',
-                minWidth: 220,
-              }}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={{ ...typography.headline, color: colors.foreground, marginTop: spacing.md }}>
-                Preparing Tap to Pay
-              </Text>
-              <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center' }}>
-                Getting the payment ready…
-              </Text>
-            </View>
-          </View>
-        )}
+        {/* Native Tap to Pay preparing overlay — branded LoadingOverlay is a
+            plain absolute View (NOT a Modal) so it never blocks Apple's
+            native tap sheet presentation. */}
+        {tapPreparing && <LoadingOverlay message="Preparing Tap to Pay..." />}
       </View>
     </>
   );

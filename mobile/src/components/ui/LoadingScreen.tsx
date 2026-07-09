@@ -542,9 +542,9 @@ export function LoadingOverlay({
     ]).start();
   }, [visible]);
 
-  if (!visible) return null;
-
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
+  if (!visible) return null;
 
   return (
     <Animated.View
