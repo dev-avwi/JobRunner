@@ -335,7 +335,9 @@ export function useStripeTerminal() {
         };
       }
     } catch (err: any) {
-      if (__DEV__) console.error('[useStripeTerminal] Collect payment error:', err);
+      // warn (not error) — expected failures like incomplete Stripe onboarding
+      // shouldn't throw full-screen red LogBox errors in dev builds.
+      if (__DEV__) console.warn('[useStripeTerminal] Collect payment error:', err);
       setError(err.message || 'Payment collection failed');
       setStatus('error');
       return null;

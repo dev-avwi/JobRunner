@@ -2182,16 +2182,30 @@ export default function CollectScreen() {
               <Text style={styles.modalStepSubtitle}>
                 {terminal.error || 'The payment could not be processed. Please try again.'}
               </Text>
-              <Button
-                variant="default"
-                onPress={() => {
-                  setPaymentStep('ready');
-                  handleTapToPay();
-                }}
-                fullWidth
-              >
-                Try Again
-              </Button>
+              {/(onboarding|capability|connect account)/i.test(terminal.error || '') ? (
+                <Button
+                  variant="default"
+                  onPress={() => {
+                    setShowTapToPayModal(false);
+                    setPaymentStep('ready');
+                    router.push('/more/payment-hub');
+                  }}
+                  fullWidth
+                >
+                  Finish Stripe Setup
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  onPress={() => {
+                    setPaymentStep('ready');
+                    handleTapToPay();
+                  }}
+                  fullWidth
+                >
+                  Try Again
+                </Button>
+              )}
             </>
           )}
         </View>
