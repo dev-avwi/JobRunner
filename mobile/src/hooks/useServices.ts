@@ -337,6 +337,10 @@ export function useStripeTerminal() {
     description?: string,
     options?: { invoiceId?: string; jobId?: string }
   ): Promise<PaymentIntent | null> => {
+    // Track the server-created PI so we can cancel it on Stripe if the
+    // customer/tradie abandons the tap sheet (otherwise it lingers as an
+    // incomplete payment and the SDK can resurface stale state).
+    let createdPaymentIntentId: string | null = null;
     try {
       setError(null);
       setIsProcessing(true);
@@ -359,6 +363,7 @@ export function useStripeTerminal() {
       }
 
       const clientSecret = intentResponse.data.clientSecret;
+      createdPaymentIntentId = intentResponse.data.paymentIntentId;
 
       if (sdkHook) {
         // Real SDK: Retrieve and collect payment
@@ -412,9 +417,30 @@ export function useStripeTerminal() {
       // warn (not error) — expected failures like incomplete Stripe onboarding
       // shouldn't throw full-screen red LogBox errors in dev builds.
       if (__DEV__) console.warn('[useStripeTerminal] Collect payment error:', err);
+
+      // Best-effort cleanup so an abandoned/failed tap doesn't leave a live
+      // incomplete PaymentIntent on Stripe or stale collect state in the SDK.
+      if (sdkHook) {
+        try { await sdkHook.cancelCollectPaymentMethod(); } catch {}
+      }
+      if (createdPaymentIntentId) {
+        api.post('/api/terminal/payment-cancel', { paymentIntentId: createdPaymentIntentId }).catch(() => {});
+      }
+
+      // User cancelling the Apple tap sheet is a normal outcome, not an error.
+      const msg = String(err?.message || '');
+      const code = String(err?.code || '');
+      const isUserCancel = /cancel/i.test(msg) || /cancel/i.test(code);
+      if (isUserCancel) {
+        setStatus('connected');
+        return null;
+      }
+
       setError(err.message || 'Payment collection failed');
       setStatus('error');
-      return null;
+      // Rethrow real failures so call sites can show a proper error message
+      // (null is reserved for user cancellation).
+      throw err;
     } finally {
       setIsProcessing(false);
     }

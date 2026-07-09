@@ -877,6 +877,11 @@ export default function CollectScreen() {
   const [showCustomAmountModal, setShowCustomAmountModal] = useState(false);
   const [customAmountValue, setCustomAmountValue] = useState('');
   const [customAmountDescription, setCustomAmountDescription] = useState('');
+
+  // Native Tap to Pay: instant "preparing" feedback while the payment is
+  // created and Apple's tap sheet warms up (otherwise the screen looks
+  // frozen for several seconds after pressing the button).
+  const [tapPreparing, setTapPreparing] = useState(false);
   
   // SMS Status and Setup Modal state
   const [smsStatus, setSmsStatus] = useState<{
@@ -1220,6 +1225,8 @@ export default function CollectScreen() {
       // Simulation mode: show custom modal as fallback UI
       setShowTapToPayModal(true);
       setPaymentStep('connecting');
+    } else {
+      setTapPreparing(true);
     }
 
     try {
@@ -1269,6 +1276,11 @@ export default function CollectScreen() {
         if (!useNativeSDK) {
           setPaymentStep('error');
         } else {
+          // Cancelled: reset the pending amount so the next tap starts
+          // fresh instead of re-running the abandoned payment. (Real
+          // failures throw and land in the catch below.)
+          setAmount('');
+          setDescription('');
           showToast({ type: 'info', message: 'Payment Cancelled', description: 'The payment was not completed.' });
         }
       }
@@ -1277,8 +1289,12 @@ export default function CollectScreen() {
       if (!useNativeSDK) {
         setPaymentStep('error');
       } else {
+        setAmount('');
+        setDescription('');
         showToast({ type: 'info', message: 'Payment Error', description: error?.message || 'The payment could not be processed. Please try again.' });
       }
+    } finally {
+      setTapPreparing(false);
     }
   };
 
@@ -1294,6 +1310,8 @@ export default function CollectScreen() {
     if (!useNativeSDK) {
       setShowTapToPayModal(true);
       setPaymentStep('connecting');
+    } else {
+      setTapPreparing(true);
     }
 
     try {
@@ -1341,6 +1359,10 @@ export default function CollectScreen() {
         if (!useNativeSDK) {
           setPaymentStep('error');
         } else {
+          // Cancelled/failed: reset the pending amount so the next tap starts
+          // fresh instead of re-running the abandoned payment.
+          setAmount('');
+          setDescription('');
           showToast({ type: 'info', message: 'Payment Cancelled', description: 'The payment was not completed.' });
         }
       }
@@ -1349,8 +1371,12 @@ export default function CollectScreen() {
       if (!useNativeSDK) {
         setPaymentStep('error');
       } else {
+        setAmount('');
+        setDescription('');
         showToast({ type: 'info', message: 'Payment Error', description: error?.message || 'The payment could not be processed. Please try again.' });
       }
+    } finally {
+      setTapPreparing(false);
     }
   };
 
@@ -3573,6 +3599,38 @@ export default function CollectScreen() {
         {renderInvoicePickerModal()}
         {renderCustomAmountModal()}
         {renderSmsSetupModal()}
+
+        {/* Native Tap to Pay preparing overlay — plain absolute View (NOT a
+            Modal) so it never blocks Apple's native tap sheet presentation. */}
+        {tapPreparing && (
+          <View
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: 'rgba(0,0,0,0.55)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 999,
+            }}
+            pointerEvents="auto">
+            <View
+              style={{
+                backgroundColor: colors.card,
+                borderRadius: radius.xl,
+                paddingVertical: spacing.xl,
+                paddingHorizontal: spacing.xl,
+                alignItems: 'center',
+                minWidth: 220,
+              }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={{ ...typography.headline, color: colors.foreground, marginTop: spacing.md }}>
+                Preparing Tap to Pay
+              </Text>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center' }}>
+                Getting the payment ready…
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     </>
   );
