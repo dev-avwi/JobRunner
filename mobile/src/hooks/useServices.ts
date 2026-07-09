@@ -63,6 +63,8 @@ export function useStripeTerminal() {
   // closure snapshot from render time (always []) — the hook state updates
   // on re-render, but the captured object never does.
   const discoveredReadersRef = useRef<any[]>([]);
+  // Holds the in-flight connectReader promise — concurrent calls share it.
+  const connectInFlightRef = useRef<Promise<Reader | null> | null>(null);
 
   // Auth gate: the real StripeTerminalProvider only mounts the SDK provider
   // once the user is authenticated (see StripeTerminalProvider.tsx). Before
@@ -200,6 +202,11 @@ export function useStripeTerminal() {
 
   // Discover and connect to Tap to Pay reader
   const connectReader = useCallback(async (): Promise<Reader | null> => {
+    // Re-entrancy guard: a second tap while discovery/connection is running
+    // would hit the SDK's "busy with another command: discoverReaders" error.
+    // Instead of failing the second caller, share the in-flight attempt.
+    if (connectInFlightRef.current) return connectInFlightRef.current;
+    const attempt = (async (): Promise<Reader | null> => {
     try {
       setError(null);
       setStatus('discovering');
@@ -207,6 +214,21 @@ export function useStripeTerminal() {
       const locationId = locationIdRef.current || 'tml_simulated';
 
       if (sdkHook) {
+        // Reuse an existing connection — reconnecting from scratch is slow.
+        const existing = sdkHook.connectedReader;
+        if (existing) {
+          const readerInfo: Reader = {
+            id: existing.id || 'local_mobile',
+            deviceType: 'localMobile',
+            serialNumber: existing.serialNumber || 'TAP_TO_PAY',
+            status: 'online',
+            batteryLevel: existing.batteryLevel,
+          };
+          setReader(readerInfo);
+          setStatus('connected');
+          return readerInfo;
+        }
+
         // Real SDK: Discover readers using tapToPay (Tap to Pay on iPhone).
         // NOTE: this SDK version renamed 'localMobile' -> 'tapToPay'; an unknown
         // method silently falls back to Bluetooth scanning, which abort()s the
@@ -215,10 +237,24 @@ export function useStripeTerminal() {
         // real Tap to Pay reader makes the native SDK abort() the whole app.
         // Use Stripe's simulated reader there instead.
         discoveredReadersRef.current = [];
-        const { error: discoverError } = await sdkHook.discoverReaders({
+        let { error: discoverError } = await sdkHook.discoverReaders({
           discoveryMethod: 'tapToPay',
           simulated: !Device.isDevice,
         });
+
+        // A previous attempt (e.g. abandoned during Apple's first-time setup
+        // sheet) can leave a native discovery running. Cancel it and retry once.
+        if (discoverError?.message?.includes('busy')) {
+          try {
+            await sdkHook.cancelDiscovering();
+          } catch {
+            // Ignore — the stale discovery may have just completed on its own.
+          }
+          ({ error: discoverError } = await sdkHook.discoverReaders({
+            discoveryMethod: 'tapToPay',
+            simulated: !Device.isDevice,
+          }));
+        }
 
         if (discoverError) {
           throw new Error(discoverError.message);
@@ -226,8 +262,9 @@ export function useStripeTerminal() {
 
         // Wait for the discovery event to deliver the reader. The event
         // usually arrives right around when discoverReaders resolves, but
-        // first-time Tap to Pay setup on a device can take noticeably longer.
-        const deadline = Date.now() + 30000;
+        // first-time Tap to Pay setup (Apple's Terms of Service sheet) can
+        // keep the user on a system screen for a while — allow up to 90s.
+        const deadline = Date.now() + 90000;
         while (discoveredReadersRef.current.length === 0 && Date.now() < deadline) {
           await new Promise(resolve => setTimeout(resolve, 250));
         }
@@ -235,6 +272,13 @@ export function useStripeTerminal() {
         const discoveredReaders = discoveredReadersRef.current;
 
         if (discoveredReaders.length === 0) {
+          // Don't leave a dangling native discovery behind — it would make
+          // every following attempt fail with "SDK is busy".
+          try {
+            await sdkHook.cancelDiscovering();
+          } catch {
+            // Ignore — nothing to cancel.
+          }
           throw new Error('No Tap to Pay reader found');
         }
 
@@ -279,7 +323,12 @@ export function useStripeTerminal() {
       setError(err.message || 'Failed to connect to reader');
       setStatus('error');
       return null;
+    } finally {
+      connectInFlightRef.current = null;
     }
+    })();
+    connectInFlightRef.current = attempt;
+    return attempt;
   }, [sdkHook]);
 
   // Collect payment using Tap to Pay
