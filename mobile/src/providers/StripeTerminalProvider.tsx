@@ -10,7 +10,7 @@
  * 3. Stripe account with Terminal enabled
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { useAuthStore } from '../lib/store';
 import api from '../lib/api';
@@ -89,9 +89,26 @@ interface TerminalProviderProps {
 export function TerminalProvider({ children }: TerminalProviderProps) {
   const { isAuthenticated, user } = useAuthStore();
   const [isReady, setIsReady] = useState(false);
+  // Tri-state Connect readiness for the token provider: 'unknown' while the
+  // status check is in flight (don't block real users at boot), then
+  // 'ready' / 'not_ready'. Kept in a ref so fetchTokenProvider (stable
+  // callback handed to the SDK) always sees the latest value.
+  const connectReadyRef = useRef<'unknown' | 'ready' | 'not_ready'>('unknown');
 
   // Fetch connection token from backend
   const fetchTokenProvider = useCallback(async (): Promise<string> => {
+    // The SDK provider is mounted from boot (stable tree — see render below),
+    // so it may ask for a token before login. Fail quietly; it retries when
+    // a payment flow actually initializes the terminal.
+    if (!useAuthStore.getState().isAuthenticated) {
+      throw new Error('Not authenticated yet');
+    }
+    // Known-not-ready: skip the doomed API call (400 "Connect not set up").
+    // 'unknown' falls through so a Connect-ready user isn't blocked by the
+    // status check still being in flight at boot.
+    if (connectReadyRef.current === 'not_ready') {
+      throw new Error('Stripe Connect not set up');
+    }
     try {
       let response = await api.post<{ secret: string }>('/api/stripe/terminal-connection-token');
 
@@ -122,13 +139,13 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
   }, []);
 
   useEffect(() => {
-    // Only initialize the Terminal SDK when the user is authenticated AND
-    // their business actually has Stripe Connect set up. Mounting the SDK
-    // without it makes the SDK immediately call the token provider, which is
-    // guaranteed to fail (400 "Stripe Connect account not set up") and spams
-    // console errors on every launch.
+    // Check whether this business has Stripe Connect set up. This does NOT
+    // gate rendering (the SDK provider stays mounted for a stable tree) —
+    // it only drives providerMounted (real-SDK-usable flag for hooks) and
+    // the token-provider short-circuit above.
     let cancelled = false;
     if (!isAuthenticated || !user) {
+      connectReadyRef.current = 'unknown';
       setIsReady(false);
       return;
     }
@@ -137,19 +154,25 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
         const res = await api.get<{ connected: boolean; chargesEnabled?: boolean }>('/api/stripe-connect/status');
         const ok = !res.error && !!res.data?.connected && res.data?.chargesEnabled !== false;
         if (!cancelled) {
+          connectReadyRef.current = ok ? 'ready' : 'not_ready';
           setIsReady(ok);
-          if (__DEV__ && !ok) console.log('[StripeTerminal] Skipping Terminal init — Stripe Connect not ready');
+          if (__DEV__ && !ok) console.log('[StripeTerminal] Stripe Connect not ready — hooks use simulator fallback');
         }
       } catch (e) {
-        if (!cancelled) setIsReady(false);
+        if (!cancelled) {
+          // Status check failed (network etc) — leave 'unknown' so a real
+          // payment attempt can still try fetching a token.
+          connectReadyRef.current = 'unknown';
+          setIsReady(false);
+        }
       }
     })();
     return () => { cancelled = true; };
   }, [isAuthenticated, user]);
 
-  // Publish the actual mount state of the SDK provider so hooks elsewhere
-  // (useStripeTerminal) know whether SDK calls are safe or they should use
-  // the simulator fallback.
+  // Publish "real SDK usable" (NOT literal mount state — the SDK provider is
+  // always mounted when available). Hooks (useStripeTerminal) use this to
+  // pick the real SDK vs the simulator fallback.
   useEffect(() => {
     setTerminalProviderMounted(!!StripeTerminalProviderSDK && isReady);
     return () => setTerminalProviderMounted(false);
@@ -161,11 +184,14 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
     return <>{children}</>;
   }
 
-  // If not authenticated, don't initialize Terminal
-  if (!isReady) {
-    return <>{children}</>;
-  }
-
+  // IMPORTANT: when the SDK is available, ALWAYS render the SDK provider —
+  // never conditionally swap between <>{children}</> and the provider based
+  // on auth/Connect state. Changing the wrapper element type mid-session
+  // remounts the ENTIRE children subtree (including the Expo Router <Stack>),
+  // which resets navigation and dumps the user back to the start screen.
+  // Gating is done instead via: (a) fetchTokenProvider failing quietly when
+  // not authenticated, and (b) providerMounted (published above) staying
+  // false until Stripe Connect is ready, so hooks use the simulator fallback.
   return (
     <StripeTerminalProviderSDK
       logLevel="verbose"
