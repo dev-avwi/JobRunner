@@ -35,7 +35,13 @@ interface TerminalPayment {
   invoiceNumber: string | null;
   jobTitle: string | null;
   clientName: string | null;
+  method: string | null;
 }
+
+const methodMeta = (p: TerminalPayment): { label: string; icon: string } => {
+  if (p.method === 'payment_link') return { label: 'Payment Link', icon: 'link' };
+  return { label: 'Tap to Pay', icon: 'credit-card' };
+};
 
 const formatCurrency = (amount: number | string | null) => {
   const { formatCurrency: fmt } = require('../../src/lib/format');
@@ -43,6 +49,7 @@ const formatCurrency = (amount: number | string | null) => {
 };
 
 const cardLabel = (p: TerminalPayment) => {
+  if (p.method === 'payment_link') return 'Payment link / QR';
   const brand = p.cardBrand ? p.cardBrand.charAt(0).toUpperCase() + p.cardBrand.slice(1) : 'Card';
   return p.cardLast4 ? `${brand} •••• ${p.cardLast4}` : brand;
 };
@@ -83,7 +90,7 @@ export default function PaymentHistoryScreen() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get<TerminalPayment[]>('/api/terminal/payments');
+      const res = await api.get<TerminalPayment[]>('/api/payments/history');
       if (!res.error && Array.isArray(res.data)) {
         setPayments(res.data);
       }
@@ -119,7 +126,7 @@ export default function PaymentHistoryScreen() {
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.pageTitle}>Payment History</Text>
-              <Text style={styles.pageSubtitle}>{payments.length} Tap to Pay charge{payments.length === 1 ? '' : 's'}</Text>
+              <Text style={styles.pageSubtitle}>{payments.length} payment{payments.length === 1 ? '' : 's'}</Text>
             </View>
             <PressableRow style={styles.backButton} onPress={() => router.back()}>
               <Feather name="arrow-left" size={iconSizes.lg} color={colors.foreground} />
@@ -146,8 +153,8 @@ export default function PaymentHistoryScreen() {
           ) : payments.length === 0 ? (
             <View style={styles.centered}>
               <Feather name="credit-card" size={40} color={colors.mutedForeground} />
-              <Text style={styles.emptyTitle}>No Tap to Pay charges yet</Text>
-              <Text style={styles.emptyText}>Charges you take with Tap to Pay will appear here with their fees and net amounts.</Text>
+              <Text style={styles.emptyTitle}>No payments yet</Text>
+              <Text style={styles.emptyText}>Payments you collect — Tap to Pay, payment links and QR codes — appear here with their fees and net amounts.</Text>
             </View>
           ) : (
             <View style={styles.list}>
@@ -189,7 +196,7 @@ export default function PaymentHistoryScreen() {
                       <Text style={styles.description} numberOfLines={1}>{p.description}</Text>
                     ) : null}
 
-                    {p.status === 'succeeded' && (
+                    {p.status === 'succeeded' && p.fee != null && (
                       <View style={styles.breakdown}>
                         <View style={styles.breakdownRow}>
                           <Text style={styles.breakdownLabel}>Fee</Text>
@@ -207,17 +214,10 @@ export default function PaymentHistoryScreen() {
                       <Text style={styles.dateText}>
                         {dateStr ? format(new Date(dateStr), 'd MMM yyyy, h:mm a') : '—'}
                       </Text>
-                      {p.invoiceId ? (
-                        <View style={styles.linkTag}>
-                          <Feather name="file-text" size={11} color={colors.mutedForeground} />
-                          <Text style={styles.linkTagText}>Invoice</Text>
-                        </View>
-                      ) : (
-                        <View style={styles.linkTag}>
-                          <Feather name="zap" size={11} color={colors.mutedForeground} />
-                          <Text style={styles.linkTagText}>Direct</Text>
-                        </View>
-                      )}
+                      <View style={styles.linkTag}>
+                        <Feather name={methodMeta(p).icon as any} size={11} color={colors.mutedForeground} />
+                        <Text style={styles.linkTagText}>{methodMeta(p).label}</Text>
+                      </View>
                     </View>
                   </View>
                 );

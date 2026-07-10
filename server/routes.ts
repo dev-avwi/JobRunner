@@ -24332,123 +24332,193 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  // Get terminal payment history
+  // Build a unified payment history. Always includes Tap to Pay charges
+  // (terminal_payments); when includePaymentRequests is set it also folds in
+  // paid Payment Links / QR codes (both are payment_requests). Every entry is
+  // normalized to the same shape, enriched with Stripe fee/net + settlement
+  // (Tap to Pay only — links/QR aren't fee-tracked) and readable context
+  // (client name + invoice number OR job title), then sorted newest-first.
+  const buildPaymentHistory = async (
+    effectiveUserId: string,
+    opts: { includePaymentRequests?: boolean } = {},
+  ): Promise<any[]> => {
+    const payments = await storage.getTerminalPayments(effectiveUserId);
+
+    let stripe: any = null;
+    let connectAccountId: string | undefined;
+    try {
+      const listSettings = await storage.getBusinessSettings(effectiveUserId);
+      connectAccountId = (listSettings as any)?.stripeConnectAccountId || undefined;
+      stripe = await getUncachableStripeClient();
+    } catch { /* fee enrichment is best-effort */ }
+
+    const retrievePi = async (intentId: string) => {
+      if (connectAccountId) {
+        try {
+          return await stripe.paymentIntents.retrieve(intentId, { expand: ['latest_charge.balance_transaction'] }, { stripeAccount: connectAccountId });
+        } catch (err: any) {
+          if (err?.code !== 'resource_missing') throw err;
+        }
+      }
+      return await stripe.paymentIntents.retrieve(intentId, { expand: ['latest_charge.balance_transaction'] });
+    };
+
+    // Bound the Stripe fan-out: cap how many uncached payments we hit Stripe
+    // for per request (older ones hydrate lazily on subsequent loads) and run
+    // in small concurrency batches so a big history can't burst the API.
+    const MAX_LOOKUPS = 25;
+    const CONCURRENCY = 4;
+    let lookupBudget = MAX_LOOKUPS;
+
+    const enrichOne = async (p: any) => {
+      const meta = (p.metadata && typeof p.metadata === 'object') ? p.metadata : {};
+      let fee = meta.stripeFee != null ? Number(meta.stripeFee) : null;
+      let net = meta.netAmount != null ? Number(meta.netAmount) : null;
+      let settlementStatus: string | null = meta.settlementStatus || null;
+
+      const needsLookup = stripe && p.status === 'succeeded' && p.stripePaymentIntentId &&
+        !String(p.stripePaymentIntentId).startsWith('demo_pi_') &&
+        (fee == null || settlementStatus === 'pending' || !settlementStatus);
+
+      if (needsLookup && lookupBudget > 0) {
+        lookupBudget--;
+        try {
+          const pi = await retrievePi(p.stripePaymentIntentId);
+          const charge = pi?.latest_charge && typeof pi.latest_charge === 'object' ? pi.latest_charge : null;
+          const bt = charge?.balance_transaction && typeof charge.balance_transaction === 'object' ? charge.balance_transaction : null;
+          if (bt) {
+            fee = (bt.fee || 0) / 100;
+            net = (bt.net || 0) / 100;
+            settlementStatus = bt.status === 'available' ? 'available' : 'pending';
+            await storage.updateTerminalPaymentByIntent(p.stripePaymentIntentId, {
+              metadata: { ...meta, stripeFee: fee, netAmount: net, settlementStatus },
+            } as any);
+          }
+        } catch (feeErr: any) {
+          console.log('[Payments] Fee lookup skipped for', p.stripePaymentIntentId, feeErr?.message);
+        }
+      }
+
+      return { ...p, fee, net, settlementStatus, method: 'tap_to_pay' };
+    };
+
+    const enriched: any[] = [];
+    for (let i = 0; i < payments.length; i += CONCURRENCY) {
+      const batch = payments.slice(i, i + CONCURRENCY);
+      enriched.push(...await Promise.all(batch.map(enrichOne)));
+    }
+
+    // Paid Payment Links / QR codes (both are payment_requests). Normalized to
+    // the terminal shape; fee/net aren't tracked for these so they show gross.
+    if (opts.includePaymentRequests) {
+      const requests = await storage.getPaymentRequests(effectiveUserId);
+      for (const r of requests) {
+        if ((r as any).status !== 'paid') continue;
+        enriched.push({
+          id: r.id,
+          stripePaymentIntentId: (r as any).stripePaymentIntentId || null,
+          amount: r.amount,
+          currency: 'aud',
+          status: 'succeeded',
+          description: (r as any).description || null,
+          cardBrand: null,
+          cardLast4: null,
+          clientId: (r as any).clientId || null,
+          invoiceId: (r as any).invoiceId || null,
+          jobId: (r as any).jobId || null,
+          metadata: {},
+          createdAt: (r as any).createdAt || null,
+          completedAt: (r as any).paidAt || (r as any).updatedAt || (r as any).createdAt || null,
+          fee: null,
+          net: null,
+          settlementStatus: null,
+          method: 'payment_link',
+        });
+      }
+    }
+
+    // Drop any (unlikely) duplicate PaymentIntent, keeping the first — terminal
+    // records come first so their fee/net enrichment wins.
+    const seenIntents = new Set<string>();
+    const deduped = enriched.filter((p) => {
+      if (!p.stripePaymentIntentId) return true;
+      if (seenIntents.has(p.stripePaymentIntentId)) return false;
+      seenIntents.add(p.stripePaymentIntentId);
+      return true;
+    });
+
+    // Attach readable context (client name + invoice number OR job title) so
+    // the mobile payment history shows what each charge was for instead of a
+    // generic "payment". Fetched by unique referenced id in small batches to
+    // avoid an N+1 blowup on large histories.
+    const fetchInBatches = async <T,>(ids: string[], fn: (id: string) => Promise<T>, onResult: (id: string, r: T) => void) => {
+      for (let i = 0; i < ids.length; i += 8) {
+        const slice = ids.slice(i, i + 8);
+        await Promise.all(slice.map(async (id) => { try { onResult(id, await fn(id)); } catch { /* skip missing */ } }));
+      }
+    };
+    const invoiceMap = new Map<string, any>();
+    const jobMap = new Map<string, any>();
+    const clientMap = new Map<string, any>();
+    const invoiceIds = Array.from(new Set(deduped.filter((p) => p.invoiceId).map((p) => p.invoiceId as string)));
+    const jobIds = Array.from(new Set(deduped.filter((p) => !p.invoiceId && p.jobId).map((p) => p.jobId as string)));
+    await fetchInBatches(invoiceIds, (id) => storage.getInvoice(id, effectiveUserId), (id, inv) => { if (inv) invoiceMap.set(id, inv); });
+    await fetchInBatches(jobIds, (id) => storage.getJob(id, effectiveUserId), (id, job) => { if (job) jobMap.set(id, job); });
+    const clientIds = Array.from(new Set([
+      ...deduped.map((p) => p.clientId),
+      ...Array.from(invoiceMap.values()).map((i: any) => i.clientId),
+      ...Array.from(jobMap.values()).map((j: any) => j.clientId),
+    ].filter(Boolean) as string[]));
+    await fetchInBatches(clientIds, (id) => storage.getClientById(id), (id, c) => { if (c) clientMap.set(id, c); });
+
+    const withContext = deduped.map((p) => {
+      const invoice = p.invoiceId ? invoiceMap.get(p.invoiceId) : null;
+      const job = !invoice && p.jobId ? jobMap.get(p.jobId) : null;
+      const clientId = invoice?.clientId || job?.clientId || p.clientId || null;
+      const client = clientId ? clientMap.get(clientId) : null;
+      return {
+        ...p,
+        invoiceNumber: invoice?.number || null,
+        jobTitle: job?.title || null,
+        clientName: client?.name || null,
+      };
+    });
+
+    withContext.sort((a, b) => {
+      const ta = new Date(a.completedAt || a.createdAt || 0).getTime();
+      const tb = new Date(b.completedAt || b.createdAt || 0).getTime();
+      return tb - ta;
+    });
+
+    return withContext;
+  };
+
   app.get("/api/terminal/payments", requireAuth, async (req: any, res) => {
     try {
       const listCtx = await getUserContext(req.userId);
       if (!hasPermission(listCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
         return res.status(403).json({ error: "You don't have permission to view payments" });
       }
-      const payments = await storage.getTerminalPayments(listCtx.effectiveUserId);
-
-      // Enrich succeeded payments with Stripe processing fee / net / settlement
-      // status so the mobile payment history can show amount, fee, net and
-      // pending-vs-available. Fee/net are cached into metadata after the first
-      // lookup; a still-"pending" settlement is re-checked until it settles.
-      let stripe: any = null;
-      let connectAccountId: string | undefined;
-      try {
-        const listSettings = await storage.getBusinessSettings(listCtx.effectiveUserId);
-        connectAccountId = (listSettings as any)?.stripeConnectAccountId || undefined;
-        stripe = await getUncachableStripeClient();
-      } catch { /* fee enrichment is best-effort */ }
-
-      const retrievePi = async (intentId: string) => {
-        if (connectAccountId) {
-          try {
-            return await stripe.paymentIntents.retrieve(intentId, { expand: ['latest_charge.balance_transaction'] }, { stripeAccount: connectAccountId });
-          } catch (err: any) {
-            if (err?.code !== 'resource_missing') throw err;
-          }
-        }
-        return await stripe.paymentIntents.retrieve(intentId, { expand: ['latest_charge.balance_transaction'] });
-      };
-
-      // Bound the Stripe fan-out: cap how many uncached payments we hit Stripe
-      // for per request (older ones hydrate lazily on subsequent loads) and run
-      // in small concurrency batches so a big history can't burst the API.
-      const MAX_LOOKUPS = 25;
-      const CONCURRENCY = 4;
-      let lookupBudget = MAX_LOOKUPS;
-
-      const enrichOne = async (p: any) => {
-        const meta = (p.metadata && typeof p.metadata === 'object') ? p.metadata : {};
-        let fee = meta.stripeFee != null ? Number(meta.stripeFee) : null;
-        let net = meta.netAmount != null ? Number(meta.netAmount) : null;
-        let settlementStatus: string | null = meta.settlementStatus || null;
-
-        const needsLookup = stripe && p.status === 'succeeded' && p.stripePaymentIntentId &&
-          !String(p.stripePaymentIntentId).startsWith('demo_pi_') &&
-          (fee == null || settlementStatus === 'pending' || !settlementStatus);
-
-        if (needsLookup && lookupBudget > 0) {
-          lookupBudget--;
-          try {
-            const pi = await retrievePi(p.stripePaymentIntentId);
-            const charge = pi?.latest_charge && typeof pi.latest_charge === 'object' ? pi.latest_charge : null;
-            const bt = charge?.balance_transaction && typeof charge.balance_transaction === 'object' ? charge.balance_transaction : null;
-            if (bt) {
-              fee = (bt.fee || 0) / 100;
-              net = (bt.net || 0) / 100;
-              settlementStatus = bt.status === 'available' ? 'available' : 'pending';
-              await storage.updateTerminalPaymentByIntent(p.stripePaymentIntentId, {
-                metadata: { ...meta, stripeFee: fee, netAmount: net, settlementStatus },
-              } as any);
-            }
-          } catch (feeErr: any) {
-            console.log('[Terminal] Fee lookup skipped for', p.stripePaymentIntentId, feeErr?.message);
-          }
-        }
-
-        return { ...p, fee, net, settlementStatus };
-      };
-
-      const enriched: any[] = [];
-      for (let i = 0; i < payments.length; i += CONCURRENCY) {
-        const batch = payments.slice(i, i + CONCURRENCY);
-        enriched.push(...await Promise.all(batch.map(enrichOne)));
-      }
-
-      // Attach readable context (client name + invoice number OR job title) so
-      // the mobile payment history shows what each charge was for instead of a
-      // generic "Tap to Pay payment". Fetched by unique referenced id in small
-      // batches to avoid an N+1 blowup on large histories.
-      const fetchInBatches = async <T,>(ids: string[], fn: (id: string) => Promise<T>, onResult: (id: string, r: T) => void) => {
-        for (let i = 0; i < ids.length; i += 8) {
-          const slice = ids.slice(i, i + 8);
-          await Promise.all(slice.map(async (id) => { try { onResult(id, await fn(id)); } catch { /* skip missing */ } }));
-        }
-      };
-      const invoiceMap = new Map<string, any>();
-      const jobMap = new Map<string, any>();
-      const clientMap = new Map<string, any>();
-      const invoiceIds = Array.from(new Set(enriched.filter((p) => p.invoiceId).map((p) => p.invoiceId as string)));
-      const jobIds = Array.from(new Set(enriched.filter((p) => !p.invoiceId && p.jobId).map((p) => p.jobId as string)));
-      await fetchInBatches(invoiceIds, (id) => storage.getInvoice(id, listCtx.effectiveUserId), (id, inv) => { if (inv) invoiceMap.set(id, inv); });
-      await fetchInBatches(jobIds, (id) => storage.getJob(id, listCtx.effectiveUserId), (id, job) => { if (job) jobMap.set(id, job); });
-      const clientIds = Array.from(new Set([
-        ...Array.from(invoiceMap.values()).map((i: any) => i.clientId),
-        ...Array.from(jobMap.values()).map((j: any) => j.clientId),
-      ].filter(Boolean) as string[]));
-      await fetchInBatches(clientIds, (id) => storage.getClientById(id), (id, c) => { if (c) clientMap.set(id, c); });
-
-      const withContext = enriched.map((p) => {
-        const invoice = p.invoiceId ? invoiceMap.get(p.invoiceId) : null;
-        const job = !invoice && p.jobId ? jobMap.get(p.jobId) : null;
-        const clientId = invoice?.clientId || job?.clientId || null;
-        const client = clientId ? clientMap.get(clientId) : null;
-        return {
-          ...p,
-          invoiceNumber: invoice?.number || null,
-          jobTitle: job?.title || null,
-          clientName: client?.name || null,
-        };
-      });
-
+      const withContext = await buildPaymentHistory(listCtx.effectiveUserId, { includePaymentRequests: false });
       res.json(withContext);
     } catch (error: any) {
       console.error("Error fetching terminal payments:", error);
       res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
+  // Unified payment history: Tap to Pay + paid Payment Links / QR codes.
+  app.get("/api/payments/history", requireAuth, async (req: any, res) => {
+    try {
+      const histCtx = await getUserContext(req.userId);
+      if (!hasPermission(histCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
+        return res.status(403).json({ error: "You don't have permission to view payments" });
+      }
+      const history = await buildPaymentHistory(histCtx.effectiveUserId, { includePaymentRequests: true });
+      res.json(history);
+    } catch (error: any) {
+      console.error("Error fetching payment history:", error);
+      res.status(500).json({ error: "Failed to fetch payment history" });
     }
   });
 
