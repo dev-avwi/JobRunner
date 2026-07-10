@@ -23717,6 +23717,15 @@ Be specific about materials, colors, and features that would be included.`
   // Get Terminal connection token - required for SDK initialization
   app.post("/api/terminal/connection-token", requireAuth, async (req: any, res) => {
     try {
+      // Workers/leads with the collect_payments permission may take Tap to Pay
+      // payments on behalf of the business — everything resolves to the OWNER's
+      // Stripe account and settings, never the worker's own.
+      const termCtx = await getUserContext(req.userId);
+      if (!hasPermission(termCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
+        return res.status(403).json({ error: "You don't have permission to collect payments" });
+      }
+      const termOwnerId = termCtx.effectiveUserId;
+
       const stripe = await getUncachableStripeClient();
       if (!stripe) {
         return res.status(503).json({ 
@@ -23725,8 +23734,8 @@ Be specific about materials, colors, and features that would be included.`
         });
       }
       
-      // Get or create a location for this user
-      const settings = await storage.getBusinessSettings(req.userId);
+      // Get or create a location for this business
+      const settings = await storage.getBusinessSettings(termOwnerId);
       let locationId: string | undefined = (settings as any)?.stripeTerminalLocationId; // column persisted in DB but absent from typed schema
       
       if (!locationId) {
@@ -23744,7 +23753,7 @@ Be specific about materials, colors, and features that would be included.`
         locationId = location.id;
         
         // Save location ID to business settings
-        await storage.updateBusinessSettings(req.userId, {
+        await storage.updateBusinessSettings(termOwnerId, {
           stripeTerminalLocationId: locationId,
         } as any);
       }
@@ -23776,12 +23785,26 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(400).json({ error: "Amount is required and must be positive" });
       }
       
+      const termCtx = await getUserContext(req.userId);
+      if (!hasPermission(termCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
+        return res.status(403).json({ error: "You don't have permission to collect payments" });
+      }
+      const termOwnerId = termCtx.effectiveUserId;
+
+      // Any invoice being collected must belong to this business.
+      if (invoiceId) {
+        const termInvoice = await storage.getInvoice(invoiceId, termOwnerId);
+        if (!termInvoice) {
+          return res.status(404).json({ error: "Invoice not found" });
+        }
+      }
+
       const stripe = await getUncachableStripeClient();
       if (!stripe) {
         return res.status(503).json({ error: "Payment processing not configured" });
       }
       
-      const settings = await storage.getBusinessSettings(req.userId);
+      const settings = await storage.getBusinessSettings(termOwnerId);
       const amountInCents = Math.round(parseFloat(amount) * 100);
       
       // Create PaymentIntent with card_present payment method type
@@ -23792,7 +23815,8 @@ Be specific about materials, colors, and features that would be included.`
         capture_method: 'automatic',
         description: description || 'In-person payment',
         metadata: {
-          userId: req.userId,
+          userId: termOwnerId,
+          collectedBy: req.userId,
           clientId: clientId || '',
           invoiceId: invoiceId || '',
           jobId: jobId || '',
@@ -23814,14 +23838,14 @@ Be specific about materials, colors, and features that would be included.`
       } else {
         // Generate idempotency key from user, amount, and timestamp (5-minute window)
         const timeWindow = Math.floor(Date.now() / (5 * 60 * 1000));
-        requestOptions.idempotencyKey = `terminal_${req.userId}_${amountInCents}_${invoiceId || jobId || 'direct'}_${timeWindow}`;
+        requestOptions.idempotencyKey = `terminal_${termOwnerId}_${amountInCents}_${invoiceId || jobId || 'direct'}_${timeWindow}`;
       }
       
       const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, requestOptions);
       
-      // Store terminal payment record
+      // Store terminal payment record (owned by the business, not the collector)
       await storage.createTerminalPayment({
-        userId: req.userId,
+        userId: termOwnerId,
         stripePaymentIntentId: paymentIntent.id,
         amount: amount.toString(),
         description: description || 'In-person payment',
@@ -23990,9 +24014,15 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(400).json({ error: "Payment intent ID is required" });
       }
 
-      // Ownership: the terminal payment must belong to the authenticated business.
+      // Ownership: the terminal payment must belong to the authenticated
+      // business (owner or a team member with the collect_payments permission).
+      const termSuccessCtx = await getUserContext(req.userId);
+      if (!hasPermission(termSuccessCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
+        return res.status(403).json({ error: "You don't have permission to collect payments" });
+      }
+      const termOwnerId = termSuccessCtx.effectiveUserId;
       const existingPayment = await storage.getTerminalPaymentByIntent(paymentIntentId);
-      if (!existingPayment || existingPayment.userId !== req.userId) {
+      if (!existingPayment || existingPayment.userId !== termOwnerId) {
         return res.status(404).json({ error: "Terminal payment not found" });
       }
       if (existingPayment.status === 'succeeded') {
@@ -24001,7 +24031,7 @@ Be specific about materials, colors, and features that would be included.`
 
       // Verify the charge actually succeeded with Stripe before marking it paid —
       // never trust the client callback. Demo bypass only for the demo business.
-      const termOwner = await storage.getUser(req.userId);
+      const termOwner = await storage.getUser(termOwnerId);
       const isDemoTerminalBusiness = termOwner?.email === DEMO_USER.email || termOwner?.email === VISITOR_USER.email || termOwner?.email === TRY_DEMO_USER.email;
       const isDemoTerminalPayment = isDemoTerminalBusiness && String(paymentIntentId).startsWith('demo_pi_');
       if (!isDemoTerminalPayment) {
@@ -24014,7 +24044,7 @@ Be specific about materials, colors, and features that would be included.`
         // payment_intent". Legacy /api/terminal/payment-intent PIs live on the
         // platform account, so fall back to a platform retrieve if the
         // connected-account lookup misses.
-        const termSettings = await storage.getBusinessSettings(req.userId);
+        const termSettings = await storage.getBusinessSettings(termOwnerId);
         let pi;
         if (termSettings?.stripeConnectAccountId) {
           try {
@@ -24044,7 +24074,7 @@ Be specific about materials, colors, and features that would be included.`
       let invoiceFullyPaid = false;
       let autoReceipt = false;
       if (existingPayment.invoiceId) {
-        const invoice = await storage.getInvoice(existingPayment.invoiceId, req.userId);
+        const invoice = await storage.getInvoice(existingPayment.invoiceId, termOwnerId);
         if (invoice) {
           const paymentAmount = parseFloat(String(existingPayment.amount || '0'));
 
@@ -24066,7 +24096,7 @@ Be specific about materials, colors, and features that would be included.`
             // the request 500s and the client/retry can re-run it.
             await storage.createPaymentRecord({
               invoiceId: invoice.id,
-              userId: req.userId,
+              userId: termOwnerId,
               amount: paymentAmount.toFixed(2),
               method: 'card',
               reference: paymentIntentId,
@@ -24088,16 +24118,16 @@ Be specific about materials, colors, and features that would be included.`
             } else if (newTotalPaid > 0) {
               updateData.status = 'partially_paid';
             }
-            await storage.updateInvoice(invoice.id, req.userId, updateData);
+            await storage.updateInvoice(invoice.id, termOwnerId, updateData);
           }
 
           if (invoiceFullyPaid) {
             // Mark the linked job as invoiced (paid on site)
             if (invoice.jobId) {
               try {
-                const job = await storage.getJob(invoice.jobId, req.userId);
+                const job = await storage.getJob(invoice.jobId, termOwnerId);
                 if (job && job.status !== 'invoiced') {
-                  await storage.updateJob(invoice.jobId, req.userId, { status: 'invoiced' });
+                  await storage.updateJob(invoice.jobId, termOwnerId, { status: 'invoiced' });
                 }
               } catch (jobErr) {
                 console.log('[Terminal] Job status update skipped:', jobErr);
@@ -24107,10 +24137,10 @@ Be specific about materials, colors, and features that would be included.`
             // Cancel any still-open payment links / requests for this invoice —
             // the customer already paid in person.
             try {
-              const openRequests = (await storage.getPaymentRequests(req.userId))
+              const openRequests = (await storage.getPaymentRequests(termOwnerId))
                 .filter((pr: any) => pr.invoiceId === invoice.id && pr.status === 'pending');
               for (const pr of openRequests) {
-                await storage.updatePaymentRequest(pr.id, req.userId, { status: 'cancelled' } as any);
+                await storage.updatePaymentRequest(pr.id, termOwnerId, { status: 'cancelled' } as any);
                 if (pr.stripePaymentIntentId && !String(pr.stripePaymentIntentId).startsWith('demo_pi_')) {
                   try {
                     const stripeForCancel = await getUncachableStripeClient();
@@ -24130,21 +24160,21 @@ Be specific about materials, colors, and features that would be included.`
               console.error('[Terminal] Failed to cancel open payment links:', cancelErr);
             }
 
-            processPaymentReceivedAutomation(req.userId, invoice.id)
+            processPaymentReceivedAutomation(termOwnerId, invoice.id)
               .catch(err => console.error('[Automations] Error processing payment received:', err));
           }
 
           // Push notification + real-time broadcast to the business
           try {
             const amountInCents = Math.round(paymentAmount * 100);
-            await notifyPaymentReceived(req.userId, amountInCents, invoice.number || `INV-${invoice.id}`, invoice.id);
+            await notifyPaymentReceived(termOwnerId, amountInCents, invoice.number || `INV-${invoice.id}`, invoice.id);
             const { broadcastPaymentReceived } = await import('./websocket');
             let clientName: string | undefined;
             if (invoice.clientId) {
               const payClient = await storage.getClientById(invoice.clientId);
               clientName = payClient?.name || undefined;
             }
-            broadcastPaymentReceived(req.userId, {
+            broadcastPaymentReceived(termOwnerId, {
               amount: amountInCents,
               invoiceNumber: invoice.number,
               clientName,
@@ -24156,7 +24186,7 @@ Be specific about materials, colors, and features that would be included.`
 
           autoReceipt = true;
           autoSendReceiptAfterPayment(
-            req.userId,
+            termOwnerId,
             invoice.id,
             paymentAmount,
             'card_present',
@@ -24198,9 +24228,15 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(400).json({ error: "Payment intent ID is required" });
       }
 
-      // Ownership: only the business that created the payment may cancel it.
+      // Ownership: only the business that created the payment may cancel it
+      // (owner or a team member with the collect_payments permission).
+      const cancelCtx = await getUserContext(req.userId);
+      if (!hasPermission(cancelCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
+        return res.status(403).json({ error: "You don't have permission to collect payments" });
+      }
+      const cancelOwnerId = cancelCtx.effectiveUserId;
       const cancelPayment = await storage.getTerminalPaymentByIntent(paymentIntentId);
-      if (!cancelPayment || cancelPayment.userId !== req.userId) {
+      if (!cancelPayment || cancelPayment.userId !== cancelOwnerId) {
         return res.status(404).json({ error: "Terminal payment not found" });
       }
 
@@ -24208,7 +24244,7 @@ Be specific about materials, colors, and features that would be included.`
       if (stripe && !String(paymentIntentId).startsWith('demo_pi_')) {
         // Terminal PIs are direct charges on the connected account; legacy
         // ones live on the platform — try connected first, fall back.
-        const cancelSettings = await storage.getBusinessSettings(req.userId);
+        const cancelSettings = await storage.getBusinessSettings(cancelOwnerId);
         try {
           if (cancelSettings?.stripeConnectAccountId) {
             try {
@@ -24243,7 +24279,11 @@ Be specific about materials, colors, and features that would be included.`
   // Get terminal payment history
   app.get("/api/terminal/payments", requireAuth, async (req: any, res) => {
     try {
-      const payments = await storage.getTerminalPayments(req.userId);
+      const listCtx = await getUserContext(req.userId);
+      if (!hasPermission(listCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
+        return res.status(403).json({ error: "You don't have permission to view payments" });
+      }
+      const payments = await storage.getTerminalPayments(listCtx.effectiveUserId);
       res.json(payments);
     } catch (error: any) {
       console.error("Error fetching terminal payments:", error);
@@ -24254,6 +24294,12 @@ Be specific about materials, colors, and features that would be included.`
   // Check if Terminal/Tap to Pay is available
   app.get("/api/terminal/availability", requireAuth, async (req: any, res) => {
     try {
+      const availCtx = await getUserContext(req.userId);
+      if (!hasPermission(availCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
+        return res.status(403).json({ error: "You don't have permission to collect payments" });
+      }
+      const availOwnerId = availCtx.effectiveUserId;
+
       const stripe = await getUncachableStripeClient();
       const stripeConfigured = !!stripe;
       
@@ -24262,7 +24308,7 @@ Be specific about materials, colors, and features that would be included.`
       if (stripe) {
         try {
           // Try to create a connection token to verify Terminal is enabled
-          const settings = await storage.getBusinessSettings(req.userId);
+          const settings = await storage.getBusinessSettings(availOwnerId);
           if ((settings as any)?.stripeTerminalLocationId) {
             terminalEnabled = true;
           } else {

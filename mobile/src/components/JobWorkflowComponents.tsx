@@ -1069,8 +1069,9 @@ export function PaymentCollectionCard({
   const { colors } = useTheme();
   const styles = createPaymentStyles(colors);
 
-  // Only show if there's an unpaid invoice
-  if (!invoice || invoice.status === 'paid' || invoice.status === 'draft' || !canCollectPayments) {
+  // Only show if there's an unpaid invoice. Draft invoices ARE collectible —
+  // tradies often collect on the spot before sending the invoice.
+  if (!invoice || invoice.status === 'paid' || !canCollectPayments) {
     return null;
   }
 
