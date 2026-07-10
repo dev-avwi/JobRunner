@@ -24646,6 +24646,8 @@ Be specific about materials, colors, and features that would be included.`
           email: businessWithLogo.email,
           logoUrl: businessWithLogo.logoUrl,
           brandColor: businessWithLogo.brandColor || '#dc2626',
+          documentTemplate: businessWithLogo.documentTemplate,
+          documentTemplateSettings: businessWithLogo.documentTemplateSettings,
         },
         invoice: invoice ? {
           number: invoice.number,
@@ -24722,6 +24724,8 @@ Be specific about materials, colors, and features that would be included.`
           email: businessWithLogo.email,
           logoUrl: businessWithLogo.logoUrl,
           brandColor: businessWithLogo.brandColor || '#dc2626',
+          documentTemplate: businessWithLogo.documentTemplate,
+          documentTemplateSettings: businessWithLogo.documentTemplateSettings,
         },
         invoice: invoice ? {
           number: invoice.number,
@@ -24797,6 +24801,8 @@ Be specific about materials, colors, and features that would be included.`
           email: businessWithLogo?.email,
           logoUrl: businessWithLogo?.logoUrl,
           brandColor: brandColor,
+          documentTemplate: businessWithLogo?.documentTemplate,
+          documentTemplateSettings: businessWithLogo?.documentTemplateSettings,
         },
         invoice: null,
         job: null,

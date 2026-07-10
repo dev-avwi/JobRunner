@@ -3223,6 +3223,8 @@ export interface PaymentReceiptData {
   } | null;
   // Structural subset (template reads only these, all null-safe); accepts full
   // BusinessSettings as well as the minimal { businessName } fallback.
+  // documentTemplate/documentTemplateSettings drive the same template selection
+  // used by quotes/invoices so receipts render with the owner's chosen style.
   business: {
     businessName?: string | null;
     abn?: string | null;
@@ -3232,6 +3234,8 @@ export interface PaymentReceiptData {
     logoUrl?: string | null;
     licenseNumber?: string | null;
     brandColor?: string | null;
+    documentTemplate?: string | null;
+    documentTemplateSettings?: unknown;
   };
   invoice?: {
     number: string;
@@ -3257,10 +3261,10 @@ const formatCentsToAUD = (cents: number): string => {
 export const generatePaymentReceiptPDF = (data: PaymentReceiptData): string => {
   const { payment, client, business, invoice, job } = data;
   
-  // Receipts only carry the invoice number/title (no per-document template
-  // fields), so always render with the business-level template settings.
-  // The receipt's business blob is a structural subset that never holds the
-  // template fields, so it safely resolves to the default template.
+  // Render with the owner's business-level document template (modern /
+  // professional / minimal) + custom settings so receipts match their quotes
+  // and invoices. Falls back to the default template when those fields are
+  // absent (e.g. the minimal { businessName } fallback).
   const { template, accentColor } = getTemplateFromBusinessSettings(business as { documentTemplate?: string | null; documentTemplateSettings?: unknown });
   
   // Amounts are already in dollars (not cents) - no conversion needed
