@@ -341,8 +341,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   modalContent: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing['3xl'],
   },
   modalStepTitle: {
     color: colors.foreground,
@@ -384,23 +384,31 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     textAlign: 'center',
   },
   successIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: colors.successLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   successTitle: {
     color: colors.success,
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   successAmount: {
     color: colors.foreground,
-    fontSize: 18,
-    marginTop: spacing.sm,
+    fontSize: 30,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginTop: spacing.xs,
+  },
+  successAmountLabel: {
+    color: colors.mutedForeground,
+    fontSize: 14,
+    marginTop: spacing.xxs,
   },
   errorIcon: {
     width: 96,
@@ -489,6 +497,37 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginTop: spacing.sm,
     color: colors.foreground,
     fontSize: 14,
+  },
+  receiptOptionsLabel: {
+    ...typography.label,
+    color: colors.mutedForeground,
+    alignSelf: 'flex-start',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  receiptOption: {
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  receiptOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  receiptOptionInput: {
+    borderTopWidth: 1,
+    borderTopColor: colors.isDark ? colors.borderLight : colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    color: colors.foreground,
+    fontSize: 15,
+    letterSpacing: 0,
+    textAlign: 'left',
   },
   qrCodeContainer: {
     width: 220,
@@ -3878,11 +3917,12 @@ export default function CollectScreen() {
             <View style={styles.successIcon}>
               <Feather name="check-circle" size={48} color={colors.success} />
             </View>
-            <Text style={styles.successTitle}>Payment Complete!</Text>
+            <Text style={styles.successTitle}>Payment Complete</Text>
             <Text style={styles.successAmount}>
-              ${(lastPaymentAmount / 100).toFixed(2)} received
+              ${(lastPaymentAmount / 100).toFixed(2)}
             </Text>
-            
+            <Text style={styles.successAmountLabel}>received</Text>
+
             {selectedInvoice && (
               <Text style={[styles.modalStepSubtitle, { marginTop: spacing.sm }]}>
                 {selectedInvoice.invoiceNumber} • {selectedInvoice.clientName}
@@ -3890,7 +3930,7 @@ export default function CollectScreen() {
             )}
 
             {autoReceiptWasSent && (
-              <View style={{ marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.success + '15', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 8 }}>
+              <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.success + '15', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.lg }}>
                 <Feather name="check" size={16} color={colors.success} />
                 <Text style={{ color: colors.success, fontSize: 14, fontWeight: '600' }}>
                   Receipt sent automatically
@@ -3898,81 +3938,82 @@ export default function CollectScreen() {
               </View>
             )}
 
-            <View style={{ marginTop: spacing.md, width: '100%', gap: spacing.sm }}>
-              <View>
-                <PressableRow
-                  style={[
-                    styles.paymentMethodCard,
-                    sendingReceipt && styles.paymentMethodCardDisabled
-                  ]}
-                  onPress={sendReceiptEmail}
-                  disabled={sendingReceipt}
-
-                >
-                  <View style={[styles.paymentMethodIcon, { backgroundColor: colors.infoLight }]}>
-                    <Feather name="mail" size={24} color={colors.info} />
-                  </View>
-                  <View style={styles.paymentMethodContent}>
-                    <Text style={styles.paymentMethodTitle}>Email Receipt</Text>
-                    <Text style={styles.paymentMethodDescription}>
-                      {manualEmail || selectedInvoice?.clientEmail || 'Enter email below'}
-                    </Text>
-                  </View>
-                  {sendingReceipt ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <Feather name="send" size={20} color={colors.mutedForeground} />
+            <View style={{ marginTop: spacing['2xl'], width: '100%' }}>
+              <Text style={styles.receiptOptionsLabel}>Send Receipt</Text>
+              <View style={{ gap: spacing.md }}>
+                <View style={styles.receiptOption}>
+                  <PressableRow
+                    style={[
+                      styles.receiptOptionRow,
+                      sendingReceipt && styles.paymentMethodCardDisabled
+                    ]}
+                    onPress={sendReceiptEmail}
+                    disabled={sendingReceipt}
+                  >
+                    <View style={[styles.paymentMethodIcon, { backgroundColor: colors.infoLight }]}>
+                      <Feather name="mail" size={22} color={colors.info} />
+                    </View>
+                    <View style={styles.paymentMethodContent}>
+                      <Text style={styles.paymentMethodTitle}>Email Receipt</Text>
+                      <Text style={styles.paymentMethodDescription} numberOfLines={1}>
+                        {manualEmail || selectedInvoice?.clientEmail || 'Enter email below'}
+                      </Text>
+                    </View>
+                    {sendingReceipt ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Feather name="send" size={20} color={colors.mutedForeground} />
+                    )}
+                  </PressableRow>
+                  {!selectedInvoice?.clientEmail && (
+                    <TextInput
+                      style={styles.receiptOptionInput}
+                      placeholder="Enter email address"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={manualEmail}
+                      onChangeText={setManualEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
                   )}
-                </PressableRow>
-                {!selectedInvoice?.clientEmail && (
-                  <TextInput
-                    style={styles.receiptInput}
-                    placeholder="Enter email address"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={manualEmail}
-                    onChangeText={setManualEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                )}
-              </View>
+                </View>
 
-              <View>
-                <PressableRow
-                  style={[
-                    styles.paymentMethodCard,
-                    sendingReceipt && styles.paymentMethodCardDisabled
-                  ]}
-                  onPress={sendReceiptSMS}
-                  disabled={sendingReceipt}
-
-                >
-                  <View style={[styles.paymentMethodIcon, { backgroundColor: colors.successLight }]}>
-                    <Feather name="message-circle" size={24} color={colors.success} />
-                  </View>
-                  <View style={styles.paymentMethodContent}>
-                    <Text style={styles.paymentMethodTitle}>SMS Receipt</Text>
-                    <Text style={styles.paymentMethodDescription}>
-                      {manualPhone || selectedInvoice?.clientPhone || 'Enter phone below'}
-                    </Text>
-                  </View>
-                  {sendingReceipt ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <Feather name="send" size={20} color={colors.mutedForeground} />
+                <View style={styles.receiptOption}>
+                  <PressableRow
+                    style={[
+                      styles.receiptOptionRow,
+                      sendingReceipt && styles.paymentMethodCardDisabled
+                    ]}
+                    onPress={sendReceiptSMS}
+                    disabled={sendingReceipt}
+                  >
+                    <View style={[styles.paymentMethodIcon, { backgroundColor: colors.successLight }]}>
+                      <Feather name="message-circle" size={22} color={colors.success} />
+                    </View>
+                    <View style={styles.paymentMethodContent}>
+                      <Text style={styles.paymentMethodTitle}>SMS Receipt</Text>
+                      <Text style={styles.paymentMethodDescription} numberOfLines={1}>
+                        {manualPhone || selectedInvoice?.clientPhone || 'Enter phone below'}
+                      </Text>
+                    </View>
+                    {sendingReceipt ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Feather name="send" size={20} color={colors.mutedForeground} />
+                    )}
+                  </PressableRow>
+                  {!selectedInvoice?.clientPhone && (
+                    <TextInput
+                      style={styles.receiptOptionInput}
+                      placeholder="Enter phone number"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={manualPhone}
+                      onChangeText={setManualPhone}
+                      keyboardType="phone-pad"
+                    />
                   )}
-                </PressableRow>
-                {!selectedInvoice?.clientPhone && (
-                  <TextInput
-                    style={styles.receiptInput}
-                    placeholder="Enter phone number"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={manualPhone}
-                    onChangeText={setManualPhone}
-                    keyboardType="phone-pad"
-                  />
-                )}
+                </View>
               </View>
             </View>
           </View>
