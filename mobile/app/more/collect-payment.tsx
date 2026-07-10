@@ -35,6 +35,7 @@ import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
 import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
 import { showToast } from '../../src/lib/toast';
@@ -1054,6 +1055,21 @@ export default function CollectScreen() {
   const [recentReceipts, setRecentReceipts] = useState<any[]>([]);
   const [paymentRequests, setPaymentRequests] = useState<any[]>([]);
   const [receiptsLoading, setReceiptsLoading] = useState(false);
+  const [quickCollectJobId, setQuickCollectJobId] = useState<string | null>(null);
+  const [sessionPaidJobIds, setSessionPaidJobIds] = useState<Set<string>>(new Set());
+  const confirmDialog = useConfirmDialog();
+
+  // Jobs already collected against — used to flag "Paid" in the job picker so a
+  // no-invoice job isn't accidentally charged twice. Combines jobs paid in this
+  // session (immediate) with any recent receipts that carry a jobId (survives
+  // reload). Scoped to this screen only — does NOT change the job's status.
+  const paidJobIds = useMemo(() => {
+    const set = new Set<string>(sessionPaidJobIds);
+    (Array.isArray(recentReceipts) ? recentReceipts : []).forEach((r: any) => {
+      if (r?.jobId) set.add(r.jobId);
+    });
+    return set;
+  }, [recentReceipts, sessionPaidJobIds]);
   
   // Invoice Picker Modal state
   const [showInvoicePickerModal, setShowInvoicePickerModal] = useState(false);
@@ -1093,7 +1109,7 @@ export default function CollectScreen() {
     setReceiptsLoading(true);
     try {
       const [receiptsResponse, requestsResponse] = await Promise.all([
-        api.get<any[]>('/api/receipts?limit=10'),
+        api.get<any[]>('/api/receipts?limit=50'),
         api.get<any[]>('/api/payment-requests?limit=15')
       ]);
       if (!receiptsResponse.error && Array.isArray(receiptsResponse.data)) {
@@ -1447,11 +1463,16 @@ export default function CollectScreen() {
       // "Hold Here to Pay" interface automatically - no custom UI needed
       const result = await terminal.collectPayment(amountCents, description || undefined, {
         invoiceId: selectedInvoice?.id,
-        jobId: selectedInvoice?.jobId || undefined,
+        jobId: selectedInvoice?.jobId || quickCollectJobId || undefined,
       });
       
       if (result) {
         await confirmTapToPaySuccess(result.id, amountCents);
+        const paidJobId = selectedInvoice?.jobId || quickCollectJobId;
+        if (paidJobId) {
+          setSessionPaidJobIds((prev) => { const next = new Set(prev); next.add(paidJobId); return next; });
+        }
+        fetchReceipts();
         
         if (!useNativeSDK) {
           setPaymentStep('success');
@@ -1486,6 +1507,7 @@ export default function CollectScreen() {
       }
     } finally {
       setTapPreparing(false);
+      setQuickCollectJobId(null);
     }
   };
 
@@ -1530,11 +1552,16 @@ export default function CollectScreen() {
       
       const result = await terminal.collectPayment(amountCents, description || undefined, {
         invoiceId: selectedInvoice?.id,
-        jobId: selectedInvoice?.jobId || undefined,
+        jobId: selectedInvoice?.jobId || quickCollectJobId || undefined,
       });
       
       if (result) {
         await confirmTapToPaySuccess(result.id, amountCents);
+        const paidJobId = selectedInvoice?.jobId || quickCollectJobId;
+        if (paidJobId) {
+          setSessionPaidJobIds((prev) => { const next = new Set(prev); next.add(paidJobId); return next; });
+        }
+        fetchReceipts();
 
         if (!useNativeSDK) {
           setPaymentStep('success');
@@ -1568,6 +1595,7 @@ export default function CollectScreen() {
       }
     } finally {
       setTapPreparing(false);
+      setQuickCollectJobId(null);
     }
   };
 
@@ -2142,6 +2170,7 @@ export default function CollectScreen() {
     
     setAmount(amountDue.toFixed(2));
     setDescription(`Payment for ${invoice.invoiceNumber || 'Invoice'}`);
+    setQuickCollectJobId(null);
     
     setShowInvoicePickerModal(false);
     
@@ -2155,6 +2184,7 @@ export default function CollectScreen() {
   };
 
   const handleSelectJobFromPicker = (job: typeof collectibleJobs[0]) => {
+    setQuickCollectJobId(job.id);
     if (job.outstandingAmount > 0) {
       setAmount(job.outstandingAmount.toFixed(2));
       setDescription(`Payment for ${job.title}`);
@@ -2175,6 +2205,7 @@ export default function CollectScreen() {
   };
 
   const handleCustomAmountFromPicker = () => {
+    setQuickCollectJobId(null);
     setShowInvoicePickerModal(false);
     setPickerSearch('');
     setCustomAmountValue('');
@@ -2295,6 +2326,7 @@ export default function CollectScreen() {
     setCustomAmountValue('');
     setCustomAmountDescription('');
     setPendingPaymentMethod(null);
+    setQuickCollectJobId(null);
   };
 
   const proceedToPaymentMethod = (method: 'record' | 'qr' | 'link' | 'tap') => {
@@ -2319,6 +2351,7 @@ export default function CollectScreen() {
     setPendingPaymentMethod(null);
     setPickerSearch('');
     setPickerTab('jobs');
+    setQuickCollectJobId(null);
   };
 
   const renderTapToPayModal = () => (
@@ -3219,11 +3252,23 @@ export default function CollectScreen() {
                 ) : (
                   filteredJobs.map(job => {
                     const sc = statusColors[job.status] || statusColors.scheduled;
+                    const isPaid = paidJobIds.has(job.id);
                     return (
                       <TouchableOpacity 
                         key={job.id}
                         style={styles.invoicePickerItem}
-                        onPress={() => handleSelectJobFromPicker(job)}
+                        onPress={() => {
+                          if (isPaid) {
+                            confirmDialog({
+                              title: 'Already paid',
+                              message: `You've already collected a payment for "${job.title}". Collect another payment?`,
+                              confirmText: 'Collect again',
+                              cancelText: 'Cancel',
+                            }).then((ok) => { if (ok) handleSelectJobFromPicker(job); });
+                            return;
+                          }
+                          handleSelectJobFromPicker(job);
+                        }}
                         activeOpacity={0.7}
                       >
                         <View style={styles.invoicePickerItemContent}>
@@ -3239,7 +3284,12 @@ export default function CollectScreen() {
                           )}
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                          {job.outstandingAmount > 0 ? (
+                          {isPaid ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.successLight, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.full }}>
+                              <Feather name="check-circle" size={12} color={colors.success} />
+                              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.success }}>Paid</Text>
+                            </View>
+                          ) : job.outstandingAmount > 0 ? (
                             <>
                               <Text style={[styles.invoicePickerItemAmount, job.hasOverdue && { color: colors.destructive }]}>
                                 {formatCurrency(job.outstandingAmount)}

@@ -24409,7 +24409,43 @@ Be specific about materials, colors, and features that would be included.`
         enriched.push(...await Promise.all(batch.map(enrichOne)));
       }
 
-      res.json(enriched);
+      // Attach readable context (client name + invoice number OR job title) so
+      // the mobile payment history shows what each charge was for instead of a
+      // generic "Tap to Pay payment". Fetched by unique referenced id in small
+      // batches to avoid an N+1 blowup on large histories.
+      const fetchInBatches = async <T,>(ids: string[], fn: (id: string) => Promise<T>, onResult: (id: string, r: T) => void) => {
+        for (let i = 0; i < ids.length; i += 8) {
+          const slice = ids.slice(i, i + 8);
+          await Promise.all(slice.map(async (id) => { try { onResult(id, await fn(id)); } catch { /* skip missing */ } }));
+        }
+      };
+      const invoiceMap = new Map<string, any>();
+      const jobMap = new Map<string, any>();
+      const clientMap = new Map<string, any>();
+      const invoiceIds = Array.from(new Set(enriched.filter((p) => p.invoiceId).map((p) => p.invoiceId as string)));
+      const jobIds = Array.from(new Set(enriched.filter((p) => !p.invoiceId && p.jobId).map((p) => p.jobId as string)));
+      await fetchInBatches(invoiceIds, (id) => storage.getInvoice(id, listCtx.effectiveUserId), (id, inv) => { if (inv) invoiceMap.set(id, inv); });
+      await fetchInBatches(jobIds, (id) => storage.getJob(id, listCtx.effectiveUserId), (id, job) => { if (job) jobMap.set(id, job); });
+      const clientIds = Array.from(new Set([
+        ...Array.from(invoiceMap.values()).map((i: any) => i.clientId),
+        ...Array.from(jobMap.values()).map((j: any) => j.clientId),
+      ].filter(Boolean) as string[]));
+      await fetchInBatches(clientIds, (id) => storage.getClientById(id), (id, c) => { if (c) clientMap.set(id, c); });
+
+      const withContext = enriched.map((p) => {
+        const invoice = p.invoiceId ? invoiceMap.get(p.invoiceId) : null;
+        const job = !invoice && p.jobId ? jobMap.get(p.jobId) : null;
+        const clientId = invoice?.clientId || job?.clientId || null;
+        const client = clientId ? clientMap.get(clientId) : null;
+        return {
+          ...p,
+          invoiceNumber: invoice?.number || null,
+          jobTitle: job?.title || null,
+          clientName: client?.name || null,
+        };
+      });
+
+      res.json(withContext);
     } catch (error: any) {
       console.error("Error fetching terminal payments:", error);
       res.status(500).json({ error: "Failed to fetch payments" });

@@ -32,6 +32,9 @@ interface TerminalPayment {
   fee: number | null;
   net: number | null;
   settlementStatus: string | null;
+  invoiceNumber: string | null;
+  jobTitle: string | null;
+  clientName: string | null;
 }
 
 const formatCurrency = (amount: number | string | null) => {
@@ -165,7 +168,24 @@ export default function PaymentHistoryScreen() {
                       </View>
                     </View>
 
-                    {(p.description) ? (
+                    {p.clientName ? (
+                      <View style={styles.contextRow}>
+                        <Feather name="user" size={13} color={colors.mutedForeground} />
+                        <Text style={styles.contextName} numberOfLines={1}>{p.clientName}</Text>
+                      </View>
+                    ) : null}
+
+                    {p.invoiceNumber ? (
+                      <View style={styles.contextRow}>
+                        <Feather name="file-text" size={13} color={colors.mutedForeground} />
+                        <Text style={styles.contextSub} numberOfLines={1}>Invoice {p.invoiceNumber}</Text>
+                      </View>
+                    ) : p.jobTitle ? (
+                      <View style={styles.contextRow}>
+                        <Feather name="briefcase" size={13} color={colors.mutedForeground} />
+                        <Text style={styles.contextSub} numberOfLines={1}>{p.jobTitle}</Text>
+                      </View>
+                    ) : p.description ? (
                       <Text style={styles.description} numberOfLines={1}>{p.description}</Text>
                     ) : null}
 
@@ -333,6 +353,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   description: {
     ...typography.body,
     color: colors.mutedForeground,
+  },
+  contextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  contextName: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.foreground,
+    flexShrink: 1,
+  },
+  contextSub: {
+    ...typography.body,
+    color: colors.mutedForeground,
+    flexShrink: 1,
   },
   breakdown: {
     borderTopWidth: 1,
