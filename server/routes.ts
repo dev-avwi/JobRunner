@@ -24195,6 +24195,62 @@ Be specific about materials, colors, and features that would be included.`
             req,
           ).catch(err => console.error('[Terminal] Auto-receipt failed:', err));
         }
+      } else {
+        // Direct Tap to Pay with no invoice/job link — still record a receipt
+        // using the owner's receipt numbering/template so the payment is
+        // tracked and shows up in Receipts + payment history (not just as a
+        // raw terminal row).
+        const directAmount = parseFloat(String(existingPayment.amount || '0'));
+        try {
+          if (directAmount > 0) {
+            const existingReceipts = await storage.getReceipts(termOwnerId);
+            const already = existingReceipts.some((r: any) => r.paymentReference === paymentIntentId);
+            if (!already) {
+              const receiptNumber = await storage.generateReceiptNumber(termOwnerId);
+              const gstAmount = directAmount / 11;
+              const subtotal = directAmount - gstAmount;
+              const directReceipt = await storage.createReceipt({
+                userId: termOwnerId,
+                receiptNumber,
+                clientId: existingPayment.clientId || null,
+                jobId: existingPayment.jobId || null,
+                amount: directAmount.toFixed(2),
+                gstAmount: gstAmount.toFixed(2),
+                subtotal: subtotal.toFixed(2),
+                paymentMethod: 'tap_to_pay',
+                paymentReference: paymentIntentId,
+                description: existingPayment.description || 'Tap to Pay payment',
+                paidAt: new Date(),
+              });
+              await logActivity(
+                termOwnerId,
+                'payment_received',
+                `Receipt ${receiptNumber} created`,
+                `Tap to Pay payment of $${directAmount.toFixed(2)} received`,
+                null,
+                null,
+                { receiptNumber, receiptId: directReceipt.id, amount: directAmount.toFixed(2), paymentMethod: 'tap_to_pay', paymentReference: paymentIntentId }
+              );
+              autoReceipt = true;
+            }
+          }
+        } catch (directReceiptErr) {
+          console.error('[Terminal] Direct Tap to Pay receipt creation failed:', directReceiptErr);
+        }
+
+        // Notify + broadcast the direct payment so it hits the owner's bell
+        // and live dashboards, same as invoice-linked taps.
+        try {
+          const amountInCents = Math.round(directAmount * 100);
+          await notifyPaymentReceived(termOwnerId, amountInCents, 'Tap to Pay', '');
+          const { broadcastPaymentReceived } = await import('./websocket');
+          broadcastPaymentReceived(termOwnerId, {
+            amount: amountInCents,
+            paymentMethod: 'card_present',
+          });
+        } catch (notifyErr) {
+          console.error('[Terminal] Direct payment notification failed:', notifyErr);
+        }
       }
 
       // All critical side effects done — now mark the terminal payment
@@ -24284,7 +24340,76 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(403).json({ error: "You don't have permission to view payments" });
       }
       const payments = await storage.getTerminalPayments(listCtx.effectiveUserId);
-      res.json(payments);
+
+      // Enrich succeeded payments with Stripe processing fee / net / settlement
+      // status so the mobile payment history can show amount, fee, net and
+      // pending-vs-available. Fee/net are cached into metadata after the first
+      // lookup; a still-"pending" settlement is re-checked until it settles.
+      let stripe: any = null;
+      let connectAccountId: string | undefined;
+      try {
+        const listSettings = await storage.getBusinessSettings(listCtx.effectiveUserId);
+        connectAccountId = (listSettings as any)?.stripeConnectAccountId || undefined;
+        stripe = await getUncachableStripeClient();
+      } catch { /* fee enrichment is best-effort */ }
+
+      const retrievePi = async (intentId: string) => {
+        if (connectAccountId) {
+          try {
+            return await stripe.paymentIntents.retrieve(intentId, { expand: ['latest_charge.balance_transaction'] }, { stripeAccount: connectAccountId });
+          } catch (err: any) {
+            if (err?.code !== 'resource_missing') throw err;
+          }
+        }
+        return await stripe.paymentIntents.retrieve(intentId, { expand: ['latest_charge.balance_transaction'] });
+      };
+
+      // Bound the Stripe fan-out: cap how many uncached payments we hit Stripe
+      // for per request (older ones hydrate lazily on subsequent loads) and run
+      // in small concurrency batches so a big history can't burst the API.
+      const MAX_LOOKUPS = 25;
+      const CONCURRENCY = 4;
+      let lookupBudget = MAX_LOOKUPS;
+
+      const enrichOne = async (p: any) => {
+        const meta = (p.metadata && typeof p.metadata === 'object') ? p.metadata : {};
+        let fee = meta.stripeFee != null ? Number(meta.stripeFee) : null;
+        let net = meta.netAmount != null ? Number(meta.netAmount) : null;
+        let settlementStatus: string | null = meta.settlementStatus || null;
+
+        const needsLookup = stripe && p.status === 'succeeded' && p.stripePaymentIntentId &&
+          !String(p.stripePaymentIntentId).startsWith('demo_pi_') &&
+          (fee == null || settlementStatus === 'pending' || !settlementStatus);
+
+        if (needsLookup && lookupBudget > 0) {
+          lookupBudget--;
+          try {
+            const pi = await retrievePi(p.stripePaymentIntentId);
+            const charge = pi?.latest_charge && typeof pi.latest_charge === 'object' ? pi.latest_charge : null;
+            const bt = charge?.balance_transaction && typeof charge.balance_transaction === 'object' ? charge.balance_transaction : null;
+            if (bt) {
+              fee = (bt.fee || 0) / 100;
+              net = (bt.net || 0) / 100;
+              settlementStatus = bt.status === 'available' ? 'available' : 'pending';
+              await storage.updateTerminalPaymentByIntent(p.stripePaymentIntentId, {
+                metadata: { ...meta, stripeFee: fee, netAmount: net, settlementStatus },
+              } as any);
+            }
+          } catch (feeErr: any) {
+            console.log('[Terminal] Fee lookup skipped for', p.stripePaymentIntentId, feeErr?.message);
+          }
+        }
+
+        return { ...p, fee, net, settlementStatus };
+      };
+
+      const enriched: any[] = [];
+      for (let i = 0; i < payments.length; i += CONCURRENCY) {
+        const batch = payments.slice(i, i + CONCURRENCY);
+        enriched.push(...await Promise.all(batch.map(enrichOne)));
+      }
+
+      res.json(enriched);
     } catch (error: any) {
       console.error("Error fetching terminal payments:", error);
       res.status(500).json({ error: "Failed to fetch payments" });

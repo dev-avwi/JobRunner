@@ -3478,7 +3478,7 @@ export default function CollectScreen() {
             <TouchableOpacity 
               style={styles.compactQuickLink} 
               activeOpacity={0.7}
-              onPress={() => router.push('/more/payments')}
+              onPress={() => router.push('/more/payment-history')}
             >
               <Feather name="clock" size={14} color={colors.foreground} />
               <Text style={styles.compactQuickLinkText}>History</Text>
