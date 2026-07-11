@@ -39,8 +39,15 @@ interface TerminalPayment {
 }
 
 const methodMeta = (p: TerminalPayment): { label: string; icon: string } => {
-  if (p.method === 'payment_link') return { label: 'Payment Link', icon: 'link' };
-  return { label: 'Tap to Pay', icon: 'credit-card' };
+  switch (p.method) {
+    case 'payment_link': return { label: 'Payment Link', icon: 'link' };
+    case 'qr_code': return { label: 'QR Code', icon: 'grid' };
+    case 'card': return { label: 'Card', icon: 'credit-card' };
+    case 'cash': return { label: 'Cash', icon: 'dollar-sign' };
+    case 'bank_transfer': return { label: 'Bank Transfer', icon: 'repeat' };
+    case 'tap_to_pay': return { label: 'Tap to Pay', icon: 'credit-card' };
+    default: return { label: 'Payment', icon: 'dollar-sign' };
+  }
 };
 
 const formatCurrency = (amount: number | string | null) => {
@@ -50,6 +57,9 @@ const formatCurrency = (amount: number | string | null) => {
 
 const cardLabel = (p: TerminalPayment) => {
   if (p.method === 'payment_link') return 'Payment link / QR';
+  if (p.method === 'qr_code') return 'QR code';
+  if (p.method === 'cash') return 'Cash';
+  if (p.method === 'bank_transfer') return 'Bank transfer';
   const brand = p.cardBrand ? p.cardBrand.charAt(0).toUpperCase() + p.cardBrand.slice(1) : 'Card';
   return p.cardLast4 ? `${brand} •••• ${p.cardLast4}` : brand;
 };
@@ -110,6 +120,7 @@ export default function PaymentHistoryScreen() {
   const succeeded = payments.filter((p) => p.status === 'succeeded');
   const totalCollected = succeeded.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const totalNet = succeeded.reduce((sum, p) => sum + (p.net != null ? Number(p.net) : Number(p.amount || 0)), 0);
+  const hasFees = succeeded.some((p) => p.fee != null);
 
   return (
     <>
@@ -139,10 +150,12 @@ export default function PaymentHistoryScreen() {
                 <Text style={styles.summaryLabel}>Collected</Text>
                 <Text style={styles.summaryValue}>{formatCurrency(totalCollected)}</Text>
               </View>
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>Net after fees</Text>
-                <Text style={styles.summaryValue}>{formatCurrency(totalNet)}</Text>
-              </View>
+              {hasFees && (
+                <View style={styles.summaryCard}>
+                  <Text style={styles.summaryLabel}>Net after fees</Text>
+                  <Text style={styles.summaryValue}>{formatCurrency(totalNet)}</Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -154,7 +167,7 @@ export default function PaymentHistoryScreen() {
             <View style={styles.centered}>
               <Feather name="credit-card" size={40} color={colors.mutedForeground} />
               <Text style={styles.emptyTitle}>No payments yet</Text>
-              <Text style={styles.emptyText}>Payments you collect — Tap to Pay, payment links and QR codes — appear here with their fees and net amounts.</Text>
+              <Text style={styles.emptyText}>Payments you collect — Tap to Pay, payment links, QR codes and more — appear here once they're paid.</Text>
             </View>
           ) : (
             <View style={styles.list}>

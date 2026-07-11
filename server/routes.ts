@@ -24333,14 +24333,15 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // Build a unified payment history. Always includes Tap to Pay charges
-  // (terminal_payments); when includePaymentRequests is set it also folds in
-  // paid Payment Links / QR codes (both are payment_requests). Every entry is
-  // normalized to the same shape, enriched with Stripe fee/net + settlement
-  // (Tap to Pay only — links/QR aren't fee-tracked) and readable context
-  // (client name + invoice number OR job title), then sorted newest-first.
+  // (terminal_payments); when includeReceipts is set it also folds in every
+  // other collected payment via the receipts ledger (Payment Links, QR codes,
+  // card, cash, bank transfer), deduped against Tap to Pay by PaymentIntent id.
+  // Every entry is normalized to the same shape, enriched with Stripe fee/net +
+  // settlement (Tap to Pay only — others aren't fee-tracked) and readable
+  // context (client name + invoice number OR job title), then sorted newest-first.
   const buildPaymentHistory = async (
     effectiveUserId: string,
-    opts: { includePaymentRequests?: boolean } = {},
+    opts: { includeReceipts?: boolean } = {},
   ): Promise<any[]> => {
     const payments = await storage.getTerminalPayments(effectiveUserId);
 
@@ -24408,15 +24409,25 @@ Be specific about materials, colors, and features that would be included.`
       enriched.push(...await Promise.all(batch.map(enrichOne)));
     }
 
-    // Paid Payment Links / QR codes (both are payment_requests). Normalized to
-    // the terminal shape; fee/net aren't tracked for these so they show gross.
-    if (opts.includePaymentRequests) {
-      const requests = await storage.getPaymentRequests(effectiveUserId);
-      for (const r of requests) {
-        if ((r as any).status !== 'paid') continue;
+    // Every other collected payment (Payment Links, QR codes, card, cash, bank
+    // transfer) is recorded as a receipt. Tap to Pay ALSO writes a receipt, so
+    // those dedupe against the terminal rows above by Stripe PaymentIntent id
+    // (the receipt's paymentReference — terminal comes first so its fee/net
+    // enrichment wins). Receipts are the record of money ACTUALLY collected: an
+    // unpaid or cancelled payment link never creates one, so it never shows here.
+    if (opts.includeReceipts) {
+      const receipts = await storage.getReceipts(effectiveUserId);
+      for (const r of receipts) {
+        const payMethod = (r as any).paymentMethod || 'card';
+        // Link/QR receipts carry a paymentRequestId; surface them as a payment
+        // link so they read clearly, unless they're explicitly a QR/tap row.
+        let method = payMethod;
+        if (payMethod !== 'tap_to_pay' && payMethod !== 'qr_code' && (r as any).paymentRequestId) {
+          method = 'payment_link';
+        }
         enriched.push({
           id: r.id,
-          stripePaymentIntentId: (r as any).stripePaymentIntentId || null,
+          stripePaymentIntentId: (r as any).paymentReference || null,
           amount: r.amount,
           currency: 'aud',
           status: 'succeeded',
@@ -24428,24 +24439,32 @@ Be specific about materials, colors, and features that would be included.`
           jobId: (r as any).jobId || null,
           metadata: {},
           createdAt: (r as any).createdAt || null,
-          completedAt: (r as any).paidAt || (r as any).updatedAt || (r as any).createdAt || null,
+          completedAt: (r as any).paidAt || (r as any).createdAt || null,
           fee: null,
           net: null,
           settlementStatus: null,
-          method: 'payment_link',
+          method,
         });
       }
     }
 
-    // Drop any (unlikely) duplicate PaymentIntent, keeping the first — terminal
-    // records come first so their fee/net enrichment wins.
-    const seenIntents = new Set<string>();
-    const deduped = enriched.filter((p) => {
-      if (!p.stripePaymentIntentId) return true;
-      if (seenIntents.has(p.stripePaymentIntentId)) return false;
-      seenIntents.add(p.stripePaymentIntentId);
-      return true;
-    });
+    // Collapse duplicate PaymentIntents (a Tap to Pay charge exists as BOTH a
+    // terminal row and a receipt). Terminal rows come first so their fee/net
+    // enrichment normally wins, but a *succeeded* row always beats a stale
+    // pending/failed one for the same PI (e.g. a receipt landed before the
+    // terminal status update did). Rows without a PI (cash/manual) are kept.
+    const byIntent = new Map<string, any>();
+    const noIntent: any[] = [];
+    for (const p of enriched) {
+      const pi = p.stripePaymentIntentId as string | null;
+      if (!pi) { noIntent.push(p); continue; }
+      const existing = byIntent.get(pi);
+      if (!existing) { byIntent.set(pi, p); continue; }
+      if (existing.status !== 'succeeded' && p.status === 'succeeded') {
+        byIntent.set(pi, p);
+      }
+    }
+    const deduped = [...byIntent.values(), ...noIntent];
 
     // Attach readable context (client name + invoice number OR job title) so
     // the mobile payment history shows what each charge was for instead of a
@@ -24499,7 +24518,7 @@ Be specific about materials, colors, and features that would be included.`
       if (!hasPermission(listCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
         return res.status(403).json({ error: "You don't have permission to view payments" });
       }
-      const withContext = await buildPaymentHistory(listCtx.effectiveUserId, { includePaymentRequests: false });
+      const withContext = await buildPaymentHistory(listCtx.effectiveUserId, { includeReceipts: false });
       res.json(withContext);
     } catch (error: any) {
       console.error("Error fetching terminal payments:", error);
@@ -24514,7 +24533,7 @@ Be specific about materials, colors, and features that would be included.`
       if (!hasPermission(histCtx, PERMISSIONS.MANAGE_PAYMENTS)) {
         return res.status(403).json({ error: "You don't have permission to view payments" });
       }
-      const history = await buildPaymentHistory(histCtx.effectiveUserId, { includePaymentRequests: true });
+      const history = await buildPaymentHistory(histCtx.effectiveUserId, { includeReceipts: true });
       res.json(history);
     } catch (error: any) {
       console.error("Error fetching payment history:", error);
