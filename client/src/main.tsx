@@ -21,6 +21,13 @@ if (import.meta.env.VITE_SENTRY_DSN) {
       if (msg.includes('localhost:undefined') && msg.includes('WebSocket')) return null;
       const frames = event.exception?.values?.[0]?.stacktrace?.frames || [];
       if (frames.some((f: any) => f.filename?.includes('/@vite/client'))) return null;
+      // Headless-browser bots (Playwright/Puppeteer scrapers) inject their own
+      // scripts into the page; when those scripts crash it isn't our bug.
+      if (frames.some((f: any) =>
+        f.function?.includes('UtilityScript') ||
+        f.function?.includes('addScriptContent') ||
+        f.function?.includes('evaluateHandle')
+      )) return null;
       return event;
     },
   });

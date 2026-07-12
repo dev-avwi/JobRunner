@@ -15,7 +15,9 @@ function scrub(value: any, depth = 0): any {
   return value;
 }
 
-if (process.env.SENTRY_DSN) {
+// Only report from production — dev workspace restarts (e.g. EADDRINUSE) were
+// polluting Sentry with fatal noise that looks like real outages.
+if (process.env.SENTRY_DSN && process.env.NODE_ENV === "production") {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || "development",
