@@ -25997,6 +25997,40 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  app.patch("/api/catalog/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
+    try {
+      const existing = await storage.getLineItemCatalogItem(req.params.id);
+      if (!existing || existing.userId !== req.userId) {
+        return res.status(404).json({ error: "Catalog item not found" });
+      }
+      // .partial() keeps id/userId/timestamps omitted, so this also strips any
+      // attempt to reassign ownership via the request body.
+      const data = insertLineItemCatalogSchema.partial().parse(req.body);
+      const item = await storage.updateLineItemCatalogItem(req.params.id, data);
+      res.json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid input", details: error.errors });
+      }
+      console.error("Error updating catalog item:", error);
+      res.status(500).json({ error: "Failed to update catalog item" });
+    }
+  });
+
+  app.delete("/api/catalog/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
+    try {
+      const existing = await storage.getLineItemCatalogItem(req.params.id);
+      if (!existing || existing.userId !== req.userId) {
+        return res.status(404).json({ error: "Catalog item not found" });
+      }
+      await storage.deleteLineItemCatalogItem(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting catalog item:", error);
+      res.status(500).json({ error: "Failed to delete catalog item" });
+    }
+  });
+
   // Job Scope Templates Routes
   app.get("/api/job-scope-templates", requireAuth, async (req: any, res) => {
     try {
