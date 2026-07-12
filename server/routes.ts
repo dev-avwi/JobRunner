@@ -40511,19 +40511,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.status(400).json({ error: 'No valid fields to update' });
       }
 
-      const setClauses = Object.entries(updateData).map(([key, value]) => {
-        const colName = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        if (typeof value === 'boolean') {
-          return sql.raw(`${colName} = ${value}`);
-        }
-        return sql.raw(`${colName} = '${value}'`);
-      });
-
-      await db.execute(sql`
-        UPDATE users 
-        SET ${sql.join(setClauses, sql.raw(', '))}
-        WHERE id = ${targetUserId}
-      `);
+      await db.update(users).set(updateData).where(eq(users.id, targetUserId));
 
       res.json({ success: true, updated: updateData });
     } catch (error: any) {

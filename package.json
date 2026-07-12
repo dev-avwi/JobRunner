@@ -69,7 +69,7 @@
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/qrcode.react": "^1.0.5",
     "@vis.gl/react-google-maps": "^1.7.1",
-    "axios": "^1.15.0",
+    "axios": "^1.16.0",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -84,7 +84,7 @@
     "expo": "^54.0.31",
     "expo-updates": "~29.0.16",
     "express": "^4.21.2",
-    "express-rate-limit": "^8.2.1",
+    "express-rate-limit": "^8.2.2",
     "express-session": "^1.18.1",
     "framer-motion": "^11.13.1",
     "googleapis": "^148.0.0",
@@ -93,11 +93,11 @@
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
     "leaflet": "^1.9.4",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "lucide-react": "^0.453.0",
     "memoizee": "^0.4.17",
     "memorystore": "^1.6.7",
-    "multer": "^2.0.2",
+    "multer": "^2.2.0",
     "next-themes": "^0.4.6",
     "nodemailer": "^7.0.11",
     "openai": "^6.8.1",
@@ -128,7 +128,7 @@
     "twilio": "^5.3.2",
     "vaul": "^1.1.2",
     "wouter": "^3.3.5",
-    "ws": "^8.18.0",
+    "ws": "^8.21.0",
     "xero-node": "^13.3.0",
     "zod": "^3.24.2",
     "zod-validation-error": "^3.4.0"
@@ -155,7 +155,7 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.1",
     "typescript": "5.6.3",
-    "vite": "^5.4.19"
+    "vite": "^5.4.21"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
