@@ -20,3 +20,10 @@ description: What the full security sweep found, what was fixed, and what remain
 - Deliberately NOT bumped (major/risky): nodemailer 7→8/9 (email is business-critical), drizzle-orm 0.39→0.45 (DB layer). Remaining highs are transitive (undici, tar, node-forge, xmldom, etc.) — need upstream updates or npm overrides (package.json edit = ask user first).
 
 **How to apply:** rerun `runDependencyAudit()` and group by `severity.level`; only chase direct deps with same-major fixes.
+
+## Follow-up sweep (user's 5 questions, 2026-07-12)
+- Client bundle exposes only VITE_SENTRY_DSN (public by design). `.env` gitignored + untracked; server keys all env-based.
+- Google Maps Android key ships committed in mobile/app.json + google-services.json — normal for Maps SDK but MUST stay restricted (Android package + SHA-1) in Google Cloud Console; can't verify restriction from here.
+- Rate limits: global generalApiLimiter 100/min/IP on all /api (skips health/metrics/assets) + dedicated limiters (login/register/verify/reset/payment/message/public portals) + per-user heavy-endpoint limiters (pdf/ai/vision/message).
+- Dev workspace DB is Replit helium dev DB (demo data only) — staging never touches prod Neon; dev URL public-but-unguessable while workspace runs, canonical URL maps to mockup-sandbox port.
+- Privacy/ToS pages (April 2026): APPs, NDB, overseas disclosure, Fair Work retention, AI + call-recording disclosure; ToS 29 sections incl. ACL. Substantive, not boilerplate.
