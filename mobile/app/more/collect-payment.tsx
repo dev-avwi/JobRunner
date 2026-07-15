@@ -21,9 +21,9 @@ import {
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import * as Clipboard from 'expo-clipboard';
-import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { Stack, useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { format, isThisWeek, parseISO } from 'date-fns';
 import { useStripeTerminal } from '../../src/hooks/useServices';
@@ -1074,6 +1074,8 @@ export default function CollectScreen() {
   // Invoice Picker Modal state
   const [showInvoicePickerModal, setShowInvoicePickerModal] = useState(false);
   const [pendingPaymentMethod, setPendingPaymentMethod] = useState<'record' | 'qr' | 'link' | 'tap' | null>(null);
+  // null = unknown (don't block), false = onboarding not completed yet
+  const [ttpSetupComplete, setTtpSetupComplete] = useState<boolean | null>(null);
   const [pickerTab, setPickerTab] = useState<'jobs' | 'invoices'>('jobs');
   const [pickerSearch, setPickerSearch] = useState('');
   
@@ -1162,12 +1164,33 @@ export default function CollectScreen() {
     setIsLoading(false);
   }, [fetchInvoices, fetchClients, fetchJobs, fetchReceipts, fetchSmsStatus]);
 
+  const refreshTtpSetupStatus = useCallback(() => {
+    if (!tapToPaySupported) return;
+    // Check whether the merchant has completed the Tap to Pay onboarding
+    // (Terms acceptance + education) — Apple requires it before first use.
+    api.get<{ accepted?: boolean; tutorialCompleted?: boolean }>('/api/tap-to-pay/terms-status')
+      .then(res => {
+        if (!res.error && res.data) {
+          setTtpSetupComplete(!!res.data.accepted && !!res.data.tutorialCompleted);
+        }
+      })
+      .catch(() => {});
+  }, [tapToPaySupported]);
+
   useEffect(() => {
     refreshData();
     if (tapToPaySupported) {
       terminal.initialize();
     }
   }, []);
+
+  // Re-check on every focus so returning from the setup wizard immediately
+  // unblocks Tap to Pay (and status never goes stale).
+  useFocusEffect(
+    useCallback(() => {
+      refreshTtpSetupStatus();
+    }, [refreshTtpSetupStatus])
+  );
 
   // Reset auto-selection flag when invoiceId changes (allows new invoice selection)
   useEffect(() => {
@@ -1418,6 +1441,16 @@ export default function CollectScreen() {
   };
 
   const handleTapToPay = async () => {
+    // Apple requirement: users must go through the Tap to Pay awareness +
+    // Terms + education flow before collecting their first payment.
+    // Fail closed: if the status is still unknown (null), route to setup —
+    // the setup screen resolves the real status and short-circuits to
+    // "Start Collecting Payments" for already-onboarded merchants.
+    if (ttpSetupComplete !== true) {
+      router.push('/more/tap-to-pay-setup');
+      return;
+    }
+
     const amountCents = getAmountInCents();
     if (amountCents < 50) {
       handleShowInvoicePicker('tap');
@@ -2364,7 +2397,7 @@ export default function CollectScreen() {
     >
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Tap to Pay</Text>
+          <Text style={styles.modalTitle}>Tap to Pay on iPhone</Text>
           <TouchableOpacity onPress={handleCancelPayment} activeOpacity={0.7}>
             <Feather name="x" size={24} color={colors.mutedForeground} />
           </TouchableOpacity>
@@ -2384,7 +2417,7 @@ export default function CollectScreen() {
           {paymentStep === 'waiting' && (
             <>
               <View style={styles.readyIcon}>
-                <Feather name="smartphone" size={64} color={colors.primary} />
+                <MaterialCommunityIcons name="contactless-payment-circle" size={64} color={colors.primary} />
               </View>
               <Text style={styles.amountDisplay}>
                 ${(getAmountInCents() / 100).toFixed(2)}
@@ -3483,8 +3516,16 @@ export default function CollectScreen() {
                   onPress={handleSubmitCustomAmount}
                   fullWidth
                   disabled={!canContinue}
-                  label={canContinue ? `Continue — $${parseFloat(customAmountValue).toFixed(2)}` : 'Continue'}
-                  trailingIcon={<Feather name="arrow-right" size={18} color={colors.primaryForeground} />}
+                  label={
+                    pendingPaymentMethod === 'tap'
+                      ? 'Tap to Pay on iPhone'
+                      : canContinue ? `Continue — $${parseFloat(customAmountValue).toFixed(2)}` : 'Continue'
+                  }
+                  trailingIcon={
+                    pendingPaymentMethod === 'tap'
+                      ? <MaterialCommunityIcons name="contactless-payment-circle" size={18} color={colors.primaryForeground} />
+                      : <Feather name="arrow-right" size={18} color={colors.primaryForeground} />
+                  }
                 />
               </View>
             </ScrollView>
@@ -3547,9 +3588,9 @@ export default function CollectScreen() {
 
           {tapToPaySupported && (
             <PaymentMethodCard
-              icon={<Feather name="smartphone" size={24} color={colors.primary} />}
-              title="Tap to Pay"
-              description="Customer taps their card on your phone ~1.95% + $0.30"
+              icon={<MaterialCommunityIcons name="contactless-payment-circle" size={24} color={colors.primary} />}
+              title="Tap to Pay on iPhone"
+              description="Accept contactless cards and Apple Pay right on your iPhone ~1.95% + $0.30"
               badge="New"
               badgeVariant="success"
               onPress={handleTapToPay}

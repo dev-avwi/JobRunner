@@ -3005,20 +3005,35 @@ export default function SettingsScreen() {
                 <>
                   <Text style={styles.sectionLabel}>TAP TO PAY ON IPHONE</Text>
 
-                  <View 
-                    style={[styles.settingsCard, { opacity: 0.6 }]}
+                  <PressableRow
+                    style={styles.settingsCard}
+                    onPress={() => router.push('/more/tap-to-pay-setup')}
+                    data-testid="row-tap-to-pay-setup"
                   >
                     <View style={styles.settingsCardHeader}>
-                      <Feather name="radio" size={20} color={colors.mutedForeground} />
+                      <Feather name="radio" size={20} color={colors.primary} />
                       <View style={styles.settingsCardInfo}>
-                        <Text style={styles.settingsCardTitle}>Tap to Pay</Text>
-                        <Text style={styles.settingsCardSubtitle}>Accept contactless card payments on your iPhone. Coming soon in a future update.</Text>
+                        <Text style={styles.settingsCardTitle}>Set Up Tap to Pay on iPhone</Text>
+                        <Text style={styles.settingsCardSubtitle}>Accept contactless cards and Apple Pay right on your iPhone. No extra hardware needed.</Text>
                       </View>
                     </View>
-                    <View style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                      <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>SOON</Text>
+                    <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+                  </PressableRow>
+
+                  <PressableRow
+                    style={styles.settingsCard}
+                    onPress={() => router.push('/more/tap-to-pay-setup?mode=education')}
+                    data-testid="row-tap-to-pay-guide"
+                  >
+                    <View style={styles.settingsCardHeader}>
+                      <Feather name="book-open" size={20} color={colors.primary} />
+                      <View style={styles.settingsCardInfo}>
+                        <Text style={styles.settingsCardTitle}>How to Accept Payments</Text>
+                        <Text style={styles.settingsCardSubtitle}>Learn how to take contactless cards, Apple Pay, and other digital wallets with Tap to Pay on iPhone.</Text>
+                      </View>
                     </View>
-                  </View>
+                    <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+                  </PressableRow>
                 </>
               )}
 

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useStripeTerminal } from '../../src/hooks/useServices';
 import { isTapToPayAvailable } from '../../src/lib/stripe-terminal';
@@ -490,6 +490,8 @@ export default function TapToPaySetupScreen() {
   const styles = createStyles(colors, bottomNavHeight);
   const { user } = useAuthStore();
   const { isInitialized: stripeTerminalReady } = useStripeTerminal();
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const educationOnly = params.mode === 'education';
 
   const [step, setStep] = useState<OnboardingStep>('splash');
   const [loading, setLoading] = useState(true);
@@ -543,6 +545,13 @@ export default function TapToPaySetupScreen() {
       return;
     }
 
+    if (educationOnly) {
+      setTutorialSlide(0);
+      setStep('tutorial');
+      setLoading(false);
+      return;
+    }
+
     const status = await fetchTermsStatus();
     
     if (status?.accepted && status?.tutorialCompleted) {
@@ -556,7 +565,7 @@ export default function TapToPaySetupScreen() {
     }
     
     setLoading(false);
-  }, [checkDeviceCompatibility, fetchTermsStatus]);
+  }, [checkDeviceCompatibility, fetchTermsStatus, educationOnly]);
 
   useEffect(() => {
     determineInitialStep();
@@ -583,7 +592,10 @@ export default function TapToPaySetupScreen() {
       const response = await api.post<{ success?: boolean }>('/api/tap-to-pay/accept-terms', {});
       
       if (response.data?.success) {
-        setStep('tutorial');
+        // Apple requirement 4.1: merchant education is shown immediately AFTER
+        // Tap to Pay is enabled and Terms are accepted — so configure first,
+        // then show the education slides.
+        runConfiguration();
       }
     } catch (error: any) {
       if (error?.response?.status === 403) {
@@ -611,29 +623,38 @@ export default function TapToPaySetupScreen() {
     }
   };
 
-  const handleTutorialComplete = async () => {
+  const runConfiguration = async () => {
     setStep('configuring');
     setConfigProgress(0);
 
+    const progressSteps = [
+      { delay: 500, progress: 1 },
+      { delay: 1000, progress: 2 },
+      { delay: 1500, progress: 3 },
+    ];
+
+    for (const s of progressSteps) {
+      await new Promise(resolve => setTimeout(resolve, s.delay));
+      setConfigProgress(s.progress);
+    }
+
+    // Education slides come straight after successful enablement (Apple 4.1)
+    setTutorialSlide(0);
+    setStep('tutorial');
+  };
+
+  const handleTutorialComplete = async () => {
+    if (educationOnly) {
+      router.back();
+      return;
+    }
+
     try {
       await api.post('/api/tap-to-pay/complete-tutorial', {});
-      
-      const progressSteps = [
-        { delay: 500, progress: 1 },
-        { delay: 1000, progress: 2 },
-        { delay: 1500, progress: 3 },
-      ];
-
-      for (const step of progressSteps) {
-        await new Promise(resolve => setTimeout(resolve, step.delay));
-        setConfigProgress(step.progress);
-      }
-
-      setStep('success');
     } catch (error) {
       console.error('Error completing tutorial:', error);
-      setStep('success');
     }
+    setStep('success');
   };
 
   const handleStartCollecting = () => {
@@ -668,7 +689,7 @@ export default function TapToPaySetupScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: step === 'splash' ? '' : 'Tap to Pay Setup',
+          title: educationOnly ? 'How to Accept Payments' : step === 'splash' ? '' : 'Tap to Pay Setup',
           headerShown: step !== 'splash',
           headerBackTitle: 'Back',
         }}
@@ -878,7 +899,7 @@ export default function TapToPaySetupScreen() {
               style={{ flex: 1 }}
               data-testid="button-tutorial-next"
             >
-              {tutorialSlide === TUTORIAL_SLIDES.length - 1 ? 'Finish Setup' : 'Next'}
+              {tutorialSlide === TUTORIAL_SLIDES.length - 1 ? (educationOnly ? 'Done' : 'Finish Setup') : 'Next'}
             </Button>
           </View>
         </View>
