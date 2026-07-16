@@ -77,7 +77,7 @@ const TUTORIAL_SLIDES = [
   }
 ];
 
-const IOS_HEADER_ALLOWANCE = Platform.OS === 'ios' ? 56 : 0;
+const IOS_HEADER_ALLOWANCE = Platform.OS === 'ios' ? 20 : 0;
 
 const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
