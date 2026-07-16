@@ -820,16 +820,16 @@ export default function TapToPaySetupScreen() {
       )}
 
       {step === 'terms' && (
-        <View style={styles.termsContainer}>
+        <View style={[styles.termsContainer, Platform.OS === 'ios' && { paddingTop: spacing.sm }]}>
           {Platform.OS === 'android' && (
             <PressableRow style={styles.backButton} onPress={() => setStep('splash')} data-testid="button-terms-back">
               <Feather name="chevron-left" size={22} color={colors.foreground} />
               <Text style={styles.backText}>Back</Text>
             </PressableRow>
           )}
-          <View style={styles.termsHeader}>
-            <View style={styles.termsIconContainer}>
-              <Feather name="file-text" size={36} color={colors.info} />
+          <View style={[styles.termsHeader, Platform.OS === 'ios' && { marginTop: 0, marginBottom: spacing.md }]}>
+            <View style={[styles.termsIconContainer, Platform.OS === 'ios' && { width: 56, height: 56, borderRadius: 28, marginBottom: spacing.md }]}>
+              <Feather name="file-text" size={Platform.OS === 'ios' ? 28 : 36} color={colors.info} />
             </View>
             <Text style={styles.termsTitle}>Terms & Conditions</Text>
             <Text style={styles.termsSubtitle}>
@@ -910,7 +910,7 @@ export default function TapToPaySetupScreen() {
               <Text style={styles.backText}>Back</Text>
             </PressableRow>
           )}
-          <View style={styles.tutorialHeader}>
+          <View style={[styles.tutorialHeader, Platform.OS === 'ios' && { paddingTop: spacing.sm }]}>
             <View style={styles.tutorialProgress}>
               {TUTORIAL_SLIDES.map((_, index) => (
                 <View
