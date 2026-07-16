@@ -729,12 +729,7 @@ export default function TapToPaySetupScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Stack.Screen
-          options={{
-            title: 'Tap to Pay Setup',
-            headerShown: Platform.OS !== 'android',
-          }}
-        />
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.pageSubtitle, { marginTop: spacing.md }]}>
@@ -747,12 +742,7 @@ export default function TapToPaySetupScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: educationOnly ? 'How to Accept Payments' : step === 'splash' ? '' : 'Tap to Pay Setup',
-          headerShown: Platform.OS !== 'android' && step !== 'splash',
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       {step === 'splash' && (
         <>
@@ -826,12 +816,10 @@ export default function TapToPaySetupScreen() {
 
       {step === 'terms' && (
         <View style={styles.termsContainer}>
-          {Platform.OS === 'android' && (
-            <PressableRow style={styles.backButton} onPress={() => setStep('splash')} data-testid="button-terms-back">
-              <Feather name="chevron-left" size={22} color={colors.foreground} />
-              <Text style={styles.backText}>Back</Text>
-            </PressableRow>
-          )}
+          <PressableRow style={styles.backButton} onPress={() => setStep('splash')} data-testid="button-terms-back">
+            <Feather name="chevron-left" size={22} color={colors.foreground} />
+            <Text style={styles.backText}>Back</Text>
+          </PressableRow>
           <View style={styles.termsHeader}>
             <View style={styles.termsIconContainer}>
               <Feather name="file-text" size={36} color={colors.info} />
@@ -905,16 +893,14 @@ export default function TapToPaySetupScreen() {
 
       {step === 'tutorial' && (
         <View style={styles.tutorialContainer}>
-          {Platform.OS === 'android' && (
-            <PressableRow
-              style={[styles.backButton, { marginLeft: spacing.md }]}
-              onPress={() => (educationOnly ? router.back() : setStep('splash'))}
-              data-testid="button-tutorial-back"
-            >
-              <Feather name="chevron-left" size={22} color={colors.foreground} />
-              <Text style={styles.backText}>Back</Text>
-            </PressableRow>
-          )}
+          <PressableRow
+            style={[styles.backButton, { marginLeft: spacing.md }]}
+            onPress={() => (educationOnly ? router.back() : setStep('splash'))}
+            data-testid="button-tutorial-back"
+          >
+            <Feather name="chevron-left" size={22} color={colors.foreground} />
+            <Text style={styles.backText}>Back</Text>
+          </PressableRow>
           <View style={styles.tutorialHeader}>
             <View style={styles.tutorialProgress}>
               {TUTORIAL_SLIDES.map((_, index) => (
