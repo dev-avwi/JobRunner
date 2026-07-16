@@ -77,6 +77,8 @@ const TUTORIAL_SLIDES = [
   }
 ];
 
+const IOS_HEADER_ALLOWANCE = Platform.OS === 'ios' ? 56 : 0;
+
 const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
     flex: 1,
@@ -111,26 +113,26 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
+    paddingTop: Platform.OS === 'ios' ? spacing.md : spacing.xl,
     paddingBottom: spacing.lg,
   },
   splashHero: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: Platform.OS === 'ios' ? spacing.lg : spacing.xl,
   },
   splashIconOuter: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: Platform.OS === 'ios' ? 88 : 108,
+    height: Platform.OS === 'ios' ? 88 : 108,
+    borderRadius: Platform.OS === 'ios' ? 44 : 54,
     backgroundColor: colors.primary + '14',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
   splashIconInner: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: Platform.OS === 'ios' ? 68 : 84,
+    height: Platform.OS === 'ios' ? 68 : 84,
+    borderRadius: Platform.OS === 'ios' ? 34 : 42,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -149,7 +151,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.xs,
   },
   splashTitle: {
-    fontSize: 30,
+    fontSize: Platform.OS === 'ios' ? 26 : 30,
     fontWeight: '800',
     color: colors.foreground,
     textAlign: 'center',
@@ -200,7 +202,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   splashFooter: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.lg + IOS_HEADER_ALLOWANCE,
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
@@ -214,7 +216,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   termsContainer: {
     flex: 1,
     padding: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.lg + IOS_HEADER_ALLOWANCE,
   },
   termsHeader: {
     alignItems: 'center',
@@ -400,7 +402,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   tutorialNavigation: {
     flexDirection: 'row',
     padding: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + IOS_HEADER_ALLOWANCE,
     gap: spacing.md,
   },
   configuringContainer: {
@@ -408,7 +410,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + IOS_HEADER_ALLOWANCE,
   },
   configuringIconContainer: {
     width: 100,
@@ -477,7 +479,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + IOS_HEADER_ALLOWANCE,
   },
   successIconContainer: {
     width: 120,
@@ -511,7 +513,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + IOS_HEADER_ALLOWANCE,
   },
   nonAdminIconContainer: {
     width: 100,
