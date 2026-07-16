@@ -3034,6 +3034,35 @@ export default function SettingsScreen() {
                     </View>
                     <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
                   </PressableRow>
+
+                  <PressableRow
+                    style={styles.settingsCard}
+                    onPress={async () => {
+                      const ok = await confirm({
+                        title: 'Reset Tap to Pay Setup?',
+                        message: 'This clears the accepted terms and tutorial progress so you can run the full setup again from the start.',
+                        confirmText: 'Reset',
+                        destructive: true,
+                      });
+                      if (!ok) return;
+                      const response = await api.post('/api/tap-to-pay/reset-setup', {});
+                      if (response.error) {
+                        Alert.alert('Reset Failed', typeof response.error === 'string' ? response.error : 'Only the business owner or an admin can reset Tap to Pay setup.');
+                      } else {
+                        Alert.alert('Setup Reset', 'Tap to Pay setup has been reset. Open "Set Up Tap to Pay on iPhone" to run the full flow.');
+                      }
+                    }}
+                    data-testid="row-tap-to-pay-reset"
+                  >
+                    <View style={styles.settingsCardHeader}>
+                      <Feather name="rotate-ccw" size={20} color={colors.mutedForeground} />
+                      <View style={styles.settingsCardInfo}>
+                        <Text style={styles.settingsCardTitle}>Reset Tap to Pay Setup</Text>
+                        <Text style={styles.settingsCardSubtitle}>Clear accepted terms and tutorial progress to run the setup flow again from the start.</Text>
+                      </View>
+                    </View>
+                    <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+                  </PressableRow>
                 </>
               )}
 

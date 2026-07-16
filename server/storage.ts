@@ -1128,6 +1128,7 @@ export interface IStorage {
   getTapToPayTermsAcceptance(userId: string): Promise<TapToPayTermsAcceptance | undefined>;
   createOrUpdateTapToPayTermsAcceptance(data: Partial<InsertTapToPayTermsAcceptance> & { userId: string; acceptedByUserId: string }): Promise<TapToPayTermsAcceptance>;
   updateTapToPayTermsAcceptance(userId: string, updates: Partial<TapToPayTermsAcceptance>): Promise<TapToPayTermsAcceptance | undefined>;
+  deleteTapToPayTermsAcceptance(userId: string): Promise<void>;
   markTapToPaySplashShown(userId: string): Promise<void>;
   getTeamMemberByUserId(userId: string): Promise<TeamMember | undefined>;
 
@@ -8000,6 +8001,12 @@ Thank you for your prompt attention to this matter.`,
       .where(eq(tapToPayTermsAcceptance.userId, userId))
       .returning();
     return result;
+  }
+
+  async deleteTapToPayTermsAcceptance(userId: string): Promise<void> {
+    await db
+      .delete(tapToPayTermsAcceptance)
+      .where(eq(tapToPayTermsAcceptance.userId, userId));
   }
 
   async markTapToPaySplashShown(userId: string): Promise<void> {

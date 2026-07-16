@@ -32521,6 +32521,35 @@ Respond with JSON in this format:
     }
   });
 
+  // Reset Tap to Pay setup (admin/owner only) - allows re-running the full setup flow
+  app.post("/api/tap-to-pay/reset-setup", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      // Same gate as accept-terms: only admins/owners may manage Tap to Pay terms
+      const teamMember = await storage.getTeamMemberByUserId(userId);
+      const isOwner = !teamMember;
+      const teamMemberRoleName = teamMember ? (await storage.getUserRole(teamMember.roleId))?.name : undefined;
+      const isAdmin = teamMemberRoleName === 'admin' || teamMemberRoleName === 'owner';
+
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ error: 'Only administrators can reset Tap to Pay setup' });
+      }
+
+      await storage.deleteTapToPayTermsAcceptance(userId);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error resetting Tap to Pay setup:', error);
+      res.status(500).json({ error: 'Failed to reset Tap to Pay setup' });
+    }
+  });
+
   // Mark splash screen as shown
   app.post("/api/tap-to-pay/mark-splash-shown", requireAuth, async (req: any, res) => {
     try {
