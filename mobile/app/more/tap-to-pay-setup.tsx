@@ -200,7 +200,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   splashFooter: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.lg + bottomNavHeight,
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
@@ -214,7 +214,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   termsContainer: {
     flex: 1,
     padding: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.lg + bottomNavHeight,
   },
   termsHeader: {
     alignItems: 'center',
@@ -400,7 +400,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   tutorialNavigation: {
     flexDirection: 'row',
     padding: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + bottomNavHeight,
     gap: spacing.md,
   },
   configuringContainer: {
@@ -408,6 +408,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+    paddingBottom: spacing.xl + bottomNavHeight,
   },
   configuringIconContainer: {
     width: 100,
@@ -476,6 +477,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+    paddingBottom: spacing.xl + bottomNavHeight,
   },
   successIconContainer: {
     width: 120,
@@ -509,6 +511,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+    paddingBottom: spacing.xl + bottomNavHeight,
   },
   nonAdminIconContainer: {
     width: 100,
