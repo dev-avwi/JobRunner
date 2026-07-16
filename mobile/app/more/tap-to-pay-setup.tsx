@@ -729,7 +729,12 @@ export default function TapToPaySetupScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen
+          options={{
+            title: educationOnly ? 'How to Accept Payments' : 'Tap to Pay Setup',
+            headerShown: Platform.OS === 'ios' && educationOnly,
+          }}
+        />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.pageSubtitle, { marginTop: spacing.md }]}>
