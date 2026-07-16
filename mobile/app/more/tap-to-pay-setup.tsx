@@ -732,7 +732,7 @@ export default function TapToPaySetupScreen() {
         <Stack.Screen
           options={{
             title: educationOnly ? 'How to Accept Payments' : 'Tap to Pay Setup',
-            headerShown: Platform.OS === 'ios' && educationOnly,
+            headerShown: Platform.OS === 'ios',
           }}
         />
         <View style={styles.loadingContainer}>
@@ -750,7 +750,7 @@ export default function TapToPaySetupScreen() {
       <Stack.Screen
         options={{
           title: educationOnly ? 'How to Accept Payments' : 'Tap to Pay Setup',
-          headerShown: Platform.OS === 'ios' && (step === 'terms' || step === 'tutorial'),
+          headerShown: Platform.OS === 'ios',
         }}
       />
 
