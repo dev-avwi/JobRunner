@@ -219,7 +219,20 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   termsHeader: {
     alignItems: 'center',
     marginBottom: spacing.xl,
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.sm,
+    paddingRight: spacing.sm,
+  },
+  backText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.foreground,
+    marginLeft: spacing.xs,
   },
   termsIconContainer: {
     width: 80,
@@ -716,12 +729,7 @@ export default function TapToPaySetupScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Stack.Screen
-          options={{
-            title: 'Tap to Pay Setup',
-            headerShown: true,
-          }}
-        />
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.pageSubtitle, { marginTop: spacing.md }]}>
@@ -734,13 +742,7 @@ export default function TapToPaySetupScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: educationOnly ? 'How to Accept Payments' : step === 'splash' ? '' : 'Tap to Pay Setup',
-          headerShown: step !== 'splash',
-          headerBackTitle: 'Back',
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       {step === 'splash' && (
         <>
@@ -814,6 +816,10 @@ export default function TapToPaySetupScreen() {
 
       {step === 'terms' && (
         <View style={styles.termsContainer}>
+          <PressableRow style={styles.backButton} onPress={() => setStep('splash')} data-testid="button-terms-back">
+            <Feather name="chevron-left" size={22} color={colors.foreground} />
+            <Text style={styles.backText}>Back</Text>
+          </PressableRow>
           <View style={styles.termsHeader}>
             <View style={styles.termsIconContainer}>
               <Feather name="file-text" size={36} color={colors.info} />
@@ -887,6 +893,14 @@ export default function TapToPaySetupScreen() {
 
       {step === 'tutorial' && (
         <View style={styles.tutorialContainer}>
+          <PressableRow
+            style={[styles.backButton, { marginLeft: spacing.md }]}
+            onPress={() => (educationOnly ? router.back() : setStep('splash'))}
+            data-testid="button-tutorial-back"
+          >
+            <Feather name="chevron-left" size={22} color={colors.foreground} />
+            <Text style={styles.backText}>Back</Text>
+          </PressableRow>
           <View style={styles.tutorialHeader}>
             <View style={styles.tutorialProgress}>
               {TUTORIAL_SLIDES.map((_, index) => (
