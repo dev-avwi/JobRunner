@@ -12,7 +12,7 @@ import {
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useStripeTerminal } from '../../src/hooks/useServices';
 import { isTapToPayAvailable } from '../../src/lib/stripe-terminal';
 import { useAuthStore } from '../../src/lib/store';
@@ -103,75 +103,118 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.mutedForeground,
     marginTop: 2,
   },
-  splashContainer: {
+  splashScroll: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-    paddingTop: 60,
   },
-  splashIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.primaryLight,
+  splashScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  splashHero: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  splashIconOuter: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    backgroundColor: colors.primary + '14',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xl,
-    borderWidth: 3,
-    borderColor: colors.primary,
+    marginBottom: spacing.lg,
+  },
+  splashIconInner: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 0,
+  },
+  splashKicker: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: colors.primary,
+    textTransform: 'uppercase',
+    marginBottom: spacing.xs,
   },
   splashTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 30,
+    fontWeight: '800',
     color: colors.foreground,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    letterSpacing: -0.5,
+    marginBottom: spacing.sm,
   },
   splashSubtitle: {
-    fontSize: 18,
+    fontSize: 15,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginBottom: spacing.xl,
-    lineHeight: 26,
+    lineHeight: 22,
+    maxWidth: 300,
   },
-  splashFeatureList: {
+  splashFeatureCard: {
     width: '100%',
-    marginBottom: spacing.xl,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.lg,
   },
   splashFeature: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+  splashFeatureDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginLeft: 36 + spacing.md,
   },
   splashFeatureIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.successLight,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary + '14',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
   splashFeatureText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  splashCTA: {
-    width: '100%',
-    marginTop: spacing.lg,
+  splashFooter: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: bottomNavHeight + spacing.md,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  splashFooterNote: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
   termsContainer: {
     flex: 1,
     padding: spacing.lg,
+    paddingBottom: bottomNavHeight + spacing.md,
   },
   termsHeader: {
     alignItems: 'center',
@@ -251,6 +294,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   tutorialContainer: {
     flex: 1,
+    paddingBottom: bottomNavHeight,
   },
   tutorialHeader: {
     padding: spacing.lg,
@@ -351,6 +395,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+    paddingBottom: bottomNavHeight + spacing.xl,
   },
   configuringIconContainer: {
     width: 100,
@@ -419,6 +464,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+    paddingBottom: bottomNavHeight + spacing.xl,
   },
   successIconContainer: {
     width: 120,
@@ -452,6 +498,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+    paddingBottom: bottomNavHeight + spacing.xl,
   },
   nonAdminIconContainer: {
     width: 100,
@@ -696,59 +743,74 @@ export default function TapToPaySetupScreen() {
       />
 
       {step === 'splash' && (
-        <View style={styles.splashContainer}>
-          <View style={styles.splashIconContainer}>
-            <Feather name="smartphone" size={56} color={colors.primary} />
-          </View>
-          
-          <Text style={styles.splashTitle}>
-            Tap to Pay{'\n'}on iPhone
-          </Text>
-          
-          <Text style={styles.splashSubtitle}>
-            Accept contactless payments anywhere with just your iPhone. No extra hardware needed.
-          </Text>
+        <>
+          <ScrollView
+            style={styles.splashScroll}
+            contentContainerStyle={styles.splashScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.splashHero}>
+              <View style={styles.splashIconOuter}>
+                <View style={styles.splashIconInner}>
+                  <MaterialCommunityIcons name="contactless-payment" size={44} color={colors.primaryForeground} />
+                </View>
+              </View>
 
-          <View style={styles.splashFeatureList}>
-            <View style={styles.splashFeature}>
-              <View style={styles.splashFeatureIcon}>
-                <Feather name="check" size={22} color={colors.success} />
-              </View>
-              <Text style={styles.splashFeatureText}>Accept credit & debit cards</Text>
+              <Text style={styles.splashKicker}>Get paid on the spot</Text>
+              <Text style={styles.splashTitle}>
+                Tap to Pay{'\n'}on iPhone
+              </Text>
+              <Text style={styles.splashSubtitle}>
+                Accept contactless payments anywhere with just your iPhone. No extra hardware needed.
+              </Text>
             </View>
-            
-            <View style={styles.splashFeature}>
-              <View style={styles.splashFeatureIcon}>
-                <Feather name="check" size={22} color={colors.success} />
-              </View>
-              <Text style={styles.splashFeatureText}>Accept Apple Pay & digital wallets</Text>
-            </View>
-            
-            <View style={styles.splashFeature}>
-              <View style={styles.splashFeatureIcon}>
-                <Feather name="check" size={22} color={colors.success} />
-              </View>
-              <Text style={styles.splashFeatureText}>Secure, contactless transactions</Text>
-            </View>
-            
-            <View style={styles.splashFeature}>
-              <View style={styles.splashFeatureIcon}>
-                <Feather name="check" size={22} color={colors.success} />
-              </View>
-              <Text style={styles.splashFeatureText}>No additional hardware required</Text>
-            </View>
-          </View>
 
-          <View style={styles.splashCTA}>
+            <View style={styles.splashFeatureCard}>
+              <View style={styles.splashFeature}>
+                <View style={styles.splashFeatureIcon}>
+                  <Feather name="credit-card" size={18} color={colors.primary} />
+                </View>
+                <Text style={styles.splashFeatureText}>Accept credit & debit cards</Text>
+              </View>
+              <View style={styles.splashFeatureDivider} />
+
+              <View style={styles.splashFeature}>
+                <View style={styles.splashFeatureIcon}>
+                  <Feather name="smartphone" size={18} color={colors.primary} />
+                </View>
+                <Text style={styles.splashFeatureText}>Accept Apple Pay & digital wallets</Text>
+              </View>
+              <View style={styles.splashFeatureDivider} />
+
+              <View style={styles.splashFeature}>
+                <View style={styles.splashFeatureIcon}>
+                  <Feather name="shield" size={18} color={colors.primary} />
+                </View>
+                <Text style={styles.splashFeatureText}>Secure, encrypted transactions</Text>
+              </View>
+              <View style={styles.splashFeatureDivider} />
+
+              <View style={styles.splashFeature}>
+                <View style={styles.splashFeatureIcon}>
+                  <Feather name="zap" size={18} color={colors.primary} />
+                </View>
+                <Text style={styles.splashFeatureText}>No extra hardware required</Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.splashFooter}>
             <Button 
               onPress={handleSplashContinue}
               size="lg"
+              fullWidth
               data-testid="button-splash-continue"
             >
               Get Started
             </Button>
+            <Text style={styles.splashFooterNote}>Takes about a minute to set up</Text>
           </View>
-        </View>
+        </>
       )}
 
       {step === 'terms' && (
