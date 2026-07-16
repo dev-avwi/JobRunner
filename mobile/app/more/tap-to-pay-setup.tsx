@@ -19,7 +19,7 @@ import { useAuthStore } from '../../src/lib/store';
 import api from '../../src/lib/api';
 import { Card, CardContent } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
-import { Button } from '../../src/components/ui/Button';
+import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -116,21 +116,21 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   splashHero: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   splashIconOuter: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
     backgroundColor: colors.primary + '14',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
   splashIconInner: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -149,7 +149,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.xs,
   },
   splashTitle: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '800',
     color: colors.foreground,
     textAlign: 'center',
@@ -175,17 +175,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   splashFeature: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm + 2,
   },
   splashFeatureDivider: {
     height: 1,
     backgroundColor: colors.border,
-    marginLeft: 36 + spacing.md,
+    marginLeft: 32 + spacing.md,
   },
   splashFeatureIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: colors.primary + '14',
     alignItems: 'center',
     justifyContent: 'center',
@@ -193,7 +193,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   splashFeatureText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: colors.foreground,
     fontWeight: '600',
   },
@@ -752,7 +752,7 @@ export default function TapToPaySetupScreen() {
             <View style={styles.splashHero}>
               <View style={styles.splashIconOuter}>
                 <View style={styles.splashIconInner}>
-                  <MaterialCommunityIcons name="contactless-payment" size={44} color={colors.primaryForeground} />
+                  <MaterialCommunityIcons name="contactless-payment" size={38} color={colors.primaryForeground} />
                 </View>
               </View>
 
@@ -800,14 +800,13 @@ export default function TapToPaySetupScreen() {
           </ScrollView>
 
           <View style={styles.splashFooter}>
-            <Button 
+            <SheetButton
               onPress={handleSplashContinue}
-              size="lg"
               fullWidth
+              label="Get Started"
+              trailingIcon={<Feather name="arrow-right" size={18} color={colors.primaryForeground} />}
               data-testid="button-splash-continue"
-            >
-              Get Started
-            </Button>
+            />
             <Text style={styles.splashFooterNote}>Takes about a minute to set up</Text>
           </View>
         </>
@@ -875,18 +874,14 @@ export default function TapToPaySetupScreen() {
             </Text>
           </PressableRow>
 
-          <Button
+          <SheetButton
             onPress={handleAcceptTerms}
-            disabled={!termsAccepted || acceptingTerms}
-            size="lg"
+            disabled={!termsAccepted}
+            loading={acceptingTerms}
+            fullWidth
+            label="Accept & Continue"
             data-testid="button-accept-terms"
-          >
-            {acceptingTerms ? (
-              <ActivityIndicator size="small" color={colors.primaryForeground} />
-            ) : (
-              'Accept & Continue'
-            )}
-          </Button>
+          />
         </View>
       )}
 
@@ -945,24 +940,22 @@ export default function TapToPaySetupScreen() {
 
           <View style={styles.tutorialNavigation}>
             {tutorialSlide > 0 ? (
-              <Button 
-                variant="outline" 
+              <SheetButton
+                variant="outline"
                 onPress={handleTutorialPrev}
                 style={{ flex: 1 }}
+                label="Previous"
                 data-testid="button-tutorial-prev"
-              >
-                Previous
-              </Button>
+              />
             ) : (
               <View style={{ flex: 1 }} />
             )}
-            <Button 
+            <SheetButton
               onPress={handleTutorialNext}
               style={{ flex: 1 }}
+              label={tutorialSlide === TUTORIAL_SLIDES.length - 1 ? (educationOnly ? 'Done' : 'Finish Setup') : 'Next'}
               data-testid="button-tutorial-next"
-            >
-              {tutorialSlide === TUTORIAL_SLIDES.length - 1 ? (educationOnly ? 'Done' : 'Finish Setup') : 'Next'}
-            </Button>
+            />
           </View>
         </View>
       )}
@@ -1025,22 +1018,20 @@ export default function TapToPaySetupScreen() {
           </Text>
 
           <View style={styles.successCTA}>
-            <Button 
+            <SheetButton
               onPress={handleStartCollecting}
-              size="lg"
+              fullWidth
+              label="Start Collecting Payments"
               data-testid="button-start-collecting"
-            >
-              Start Collecting Payments
-            </Button>
-            
-            <Button 
+            />
+
+            <SheetButton
               variant="outline"
               onPress={handleViewTutorial}
-              size="lg"
+              fullWidth
+              label="View Tutorial Again"
               data-testid="button-view-tutorial"
-            >
-              View Tutorial Again
-            </Button>
+            />
           </View>
         </View>
       )}
@@ -1056,14 +1047,13 @@ export default function TapToPaySetupScreen() {
             Contact your admin to enable Tap to Pay on iPhone. Only business administrators can accept the terms and conditions.
           </Text>
 
-          <Button 
+          <SheetButton
             variant="outline"
             onPress={() => router.back()}
-            size="lg"
+            fullWidth
+            label="Go Back"
             data-testid="button-non-admin-back"
-          >
-            Go Back
-          </Button>
+          />
         </View>
       )}
     </View>
