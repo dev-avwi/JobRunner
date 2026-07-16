@@ -116,21 +116,21 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   splashHero: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   splashIconOuter: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
+    width: 108,
+    height: 108,
+    borderRadius: 54,
     backgroundColor: colors.primary + '14',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
   splashIconInner: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -149,7 +149,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.xs,
   },
   splashTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '800',
     color: colors.foreground,
     textAlign: 'center',
@@ -175,17 +175,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   splashFeature: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.md,
   },
   splashFeatureDivider: {
     height: 1,
     backgroundColor: colors.border,
-    marginLeft: 32 + spacing.md,
+    marginLeft: 36 + spacing.md,
   },
   splashFeatureIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.primary + '14',
     alignItems: 'center',
     justifyContent: 'center',
@@ -193,7 +193,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   splashFeatureText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.foreground,
     fontWeight: '600',
   },
@@ -754,7 +754,7 @@ export default function TapToPaySetupScreen() {
             <View style={styles.splashHero}>
               <View style={styles.splashIconOuter}>
                 <View style={styles.splashIconInner}>
-                  <MaterialCommunityIcons name="contactless-payment" size={38} color={colors.primaryForeground} />
+                  <MaterialCommunityIcons name="contactless-payment" size={44} color={colors.primaryForeground} />
                 </View>
               </View>
 
