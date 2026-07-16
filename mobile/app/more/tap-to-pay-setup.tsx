@@ -964,7 +964,7 @@ export default function TapToPaySetupScreen() {
           </ScrollView>
 
           <View style={styles.tutorialNavigation}>
-            {tutorialSlide > 0 ? (
+            {tutorialSlide > 0 && (
               <SheetButton
                 variant="outline"
                 onPress={handleTutorialPrev}
@@ -972,8 +972,6 @@ export default function TapToPaySetupScreen() {
                 label="Previous"
                 data-testid="button-tutorial-prev"
               />
-            ) : (
-              <View style={{ flex: 1 }} />
             )}
             <SheetButton
               onPress={handleTutorialNext}
