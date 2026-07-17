@@ -551,7 +551,8 @@ export default function TapToPaySetupScreen() {
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = createStyles(colors, bottomNavHeight);
   const { user } = useAuthStore();
-  const { isInitialized: stripeTerminalReady } = useStripeTerminal();
+  const terminal = useStripeTerminal();
+  const { isInitialized: stripeTerminalReady } = terminal;
   const params = useLocalSearchParams<{ mode?: string }>();
   const educationOnly = params.mode === 'education';
 
@@ -689,15 +690,34 @@ export default function TapToPaySetupScreen() {
     setStep('configuring');
     setConfigProgress(0);
 
-    const progressSteps = [
-      { delay: 500, progress: 1 },
-      { delay: 1000, progress: 2 },
-      { delay: 1500, progress: 3 },
-    ];
-
-    for (const s of progressSteps) {
-      await new Promise(resolve => setTimeout(resolve, s.delay));
-      setConfigProgress(s.progress);
+    if (Platform.OS === 'ios' && !terminal.isSimulation) {
+      // Real device + real Stripe Terminal SDK: actually connect the Tap to
+      // Pay reader now. The FIRST-ever connection makes iOS present Apple's
+      // system-provided Tap to Pay on iPhone Terms & Conditions sheet —
+      // Apple requires acceptance to happen through that sheet, not our own.
+      try {
+        await new Promise(resolve => setTimeout(resolve, 400));
+        setConfigProgress(1);
+        await terminal.initialize();
+        setConfigProgress(2);
+        await terminal.connectReader();
+        setConfigProgress(3);
+      } catch (error) {
+        // Don't block onboarding if the connection fails (e.g. offline) —
+        // Apple's sheet will also appear on the first payment attempt.
+        if (__DEV__) console.warn('TTP setup connect failed:', error);
+        setConfigProgress(3);
+      }
+    } else {
+      const progressSteps = [
+        { delay: 500, progress: 1 },
+        { delay: 1000, progress: 2 },
+        { delay: 1500, progress: 3 },
+      ];
+      for (const s of progressSteps) {
+        await new Promise(resolve => setTimeout(resolve, s.delay));
+        setConfigProgress(s.progress);
+      }
     }
 
     // Education slides come straight after successful enablement (Apple 4.1)
@@ -840,14 +860,14 @@ export default function TapToPaySetupScreen() {
             </View>
             <Text style={styles.termsTitle}>Terms & Conditions</Text>
             <Text style={styles.termsSubtitle}>
-              Please review and accept the terms to enable Tap to Pay
+              Review JobRunner's payment terms. Apple's own Tap to Pay on iPhone Terms & Conditions will be presented by iOS in the next step.
             </Text>
           </View>
 
           <ScrollView style={styles.termsScrollView}>
             <View style={styles.termsContent}>
               <Text style={styles.termsText}>
-                By enabling Tap to Pay on iPhone, you agree to the following terms and conditions:
+                By enabling card payments in JobRunner, you agree to the following JobRunner terms. Apple will separately present the Tap to Pay on iPhone Terms & Conditions for you to accept on the next screen.
               </Text>
 
               <Text style={styles.termsSectionTitle}>1. Service Agreement</Text>
@@ -890,7 +910,7 @@ export default function TapToPaySetupScreen() {
               {termsAccepted && <Feather name="check" size={16} color={colors.primaryForeground} />}
             </View>
             <Text style={styles.termsCheckboxLabel}>
-              I have read and agree to the Terms & Conditions for using Tap to Pay on iPhone
+              I have read and agree to JobRunner's payment Terms & Conditions
             </Text>
           </PressableRow>
 
@@ -996,7 +1016,7 @@ export default function TapToPaySetupScreen() {
 
           <Text style={styles.configuringTitle}>Configuring Tap to Pay</Text>
           <Text style={styles.configuringSubtitle}>
-            Please wait while we set up your device...
+            Please wait while we set up your device. If this is your first time, iOS will show Apple's Tap to Pay on iPhone Terms & Conditions for you to accept.
           </Text>
 
           <View style={styles.configuringSteps}>

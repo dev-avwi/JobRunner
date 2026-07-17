@@ -153,3 +153,4 @@
 - [Sentry noise triage](sentry-noise-triage.md) — weekly-report errors are mostly noise (Playwright bot frames, dev EADDRINUSE, mobile offline events landing in node-express project); pull event via API + check tags before fixing.
 - [Unified payment history](payment-history-unification.md) — buildPaymentHistory merges terminal_payments (Tap to Pay) + the RECEIPTS ledger (links/QR/card/cash/etc), NOT payment_requests (paid links live as receipts; the request row rarely flips to 'paid'); dedupe by PI prefers succeeded; owner-scoped (no businessOwnerId col).
 - [Mobile bottom-nav padding](mobile-bottomnav-padding.md) — root layout already pads content by bottomNavHeight; adding it per-screen double-pads (big empty strip). Use plain spacing only.
+- [TTP Apple system terms sheet](ttp-apple-system-terms-sheet.md) — Apple requires their own iOS T&C sheet (shown on first tapToPay reader connect); setup now connects for real; custom terms reworded as JobRunner terms.
