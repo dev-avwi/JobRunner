@@ -425,7 +425,7 @@ export default function IntegrationsScreen() {
         api.get<QuickBooksStatus>('/api/integrations/quickbooks/status')
       ]);
       
-      if (stripeResponse.data) {
+      if (!stripeResponse.error && stripeResponse.data && typeof stripeResponse.data.connected === 'boolean') {
         setStripeStatus(stripeResponse.data);
       }
       if (healthResponse.data) {
@@ -1006,7 +1006,7 @@ export default function IntegrationsScreen() {
                       </Text>
                     </PressableRow>
                   ) : (
-                    <PressableRow style={[styles.actionButton, styles.actionButtonPrimary]} onPress={handleConnectStripe} disabled={isConnecting || !stripeStatus?.stripeAvailable} data-testid="button-connect-stripe" >
+                    <PressableRow style={[styles.actionButton, styles.actionButtonPrimary]} onPress={handleConnectStripe} disabled={isConnecting || stripeStatus?.stripeAvailable === false} data-testid="button-connect-stripe" >
                       {isConnecting ? (
                         <ActivityIndicator size="small" color={colors.primaryForeground} />
                       ) : (
