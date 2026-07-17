@@ -28,7 +28,7 @@ import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { format, isThisWeek, parseISO } from 'date-fns';
 import { useStripeTerminal } from '../../src/hooks/useServices';
 import { isTapToPayAvailable } from '../../src/lib/stripe-terminal';
-import { useInvoicesStore, useClientsStore, useJobsStore } from '../../src/lib/store';
+import { useInvoicesStore, useClientsStore, useJobsStore, useAuthStore } from '../../src/lib/store';
 import api from '../../src/lib/api';
 import { Card, CardContent } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
@@ -1184,6 +1184,38 @@ export default function CollectScreen() {
     }
   }, []);
 
+  // Stripe Connect readiness — QR codes, payment links and Tap to Pay all
+  // charge through the business's Stripe account, so like the Tap to Pay
+  // setup flow they are gated until Stripe is set up. Demo account exempt.
+  const authUser = useAuthStore((st) => st.user);
+  const isDemoAccount = (authUser?.email || '').toLowerCase() === 'demo@jobrunner.com.au';
+  const [stripeReady, setStripeReady] = useState<boolean | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        const res = await api.get<{ connected: boolean; chargesEnabled?: boolean }>('/api/stripe-connect/status');
+        if (cancelled) return;
+        if (!res.error && res.data && typeof res.data.connected === 'boolean') {
+          setStripeReady(res.data.connected && res.data.chargesEnabled !== false);
+        }
+      })();
+      return () => { cancelled = true; };
+    }, [])
+  );
+  const ensureStripeReady = (): boolean => {
+    if (isDemoAccount || stripeReady !== false) return true;
+    Alert.alert(
+      'Set Up Payments First',
+      'QR codes, payment links and Tap to Pay need your Stripe payment account to be set up and verified before customers can pay you.',
+      [
+        { text: 'Not Now', style: 'cancel' },
+        { text: 'Set Up Payments', onPress: () => router.push('/more/payment-hub') },
+      ]
+    );
+    return false;
+  };
+
   // Re-check on every focus so returning from the setup wizard immediately
   // unblocks Tap to Pay (and status never goes stale).
   useFocusEffect(
@@ -2160,6 +2192,9 @@ export default function CollectScreen() {
 
   // Invoice Picker handlers
   const handleShowInvoicePicker = (method: 'record' | 'qr' | 'link' | 'tap') => {
+    // Card-based methods require Stripe to be set up (recording a manual
+    // cash/bank payment does not).
+    if (method !== 'record' && !ensureStripeReady()) return;
     // If amount is already entered or invoice selected, skip the picker
     if (amount && parseFloat(amount) > 0) {
       proceedToPaymentMethod(method);
