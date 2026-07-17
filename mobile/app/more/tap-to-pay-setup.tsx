@@ -695,18 +695,41 @@ export default function TapToPaySetupScreen() {
       // Pay reader now. The FIRST-ever connection makes iOS present Apple's
       // system-provided Tap to Pay on iPhone Terms & Conditions sheet —
       // Apple requires acceptance to happen through that sheet, not our own.
+      let connected = false;
       try {
         await new Promise(resolve => setTimeout(resolve, 400));
         setConfigProgress(1);
         await terminal.initialize();
         setConfigProgress(2);
-        await terminal.connectReader();
+        // First-ever connection for this Stripe account triggers Apple's
+        // system Terms & Conditions sheet; first-time device configuration
+        // can take up to ~2 minutes (the hook waits up to 90s).
+        const reader = await terminal.connectReader();
+        connected = !!reader;
         setConfigProgress(3);
       } catch (error) {
-        // Don't block onboarding if the connection fails (e.g. offline) —
-        // Apple's sheet will also appear on the first payment attempt.
         if (__DEV__) console.warn('TTP setup connect failed:', error);
         setConfigProgress(3);
+      }
+      if (!connected) {
+        // Stop here instead of showing a false "You're All Set" — a failed
+        // activation must be visible and retryable, not silently passed over.
+        Alert.alert(
+          'Tap to Pay Not Activated',
+          'We could not finish activating Tap to Pay on this device. Check your internet connection and try again, or continue anyway — activation (and Apple\'s Terms & Conditions, if not yet accepted) will run at your first payment.',
+          [
+            { text: 'Try Again', onPress: () => { runConfiguration(); } },
+            {
+              text: 'Continue Anyway',
+              style: 'cancel',
+              onPress: () => {
+                setTutorialSlide(0);
+                setStep('tutorial');
+              },
+            },
+          ]
+        );
+        return;
       }
     } else {
       const progressSteps = [
