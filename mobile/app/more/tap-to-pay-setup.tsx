@@ -27,7 +27,7 @@ import { getBottomNavHeight } from '../../src/components/BottomNav';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type OnboardingStep = 'splash' | 'terms' | 'tutorial' | 'configuring' | 'success' | 'non-admin';
+type OnboardingStep = 'splash' | 'terms' | 'tutorial' | 'configuring' | 'success' | 'non-admin' | 'stripe-required';
 
 interface TermsStatus {
   accepted: boolean;
@@ -615,6 +615,19 @@ export default function TapToPaySetupScreen() {
       return;
     }
 
+    // Real businesses must have Stripe payments set up before Tap to Pay —
+    // otherwise the flow would run in confusing simulation mode. The demo
+    // account is exempt (it intentionally showcases the flow without Stripe).
+    const isDemoAccount = (user?.email || '').toLowerCase() === 'demo@jobrunner.com.au';
+    if (!isDemoAccount) {
+      const res = await api.get<{ connected: boolean; chargesEnabled?: boolean }>('/api/stripe-connect/status');
+      if (!res.error && res.data && !(res.data.connected && res.data.chargesEnabled !== false)) {
+        setStep('stripe-required');
+        setLoading(false);
+        return;
+      }
+    }
+
     const status = await fetchTermsStatus();
     
     if (status?.accepted && status?.tutorialCompleted) {
@@ -628,7 +641,7 @@ export default function TapToPaySetupScreen() {
     }
     
     setLoading(false);
-  }, [checkDeviceCompatibility, fetchTermsStatus, educationOnly]);
+  }, [checkDeviceCompatibility, fetchTermsStatus, educationOnly, user?.email]);
 
   useEffect(() => {
     determineInitialStep();
@@ -1104,6 +1117,34 @@ export default function TapToPaySetupScreen() {
               data-testid="button-view-tutorial"
             />
           </View>
+        </View>
+      )}
+
+      {step === 'stripe-required' && (
+        <View style={styles.nonAdminContainer}>
+          <View style={styles.nonAdminIconContainer}>
+            <Feather name="credit-card" size={48} color={colors.warning} />
+          </View>
+
+          <Text style={styles.nonAdminTitle}>Set Up Payments First</Text>
+          <Text style={styles.nonAdminSubtitle}>
+            Tap to Pay needs your Stripe payment account to be set up and verified before you can accept card payments on this phone.
+          </Text>
+
+          <SheetButton
+            onPress={() => router.replace('/more/payment-hub')}
+            fullWidth
+            label="Set Up Payments"
+            data-testid="button-stripe-required-setup"
+          />
+          <View style={{ height: spacing.sm }} />
+          <SheetButton
+            variant="outline"
+            onPress={() => router.back()}
+            fullWidth
+            label="Go Back"
+            data-testid="button-stripe-required-back"
+          />
         </View>
       )}
 
