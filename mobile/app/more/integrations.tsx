@@ -467,11 +467,18 @@ export default function IntegrationsScreen() {
     setIsConnecting(true);
     try {
       if (!stripeStatus?.connected) {
-        const response = await api.post<{ url: string; accountId: string }>('/api/stripe-connect/create-account');
-        if (response.data?.url) {
-          await Linking.openURL(response.data.url);
-        } else if (response.error) {
-          showToast({ type: 'info', message: 'Connection Error', description: response.error });
+        // create-account only creates/returns the account — the actual
+        // onboarding URL comes from the account-link endpoint afterwards.
+        const createRes = await api.post<{ accountId?: string; error?: string; connectNotEnabled?: boolean }>('/api/stripe-connect/create-account');
+        if (createRes.error || createRes.data?.connectNotEnabled) {
+          showToast({ type: 'info', message: 'Connection Error', description: createRes.data?.error || createRes.error || 'Could not start Stripe setup' });
+          return;
+        }
+        const linkRes = await api.post<{ url: string }>('/api/stripe-connect/account-link', { type: 'account_onboarding' });
+        if (linkRes.data?.url) {
+          await Linking.openURL(linkRes.data.url);
+        } else {
+          showToast({ type: 'info', message: 'Setup Error', description: linkRes.error || 'Could not open Stripe onboarding' });
         }
       } else if (!stripeStatus.chargesEnabled) {
         const response = await api.post<{ url: string }>('/api/stripe-connect/account-link', { type: 'account_onboarding' });
