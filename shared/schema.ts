@@ -2489,6 +2489,19 @@ export const formSubmissions = pgTable("form_submissions", {
   index("idx_form_submissions_reviewed_by").on(table.reviewedBy),
 ]);
 
+// Version history for form submissions (job card edits) — a snapshot of the
+// previous submissionData is written here every time a submission is edited.
+export const formSubmissionVersions = pgTable("form_submission_versions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  submissionId: varchar("submission_id").notNull().references(() => formSubmissions.id, { onDelete: 'cascade' }),
+  versionNumber: integer("version_number").notNull().default(1),
+  submissionData: json("submission_data").default({}),
+  editedBy: varchar("edited_by").references(() => users.id),
+  editedAt: timestamp("edited_at").defaultNow(),
+}, (table) => [
+  index("idx_form_submission_versions_submission_id").on(table.submissionId),
+]);
+
 // Follow-up Tasks — spawned when a form/job-card answer matches a task rule
 export const tasks = pgTable("tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2898,6 +2911,13 @@ export const insertFormSubmissionSchema = createInsertSchema(formSubmissions).om
   id: true,
   createdAt: true,
 });
+
+export const insertFormSubmissionVersionSchema = createInsertSchema(formSubmissionVersions).omit({
+  id: true,
+  editedAt: true,
+});
+export type InsertFormSubmissionVersion = z.infer<typeof insertFormSubmissionVersionSchema>;
+export type FormSubmissionVersion = typeof formSubmissionVersions.$inferSelect;
 
 export const insertDigitalSignatureSchema = createInsertSchema(digitalSignatures).omit({
   id: true,

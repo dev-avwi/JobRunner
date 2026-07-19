@@ -39703,28 +39703,63 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  // Update form submission (for review status)
+  // Update form submission (review status, or editing the answers).
+  // Editing the answers snapshots the previous data into form_submission_versions.
   app.patch("/api/form-submissions/:id", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
-      
+
       const updates: any = { ...req.body };
+      // Normalize mobile payload key (`data`) to the DB column (`submissionData`)
+      if (updates.submissionData === undefined && updates.data !== undefined) {
+        updates.submissionData = updates.data;
+      }
+      delete updates.data;
       // Strip server-controlled identity/ownership fields (mass-assignment guard).
       // reviewedBy/reviewedAt are set by the server below, never trusted from the client.
-      delete updates.id; delete updates.userId; delete updates.formId; delete updates.createdAt; delete updates.updatedAt; delete updates.reviewedBy; delete updates.reviewedAt;
-      
+      delete updates.id; delete updates.userId; delete updates.formId; delete updates.jobId; delete updates.submittedBy; delete updates.submittedAt; delete updates.customerUserId; delete updates.createdAt; delete updates.updatedAt; delete updates.reviewedBy; delete updates.reviewedAt;
+
+      // Resolve business context so team members can edit submissions on the
+      // owner's forms, then require owner/manager OR the original submitter.
+      const userContext = await getUserContext(userId);
+      const existing = await storage.getFormSubmission(id, userContext.effectiveUserId);
+      if (!existing) {
+        return res.status(404).json({ error: 'Submission not found' });
+      }
+      const perms = (userContext.permissions || []) as string[];
+      const isOwnerContext = userContext.effectiveUserId === userId || perms.includes('*') || perms.includes('manage_team');
+      if (!isOwnerContext && existing.submittedBy !== userId) {
+        return res.status(403).json({ error: 'You can only edit your own submissions' });
+      }
+
       if (updates.reviewStatus === 'approved' || updates.reviewStatus === 'rejected') {
         updates.reviewedBy = userId;
         updates.reviewedAt = new Date();
       }
-      
-      const submission = await storage.updateFormSubmission(id, userId, updates);
-      
+
+      // Snapshot the previous answers before overwriting them. If the
+      // snapshot fails, fail the edit — history must never silently degrade.
+      if (updates.submissionData !== undefined) {
+        try {
+          await storage.createFormSubmissionVersion({
+            submissionId: id,
+            versionNumber: 1, // ignored — assigned atomically in storage
+            submissionData: existing.submissionData || {},
+            editedBy: userId,
+          });
+        } catch (e) {
+          console.error('Failed to snapshot form submission version:', e);
+          return res.status(500).json({ error: 'Could not save edit history. Changes were not saved.' });
+        }
+      }
+
+      const submission = await storage.updateFormSubmission(id, userContext.effectiveUserId, updates);
+
       if (!submission) {
         return res.status(404).json({ error: 'Submission not found' });
       }
-      
+
       res.json(submission);
     } catch (error: any) {
       console.error('Error updating form submission:', error);
@@ -39732,18 +39767,56 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
-  // Delete form submission
+  // Version history for a form submission (job card edit history)
+  app.get("/api/form-submissions/:id/versions", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { id } = req.params;
+
+      const userContext = await getUserContext(userId);
+      const submission = await storage.getFormSubmission(id, userContext.effectiveUserId);
+      if (!submission) {
+        return res.status(404).json({ error: 'Submission not found' });
+      }
+
+      const versions = await storage.getFormSubmissionVersions(id);
+      // Attach editor names for display
+      const editorIds = Array.from(new Set(versions.map(v => v.editedBy).filter(Boolean))) as string[];
+      const editors: Record<string, string> = {};
+      for (const eid of editorIds) {
+        const u = await storage.getUser(eid);
+        if (u) editors[eid] = u.username || u.email || 'Unknown';
+      }
+      res.json(versions.map(v => ({ ...v, editedByName: v.editedBy ? (editors[v.editedBy] || 'Unknown') : 'Unknown' })));
+    } catch (error: any) {
+      console.error('Error fetching form submission versions:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete form submission (owner/manager or the original submitter)
   app.delete("/api/form-submissions/:id", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { id } = req.params;
-      
-      const deleted = await storage.deleteFormSubmission(id, userId);
-      
+
+      const userContext = await getUserContext(userId);
+      const existing = await storage.getFormSubmission(id, userContext.effectiveUserId);
+      if (!existing) {
+        return res.status(404).json({ error: 'Submission not found' });
+      }
+      const perms = (userContext.permissions || []) as string[];
+      const isOwnerContext = userContext.effectiveUserId === userId || perms.includes('*') || perms.includes('manage_team');
+      if (!isOwnerContext && existing.submittedBy !== userId) {
+        return res.status(403).json({ error: 'You can only delete your own submissions' });
+      }
+
+      const deleted = await storage.deleteFormSubmission(id, userContext.effectiveUserId);
+
       if (!deleted) {
         return res.status(404).json({ error: 'Submission not found' });
       }
-      
+
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting form submission:', error);

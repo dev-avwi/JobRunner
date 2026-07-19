@@ -151,8 +151,11 @@ import {
   type InsertCustomForm,
   type FormSubmission,
   type InsertFormSubmission,
+  type FormSubmissionVersion,
+  type InsertFormSubmissionVersion,
   customForms,
   formSubmissions,
+  formSubmissionVersions,
   tasks,
   type Task,
   type InsertTask,
@@ -924,6 +927,8 @@ export interface IStorage {
   createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission>;
   updateFormSubmission(id: string, userId: string, submission: Partial<InsertFormSubmission>): Promise<FormSubmission | undefined>;
   deleteFormSubmission(id: string, userId: string): Promise<boolean>;
+  getFormSubmissionVersions(submissionId: string): Promise<FormSubmissionVersion[]>;
+  createFormSubmissionVersion(version: InsertFormSubmissionVersion): Promise<FormSubmissionVersion>;
   getFormSubmissionsForExport(ownerUserId: string, opts?: { formId?: string; from?: Date; to?: Date }): Promise<Array<{
     submission: FormSubmission;
     formId: string;
@@ -1374,6 +1379,25 @@ pool
   `)
   .catch((err) => {
     console.error('[Schema] Failed to ensure terms_acceptance table:', err.message);
+  });
+
+// Job card edit history: form_submission_versions. Created idempotently with
+// raw SQL at startup (we do NOT use drizzle-kit push on this database).
+pool
+  .query(`
+    CREATE TABLE IF NOT EXISTS form_submission_versions (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      submission_id varchar NOT NULL REFERENCES form_submissions(id) ON DELETE CASCADE,
+      version_number integer NOT NULL DEFAULT 1,
+      submission_data json DEFAULT '{}',
+      edited_by varchar REFERENCES users(id),
+      edited_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_form_submission_versions_submission_id ON form_submission_versions (submission_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_form_submission_versions_sub_ver ON form_submission_versions (submission_id, version_number);
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure form_submission_versions table:', err.message);
   });
 
 // Task #271 (Subcontractor & payroll payments): new money-side tables + columns.
@@ -5519,6 +5543,32 @@ export class PostgresStorage implements IStorage {
       .where(eq(formSubmissions.id, id))
       .returning();
     return result;
+  }
+
+  async getFormSubmissionVersions(submissionId: string): Promise<FormSubmissionVersion[]> {
+    return await db.select().from(formSubmissionVersions)
+      .where(eq(formSubmissionVersions.submissionId, submissionId))
+      .orderBy(desc(formSubmissionVersions.versionNumber));
+  }
+
+  async createFormSubmissionVersion(version: InsertFormSubmissionVersion): Promise<FormSubmissionVersion> {
+    // Version number is assigned atomically in SQL (max+1) with a unique index
+    // on (submission_id, version_number); retry once on a concurrent conflict.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = await pool.query(
+          `INSERT INTO form_submission_versions (submission_id, version_number, submission_data, edited_by)
+           VALUES ($1::varchar, (SELECT COALESCE(MAX(version_number), 0) + 1 FROM form_submission_versions WHERE submission_id = $1::varchar), $2::json, $3::varchar)
+           RETURNING id, submission_id AS "submissionId", version_number AS "versionNumber", submission_data AS "submissionData", edited_by AS "editedBy", edited_at AS "editedAt"`,
+          [version.submissionId, JSON.stringify(version.submissionData || {}), version.editedBy || null]
+        );
+        return result.rows[0] as FormSubmissionVersion;
+      } catch (err: any) {
+        if (err?.code === '23505' && attempt < 2) continue; // unique conflict, retry
+        throw err;
+      }
+    }
+    throw new Error('Failed to create form submission version after retries');
   }
 
   async deleteFormSubmission(id: string, userId: string): Promise<boolean> {

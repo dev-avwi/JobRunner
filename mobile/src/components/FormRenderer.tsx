@@ -52,6 +52,16 @@ interface FormSubmission {
   form?: CustomForm;
 }
 
+interface SubmissionVersion {
+  id: string;
+  submissionId: string;
+  versionNumber: number;
+  submissionData: Record<string, any>;
+  editedBy?: string;
+  editedByName?: string;
+  editedAt?: string;
+}
+
 interface JobFormsProps {
   jobId: string;
   readOnly?: boolean;
@@ -74,6 +84,11 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showFormSelector, setShowFormSelector] = useState(false);
   const [showSignaturePad, setShowSignaturePad] = useState<string | null>(null);
+  const [editingSubmissionId, setEditingSubmissionId] = useState<string | null>(null);
+  const [historySubmission, setHistorySubmission] = useState<FormSubmission | null>(null);
+  const [historyVersions, setHistoryVersions] = useState<SubmissionVersion[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [expandedVersionId, setExpandedVersionId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -106,7 +121,58 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
   const handleSelectForm = (form: CustomForm) => {
     setSelectedForm(form);
     setFormData({});
+    setEditingSubmissionId(null);
     setShowFormSelector(false);
+  };
+
+  const handleEditSubmission = (submission: FormSubmission) => {
+    const form = forms.find(f => f.id === submission.formId) || submission.form;
+    if (!form) {
+      Alert.alert('Cannot Edit', 'The form this was filled out from is no longer available.');
+      return;
+    }
+    const existingData = (submission as any).submissionData || submission.data || {};
+    setSelectedForm(form);
+    setFormData({ ...existingData });
+    setEditingSubmissionId(submission.id);
+  };
+
+  const handleDeleteSubmission = (submission: FormSubmission) => {
+    Alert.alert(
+      'Delete Job Card',
+      'This will permanently delete this completed job card. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const res = await api.delete(`/api/form-submissions/${submission.id}`);
+            if (res.error) {
+              Alert.alert('Error', res.error || 'Failed to delete');
+              return;
+            }
+            await loadData();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleShowHistory = async (submission: FormSubmission) => {
+    setHistorySubmission(submission);
+    setExpandedVersionId(null);
+    setIsLoadingHistory(true);
+    try {
+      const res = await api.get<SubmissionVersion[]>(`/api/form-submissions/${submission.id}/versions`);
+      if (!res.error && Array.isArray(res.data)) {
+        setHistoryVersions(res.data);
+      } else {
+        setHistoryVersions([]);
+      }
+    } finally {
+      setIsLoadingHistory(false);
+    }
   };
 
   const handleFieldChange = (fieldId: string, value: any) => {
@@ -151,15 +217,29 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
 
     try {
       setIsSubmitting(true);
-      await api.post(`/api/jobs/${jobId}/form-submissions`, {
-        formId: selectedForm.id,
-        data: formData,
-        status: 'submitted',
-      });
-      
-      Alert.alert('Success', 'Form submitted successfully');
+      let submitError: string | undefined;
+      if (editingSubmissionId) {
+        const res = await api.patch(`/api/form-submissions/${editingSubmissionId}`, {
+          data: formData,
+        });
+        submitError = res.error;
+      } else {
+        const res = await api.post(`/api/jobs/${jobId}/form-submissions`, {
+          formId: selectedForm.id,
+          data: formData,
+          status: 'submitted',
+        });
+        submitError = res.error;
+      }
+      if (submitError) {
+        Alert.alert('Error', submitError);
+        return;
+      }
+
+      Alert.alert('Success', editingSubmissionId ? 'Changes saved' : 'Form submitted successfully');
       setSelectedForm(null);
       setFormData({});
+      setEditingSubmissionId(null);
       await loadData();
     } catch (error) {
       Alert.alert('Error', 'Failed to submit form');
@@ -442,6 +522,48 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
             </Text>
           </View>
         </View>
+        {!readOnly && (
+          <View style={styles.submissionActions}>
+            <PressableRow style={styles.submissionActionButton} onPress={() => handleEditSubmission(submission)}>
+              <Feather name="edit-2" size={14} color={colors.primary} />
+              <Text style={styles.submissionActionText}>Edit</Text>
+            </PressableRow>
+            <PressableRow style={styles.submissionActionButton} onPress={() => handleShowHistory(submission)}>
+              <Feather name="clock" size={14} color={colors.mutedForeground} />
+              <Text style={[styles.submissionActionText, { color: colors.mutedForeground }]}>History</Text>
+            </PressableRow>
+            <PressableRow style={styles.submissionActionButton} onPress={() => handleDeleteSubmission(submission)}>
+              <Feather name="trash-2" size={14} color={colors.destructive} />
+              <Text style={[styles.submissionActionText, { color: colors.destructive }]}>Delete</Text>
+            </PressableRow>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderVersionValues = (version: SubmissionVersion, form?: CustomForm) => {
+    const data = version.submissionData || {};
+    const fields = form?.fields?.filter(f => f.type !== 'section') || [];
+    const entries = fields.length > 0
+      ? fields.map(f => ({ label: f.label, value: data[f.id] }))
+      : Object.keys(data).map(k => ({ label: k, value: data[k] }));
+    return (
+      <View style={styles.versionValues}>
+        {entries.map((e, i) => {
+          let display: string;
+          if (e.value === null || e.value === undefined || e.value === '') display = '—';
+          else if (typeof e.value === 'boolean') display = e.value ? 'Yes' : 'No';
+          else if (typeof e.value === 'string' && e.value.startsWith('data:image')) display = '[Photo/Signature]';
+          else display = String(e.value);
+          return (
+            <View key={i} style={styles.versionValueRow}>
+              <Text style={styles.versionValueLabel} numberOfLines={1}>{e.label}</Text>
+              <Text style={styles.versionValueText}>{display}</Text>
+            </View>
+          );
+        })}
+        {entries.length === 0 && <Text style={styles.versionValueText}>No data</Text>}
       </View>
     );
   };
@@ -535,11 +657,18 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
         <View style={styles.formContainer}>
           <View style={styles.formHeader}>
             <Text style={styles.formTitle}>{selectedForm.name}</Text>
-            <PressableRow onPress={() => { setSelectedForm(null); setFormData({}); }} >
+            <PressableRow onPress={() => { setSelectedForm(null); setFormData({}); setEditingSubmissionId(null); }} >
               <Feather name="x" size={24} color={colors.mutedForeground} />
             </PressableRow>
           </View>
           
+          {editingSubmissionId && (
+            <View style={styles.editingBanner}>
+              <Feather name="edit-2" size={14} color={colors.primary} />
+              <Text style={styles.editingBannerText}>Editing existing job card — previous version will be kept in history</Text>
+            </View>
+          )}
+
           {selectedForm.description && (
             <Text style={styles.formDescription}>{selectedForm.description}</Text>
           )}
@@ -554,7 +683,7 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
             ) : (
               <>
                 <Feather name="check" size={20} color={colors.primaryForeground} />
-                <Text style={styles.submitButtonText}>Submit Form</Text>
+                <Text style={styles.submitButtonText}>{editingSubmissionId ? 'Save Changes' : 'Submit Form'}</Text>
               </>
             )}
           </PressableRow>
@@ -569,6 +698,60 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
           <Text style={styles.emptyText}>{jobCardMode ? 'No job card available' : 'No checklists available'}</Text>
         </View>
       )}
+
+      <AppBottomSheet
+        visible={!!historySubmission}
+        onDismiss={() => setHistorySubmission(null)}
+        snapPoints={['75%']}
+        scrollable={false}
+        contentPadding={0}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit History</Text>
+            <PressableRow onPress={() => setHistorySubmission(null)}>
+              <Feather name="x" size={24} color={colors.foreground} />
+            </PressableRow>
+          </View>
+          {isLoadingHistory ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : historyVersions.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No edits yet — this job card is still the original version.</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={historyVersions}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.formsList}
+              renderItem={({ item }) => {
+                const form = historySubmission
+                  ? (forms.find(f => f.id === historySubmission.formId) || historySubmission.form)
+                  : undefined;
+                const isExpanded = expandedVersionId === item.id;
+                return (
+                  <View style={styles.versionCard}>
+                    <PressableRow style={styles.versionHeader} onPress={() => setExpandedVersionId(isExpanded ? null : item.id)}>
+                      <View style={styles.versionHeaderInfo}>
+                        <Text style={styles.versionTitle}>Version {item.versionNumber}</Text>
+                        <Text style={styles.versionMeta}>
+                          {item.editedByName || 'Unknown'}
+                          {item.editedAt && !isNaN(new Date(item.editedAt).getTime())
+                            ? ` — ${new Date(item.editedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}`
+                            : ''}
+                        </Text>
+                      </View>
+                      <Feather name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+                    </PressableRow>
+                    {isExpanded && renderVersionValues(item, form)}
+                  </View>
+                );
+              }}
+            />
+          )}
+        </View>
+      </AppBottomSheet>
 
       <AppBottomSheet
         visible={showFormSelector}
@@ -1080,6 +1263,98 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   signaturePadContainer: {
     flex: 1,
     padding: spacing.lg,
+  },
+  submissionActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  submissionActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.sm,
+    backgroundColor: colors.muted,
+  },
+  submissionActionText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: colors.primary,
+    letterSpacing: 0,
+  },
+  editingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+    backgroundColor: `${colors.primary}12`,
+    marginBottom: spacing.sm,
+  },
+  editingBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.primary,
+    letterSpacing: 0,
+  },
+  versionCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.card,
+    overflow: 'hidden',
+  },
+  versionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+  },
+  versionHeaderInfo: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  versionTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.foreground,
+    letterSpacing: 0,
+  },
+  versionMeta: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    marginTop: 2,
+    letterSpacing: 0,
+  },
+  versionValues: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.xs,
+  },
+  versionValueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingVertical: 2,
+  },
+  versionValueLabel: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    flex: 1,
+    letterSpacing: 0,
+  },
+  versionValueText: {
+    fontSize: 12,
+    color: colors.foreground,
+    flexShrink: 1,
+    textAlign: 'right' as const,
+    letterSpacing: 0,
   },
 });
 
