@@ -3585,6 +3585,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const response: any = {
         ...safeUser,
+        // Team members inherit the plan of the business they work in — their own
+        // account tier is usually 'free', which wrongly hid team-gated UI
+        // (e.g. the manager Team View toggle on mobile time tracking).
+        subscriptionTier: userContext.effectiveSubscriptionTier || safeUser.subscriptionTier || 'free',
         workerPermissions: workerPermissionContext.permissions,
         isOwner: workerPermissionContext.isOwner,
         isWorker: workerPermissionContext.isWorker,
@@ -26878,7 +26882,14 @@ Respond with JSON in this format:
         );
       } else if (teamView && !jobId) {
         const userContext = await getUserContext(userId);
-        const canViewTeam = userContext.isOwner || userContext.roleName === 'MANAGER' || userContext.roleName === 'ADMIN' || userContext.permissions.includes('MANAGE_TEAM' as any);
+        // Role names come from the DB as e.g. "Manager"; permissions are
+        // lowercase strings ('manage_team'). The old exact-uppercase checks
+        // ('MANAGER', 'MANAGE_TEAM') matched nothing and 403'd real managers.
+        const perms = (userContext.permissions || []) as string[];
+        const canViewTeam = userContext.isOwner ||
+          /manager|admin|supervisor/i.test(userContext.roleName || '') ||
+          perms.includes('*') ||
+          perms.includes(PERMISSIONS.MANAGE_TEAM);
         if (!canViewTeam) {
           return res.status(403).json({ error: 'Team view requires owner or manager access' });
         }
