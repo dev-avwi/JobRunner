@@ -103,6 +103,11 @@ const PERMISSION_ALIASES: Record<string, string[]> = {
   view_dispatch: [PERMISSIONS.VIEW_DISPATCH],
   // Team
   manage_roles: [PERMISSIONS.MANAGE_TEAM],
+  // Managers run the team day-to-day: seeing every job/client (not just their
+  // own assignments) is required to oversee the crew, so manage_team grants
+  // business-wide visibility. Deliberately NOT extended to assign_jobs — a
+  // narrow assign-only role must not gain full client/job visibility.
+  manage_team: [PERMISSIONS.VIEW_ALL],
   // Time tracking
   track_time: [PERMISSIONS.READ_TIME_ENTRIES, PERMISSIONS.WRITE_TIME_ENTRIES],
   time_tracking: [PERMISSIONS.READ_TIME_ENTRIES, PERMISSIONS.WRITE_TIME_ENTRIES],

@@ -1972,7 +1972,7 @@ export default function TeamManagementScreen() {
         api.get<TeamMember[]>('/api/team/members'),
         api.get<UserRole[]>('/api/team/roles'),
         api.get<PermissionItem[]>('/api/team/permissions'),
-        api.get<{ isOwner: boolean; role?: string }>('/api/team/my-role'),
+        api.get<{ isOwner: boolean; role?: string; roleName?: string }>('/api/team/my-role'),
         api.get<SubscriptionStatus>('/api/billing/status'),
       ]);
       
@@ -1986,7 +1986,14 @@ export default function TeamManagementScreen() {
         setAvailablePermissions(permissionsRes.data);
       }
       if (myRoleRes.data) {
-        setCurrentUserRole(myRoleRes.data.isOwner ? 'owner' : (myRoleRes.data.role || ''));
+        // Team members get roleName (e.g. "Manager") from my-role, not `role`
+        // — so fall through to it or managers resolve to '' and lose all
+        // team-management controls the server actually allows them.
+        setCurrentUserRole(
+          myRoleRes.data.isOwner
+            ? 'owner'
+            : (myRoleRes.data.role || myRoleRes.data.roleName || '').toLowerCase()
+        );
       }
       if (statusRes.data) {
         setSubscriptionStatus(statusRes.data);
@@ -2085,6 +2092,10 @@ export default function TeamManagementScreen() {
   }, [availablePermissions]);
 
   const currentUserIsOwner = currentUserRole === 'owner';
+  // Managers can run the team day-to-day (server allows them to invite, edit
+  // and remove members via ownerOrManagerOnly). Owner-only stays for invite
+  // codes, custom permissions and subcontractor billing.
+  const currentUserCanManage = currentUserIsOwner || /manager|admin|supervisor/i.test(currentUserRole);
 
   const fetchMemberDetails = useCallback(async (member: TeamMember) => {
     setIsLoadingDetail(true);
@@ -2487,7 +2498,7 @@ export default function TeamManagementScreen() {
         </View>
 
         {/* Location toggle for accepted members */}
-        {member.role !== 'owner' && member.inviteStatus === 'accepted' && currentUserIsOwner && (
+        {member.role !== 'owner' && member.inviteStatus === 'accepted' && currentUserCanManage && (
           <View style={[styles.memberActions, { borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: spacing.sm, marginBottom: spacing.sm }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <Feather 
@@ -2523,7 +2534,7 @@ export default function TeamManagementScreen() {
           </View>
         )}
 
-        {member.role !== 'owner' && currentUserIsOwner && (
+        {member.role !== 'owner' && currentUserCanManage && (
           <View style={styles.memberActions}>
             <TouchableOpacity 
               testID={`button-view-${member.id}`}
@@ -2792,7 +2803,7 @@ export default function TeamManagementScreen() {
                 <Text style={styles.headerTitle}>Team Management</Text>
                 <Text testID="text-member-count" style={styles.headerSubtitle}>{currentUserRole === 'owner' ? teamMembers.length + 1 : teamMembers.length} team members</Text>
               </View>
-              {currentUserIsOwner && (
+              {currentUserCanManage && (
                 <TouchableOpacity 
                   testID="button-invite-member"
                   style={styles.inviteButton}
@@ -2909,7 +2920,7 @@ export default function TeamManagementScreen() {
                 <Text style={styles.emptyStateText}>
                   Invite your first team member to get started with team collaboration
                 </Text>
-                {currentUserIsOwner && (
+                {currentUserCanManage && (
                   <TouchableOpacity 
                     testID="button-invite-member-empty"
                     style={styles.emptyStateButton}
@@ -3333,7 +3344,7 @@ export default function TeamManagementScreen() {
               </ScrollView>
 
               <View style={styles.modalFooter}>
-                {currentUserIsOwner && selectedMember && selectedMember.role !== 'owner' && (
+                {currentUserCanManage && selectedMember && selectedMember.role !== 'owner' && (
                   <>
                     <TouchableOpacity 
                       style={styles.cancelButton}
@@ -3364,7 +3375,7 @@ export default function TeamManagementScreen() {
                     </TouchableOpacity>
                   </>
                 )}
-                {(!currentUserIsOwner || !selectedMember || selectedMember.role === 'owner') && (
+                {(!currentUserCanManage || !selectedMember || selectedMember.role === 'owner') && (
                   <TouchableOpacity 
                     style={[styles.saveButton, { flex: 1 }]}
                     onPress={() => setShowDetailModal(false)}

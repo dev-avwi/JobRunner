@@ -26882,14 +26882,14 @@ Respond with JSON in this format:
         );
       } else if (teamView && !jobId) {
         const userContext = await getUserContext(userId);
-        // Role names come from the DB as e.g. "Manager"; permissions are
-        // lowercase strings ('manage_team'). The old exact-uppercase checks
-        // ('MANAGER', 'MANAGE_TEAM') matched nothing and 403'd real managers.
+        // Gate on the explicit privilege, not role-name strings. (The old
+        // exact-uppercase 'MANAGER'/'MANAGE_TEAM' checks matched nothing —
+        // roles are stored as "Manager" and permissions lowercase.)
         const perms = (userContext.permissions || []) as string[];
         const canViewTeam = userContext.isOwner ||
-          /manager|admin|supervisor/i.test(userContext.roleName || '') ||
           perms.includes('*') ||
-          perms.includes(PERMISSIONS.MANAGE_TEAM);
+          perms.includes(PERMISSIONS.MANAGE_TEAM) ||
+          perms.includes(PERMISSIONS.VIEW_ALL);
         if (!canViewTeam) {
           return res.status(403).json({ error: 'Team view requires owner or manager access' });
         }

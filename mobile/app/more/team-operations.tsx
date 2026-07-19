@@ -169,7 +169,7 @@ export default function TeamOperationsScreen() {
   const styles = useMemo(() => createStyles(colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice, isDark), [colors, contentWidth, responsiveShell.paddingHorizontal, isTabletDevice, isDark]);
   const { user } = useAuthStore();
 
-  const { hasTeamSubscription, hasProSubscription, subscriptionTier } = useUserRole();
+  const { hasTeamSubscription, hasProSubscription, subscriptionTier, isOwner: roleIsOwner, isManager: roleIsManager } = useUserRole();
 
   const [activeTab, setActiveTab] = useState<TabType>('live');
   const [perfPeriod, setPerfPeriod] = useState<PerfPeriod>('week');
@@ -203,7 +203,9 @@ export default function TeamOperationsScreen() {
     return () => clearInterval(t);
   }, []);
 
-  const isOwnerOrManager = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'manager';
+  // user.role from the auth store is unreliable (legacy column); use the
+  // resolved role hook so real managers pass this gate.
+  const isOwnerOrManager = roleIsOwner || roleIsManager || user?.role === 'owner' || user?.role === 'admin' || user?.role === 'manager';
 
   const handleAssignJob = async (job: JobData) => {
     if (!assigningToMember || isAssigningJob) return;
