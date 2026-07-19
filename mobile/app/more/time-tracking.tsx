@@ -811,8 +811,10 @@ export default function TimeTrackingScreen() {
   const [weeklyData, setWeeklyData] = useState<WeeklyStats[]>([]);
   const [teamViewEnabled, setTeamViewEnabled] = useState(false);
   const { user } = useAuthStore();
-  const isOwnerOrManager = user?.isOwner === true || user?.roleName === 'MANAGER' || user?.roleName === 'ADMIN';
-  const { hasTeamSubscription } = useUserRole();
+  const { hasTeamSubscription, isManager } = useUserRole();
+  // isManager matches manager/admin/supervisor role names case-insensitively;
+  // the old exact 'MANAGER' string check missed real DB role names like "Manager".
+  const isOwnerOrManager = user?.isOwner === true || isManager;
 
   const [showAddEntryModal, setShowAddEntryModal] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);

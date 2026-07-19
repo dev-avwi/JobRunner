@@ -12,3 +12,5 @@ Server `GET /api/team/members` returns `role` = role name lowercased with spaces
 **Why:** a subcontractor invited via a subcontractor invite code was badged "Worker" — the join was correct in the DB; only this map was missing the `subcontractor` key.
 
 **How to apply:** add the entry (label/color/icon/description) right next to `worker`/`staff`. `getRoleCategory` (owner|manager|worker stat buckets) intentionally compresses unknown roles into `worker` for counts — that's acceptable, not the label bug. Mobile changes only reach devices after a PUBLISH.
+
+**Related class of bug — exact-string role checks:** server `roleName` is the raw DB role name (e.g. `"Manager"`), so any screen doing `roleName === 'MANAGER'` silently fails for real managers (bit time-tracking's team view). Always gate via `useUserRole()` flags (`isManager` matches manager/admin/supervisor case-insensitively), never exact roleName strings.

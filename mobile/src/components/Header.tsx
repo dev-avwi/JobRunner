@@ -180,7 +180,7 @@ export function Header({
   const { unreadCount } = useNotificationsStore();
   const pathname = usePathname();
   const { canAccessMap, isSubcontractor, isLoading: roleLoading } = useUserRole();
-  const isManagerFromStore = roleInfo?.roleName === 'MANAGER' || roleInfo?.roleName === 'manager';
+  const isManagerFromStore = /manager|admin|supervisor/i.test(roleInfo?.roleName || '');
   const cachedCanViewMap = isOwnerFromStore() || isManagerFromStore;
   // Map is open to every role — owners, managers, subcontractors and workers all
   // want to see their jobs (and the jobs assigned to them).
