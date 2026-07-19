@@ -10,3 +10,4 @@ description: Rules for offline edit/delete of job-card submissions — tombstone
 - Tombstone rows can have NULL job_id, so tombstone lookups must query ALL local rows, not the per-job filter.
 - `form_submissions_local` is shared with SWMS (form_id `swms:` prefix) — filter it when listing job cards. Table is already in clearCache().
 - Local `local_` rows: edits rewrite the queued create payload; deletes just drop row + queued create (nothing reached the server).
+- **Team 403s are permanent**: server PATCH/DELETE gate on owner/manager OR original submitter ("You can only edit/delete your own submissions"). Sync handlers must treat that wording as a permanent drop — delete the local override/tombstone so server truth reappears — never retry. Concurrent teammate edits are last-write-wins with server-side version snapshots (history keeps both).

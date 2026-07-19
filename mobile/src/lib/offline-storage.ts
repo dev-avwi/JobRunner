@@ -2574,8 +2574,10 @@ class OfflineStorageService {
           submissionData: data.submissionData,
         });
         if (response.error) {
-          // Submission deleted on server (or access revoked) — retrying re-404s forever
-          if (/not found/i.test(response.error)) {
+          // Submission deleted on server, or edit not permitted (e.g. a team
+          // member editing someone else's card) — retrying can never succeed.
+          // Drop the local override so the server's version shows again.
+          if (/not found/i.test(response.error) || /only edit your own/i.test(response.error)) {
             if (this.db) {
               await this.db.runAsync('DELETE FROM form_submissions_local WHERE id = ? OR local_id = ?', [data.id, data.id]);
             }
@@ -2600,6 +2602,14 @@ class OfflineStorageService {
     if (type === 'formSubmission' && action === 'delete') {
       try {
         const response = await api.delete(`/api/form-submissions/${data.id}`);
+        if (response.error && /only delete your own/i.test(response.error)) {
+          // Not permitted (team member deleting someone else's card) — drop the
+          // tombstone so the card reappears from the server on next load.
+          if (this.db) {
+            await this.db.runAsync('DELETE FROM form_submissions_local WHERE id = ? OR local_id = ?', [data.id, data.id]);
+          }
+          return true;
+        }
         if (response.error && !/not found/i.test(response.error)) {
           if (__DEV__) console.warn('[OfflineStorage] formSubmission delete sync error:', response.error);
           return false;
