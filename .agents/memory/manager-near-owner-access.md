@@ -10,5 +10,6 @@ Rule: managers get owner-like read access via the permission alias `manage_team 
 **How to apply:**
 - Server gates should check permissions (`manage_team`, `view_all`, `*`), never role-name regexes.
 - /api/team/my-role returns `roleName` (e.g. "Manager") for members, NOT `role` — mobile code reading `data.role` resolves to '' for managers and hides UI.
-- Mobile team-management uses `currentUserCanManage` (owner or /manager|admin|supervisor/i on the resolved role) for member edit/invite/location controls; invite codes, custom permissions, subcontractor invoices stay owner-only (server ownerOnly anyway).
+- Mobile team-management uses `currentUserCanManage` (owner or /manager|admin|supervisor/i on the resolved role) for member edit/invite/location controls, invite codes, custom permissions and subcontractor invoices.
 - Server team-member write routes are ownerOrManagerOnly (= MANAGE_TEAM), so managers can invite/edit/remove members.
+- Also manager-open (2026-07-19): invite codes (GET/POST/DELETE), member custom permissions PATCH, roles, business subcontractor-invoices GET/PATCH-status. These route bodies must scope by `req.effectiveUserId || req.userId` (ownerOrManagerOnly sets effectiveUserId to the owner) or a manager sees an empty list / 403. Subscription + billing lifecycle routes stay ownerOnly.

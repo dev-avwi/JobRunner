@@ -29885,7 +29885,7 @@ Respond with JSON in this format:
     }
   }, 10 * 60 * 1000).unref();
 
-  app.post("/api/team/invite-codes", requireAuth, ownerOnly(), requireTeamPlan(), async (req: any, res) => {
+  app.post("/api/team/invite-codes", requireAuth, ownerOrManagerOnly(), requireTeamPlan(), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const { roleType } = req.body;
@@ -29922,7 +29922,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.get("/api/team/invite-codes", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.get("/api/team/invite-codes", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const codes = await db.select().from(inviteCodes)
@@ -29935,7 +29935,7 @@ Respond with JSON in this format:
     }
   });
 
-  app.delete("/api/team/invite-codes/:id", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.delete("/api/team/invite-codes/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userId = req.userContext?.effectiveUserId || req.userId!;
       const codeId = req.params.id;
@@ -30882,7 +30882,7 @@ Respond with JSON in this format:
   });
   
   // Update custom permissions for a team member (owner only)
-  app.patch("/api/team/members/:id/permissions", requireAuth, ownerOnly(), async (req: any, res) => {
+  app.patch("/api/team/members/:id/permissions", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const memberId = req.params.id;
       const { permissions, useCustomPermissions } = req.body;
@@ -48899,9 +48899,10 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // GET /api/business/subcontractor-invoices - Business owner views received invoices
-  app.get("/api/business/subcontractor-invoices", requireAuth, async (req: any, res) => {
+  app.get("/api/business/subcontractor-invoices", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
-      const userId = req.userId;
+      // Managers act on behalf of the business owner.
+      const userId = req.effectiveUserId || req.userId;
       const status = req.query.status as string | undefined;
 
       let invoicesList = await storage.getSubcontractorInvoicesByBusiness(userId);
@@ -48934,9 +48935,10 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // PATCH /api/business/subcontractor-invoices/:id/status - Approve or mark paid
-  app.patch("/api/business/subcontractor-invoices/:id/status", requireAuth, async (req: any, res) => {
+  app.patch("/api/business/subcontractor-invoices/:id/status", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
-      const userId = req.userId;
+      // Managers act on behalf of the business owner.
+      const userId = req.effectiveUserId || req.userId;
       const { status, paidMethod, paidAt, rejectionReason } = req.body;
 
       if (!['approved', 'paid', 'rejected'].includes(status)) {

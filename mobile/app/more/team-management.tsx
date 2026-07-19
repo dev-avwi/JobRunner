@@ -2093,8 +2093,9 @@ export default function TeamManagementScreen() {
 
   const currentUserIsOwner = currentUserRole === 'owner';
   // Managers can run the team day-to-day (server allows them to invite, edit
-  // and remove members via ownerOrManagerOnly). Owner-only stays for invite
-  // codes, custom permissions and subcontractor billing.
+  // and remove members, manage invite codes, custom permissions and
+  // subcontractor billing via ownerOrManagerOnly). Subscription/billing
+  // stays owner-only.
   const currentUserCanManage = currentUserIsOwner || /manager|admin|supervisor/i.test(currentUserRole);
 
   const fetchMemberDetails = useCallback(async (member: TeamMember) => {
@@ -2838,7 +2839,7 @@ export default function TeamManagementScreen() {
             </View>
           </View>
 
-          {currentUserIsOwner && inviteCodes.filter(c => c.isActive).length > 0 && (
+          {currentUserCanManage && inviteCodes.filter(c => c.isActive).length > 0 && (
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Active Invite Codes</Text>
               {inviteCodes.filter(c => c.isActive).map((ic) => {
@@ -2906,8 +2907,8 @@ export default function TeamManagementScreen() {
             <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
           </TouchableOpacity>
 
-          {/* Subcontractor Invoices Section - Business Owner Only */}
-          {currentUserIsOwner && <SubcontractorInvoicesSection colors={colors} focusInvoiceId={focusInvoiceId} />}
+          {/* Subcontractor Invoices Section - Owner or Manager */}
+          {currentUserCanManage && <SubcontractorInvoicesSection colors={colors} focusInvoiceId={focusInvoiceId} />}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Team Members</Text>
