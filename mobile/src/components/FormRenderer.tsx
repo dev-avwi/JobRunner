@@ -17,6 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import api from '../lib/api';
+import { offlineStorage } from '../lib/offline-storage';
 import { useTheme, ThemeColors } from '../lib/theme';
 import { AppBottomSheet } from './ui/AppBottomSheet';
 import { spacing, radius, shadows, iconSizes, typography } from '../lib/design-tokens';
@@ -50,6 +51,7 @@ interface FormSubmission {
   submittedAt?: string;
   reviewedAt?: string;
   form?: CustomForm;
+  pendingSync?: boolean;
 }
 
 interface SubmissionVersion {
@@ -94,6 +96,16 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
     loadData();
   }, [jobId]);
 
+  const mapLocalSubmission = (r: any): FormSubmission => ({
+    id: r.id,
+    formId: r.form_id,
+    jobId: r.job_id || undefined,
+    data: r.submissionData || {},
+    status: r.status === 'reviewed' ? 'reviewed' : 'submitted',
+    submittedAt: r.cached_at ? new Date(r.cached_at).toISOString() : undefined,
+    pendingSync: r.pendingSync === true,
+  });
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -101,15 +113,76 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
         api.get<CustomForm[]>('/api/custom-forms'),
         api.get<FormSubmission[]>(`/api/jobs/${jobId}/form-submissions`),
       ]);
-      
-      if (formsRes.data) {
+
+      // Forms: server first, cached templates when offline/unreachable
+      if (!formsRes.error && Array.isArray(formsRes.data)) {
         const activeForms = formsRes.data.filter(f => f.isActive);
         setForms(activeForms);
         onFormsChange?.(activeForms);
+      } else {
+        try {
+          const cached = await offlineStorage.getSafetyFormTemplatesOffline();
+          const activeForms = (cached as CustomForm[]).filter(
+            f => f && Array.isArray(f.fields) && f.isActive !== false
+          );
+          setForms(activeForms);
+          onFormsChange?.(activeForms);
+        } catch {}
       }
-      if (submissionsRes.data) {
-        setSubmissions(submissionsRes.data);
-        onSubmissionsChange?.(submissionsRes.data);
+
+      // Submissions: merge server data with locally pending (offline) rows
+      let serverSubs: FormSubmission[] | null = null;
+      if (!submissionsRes.error && Array.isArray(submissionsRes.data)) {
+        serverSubs = submissionsRes.data;
+        // Write-through cache so the job view still shows these offline
+        try {
+          await offlineStorage.cacheServerFormSubmissions(jobId, serverSubs);
+        } catch {}
+      }
+      try {
+        const localRows = await offlineStorage.getOfflineFormSubmissions(jobId);
+        // Tombstones = deletes queued offline; hide those rows and drop matching server rows
+        const allLocal = await offlineStorage.getOfflineFormSubmissions();
+        const deletedIds = new Set(
+          allLocal.filter((r: any) => r.sync_action === 'delete').map((r: any) => r.id)
+        );
+        const jobCardRows = localRows.filter(
+          (r: any) =>
+            r.sync_action !== 'delete' &&
+            typeof r.form_id === 'string' &&
+            !r.form_id.startsWith('swms:')
+        );
+        if (serverSubs) {
+          // Online: server list + still-pending local rows; local pending edits overlay server rows
+          const pending = jobCardRows.filter((r: any) => r.pendingSync);
+          const pendingCreates = pending
+            .filter((r: any) => String(r.id).startsWith('local_'))
+            .map(mapLocalSubmission);
+          const pendingEdits = new Map(
+            pending
+              .filter((r: any) => !String(r.id).startsWith('local_'))
+              .map((r: any) => [r.id, r])
+          );
+          const merged = serverSubs
+            .filter(s => !deletedIds.has(s.id))
+            .map(s => {
+              const edit = pendingEdits.get(s.id);
+              return edit ? { ...s, data: edit.submissionData || s.data, pendingSync: true } : s;
+            });
+          const all = [...pendingCreates, ...merged];
+          setSubmissions(all);
+          onSubmissionsChange?.(all);
+        } else {
+          // Offline: cached rows are all we have
+          const all = jobCardRows.map(mapLocalSubmission);
+          setSubmissions(all);
+          onSubmissionsChange?.(all);
+        }
+      } catch {
+        if (serverSubs) {
+          setSubmissions(serverSubs);
+          onSubmissionsChange?.(serverSubs);
+        }
       }
     } catch (error) {
       if (__DEV__) console.error('Error loading forms:', error);
@@ -147,8 +220,26 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            if (submission.id.startsWith('local_')) {
+              // Never reached the server — just remove locally
+              try {
+                await offlineStorage.deleteFormSubmissionOffline(submission.id);
+              } catch {}
+              await loadData();
+              return;
+            }
             const res = await api.delete(`/api/form-submissions/${submission.id}`);
             if (res.error) {
+              if (res.isOffline) {
+                try {
+                  await offlineStorage.deleteFormSubmissionOffline(submission.id);
+                  Alert.alert('Deleted Offline', 'This job card will be removed from the server when you reconnect.');
+                  await loadData();
+                } catch {
+                  Alert.alert('Error', 'Could not queue the delete while offline.');
+                }
+                return;
+              }
               Alert.alert('Error', res.error || 'Failed to delete');
               return;
             }
@@ -160,6 +251,10 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
   };
 
   const handleShowHistory = async (submission: FormSubmission) => {
+    if (submission.id.startsWith('local_') || submission.pendingSync) {
+      Alert.alert('Not Synced Yet', 'Version history is available once this job card has synced to the server.');
+      return;
+    }
     setHistorySubmission(submission);
     setExpandedVersionId(null);
     setIsLoadingHistory(true);
@@ -218,25 +313,70 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
     try {
       setIsSubmitting(true);
       let submitError: string | undefined;
-      if (editingSubmissionId) {
+      let savedOffline = false;
+
+      // Editing a submission that only exists locally (created offline, not yet synced):
+      // always write locally — the queued create carries the latest data when it syncs.
+      if (editingSubmissionId && editingSubmissionId.startsWith('local_')) {
+        try {
+          await offlineStorage.updateFormSubmissionOffline(editingSubmissionId, formData, {
+            formId: selectedForm.id,
+            jobId,
+          });
+          savedOffline = true;
+        } catch {
+          submitError = 'Failed to save changes locally';
+        }
+      } else if (editingSubmissionId) {
         const res = await api.patch(`/api/form-submissions/${editingSubmissionId}`, {
           data: formData,
         });
-        submitError = res.error;
+        if (res.error && res.isOffline) {
+          try {
+            await offlineStorage.updateFormSubmissionOffline(editingSubmissionId, formData, {
+              formId: selectedForm.id,
+              jobId,
+            });
+            savedOffline = true;
+          } catch {
+            submitError = 'You are offline and the change could not be queued.';
+          }
+        } else {
+          submitError = res.error;
+        }
       } else {
         const res = await api.post(`/api/jobs/${jobId}/form-submissions`, {
           formId: selectedForm.id,
           data: formData,
           status: 'submitted',
         });
-        submitError = res.error;
+        if (res.error && res.isOffline) {
+          try {
+            await offlineStorage.saveFormSubmissionOffline({
+              formId: selectedForm.id,
+              jobId,
+              submissionData: formData,
+              status: 'submitted',
+            });
+            savedOffline = true;
+          } catch {
+            submitError = 'You are offline and the job card could not be saved locally.';
+          }
+        } else {
+          submitError = res.error;
+        }
       }
       if (submitError) {
         Alert.alert('Error', submitError);
         return;
       }
 
-      Alert.alert('Success', editingSubmissionId ? 'Changes saved' : 'Form submitted successfully');
+      Alert.alert(
+        savedOffline ? 'Saved Offline' : 'Success',
+        savedOffline
+          ? 'This job card is saved on your device and will sync when you reconnect.'
+          : editingSubmissionId ? 'Changes saved' : 'Form submitted successfully'
+      );
       setSelectedForm(null);
       setFormData({});
       setEditingSubmissionId(null);
@@ -508,19 +648,26 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
                 : 'Draft'}
             </Text>
           </View>
-          <View style={[
-            styles.submissionStatus,
-            submission.status === 'reviewed' && styles.submissionStatusReviewed,
-            submission.status === 'submitted' && styles.submissionStatusSubmitted,
-          ]}>
-            <Text style={[
-              styles.submissionStatusText,
-              submission.status === 'reviewed' && styles.submissionStatusTextReviewed,
-              submission.status === 'submitted' && styles.submissionStatusTextSubmitted,
+          {submission.pendingSync ? (
+            <View style={styles.submissionStatus}>
+              <Feather name="upload-cloud" size={12} color={colors.mutedForeground} />
+              <Text style={styles.submissionStatusText}> pending sync</Text>
+            </View>
+          ) : (
+            <View style={[
+              styles.submissionStatus,
+              submission.status === 'reviewed' && styles.submissionStatusReviewed,
+              submission.status === 'submitted' && styles.submissionStatusSubmitted,
             ]}>
-              {submission.status}
-            </Text>
-          </View>
+              <Text style={[
+                styles.submissionStatusText,
+                submission.status === 'reviewed' && styles.submissionStatusTextReviewed,
+                submission.status === 'submitted' && styles.submissionStatusTextSubmitted,
+              ]}>
+                {submission.status}
+              </Text>
+            </View>
+          )}
         </View>
         {!readOnly && (
           <View style={styles.submissionActions}>

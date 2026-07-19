@@ -2567,6 +2567,54 @@ class OfflineStorageService {
       }
     }
 
+    // Job-card edits made offline against an already-synced submission
+    if (type === 'formSubmission' && action === 'update') {
+      try {
+        const response = await api.patch(`/api/form-submissions/${data.id}`, {
+          submissionData: data.submissionData,
+        });
+        if (response.error) {
+          // Submission deleted on server (or access revoked) — retrying re-404s forever
+          if (/not found/i.test(response.error)) {
+            if (this.db) {
+              await this.db.runAsync('DELETE FROM form_submissions_local WHERE id = ? OR local_id = ?', [data.id, data.id]);
+            }
+            return true;
+          }
+          if (__DEV__) console.warn('[OfflineStorage] formSubmission update sync error:', response.error);
+          return false;
+        }
+        if (this.db) {
+          await this.db.runAsync(
+            `UPDATE form_submissions_local SET pending_sync = 0, sync_action = NULL WHERE id = ?`,
+            [data.id]
+          );
+        }
+        return true;
+      } catch (err) {
+        if (__DEV__) console.warn('[OfflineStorage] formSubmission update sync failed:', err);
+        return false;
+      }
+    }
+
+    if (type === 'formSubmission' && action === 'delete') {
+      try {
+        const response = await api.delete(`/api/form-submissions/${data.id}`);
+        if (response.error && !/not found/i.test(response.error)) {
+          if (__DEV__) console.warn('[OfflineStorage] formSubmission delete sync error:', response.error);
+          return false;
+        }
+        // Clear the tombstone now that the server delete is confirmed (404 = already gone)
+        if (this.db) {
+          await this.db.runAsync('DELETE FROM form_submissions_local WHERE id = ? OR local_id = ?', [data.id, data.id]);
+        }
+        return true;
+      } catch (err) {
+        if (__DEV__) console.warn('[OfflineStorage] formSubmission delete sync failed:', err);
+        return false;
+      }
+    }
+
     // T006: Chat message sync — endpoint depends on channel type
     if (type === 'chatMessage' && action === 'create') {
       try {
@@ -4020,6 +4068,148 @@ class OfflineStorageService {
     await this.updatePendingSyncCount();
     if (__DEV__) console.log(`[OfflineStorage] Queued form submission ${localId}`);
     return localId;
+  }
+
+  /**
+   * Queue an offline edit of a job-card submission.
+   * - Local (unsynced `local_`) rows: update the row + rewrite the queued create payload.
+   * - Server rows: upsert a local snapshot and queue an 'update' action.
+   */
+  async updateFormSubmissionOffline(
+    id: string,
+    submissionData: any,
+    meta?: { formId?: string; jobId?: string | null }
+  ): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    const now = Date.now();
+    if (id.startsWith('local_')) {
+      await this.db.runAsync(
+        `UPDATE form_submissions_local SET submission_data = ? WHERE local_id = ? OR id = ?`,
+        [JSON.stringify(submissionData || {}), id, id]
+      );
+      // Rewrite the pending create payload so the eventual sync carries the edit
+      const rows = await this.db.getAllAsync(
+        `SELECT id, data FROM sync_queue WHERE type = 'formSubmission' AND action = 'create' AND data LIKE ?`,
+        [`%${id}%`]
+      ) as { id: string; data: string }[];
+      for (const row of rows) {
+        try {
+          const payload = JSON.parse(row.data);
+          if (payload.localId === id) {
+            payload.submissionData = submissionData || {};
+            await this.db.runAsync(`UPDATE sync_queue SET data = ? WHERE id = ?`, [JSON.stringify(payload), row.id]);
+          }
+        } catch {}
+      }
+    } else {
+      await this.db.runAsync(
+        `INSERT INTO form_submissions_local (id, local_id, form_id, job_id, submission_data, status, cached_at, pending_sync, sync_action)
+         VALUES (?, ?, ?, ?, ?, 'submitted', ?, 1, 'update')
+         ON CONFLICT(id) DO UPDATE SET submission_data = excluded.submission_data, pending_sync = 1, sync_action = 'update'`,
+        [id, id, meta?.formId || null, meta?.jobId || null, JSON.stringify(submissionData || {}), now]
+      );
+      // Collapse any earlier queued update for the same submission (last write wins)
+      const rows = await this.db.getAllAsync(
+        `SELECT id, data FROM sync_queue WHERE type = 'formSubmission' AND action = 'update' AND data LIKE ?`,
+        [`%${id}%`]
+      ) as { id: string; data: string }[];
+      for (const row of rows) {
+        try {
+          if (JSON.parse(row.data).id === id) {
+            await this.db.runAsync('DELETE FROM sync_queue WHERE id = ?', [row.id]);
+          }
+        } catch {}
+      }
+      const syncId = `sync_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      await this.db.runAsync(
+        `INSERT INTO sync_queue (id, type, action, data, created_at, retry_count) VALUES (?, 'formSubmission', 'update', ?, ?, 0)`,
+        [syncId, JSON.stringify({ id, submissionData: submissionData || {} }), now]
+      );
+    }
+    await this.updatePendingSyncCount();
+  }
+
+  /**
+   * Queue an offline delete of a job-card submission.
+   * - Local (unsynced) rows: drop the row and its queued create — nothing ever reaches the server.
+   * - Server rows: drop the local snapshot (+ any queued edits) and queue a 'delete'.
+   */
+  async deleteFormSubmissionOffline(id: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    const now = Date.now();
+    // Remove any queued create/update for this submission
+    const rows = await this.db.getAllAsync(
+      `SELECT id, data, action FROM sync_queue WHERE type = 'formSubmission' AND data LIKE ?`,
+      [`%${id}%`]
+    ) as { id: string; data: string; action: string }[];
+    for (const row of rows) {
+      try {
+        const payload = JSON.parse(row.data);
+        if (payload.localId === id || payload.id === id) {
+          await this.db.runAsync('DELETE FROM sync_queue WHERE id = ?', [row.id]);
+        }
+      } catch {}
+    }
+    if (id.startsWith('local_')) {
+      // Never reached the server — hard-delete, nothing to reconcile
+      await this.db.runAsync('DELETE FROM form_submissions_local WHERE id = ? OR local_id = ?', [id, id]);
+    } else {
+      // Server row: keep a tombstone (pending_sync=1, sync_action='delete') so the
+      // write-through cache can't resurrect it before the queued delete syncs.
+      await this.db.runAsync(
+        `INSERT INTO form_submissions_local (id, local_id, form_id, job_id, submission_data, status, cached_at, pending_sync, sync_action)
+         VALUES (?, ?, NULL, NULL, '{}', 'deleted', ?, 1, 'delete')
+         ON CONFLICT(id) DO UPDATE SET pending_sync = 1, sync_action = 'delete', status = 'deleted'`,
+        [id, id, now]
+      );
+      const syncId = `sync_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      await this.db.runAsync(
+        `INSERT INTO sync_queue (id, type, action, data, created_at, retry_count) VALUES (?, 'formSubmission', 'delete', ?, ?, 0)`,
+        [syncId, JSON.stringify({ id }), now]
+      );
+    }
+    await this.updatePendingSyncCount();
+  }
+
+  /**
+   * Write-through cache of server job-card submissions for a job so the job
+   * view still shows them offline. Never touches rows with pending_sync=1
+   * (queued offline work) — only refreshes the synced snapshot.
+   */
+  async cacheServerFormSubmissions(jobId: string, submissions: any[]): Promise<void> {
+    if (!this.db) return;
+    try {
+      await this.db.runAsync(
+        `DELETE FROM form_submissions_local WHERE job_id = ? AND pending_sync = 0`,
+        [jobId]
+      );
+      const now = Date.now();
+      for (const s of submissions) {
+        if (!s?.id) continue;
+        // Skip ids that still have a pending edit queued locally
+        const pending = await this.db.getFirstAsync(
+          `SELECT id FROM form_submissions_local WHERE id = ? AND pending_sync = 1`,
+          [s.id]
+        );
+        if (pending) continue;
+        await this.db.runAsync(
+          `INSERT OR REPLACE INTO form_submissions_local (id, local_id, form_id, job_id, submission_data, signatures, status, cached_at, pending_sync, sync_action)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL)`,
+          [
+            s.id,
+            s.id,
+            s.formId || null,
+            jobId,
+            JSON.stringify(s.submissionData ?? s.data ?? {}),
+            s.signatures ? JSON.stringify(s.signatures) : null,
+            s.status || 'submitted',
+            s.submittedAt ? new Date(s.submittedAt).getTime() || now : now,
+          ]
+        );
+      }
+    } catch (err) {
+      if (__DEV__) console.warn('[OfflineStorage] cacheServerFormSubmissions failed:', err);
+    }
   }
 
   async getOfflineFormSubmissions(jobId?: string): Promise<any[]> {
