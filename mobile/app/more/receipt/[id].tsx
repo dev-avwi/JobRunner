@@ -66,6 +66,18 @@ interface JobData {
   address: string | null;
 }
 
+
+function safeFormatDate(value: string | Date | null | undefined, fmt: string, fallback: string = ''): string {
+  if (!value) return fallback;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return fallback;
+  try {
+    return format(d, fmt);
+  } catch {
+    return fallback;
+  }
+}
+
 export default function ReceiptDetailScreen() {
   const confirm = useConfirmDialog();
   const showActionSheet = useActionSheet();
@@ -337,7 +349,7 @@ export default function ReceiptDetailScreen() {
       const receiptNumber = receipt.receiptNumber || receipt.id?.slice(0, 8);
       const businessName = businessSettings?.businessName || user?.name || 'Your tradie';
       const amount = formatCurrency(receipt.amount);
-      const paidDate = receipt.paidAt ? format(new Date(receipt.paidAt), 'PP') : format(new Date(), 'PP');
+      const paidDate = safeFormatDate(receipt.paidAt, 'PP', format(new Date(), 'PP'));
       
       const subject = `Payment Receipt ${receiptNumber} from ${businessName}`;
       const body = `Hi ${client?.name || 'there'},
@@ -524,7 +536,7 @@ ${businessName}`;
     }
 
     const businessName = businessSettings?.businessName || 'Your Business';
-    const message = `Hi ${client.name || 'there'},\n\nThank you for your payment of ${formatCurrency(receipt.amount)}.\n\nReceipt: ${receipt.receiptNumber}\nDate: ${receipt.paidAt ? format(new Date(receipt.paidAt), 'd MMMM yyyy') : format(new Date(receipt.createdAt), 'd MMMM yyyy')}\nMethod: ${formatPaymentMethod(receipt.paymentMethod)}\n\nThank you for your business!\n\n${businessName}`;
+    const message = `Hi ${client.name || 'there'},\n\nThank you for your payment of ${formatCurrency(receipt.amount)}.\n\nReceipt: ${receipt.receiptNumber}\nDate: ${safeFormatDate(receipt.paidAt, 'd MMMM yyyy', safeFormatDate(receipt.createdAt, 'd MMMM yyyy', format(new Date(), 'd MMMM yyyy')))}\nMethod: ${formatPaymentMethod(receipt.paymentMethod)}\n\nThank you for your business!\n\n${businessName}`;
 
     try {
       await SMS.sendSMSAsync([client.phone], message);
@@ -654,7 +666,7 @@ ${businessName}`;
             <View style={styles.summaryDateRow}>
               <Feather name="calendar" size={14} color={colors.mutedForeground} />
               <Text style={styles.summaryDateText}>
-                Paid on {format(new Date(receipt.paidAt), 'd MMMM yyyy')} at {format(new Date(receipt.paidAt), 'h:mm a')}
+                Paid on {safeFormatDate(receipt.paidAt, 'd MMMM yyyy', 'Unknown date')}{safeFormatDate(receipt.paidAt, 'h:mm a') ? ` at ${safeFormatDate(receipt.paidAt, 'h:mm a')}` : ''}
               </Text>
             </View>
           )}
@@ -771,9 +783,7 @@ ${businessName}`;
                 <Text style={styles.sectionLabel}>PAYMENT DETAILS</Text>
                 <Text style={styles.infoText}>
                   <Text style={styles.infoLabel}>Date: </Text>
-                  {receipt.paidAt 
-                    ? format(new Date(receipt.paidAt), 'd MMMM yyyy') 
-                    : format(new Date(receipt.createdAt), 'd MMMM yyyy')}
+                  {safeFormatDate(receipt.paidAt, 'd MMMM yyyy', safeFormatDate(receipt.createdAt, 'd MMMM yyyy', 'Unknown date'))}
                 </Text>
                 <Text style={styles.infoText}>
                   <Text style={styles.infoLabel}>Method: </Text>
@@ -831,7 +841,7 @@ ${businessName}`;
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Date & Time</Text>
                 <Text style={styles.detailValue}>
-                  {format(new Date(receipt.paidAt), 'd MMMM yyyy, h:mm a')}
+                  {safeFormatDate(receipt.paidAt, 'd MMMM yyyy, h:mm a', 'Unknown')}
                 </Text>
               </View>
             )}
@@ -947,9 +957,7 @@ ${businessName}`;
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 10, fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>PAYMENT DATE</Text>
                     <Text style={{ fontSize: 13, color: '#1a1a1a' }}>
-                      {receipt.paidAt 
-                        ? format(new Date(receipt.paidAt), 'd MMMM yyyy') 
-                        : format(new Date(receipt.createdAt), 'd MMMM yyyy')}
+                      {safeFormatDate(receipt.paidAt, 'd MMMM yyyy', safeFormatDate(receipt.createdAt, 'd MMMM yyyy', 'Unknown date'))}
                     </Text>
                     <Text style={{ fontSize: 10, fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 12 }}>METHOD</Text>
                     <Text style={{ fontSize: 13, color: '#1a1a1a' }}>{formatPaymentMethod(receipt.paymentMethod)}</Text>
@@ -1005,7 +1013,7 @@ ${businessName}`;
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
                         <Text style={{ fontSize: 12, color: '#6b7280' }}>Date & Time</Text>
                         <Text style={{ fontSize: 12, fontWeight: '500', color: '#1a1a1a' }}>
-                          {format(new Date(receipt.paidAt), 'd MMM yyyy, h:mm a')}
+                          {safeFormatDate(receipt.paidAt, 'd MMM yyyy, h:mm a', 'Unknown')}
                         </Text>
                       </View>
                     )}
