@@ -357,8 +357,6 @@
           "color": "#E8862E"
         }
       ],
-      "./plugins/withIAPStoreFlavor",
-      "./plugins/withIAPKotlinFix",
       "./plugins/withLiveActivity",
       "./plugins/withAndroidFoldableConfigChanges"
     ],

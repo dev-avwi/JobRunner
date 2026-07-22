@@ -105,7 +105,11 @@ function settlePurchaseError(error: any): void {
 }
 
 export async function initIAP(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
+  // IAP is iOS-only (Apple IAP). Android payments go through Stripe web links,
+  // and the react-native-iap native module is excluded from the Android build
+  // (see mobile/react-native.config.js) to satisfy Google Play's Billing
+  // Library 8+ requirement.
+  if (Platform.OS !== 'ios') return false;
   if (isInitialized) return true;
 
   try {
@@ -135,6 +139,7 @@ export async function cleanupIAP(): Promise<void> {
 }
 
 export async function fetchSubscriptions(): Promise<Subscription[]> {
+  if (Platform.OS !== 'ios') return [];
   try {
     if (!isInitialized) await initIAP();
     const subscriptions = await getSubscriptions({ skus: ALL_PRODUCT_IDS });
@@ -151,6 +156,7 @@ export async function fetchSubscriptions(): Promise<Subscription[]> {
 // dismisses the Apple sheet. Callers must therefore treat a resolve as a genuine
 // purchase, and silently ignore E_USER_CANCELLED in their catch.
 export async function purchaseSubscription(productId: string): Promise<void> {
+  if (Platform.OS !== 'ios') throw { code: 'E_IAP_NOT_AVAILABLE' };
   if (!isInitialized) await initIAP();
 
   // Abandon any prior in-flight purchase deferred so its promise can't leak.
@@ -170,14 +176,7 @@ export async function purchaseSubscription(productId: string): Promise<void> {
   });
 
   try {
-    if (Platform.OS === 'ios') {
-      await requestSubscription({ sku: productId });
-    } else if (Platform.OS === 'android') {
-      await requestSubscription({
-        sku: productId,
-        subscriptionOffers: [{ sku: productId, offerToken: '' }],
-      });
-    }
+    await requestSubscription({ sku: productId });
   } catch (error: any) {
     // Some platform/library versions DO reject requestSubscription directly (incl.
     // cancel). Surface that through the same deferred so we never double-settle.
@@ -193,6 +192,7 @@ export async function purchaseSubscription(productId: string): Promise<void> {
 }
 
 export async function restorePurchases(): Promise<(ProductPurchase | SubscriptionPurchase)[]> {
+  if (Platform.OS !== 'ios') return [];
   try {
     if (!isInitialized) await initIAP();
     const purchases = await getAvailablePurchases();
@@ -208,6 +208,7 @@ export function setupPurchaseListeners(
   onPurchaseSuccess: (purchase: ProductPurchase | SubscriptionPurchase) => void,
   onPurchaseError: (error: any) => void,
 ) {
+  if (Platform.OS !== 'ios') return;
   if (purchaseUpdateSubscription) purchaseUpdateSubscription.remove();
   if (purchaseErrorSubscription) purchaseErrorSubscription.remove();
 
@@ -244,5 +245,5 @@ export function setupPurchaseListeners(
 }
 
 export function isIAPAvailable(): boolean {
-  return Platform.OS === 'ios' || Platform.OS === 'android';
+  return Platform.OS === 'ios';
 }
