@@ -34553,6 +34553,11 @@ Respond with JSON in this format:
   app.get("/api/map/team-locations", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
+      // Same gate as /api/team/locations: only owners or members with the
+      // view_all permission may see everyone's live locations on the map.
+      if (!userContext.isOwner && !hasPermission(userContext, PERMISSIONS.VIEW_ALL)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
       const allTeamMembers = await storage.getTeamMembers(userContext.effectiveUserId);
       
       const locations = await Promise.all(
