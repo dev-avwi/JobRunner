@@ -25157,7 +25157,16 @@ Be specific about materials, colors, and features that would be included.`
       // Get business settings for branding
       const settings = await storage.getBusinessSettings(request.userId);
       const canAcceptPayments = !!(settings?.stripeConnectAccountId && settings?.connectChargesEnabled);
-      
+
+      // Prefer a real business name; placeholder rows (e.g. a subcontractor's
+      // "Worker Profile") fall back to the requester's personal name.
+      let displayName = settings?.businessName || '';
+      if (!displayName || displayName === 'Worker Profile') {
+        const requester = await storage.getUser(request.userId);
+        const personal = `${requester?.firstName || ''} ${requester?.lastName || ''}`.trim();
+        displayName = personal || displayName || 'Business';
+      }
+
       // Return payment details (exclude sensitive data)
       res.json({
         id: request.id,
@@ -25167,7 +25176,7 @@ Be specific about materials, colors, and features that would be included.`
         reference: request.reference,
         status: request.status,
         expiresAt: request.expiresAt,
-        businessName: settings?.businessName || 'Business',
+        businessName: displayName,
         businessLogo: settings?.logoUrl,
         brandColor: settings?.brandColor || '#dc2626',
         isDemoMode: false,
@@ -25224,6 +25233,13 @@ Be specific about materials, colors, and features that would be included.`
         },
       };
       
+      // Subcontractor-invoice links MUST pay out to the subbie's connected account.
+      // If they've since disconnected Stripe, refuse rather than silently taking a
+      // platform charge the subbie would never receive.
+      if ((request as any).subcontractorInvoiceId && (!settings?.stripeConnectAccountId || !settings?.connectChargesEnabled)) {
+        return res.status(409).json({ error: "This payment link is no longer available. Contact the subcontractor for updated payment details." });
+      }
+
       // If tradie has Stripe Connect account with charges enabled, use destination charges
       if (settings?.stripeConnectAccountId && settings?.connectChargesEnabled) {
         // Calculate platform fee (2.5%)
@@ -25303,12 +25319,16 @@ Be specific about materials, colors, and features that would be included.`
         }
       }
       
-      // Update payment request status
-      await storage.updatePaymentRequestByToken(request.token, {
-        status: 'paid',
-        paidAt: new Date(),
-        paymentMethod: paymentMethod || 'card',
-      } as any);
+      // Atomically flip pending -> paid. If another path (manual mark-paid,
+      // cancellation) changed the status since we loaded it, abort instead of
+      // resurrecting a cancelled/paid request.
+      const flipped = await db.update(paymentRequests)
+        .set({ status: 'paid', paidAt: new Date(), paymentMethod: paymentMethod || 'card', updatedAt: new Date() })
+        .where(and(eq(paymentRequests.token, request.token), eq(paymentRequests.status, 'pending')))
+        .returning({ id: paymentRequests.id });
+      if (flipped.length === 0) {
+        return res.status(409).json({ error: "This payment request is no longer payable. If you were charged, contact the business for a refund." });
+      }
       
       // If linked to an invoice, mark it as paid and lock it too
       if (request.invoiceId) {
@@ -48975,6 +48995,15 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.status(400).json({ error: 'This invoice has been synced to your accounting software and cannot be deleted.' });
       }
 
+      // Cancel any pending card-payment link before the invoice disappears.
+      try {
+        await db.update(paymentRequests)
+          .set({ status: 'cancelled', updatedAt: new Date() })
+          .where(and(eq(paymentRequests.subcontractorInvoiceId, req.params.id), eq(paymentRequests.status, 'pending')));
+      } catch (e) {
+        console.warn('[Subcontractor Invoice Delete] Failed to cancel pending payment request:', e);
+      }
+
       await storage.deleteSubcontractorInvoice(req.params.id);
       res.json({ success: true });
     } catch (error) {
@@ -49067,8 +49096,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       const updated = await storage.updateSubcontractorInvoice(req.params.id, updates);
 
-      // If manually marked paid, cancel any pending card-payment link so it can't be paid twice
-      if (status === 'paid') {
+      // If manually marked paid or rejected, cancel any pending card-payment link so it can't be paid twice
+      if (status === 'paid' || status === 'rejected') {
         try {
           await db.update(paymentRequests)
             .set({ status: 'cancelled', updatedAt: new Date() })
