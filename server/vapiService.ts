@@ -58,7 +58,11 @@ export const AUSTRALIAN_PUBLIC_HOLIDAYS: Holiday[] = [
 const VAPI_API_BASE = 'https://api.vapi.ai';
 const VAPI_API_KEY = process.env.VAPI_PRIVATE_KEY || '';
 
-export function verifyVapiWebhook(rawBody: Buffer, signature: string | undefined): boolean {
+export function verifyVapiWebhook(
+  rawBody: Buffer,
+  signature: string | undefined,
+  verbatimSecret?: string | undefined,
+): boolean {
   if (!VAPI_API_KEY) {
     console.error('[Vapi] VAPI_PRIVATE_KEY not configured — rejecting webhook (fail-closed)');
     return false;
@@ -66,19 +70,31 @@ export function verifyVapiWebhook(rawBody: Buffer, signature: string | undefined
 
   const webhookSecret = process.env.VAPI_WEBHOOK_SECRET;
 
-  if (webhookSecret && signature) {
-    try {
-      const hmac = crypto.createHmac('sha256', webhookSecret);
-      hmac.update(rawBody);
-      const expected = hmac.digest('hex');
-      return crypto.timingSafeEqual(Buffer.from(signature, 'utf8'), Buffer.from(expected, 'utf8'));
-    } catch {
-      return false;
+  if (webhookSecret) {
+    // Vapi sends the assistant's serverUrlSecret VERBATIM in the x-vapi-secret
+    // header (it does not HMAC-sign payloads). Accept that first; keep the
+    // HMAC x-vapi-signature path for forward compatibility.
+    if (verbatimSecret) {
+      try {
+        const a = Buffer.from(verbatimSecret, 'utf8');
+        const b = Buffer.from(webhookSecret, 'utf8');
+        return a.length === b.length && crypto.timingSafeEqual(a, b);
+      } catch {
+        return false;
+      }
     }
-  }
-
-  if (webhookSecret && !signature) {
-    console.error('[Vapi] Webhook secret configured but no signature received — rejecting');
+    if (signature) {
+      try {
+        const hmac = crypto.createHmac('sha256', webhookSecret);
+        hmac.update(rawBody);
+        const expected = Buffer.from(hmac.digest('hex'), 'utf8');
+        const provided = Buffer.from(signature, 'utf8');
+        return provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
+      } catch {
+        return false;
+      }
+    }
+    console.error('[Vapi] Webhook secret configured but request carried no x-vapi-secret/x-vapi-signature — rejecting');
     return false;
   }
 
@@ -627,6 +643,7 @@ export async function createAssistant(config: VapiAssistantConfig): Promise<Vapi
     firstMessage: applyRecordingNotice(config.greeting || `G'day, thanks for calling ${config.businessName}. How can I help you today?`, config.recordingEnabled),
     endCallMessage: config.endCallMessage || 'Thanks for calling! Someone from the team will be in touch soon. Have a great day!',
     serverUrl: config.webhookUrl,
+    ...(process.env.VAPI_WEBHOOK_SECRET ? { serverUrlSecret: process.env.VAPI_WEBHOOK_SECRET } : {}),
     silenceTimeoutSeconds: config.silenceTimeoutSeconds ?? 30,
     maxDurationSeconds: config.maxCallDurationSeconds ?? 600,
     backgroundSound: config.backgroundSound || 'off',
@@ -747,6 +764,9 @@ export async function updateAssistant(assistantId: string, config: Partial<VapiA
 
   if (config.webhookUrl) {
     updates.serverUrl = config.webhookUrl;
+    if (process.env.VAPI_WEBHOOK_SECRET) {
+      updates.serverUrlSecret = process.env.VAPI_WEBHOOK_SECRET;
+    }
   }
 
   // Always (re)apply balanced turn-taking on update so manual UI tweaks can
@@ -1377,6 +1397,7 @@ export async function updateReceptionistConfigById(configId: string, userId: str
           ...(resolvedTemperature !== undefined ? { temperature: resolvedTemperature } : {}),
         },
         serverUrl: webhookUrl,
+        ...(process.env.VAPI_WEBHOOK_SECRET ? { serverUrlSecret: process.env.VAPI_WEBHOOK_SECRET } : {}),
       };
 
       if (updates.voice) {

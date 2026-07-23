@@ -3091,7 +3091,7 @@ class OfflineStorageService {
 
     // Account-scoped side tables — cleared separately so a missing table in an
     // older on-device schema can't abort the whole logout wipe above.
-    for (const table of ['subscription_cache', 'chat_messages', 'form_submissions_local', 'geofence_events_local']) {
+    for (const table of ['subscription_cache', 'chat_messages', 'chat_unread', 'form_submissions_local', 'geofence_events_local', 'quote_line_items', 'invoice_line_items', 'conflicts', 'delta_sync', 'safety_form_templates']) {
       try {
         await this.db.execAsync(`DELETE FROM ${table};`);
       } catch (e) {

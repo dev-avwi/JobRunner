@@ -181,13 +181,14 @@ if (process.env.DATABASE_URL) {
       try {
         const { processWebhookEvent, verifyVapiWebhook } = await import('./vapiService');
         const signature = req.headers['x-vapi-signature'] as string | undefined;
+        const verbatimSecret = req.headers['x-vapi-secret'] as string | undefined;
 
         if (!Buffer.isBuffer(req.body)) {
           console.error('[Vapi Webhook] req.body is not a Buffer');
           return res.status(500).json({ error: 'Webhook processing error' });
         }
 
-        if (!verifyVapiWebhook(req.body, signature)) {
+        if (!verifyVapiWebhook(req.body, signature, verbatimSecret)) {
           console.warn('[Vapi Webhook] Invalid signature - rejecting request');
           return res.status(401).json({ error: 'Invalid webhook signature' });
         }
