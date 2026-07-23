@@ -48590,11 +48590,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           return res.status(400).json({ error: `Job "${jobRecord[0].title}" must be completed before invoicing` });
         }
 
-        // Verify the subcontractor is assigned to this job
+        // Verify the subcontractor is assigned to this job. Assignment can live
+        // either in job_assignments (multi-assign) or as the job's lead worker
+        // (jobs.assignedTo, set by the plain /assign route).
         const assignment = await db.select().from(jobAssignments)
           .where(and(eq(jobAssignments.userId, userId), eq(jobAssignments.jobId, jobId)))
           .limit(1);
-        if (assignment.length === 0) {
+        if (assignment.length === 0 && jobRecord[0].assignedTo !== userId) {
           return res.status(400).json({ error: `You are not assigned to job "${jobRecord[0].title}"` });
         }
         // Prefer the rate captured on each time entry (what the worker already
@@ -49677,7 +49679,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           const assignment = await db.select().from(jobAssignments)
             .where(and(eq(jobAssignments.userId, userId), eq(jobAssignments.jobId, jobId), eq(jobAssignments.isActive, true)))
             .limit(1);
-          if (assignment.length === 0) {
+          if (assignment.length === 0 && jobRecord[0].assignedTo !== userId) {
             return res.status(400).json({ error: `You are not assigned to job "${jobRecord[0].title}"` });
           }
           if (docType === 'invoice' && billedJobIds.has(jobId)) {

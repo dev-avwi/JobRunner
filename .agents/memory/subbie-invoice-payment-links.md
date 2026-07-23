@@ -14,3 +14,5 @@ Rules:
 - getBusinessSettings has a 60s cache — DB patches to connect fields need cache expiry/restart before taking effect.
 
 **Prod at next publish**: raw `ALTER TABLE payment_requests ADD COLUMN IF NOT EXISTS subcontractor_invoice_id varchar;` (never db:push).
+
+- 2026-07-23: invoice eligibility now accepts jobs.assignedTo === userId OR a job_assignments row (plain /assign never creates job_assignments); both create paths in server/routes.ts.
