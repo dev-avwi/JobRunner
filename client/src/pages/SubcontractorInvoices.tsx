@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { HardHat, FileText, Download, CheckCircle2, XCircle, DollarSign, Building2, Loader2, Receipt, Eye } from "lucide-react";
+import { HardHat, FileText, Download, CheckCircle2, XCircle, DollarSign, Building2, Loader2, Receipt, Eye, CreditCard } from "lucide-react";
 import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,6 +30,7 @@ interface SubInvoice {
   subcontractorName: string;
   accountingBillId: string | null;
   accountingProvider: string | null;
+  paymentToken?: string | null;
 }
 
 interface SubInvoiceItem {
@@ -376,6 +377,15 @@ export default function SubcontractorInvoices({ embedded = false }: { embedded?:
                                 data-testid={`button-pay-${inv.id}`}
                               >
                                 <DollarSign className="h-3.5 w-3.5 mr-1" />Pay
+                              </Button>
+                            )}
+                            {(inv.status === 'submitted' || inv.status === 'approved') && inv.docType !== 'quote' && inv.paymentToken && (
+                              <Button
+                                size="sm" variant="outline"
+                                onClick={() => window.open(`/pay/${inv.paymentToken}`, '_blank')}
+                                data-testid={`button-pay-card-${inv.id}`}
+                              >
+                                <CreditCard className="h-3.5 w-3.5 mr-1" />Pay by card
                               </Button>
                             )}
                             {inv.status === 'submitted' && (

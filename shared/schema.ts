@@ -1188,6 +1188,8 @@ export const paymentRequests = pgTable("payment_requests", {
   invoiceId: varchar("invoice_id").references(() => invoices.id, { onDelete: 'set null' }),
   jobId: varchar("job_id").references(() => jobs.id, { onDelete: 'set null' }),
   clientId: varchar("client_id").references(() => clients.id, { onDelete: 'set null' }),
+  // Optional link to a subcontractor invoice (subbie -> business owner card payment)
+  subcontractorInvoiceId: varchar("subcontractor_invoice_id"),
   // Payment details
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   gstAmount: decimal("gst_amount", { precision: 10, scale: 2 }).notNull().default('0.00'),

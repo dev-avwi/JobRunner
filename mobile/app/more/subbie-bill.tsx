@@ -103,6 +103,8 @@ export default function SubbieBillBuilder() {
 
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [stripeReady, setStripeReady] = useState(false);
+  const [requestOnlinePayment, setRequestOnlinePayment] = useState(false);
 
   // Line item editor modal
   const [editorVisible, setEditorVisible] = useState(false);
@@ -151,6 +153,21 @@ export default function SubbieBillBuilder() {
   }, []);
 
   useEffect(() => { loadBusinesses(); }, [loadBusinesses]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get<{ connected?: boolean; chargesEnabled?: boolean }>('/api/stripe-connect/status');
+        if (!cancelled && !res.error) {
+          setStripeReady(!!res.data?.connected && !!res.data?.chargesEnabled);
+        }
+      } catch {
+        // leave stripeReady false
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (businessOwnerId) {
@@ -330,6 +347,7 @@ export default function SubbieBillBuilder() {
           unitPrice: parseFloat(li.unitPrice) || 0,
           jobId: li.jobId || undefined,
         })),
+        requestOnlinePayment: docType === 'invoice' && stripeReady ? requestOnlinePayment : undefined,
       });
       if (res.error || !res.data?.id) {
         showToast({ type: 'error', message: res.error || `Could not create ${docNoun.toLowerCase()}` });
@@ -353,7 +371,7 @@ export default function SubbieBillBuilder() {
     } finally {
       setSubmitting(false);
     }
-  }, [businessOwnerId, lineItems, docType, title, notes, gstEnabled, docDate, total, docNoun, confirm, downloadAndShare]);
+  }, [businessOwnerId, lineItems, docType, title, notes, gstEnabled, docDate, total, docNoun, confirm, downloadAndShare, stripeReady, requestOnlinePayment]);
 
   const editorTotal = (parseFloat(editorQty) || 0) * (parseFloat(editorPrice) || 0);
   const suggestedJobs = completedJobs.filter(j => !addedJobIds.has(j.jobId));
@@ -651,6 +669,27 @@ export default function SubbieBillBuilder() {
                   </PressableRow>
                 </View>
               </View>
+
+              {/* Online card payment */}
+              {docType === 'invoice' && stripeReady && (
+                <View style={styles.card}>
+                  <View style={styles.toggleHeader}>
+                    <View style={styles.cardHeader}>
+                      <Feather name="credit-card" size={16} color={colors.primary} />
+                      <Text style={styles.cardHeaderText}>Accept card payment</Text>
+                    </View>
+                    <PressableRow
+                      style={[styles.toggleSwitch, requestOnlinePayment && styles.toggleSwitchOn]}
+                      onPress={() => setRequestOnlinePayment(v => !v)}
+                    >
+                      <View style={[styles.toggleKnob, requestOnlinePayment && styles.toggleKnobOn]} />
+                    </PressableRow>
+                  </View>
+                  <Text style={styles.toggleHint}>
+                    Adds a secure card payment link so the business can pay this invoice online. Funds go to your Stripe account. Fees apply: 2.5% platform fee plus Stripe processing fees, deducted from the payout.
+                  </Text>
+                </View>
+              )}
 
               {/* Notes */}
               <View style={styles.card}>
@@ -1029,6 +1068,7 @@ function createStyles(colors: ThemeColors) {
     grandTotalValue: { fontSize: 17, fontWeight: '700', color: colors.primary },
 
     toggleHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    toggleHint: { fontSize: 13, color: colors.mutedForeground, lineHeight: 18, marginTop: spacing.sm, letterSpacing: 0 },
     toggleSwitch: {
       width: 48,
       height: 28,

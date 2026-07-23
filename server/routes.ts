@@ -220,6 +220,7 @@ import {
   insertNumberPortRequestSchema,
   PORT_REQUEST_STATUSES,
   quoteLineItems,
+  paymentRequests,
 } from "@shared/schema";
 import { db } from "./storage";
 import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
@@ -25322,6 +25323,33 @@ Be specific about materials, colors, and features that would be included.`
           });
         }
       }
+
+      // If linked to a subcontractor invoice, mark it paid and notify both sides
+      if ((request as any).subcontractorInvoiceId) {
+        try {
+          const subInvId = (request as any).subcontractorInvoiceId as string;
+          const subInv = await storage.getSubcontractorInvoiceWithItems(subInvId);
+          // The payment request is always owned by the subcontractor, so verify linkage.
+          if (subInv && subInv.subcontractorUserId === request.userId && subInv.status !== 'paid') {
+            await storage.updateSubcontractorInvoice(subInvId, {
+              status: 'paid',
+              paidAt: new Date(),
+              paidMethod: 'card',
+              paidReference: paymentIntentId || request.stripePaymentIntentId || null,
+            });
+            await storage.createNotification({
+              userId: subInv.businessOwnerId,
+              type: 'subcontractor_invoice',
+              title: 'Subcontractor Invoice Paid',
+              message: `Invoice ${subInv.invoiceNumber} ($${parseFloat(request.amount).toFixed(2)}) was paid by card.`,
+              relatedType: 'subcontractor_invoice',
+              relatedId: subInvId,
+            });
+          }
+        } catch (subErr) {
+          console.error('Failed to mark subcontractor invoice paid:', subErr);
+        }
+      }
       
       // Create notification for the tradie
       await storage.createNotification({
@@ -48469,11 +48497,34 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     }
   });
 
+  // Shared helper: create a card-payment request for a subcontractor invoice.
+  // Funds go to the SUBCONTRACTOR's own Stripe Connect account (they must have
+  // connected Stripe in their own workspace). Returns the payment token.
+  async function createSubbieInvoicePaymentRequest(subbieUserId: string, inv: { id: string; invoiceNumber: string; totalAmount: string; gstAmount: string }): Promise<{ token: string } | { error: string }> {
+    const subSettings = await storage.getBusinessSettings(subbieUserId);
+    if (!subSettings?.stripeConnectAccountId || !subSettings?.connectChargesEnabled) {
+      return { error: 'Connect your own Stripe account (Settings > Integrations) before adding a card payment link.' };
+    }
+    const { nanoid } = await import('nanoid');
+    const token = nanoid(12);
+    await storage.createPaymentRequest({
+      userId: subbieUserId,
+      token,
+      subcontractorInvoiceId: inv.id,
+      amount: inv.totalAmount,
+      gstAmount: inv.gstAmount,
+      description: `Subcontractor invoice ${inv.invoiceNumber}`,
+      reference: inv.invoiceNumber,
+      status: 'pending',
+    } as any);
+    return { token };
+  }
+
   // POST /api/subcontractor/invoices - Create invoice from selected jobs
   app.post("/api/subcontractor/invoices", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const { businessOwnerId, items, notes, dueDate } = req.body;
+      const { businessOwnerId, items, notes, dueDate, requestOnlinePayment } = req.body;
 
       if (!businessOwnerId || !items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: 'Business owner and at least one line item required' });
@@ -48485,6 +48536,15 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         .limit(1);
       if (membership.length === 0) {
         return res.status(403).json({ error: 'Not a subcontractor for this business' });
+      }
+
+      // Fail early if a card payment link was requested but the subbie's own
+      // Stripe account isn't ready — never silently drop the option.
+      if (requestOnlinePayment) {
+        const subSettings = await storage.getBusinessSettings(userId);
+        if (!subSettings?.stripeConnectAccountId || !subSettings?.connectChargesEnabled) {
+          return res.status(400).json({ error: 'Connect your own Stripe account (Settings > Integrations) before adding a card payment link.' });
+        }
       }
 
       // Server-side recalculation of amounts from assignments/memberships
@@ -48790,8 +48850,20 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         console.warn('[SubInvoice] Email notification error:', e);
       }
 
+      // Optional card payment link (funds go to the subbie's own Stripe account)
+      let paymentToken: string | null = null;
+      if (requestOnlinePayment) {
+        const prResult = await createSubbieInvoicePaymentRequest(userId, {
+          id: invoice.id,
+          invoiceNumber,
+          totalAmount: totalAmount.toFixed(2),
+          gstAmount: gstAmount.toFixed(2),
+        });
+        if ('token' in prResult) paymentToken = prResult.token;
+      }
+
       const fullInvoice = await storage.getSubcontractorInvoiceWithItems(invoice.id);
-      res.json(fullInvoice);
+      res.json({ ...fullInvoice, paymentToken, paymentUrl: paymentToken ? `${getProductionBaseUrl(req)}/pay/${paymentToken}` : null });
     } catch (error) {
       console.error('[Subcontractor Create Invoice] Error:', error);
       res.status(500).json({ error: 'Failed to create invoice' });
@@ -48824,9 +48896,22 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const bizMap: Record<string, string> = {};
       bizInfos.forEach(b => { bizMap[b.userId] = b.businessName || 'Unknown'; });
 
+      // Attach pending card-payment tokens so the subbie can see/share the link
+      const subInvIds = invoicesList.map(i => i.id);
+      const subPayReqs = subInvIds.length > 0
+        ? await db.select({ subcontractorInvoiceId: paymentRequests.subcontractorInvoiceId, token: paymentRequests.token, status: paymentRequests.status })
+            .from(paymentRequests)
+            .where(inArray(paymentRequests.subcontractorInvoiceId, subInvIds))
+        : [];
+      const subTokenMap: Record<string, string> = {};
+      subPayReqs.forEach(pr => {
+        if (pr.subcontractorInvoiceId && pr.status === 'pending') subTokenMap[pr.subcontractorInvoiceId] = pr.token;
+      });
+
       const enriched = invoicesList.map(inv => ({
         ...inv,
         businessName: bizMap[inv.businessOwnerId] || 'Unknown',
+        paymentToken: subTokenMap[inv.id] || null,
       }));
 
       res.json(enriched);
@@ -48922,9 +49007,22 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         subMap[u.id] = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Unknown';
       });
 
+      // Attach pending card-payment tokens (subbie opted into online payment)
+      const invIds = invoicesList.map(i => i.id);
+      const payReqs = invIds.length > 0
+        ? await db.select({ subcontractorInvoiceId: paymentRequests.subcontractorInvoiceId, token: paymentRequests.token, status: paymentRequests.status })
+            .from(paymentRequests)
+            .where(inArray(paymentRequests.subcontractorInvoiceId, invIds))
+        : [];
+      const tokenMap: Record<string, string> = {};
+      payReqs.forEach(pr => {
+        if (pr.subcontractorInvoiceId && pr.status === 'pending') tokenMap[pr.subcontractorInvoiceId] = pr.token;
+      });
+
       const enriched = invoicesList.map(inv => ({
         ...inv,
         subcontractorName: subMap[inv.subcontractorUserId] || 'Unknown',
+        paymentToken: tokenMap[inv.id] || null,
       }));
 
       res.json(enriched);
@@ -48968,6 +49066,17 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }
 
       const updated = await storage.updateSubcontractorInvoice(req.params.id, updates);
+
+      // If manually marked paid, cancel any pending card-payment link so it can't be paid twice
+      if (status === 'paid') {
+        try {
+          await db.update(paymentRequests)
+            .set({ status: 'cancelled', updatedAt: new Date() })
+            .where(and(eq(paymentRequests.subcontractorInvoiceId, invoice.id), eq(paymentRequests.status, 'pending')));
+        } catch (e) {
+          console.warn('[SubInvoice] Failed to cancel pending payment request:', e);
+        }
+      }
 
       // Notify subcontractor
       const isQuote = invoice.docType === 'quote';
@@ -49141,6 +49250,15 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }
 
       const updated = await storage.updateSubcontractorInvoice(req.params.id, updates);
+
+      // Cancel any pending card-payment link so it can't be paid twice
+      try {
+        await db.update(paymentRequests)
+          .set({ status: 'cancelled', updatedAt: new Date() })
+          .where(and(eq(paymentRequests.subcontractorInvoiceId, invoice.id), eq(paymentRequests.status, 'pending')));
+      } catch (e) {
+        console.warn('[SubInvoice Pay] Failed to cancel pending payment request:', e);
+      }
 
       await storage.createNotification({
         userId: invoice.subcontractorUserId,
@@ -49453,7 +49571,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.post("/api/subcontractor/billing-documents", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const { businessOwnerId, docType, title, notes, gstEnabled, dueDate, validUntil, items } = req.body;
+      const { businessOwnerId, docType, title, notes, gstEnabled, dueDate, validUntil, items, requestOnlinePayment } = req.body;
 
       if (!businessOwnerId) {
         return res.status(400).json({ error: 'Business owner is required' });
@@ -49471,6 +49589,15 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         .limit(1);
       if (membership.length === 0) {
         return res.status(403).json({ error: 'Not a subcontractor for this business' });
+      }
+
+      // Fail early if a card payment link was requested but the subbie's own
+      // Stripe account isn't ready — never silently drop the option.
+      if (requestOnlinePayment && docType === 'invoice') {
+        const subSettings = await storage.getBusinessSettings(userId);
+        if (!subSettings?.stripeConnectAccountId || !subSettings?.connectChargesEnabled) {
+          return res.status(400).json({ error: 'Connect your own Stripe account (Settings > Integrations) before adding a card payment link.' });
+        }
       }
 
       // Prevent double-billing: for invoices, block jobs already on a non-draft invoice for this subbie+business
@@ -49667,8 +49794,20 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         console.warn('[SubBilling] Email notification error:', e);
       }
 
+      // Optional card payment link (invoices only; funds go to the subbie's own Stripe account)
+      let paymentToken: string | null = null;
+      if (requestOnlinePayment && docType === 'invoice') {
+        const prResult = await createSubbieInvoicePaymentRequest(userId, {
+          id: created.id,
+          invoiceNumber,
+          totalAmount: totalAmount.toFixed(2),
+          gstAmount: gstAmount.toFixed(2),
+        });
+        if ('token' in prResult) paymentToken = prResult.token;
+      }
+
       const full = await storage.getSubcontractorInvoiceWithItems(created.id);
-      res.json(full);
+      res.json({ ...full, paymentToken, paymentUrl: paymentToken ? `${getProductionBaseUrl(req)}/pay/${paymentToken}` : null });
     } catch (error) {
       console.error('[Subcontractor Billing Document] Error:', error);
       res.status(500).json({ error: 'Failed to create billing document' });
