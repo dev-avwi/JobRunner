@@ -79,6 +79,7 @@ export default function MyInvoices() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<string>("");
   const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
+  const [rateOverrides, setRateOverrides] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [withdrawTarget, setWithdrawTarget] = useState<SubInvoice | null>(null);
@@ -113,14 +114,27 @@ export default function MyInvoices() {
   (unbilled || []).forEach((u) => businessMap.set(u.businessOwnerId, u.businessName));
   const businesses = Array.from(businessMap.entries());
   const businessJobs = (unbilled || []).filter((u) => u.businessOwnerId === selectedBusiness);
+
+  // Effective rate/total per job, honouring any manual rate the subbie typed in.
+  const effectiveRate = (j: UnbilledJob) => {
+    const raw = rateOverrides[j.jobId];
+    if (raw !== undefined && raw !== "") {
+      const n = parseFloat(raw);
+      if (isFinite(n) && n > 0) return n;
+    }
+    return j.hourlyRate;
+  };
+  const effectiveTotal = (j: UnbilledJob) =>
+    Math.round((j.totalHours * effectiveRate(j) + j.materialsCost) * 100) / 100;
   const selectedTotal = businessJobs
     .filter((j) => selectedJobs.has(j.jobId))
-    .reduce((sum, j) => sum + j.totalAmount, 0);
+    .reduce((sum, j) => sum + effectiveTotal(j), 0);
 
   const resetCreate = () => {
     setCreateOpen(false);
     setSelectedBusiness("");
     setSelectedJobs(new Set());
+    setRateOverrides({});
     setNotes("");
     setDueDate("");
   };
@@ -129,7 +143,16 @@ export default function MyInvoices() {
     mutationFn: async () => {
       const items = businessJobs
         .filter((j) => selectedJobs.has(j.jobId))
-        .map((j) => ({ jobId: j.jobId, timeEntryIds: j.timeEntries.map((t) => t.id) }));
+        .map((j) => {
+          const raw = rateOverrides[j.jobId];
+          const n = raw !== undefined && raw !== "" ? parseFloat(raw) : NaN;
+          const hasOverride = isFinite(n) && n > 0 && n !== j.hourlyRate;
+          return {
+            jobId: j.jobId,
+            timeEntryIds: j.timeEntries.map((t) => t.id),
+            ...(hasOverride ? { hourlyRate: n } : {}),
+          };
+        });
       return apiRequest("POST", "/api/subcontractor/invoices", {
         businessOwnerId: selectedBusiness,
         items,
@@ -375,12 +398,30 @@ export default function MyInvoices() {
                         />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{j.jobTitle}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {j.totalHours}h @ {formatMoney(j.hourlyRate)}/h
-                            {j.materialsCost > 0 ? ` + materials ${formatMoney(j.materialsCost)}` : ""}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <span className="text-xs text-muted-foreground">{j.totalHours}h @</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                className="h-8 w-24 text-sm"
+                                value={rateOverrides[j.jobId] ?? String(j.hourlyRate)}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                onChange={(e) =>
+                                  setRateOverrides((prev) => ({ ...prev, [j.jobId]: e.target.value }))
+                                }
+                                data-testid={`input-rate-${j.jobId}`}
+                              />
+                              <span className="text-xs text-muted-foreground">/h</span>
+                            </div>
+                            {j.materialsCost > 0 && (
+                              <span className="text-xs text-muted-foreground">+ materials {formatMoney(j.materialsCost)}</span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-sm font-medium shrink-0">{formatMoney(j.totalAmount)}</span>
+                        <span className="text-sm font-medium shrink-0">{formatMoney(effectiveTotal(j))}</span>
                       </label>
                     ))}
                   </div>

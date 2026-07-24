@@ -19351,7 +19351,7 @@ Be specific about materials, colors, and features that would be included.`
           
           // If no quote line items, create a default line item from job
           if (lineItems.length === 0) {
-            const hourlyRate = 85;
+            const hourlyRate = parseFloat(business?.defaultHourlyRate || '0') || 85;
             const timeEntries = await storage.getTimeEntries(userContext.effectiveUserId, jobId);
             const totalHours = timeEntries.reduce((sum: number, te: any) => {
               if (te.duration) return sum + parseFloat(te.duration) / 3600;
@@ -27530,6 +27530,14 @@ Respond with JSON in this format:
       }
       if (!resolvedHourlyRate && hasUsableRate(data.hourlyRate)) {
         resolvedHourlyRate = String(data.hourlyRate);
+      }
+      // Last resort: the business's own default hourly rate. Only fall back to
+      // the legacy hardcoded 85 when the business hasn't set a default either.
+      if (!resolvedHourlyRate) {
+        const bizForRate = await storage.getBusinessSettings(rateCtx.effectiveUserId);
+        if (bizForRate && hasUsableRate((bizForRate as any).defaultHourlyRate)) {
+          resolvedHourlyRate = String((bizForRate as any).defaultHourlyRate);
+        }
       }
       const finalHourlyRate = resolvedHourlyRate || '85.00';
 
@@ -48172,15 +48180,19 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
           // Resolve the job this entry belongs to (assigned business job OR the user's own solo job)
           const jobEntry = entry.jobId ? (allJobsMap.get(entry.jobId) || null) : null;
+          // Prefer the rate captured on the time entry itself — this is the same
+          // rate invoices and unbilled-work use, so dashboard earnings stay
+          // consistent with what actually gets billed (owner and subbie see the
+          // same numbers). Fall back to membership/own rates only when the entry
+          // has no rate.
+          const entryRate = parseFloat(entry.hourlyRate || '0') || 0;
           let rate: number;
           if (jobEntry && jobEntry.userId !== userId) {
-            // Job belongs to a business this user subcontracts for — use the agreed membership rate
             const membership = memberships.find(m => m.businessOwnerId === jobEntry.userId);
-            rate = parseFloat(membership?.hourlyRate || '0') || 0;
+            rate = entryRate || parseFloat(membership?.hourlyRate || '0') || 0;
           } else {
-            // Solo work (own job, or an entry with no matched job) — use the user's own default rate,
-            // falling back to a membership rate if no own rate is set
-            rate = ownRate || parseFloat(memberships[0]?.hourlyRate || '0') || 0;
+            // Solo work (own job, or an entry with no matched job)
+            rate = entryRate || ownRate || parseFloat(memberships[0]?.hourlyRate || '0') || 0;
           }
           const earned = hours * rate;
 
@@ -48610,7 +48622,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       // Server-side recalculation of amounts from assignments/memberships
       let subtotal = 0;
-      const resolvedItems: Array<{ description: string; hours: string; rate: string; amount: string; jobId: string | null; timeEntryIds: string[]; fallbackRate: number }> = [];
+      const resolvedItems: Array<{ description: string; hours: string; rate: string; amount: string; jobId: string | null; timeEntryIds: string[]; fallbackRate: number; overrideRate?: number | null }> = [];
 
       for (const item of items) {
         const jobId = item.jobId;
@@ -48682,13 +48694,24 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         if (entries.some(te => te.isBreak)) {
           return res.status(400).json({ error: `Break time can't be invoiced for job "${jobRecord[0].title}". Breaks are unpaid.` });
         }
+        // Optional manual rate override from the invoice form. The subbie is
+        // billing for their own work, so they may set the rate; the owner still
+        // reviews/approves the invoice before paying.
+        let overrideRate: number | null = null;
+        if (item.hourlyRate !== undefined && item.hourlyRate !== null && String(item.hourlyRate).trim() !== '') {
+          overrideRate = parseFloat(String(item.hourlyRate));
+          if (!isFinite(overrideRate) || overrideRate <= 0 || overrideRate > 10000) {
+            return res.status(400).json({ error: `Hourly rate for job "${jobRecord[0].title}" must be greater than $0` });
+          }
+        }
+
         let labourAmount = 0;
-        let effectiveRate = fallbackRate;
+        let effectiveRate = overrideRate ?? fallbackRate;
         for (const te of entries) {
           const durationMinutes = te.duration || Math.round((new Date(te.endTime!).getTime() - new Date(te.startTime).getTime()) / 60000);
           const hours = Math.round(durationMinutes / 60 * 100) / 100;
           totalHours += hours;
-          const entryRate = parseFloat(te.hourlyRate || '0') || fallbackRate;
+          const entryRate = overrideRate ?? (parseFloat(te.hourlyRate || '0') || fallbackRate);
           if (entryRate > 0) effectiveRate = entryRate;
           labourAmount += Math.round(hours * entryRate * 100) / 100;
         }
@@ -48742,6 +48765,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           jobId,
           timeEntryIds,
           fallbackRate,
+          overrideRate,
         });
       }
 
@@ -48772,7 +48796,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
               .limit(1);
             const teDuration = te[0]?.duration || (te[0]?.endTime ? Math.round((new Date(te[0].endTime).getTime() - new Date(te[0].startTime).getTime()) / 60000) : 0);
             const teHours = Math.round(teDuration / 60 * 100) / 100;
-            const teRate = parseFloat(te[0]?.hourlyRate || '0') || rItem.fallbackRate;
+            // Must mirror the subtotal calculation above (override wins) so the
+            // stored line items always reconcile with the invoice header totals.
+            const teRate = rItem.overrideRate ?? (parseFloat(te[0]?.hourlyRate || '0') || rItem.fallbackRate);
             const teAmount = Math.round(teHours * teRate * 100) / 100;
             await storage.createSubcontractorInvoiceItem({
               invoiceId: invoice.id,
