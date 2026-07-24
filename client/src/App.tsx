@@ -30,6 +30,7 @@ import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useFeatureAccess } from "@/hooks/use-subscription";
 import GuidedTour, { useGuidedTour } from "@/components/GuidedTour";
 import { useAppMode } from "@/hooks/use-app-mode";
+import { useUserRole } from "@/hooks/use-user-role";
 import { KeyboardShortcutsDialog, useKeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import WhatYouMissedModal from "@/components/WhatYouMissedModal";
 import AdminAppShell from "@/components/AdminAppShell";
@@ -129,6 +130,7 @@ const TimeEditAuditLog = lazyWithReload(() => import("@/pages/TimeEditAuditLog")
 const ProfitabilityReport = lazyWithReload(() => import("@/pages/ProfitabilityReport"));
 const SubcontractorWebView = lazyWithReload(() => import("@/pages/SubcontractorWebView"));
 const MyInvoices = lazyWithReload(() => import("@/pages/MyInvoices"));
+const SubcontractorDashboardPage = lazyWithReload(() => import("@/pages/SubcontractorDashboard"));
 const FilesPage = lazyWithReload(() => import("@/pages/Files"));
 const AIReceptionist = lazyWithReload(() => import("@/pages/AIReceptionist"));
 const AIReceptionistCalls = lazyWithReload(() => import("@/pages/AIReceptionistCalls"));
@@ -472,6 +474,7 @@ function Router({
   onShowInvoiceModal: (invoiceId: string) => void;
 }) {
   const [location] = useLocation();
+  const { isSubcontractor, isLoading: roleLoading } = useUserRole();
   
   // Stable callbacks for quote/invoice editors using useCallback
   const handleQuoteSave = useCallback((quoteId: string) => {
@@ -974,7 +977,14 @@ function Router({
       <Route path="/more" component={More} />
       
       {/* Root route must be near the end to avoid prefix matching issues */}
-      <Route path="/" component={() => (
+      <Route path="/" component={() => roleLoading ? (
+        <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4 animate-pulse">
+          <div className="h-16 bg-muted rounded-md" />
+          <div className="h-32 bg-muted rounded-md" />
+        </div>
+      ) : isSubcontractor ? (
+        <SubcontractorDashboardPage />
+      ) : (
         <Dashboard 
           onCreateJob={() => onNavigate('/jobs')}
           onCreateQuote={() => onNavigate('/quotes')}
