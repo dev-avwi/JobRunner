@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useFeatureAccess } from "@/hooks/use-subscription";
+import { useUserRole } from "@/hooks/use-user-role";
 import { Lock, Crown, Users, ArrowRight, Sparkles, Zap } from "lucide-react";
 import { Link } from "wouter";
 
@@ -77,8 +78,9 @@ export default function FeatureGate({
   compact = false,
 }: FeatureGateProps) {
   const { subscriptionTier, isLoading, isFoundingMember } = useFeatureAccess();
+  const { isOwner, isLoading: roleLoading } = useUserRole();
 
-  if (isLoading) {
+  if (isLoading || roleLoading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center space-y-3">
@@ -91,6 +93,32 @@ export default function FeatureGate({
 
   if (isFoundingMember || hasSufficientTier(subscriptionTier, requiredTier)) {
     return <>{children}</>;
+  }
+
+  // Team members / subcontractors working inside a business are covered by the
+  // business's seat — never show them a personal upgrade/trial pitch. If the
+  // effective (owner-inherited) tier doesn't cover this feature, tell them to
+  // ask the owner instead.
+  if (!isOwner) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh] px-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center space-y-3">
+            <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+              <Lock className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-semibold">
+                {featureName || 'This feature'} isn't included in your business's plan
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ask the business owner to upgrade their plan to unlock this for the team.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const tierInfo = TIER_INFO[requiredTier];
@@ -203,12 +231,26 @@ export function FeatureGateInline({
   children?: React.ReactNode;
 }) {
   const { subscriptionTier, isLoading, isFoundingMember } = useFeatureAccess();
+  const { isOwner, isLoading: roleLoading } = useUserRole();
 
-  if (isLoading || isFoundingMember || hasSufficientTier(subscriptionTier, requiredTier)) {
+  if (isLoading || roleLoading || isFoundingMember || hasSufficientTier(subscriptionTier, requiredTier)) {
     return <>{children}</>;
   }
 
   const tierInfo = TIER_INFO[requiredTier];
+
+  // Members inside a business never get a personal upgrade pitch — billing is
+  // the owner's concern.
+  if (!isOwner) {
+    return (
+      <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed">
+        <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <span className="text-sm text-muted-foreground flex-1">
+          {featureName || 'This feature'} isn't included in your business's plan
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed">

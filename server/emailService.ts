@@ -433,11 +433,14 @@ const renderEmailShell = (title: string, innerRows: string, footerNote?: string)
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>${title}</title>
   <!--[if mso]>
   <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
   <![endif]-->
   <style type="text/css">
+    :root { color-scheme: light; supported-color-schemes: light; }
     body, table, td, p, a, li, blockquote { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
@@ -1333,6 +1336,8 @@ const createJobConfirmationEmail = (job: any, client: any, business: any) => {
       <!DOCTYPE html>
       <html>
       <head>
+        <meta name="color-scheme" content="light">
+        <meta name="supported-color-schemes" content="light">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Job Confirmation - ${job.title}</title>
@@ -1566,6 +1571,8 @@ export const sendLoginCodeEmail = async (email: string, code: string) => {
       <!DOCTYPE html>
       <html>
       <head>
+        <meta name="color-scheme" content="light">
+        <meta name="supported-color-schemes" content="light">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Your Login Code</title>
@@ -2403,6 +2410,8 @@ export function createEmailFromTemplate(
     <!DOCTYPE html>
     <html>
     <head>
+      <meta name="color-scheme" content="light">
+      <meta name="supported-color-schemes" content="light">
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${subject}</title>

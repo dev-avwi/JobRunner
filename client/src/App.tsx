@@ -128,6 +128,7 @@ const CommunicationsHub = lazyWithReload(() => import("@/pages/CommunicationsHub
 const TimeEditAuditLog = lazyWithReload(() => import("@/pages/TimeEditAuditLog"));
 const ProfitabilityReport = lazyWithReload(() => import("@/pages/ProfitabilityReport"));
 const SubcontractorWebView = lazyWithReload(() => import("@/pages/SubcontractorWebView"));
+const MyInvoices = lazyWithReload(() => import("@/pages/MyInvoices"));
 const FilesPage = lazyWithReload(() => import("@/pages/Files"));
 const AIReceptionist = lazyWithReload(() => import("@/pages/AIReceptionist"));
 const AIReceptionistCalls = lazyWithReload(() => import("@/pages/AIReceptionistCalls"));
@@ -855,6 +856,8 @@ function Router({
       <Route path="/subcontractor-invoices">
         <Redirect to="/team?tab=subinvoices" />
       </Route>
+
+      <Route path="/my-invoices" component={MyInvoices} />
 
       <Route path="/reports" component={() => (
         <FeatureGate requiredTier="pro" featureName="Reports" description="Access detailed reports on jobs, revenue, team performance, and more.">

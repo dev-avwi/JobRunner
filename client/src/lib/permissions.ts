@@ -126,6 +126,8 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // Payment Hub - office admin can manage payments
   { path: '/payment-hub', label: 'Payment Hub', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'], showInNav: true },
   { path: '/expenses', label: 'Expenses', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: true },
+  // Subcontractor's own invoices to the businesses they work with (web parity with mobile)
+  { path: '/my-invoices', label: 'My Invoices', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: false },
   
   // Automations - owner only (controls now in Communications Hub)
   { path: '/automations', label: 'Automations', allowedRoles: ['owner', 'solo_owner'], showInNav: false },

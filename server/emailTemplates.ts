@@ -20,6 +20,8 @@ const baseEmailWrapper = (content: string, brandColor: string = BRAND_BLUE) => `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>JobRunner</title>
   <!--[if mso]>
   <noscript>
@@ -31,6 +33,8 @@ const baseEmailWrapper = (content: string, brandColor: string = BRAND_BLUE) => `
   </noscript>
   <![endif]-->
   <style type="text/css">
+    /* Force light rendering — dark-mode email clients must not invert colors */
+    :root { color-scheme: light; supported-color-schemes: light; }
     /* Reset styles */
     body, table, td, p, a, li, blockquote { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }

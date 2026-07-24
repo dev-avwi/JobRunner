@@ -182,6 +182,7 @@ export default function AcceptInvite() {
   };
 
   const handleAcceptAsExistingUser = async () => {
+    setErrorMessage('');
     setAcceptStatus('loading');
     try {
       const response = await apiRequest("POST", `/api/team/invite/accept/${token}`, {});
@@ -238,6 +239,7 @@ export default function AcceptInvite() {
       return;
     }
 
+    setErrorMessage('');
     setAcceptStatus('loading');
     try {
       const response = await apiRequest("POST", `/api/team/invite/accept/${token}`, {

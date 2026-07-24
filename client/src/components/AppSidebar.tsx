@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LogOut, User, LayoutDashboard, Zap } from "lucide-react";
+import { LogOut, User, LayoutDashboard, Zap, Receipt } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useBusinessSettings } from "@/hooks/use-business-settings";
 import { useAppMode } from "@/hooks/use-app-mode";
+import { useUserRole } from "@/hooks/use-user-role";
 import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { useFeatureAccess } from "@/hooks/use-subscription";
 import { 
@@ -61,8 +62,14 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
     staleTime: 30_000,
   });
 
+  const { roleName, isSubcontractor } = useUserRole();
+
   const filterOptions = { isTeam, isTradie, isOwner, isManager, userRole, isSimpleMode, hasProSubscription: canUseAIFeatures, extraAllowedUrls: permissionNavUrls };
-  const visibleMenuItems = getSidebarMenuItems(filterOptions);
+  const baseMenuItems = getSidebarMenuItems(filterOptions);
+  // Subcontractors get their own invoices page on web (parity with mobile).
+  const visibleMenuItems = isSubcontractor
+    ? [...baseMenuItems, { title: "My Invoices", url: "/my-invoices", icon: Receipt } as NavItem]
+    : baseMenuItems;
   const visibleSettingsItems = getSidebarSettingsItems(filterOptions);
 
   // Get badge count for specific menu items
@@ -217,15 +224,20 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
                   className="text-[10px] h-5 px-1.5"
                   data-testid="badge-user-role"
                 >
-                  {isOwner ? 'Owner' : userRole || 'Team'}
+                  {isOwner ? 'Owner' : roleName || 'Team'}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground truncate">
-                {businessSettings?.subscriptionTier === 'business' ? 'Business Plan' :
-                 businessSettings?.subscriptionTier === 'team' ? 'Team Plan' : 
-                 businessSettings?.subscriptionTier === 'pro' ? 'Pro Plan' : 
-                 businessSettings?.subscriptionTier === 'trial' ? 'Trial' : 'Free Plan'}
-              </p>
+              {/* Plan label is the OWNER's billing concern. Members joined to a
+                  business are covered by the business seat — showing them
+                  "Free Plan" (their own placeholder settings) is wrong. */}
+              {isOwner && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {businessSettings?.subscriptionTier === 'business' ? 'Business Plan' :
+                   businessSettings?.subscriptionTier === 'team' ? 'Team Plan' : 
+                   businessSettings?.subscriptionTier === 'pro' ? 'Pro Plan' : 
+                   businessSettings?.subscriptionTier === 'trial' ? 'Trial' : 'Free Plan'}
+                </p>
+              )}
             </div>
           </div>
           

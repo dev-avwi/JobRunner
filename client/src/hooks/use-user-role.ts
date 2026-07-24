@@ -89,6 +89,11 @@ export function useUserRole() {
   };
 
   const role = getUserRole();
+  // Human-readable role name from the server (e.g. "Subcontractor", "Manager").
+  const roleName = teamMemberInfo?.isOwner || teamMemberInfo?.role === 'owner'
+    ? 'Owner'
+    : teamMemberInfo?.roleName || null;
+  const isSubcontractor = !!roleName && roleName.toLowerCase().includes("subcontractor");
   const isOwner = role === "owner";
   const isManager = role === "manager" || role === "office_admin";
   const isOfficeAdmin = role === "office_admin";
@@ -120,6 +125,8 @@ export function useUserRole() {
 
   return {
     role,
+    roleName,
+    isSubcontractor,
     isOwner,
     isManager,
     isOfficeAdmin,

@@ -5209,9 +5209,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usageInfo = await FreemiumService.getFullUsageInfo(req.userId);
       const user = await storage.getUser(req.userId);
       const businessSettings = await storage.getBusinessSettings(req.userId);
+      // A worker/subcontractor inherits the plan of the business they work in.
+      const userContext = await getUserContext(req.userId);
+      const effectiveTier = userContext.effectiveSubscriptionTier || user?.subscriptionTier || 'free';
       res.json({
         ...usageInfo,
-        subscriptionTier: user?.subscriptionTier || 'free',
+        subscriptionTier: effectiveTier,
         subscriptionStatus: businessSettings?.subscriptionStatus || 'none',
       });
     } catch (error) {
@@ -30443,7 +30446,39 @@ Respond with JSON in this format:
         return res.status(404).json({ success: false, error: 'Invalid or expired invitation token' });
       }
       
+      // Resolve the authenticated user from EITHER the cookie session or a
+      // Bearer session token. The web app is Bearer-token-only, so checking
+      // only req.session.userId made logged-in users fall into the "not
+      // logged in" branch and see "Failed to accept invitation".
+      let authedUserId: string | undefined = req.session?.userId;
+      if (!authedUserId) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const sessionToken = authHeader.substring(7);
+          try {
+            const result = await db.execute(
+              sql`SELECT sess FROM session WHERE sid = ${sessionToken} AND expire > NOW()`
+            );
+            if (result.rows && result.rows.length > 0) {
+              authedUserId = (result.rows[0].sess as any)?.userId;
+            }
+          } catch (err) {
+            console.error('Invite accept: session token lookup error:', err);
+          }
+        }
+      }
+
       if (teamMember.inviteStatus !== 'pending') {
+        // Idempotent double-submit: if THIS user already accepted this invite,
+        // report success instead of "already been used" so a re-click or retry
+        // doesn't flash an error at someone who is in fact joined.
+        if (
+          teamMember.inviteStatus === 'accepted' &&
+          authedUserId &&
+          teamMember.memberId === authedUserId
+        ) {
+          return res.json({ success: true, alreadyMember: true });
+        }
         return res.status(400).json({ success: false, error: 'This invitation has already been used' });
       }
 
@@ -30500,19 +30535,20 @@ Respond with JSON in this format:
 
       let user: any;
       let isNewUser = false;
-      
-      // Check if user is already authenticated
-      if (req.session?.userId) {
+
+      // Check if user is already authenticated (resolved above from cookie
+      // session or Bearer token).
+      if (authedUserId) {
         // User is logged in - link their existing account
-        user = await AuthService.getUserById(req.session.userId);
+        user = await AuthService.getUserById(authedUserId);
         if (!user) {
           return res.status(401).json({ success: false, error: 'Session expired. Please log in again.' });
         }
         
-        // Check if this user is already a member of this team
+        // Already a member of this team? Treat as success — they're joined.
         const existingMembership = await storage.getTeamMemberByUserIdAndBusiness(user.id, teamMember.businessOwnerId);
-        if (existingMembership) {
-          return res.status(400).json({ success: false, error: 'You are already a member of this team' });
+        if (existingMembership && existingMembership.inviteStatus === 'accepted') {
+          return res.json({ success: true, alreadyMember: true });
         }
       } else {
         // User is not logged in - check for registration data
