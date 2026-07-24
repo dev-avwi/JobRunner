@@ -80,6 +80,7 @@ export default function MyInvoices() {
   const [selectedBusiness, setSelectedBusiness] = useState<string>("");
   const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
   const [rateOverrides, setRateOverrides] = useState<Record<string, string>>({});
+  const [customItems, setCustomItems] = useState<Array<{ description: string; quantity: string; unitPrice: string }>>([]);
   const [notes, setNotes] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [withdrawTarget, setWithdrawTarget] = useState<SubInvoice | null>(null);
@@ -126,15 +127,30 @@ export default function MyInvoices() {
   };
   const effectiveTotal = (j: UnbilledJob) =>
     Math.round((j.totalHours * effectiveRate(j) + j.materialsCost) * 100) / 100;
-  const selectedTotal = businessJobs
-    .filter((j) => selectedJobs.has(j.jobId))
-    .reduce((sum, j) => sum + effectiveTotal(j), 0);
+  const customItemTotal = (c: { quantity: string; unitPrice: string }) => {
+    const q = parseFloat(c.quantity);
+    const p = parseFloat(c.unitPrice);
+    if (!isFinite(q) || q <= 0 || !isFinite(p) || p < 0) return 0;
+    return Math.round(q * p * 100) / 100;
+  };
+  const isValidCustomItem = (c: { description: string; quantity: string; unitPrice: string }) => {
+    const q = parseFloat(c.quantity);
+    const p = parseFloat(c.unitPrice);
+    return c.description.trim().length > 0 && isFinite(q) && q > 0 && isFinite(p) && p >= 0;
+  };
+  const validCustomItems = customItems.filter(isValidCustomItem);
+  const selectedTotal =
+    businessJobs
+      .filter((j) => selectedJobs.has(j.jobId))
+      .reduce((sum, j) => sum + effectiveTotal(j), 0) +
+    validCustomItems.reduce((sum, c) => sum + customItemTotal(c), 0);
 
   const resetCreate = () => {
     setCreateOpen(false);
     setSelectedBusiness("");
     setSelectedJobs(new Set());
     setRateOverrides({});
+    setCustomItems([]);
     setNotes("");
     setDueDate("");
   };
@@ -153,9 +169,14 @@ export default function MyInvoices() {
             ...(hasOverride ? { hourlyRate: n } : {}),
           };
         });
+      const customs = validCustomItems.map((c) => ({
+        description: c.description.trim(),
+        quantity: parseFloat(c.quantity),
+        unitPrice: parseFloat(c.unitPrice),
+      }));
       return apiRequest("POST", "/api/subcontractor/invoices", {
         businessOwnerId: selectedBusiness,
-        items,
+        items: [...items, ...customs],
         notes: notes || undefined,
         dueDate: dueDate || undefined,
       });
@@ -356,7 +377,7 @@ export default function MyInvoices() {
                 <Label>Bill to</Label>
                 <Select
                   value={selectedBusiness}
-                  onValueChange={(v) => { setSelectedBusiness(v); setSelectedJobs(new Set()); }}
+                  onValueChange={(v) => { setSelectedBusiness(v); setSelectedJobs(new Set()); setCustomItems([]); }}
                 >
                   <SelectTrigger data-testid="select-invoice-business">
                     <SelectValue placeholder="Choose a business" />
@@ -371,7 +392,7 @@ export default function MyInvoices() {
 
               {selectedBusiness && businessJobs.length === 0 && (
                 <p className="text-sm text-muted-foreground py-1">
-                  No unbilled work for this business yet. Work shows up here once a job you're assigned to is completed and you've tracked time on it.
+                  No unbilled work for this business yet. You can still add custom items below, or wait until a job you're assigned to is completed with tracked time.
                 </p>
               )}
 
@@ -429,6 +450,75 @@ export default function MyInvoices() {
               )}
 
               {selectedBusiness && (
+                <div className="space-y-1.5">
+                  <Label>Custom items</Label>
+                  {customItems.length > 0 && (
+                    <div className="space-y-2">
+                      {customItems.map((c, idx) => (
+                        <div key={idx} className="rounded-md border p-3 space-y-2" data-testid={`row-custom-item-${idx}`}>
+                          <div className="flex items-start gap-2">
+                            <Input
+                              placeholder="Description (e.g. Materials, callout fee)"
+                              value={c.description}
+                              onChange={(e) =>
+                                setCustomItems((prev) => prev.map((it, i) => (i === idx ? { ...it, description: e.target.value } : it)))
+                              }
+                              data-testid={`input-custom-description-${idx}`}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setCustomItems((prev) => prev.filter((_, i) => i !== idx))}
+                              data-testid={`button-remove-custom-${idx}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="Qty"
+                              className="w-20"
+                              value={c.quantity}
+                              onChange={(e) =>
+                                setCustomItems((prev) => prev.map((it, i) => (i === idx ? { ...it, quantity: e.target.value } : it)))
+                              }
+                              data-testid={`input-custom-qty-${idx}`}
+                            />
+                            <span className="text-xs text-muted-foreground">x $</span>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="Price"
+                              className="w-28"
+                              value={c.unitPrice}
+                              onChange={(e) =>
+                                setCustomItems((prev) => prev.map((it, i) => (i === idx ? { ...it, unitPrice: e.target.value } : it)))
+                              }
+                              data-testid={`input-custom-price-${idx}`}
+                            />
+                            <span className="text-sm font-medium ml-auto">{formatMoney(customItemTotal(c))}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCustomItems((prev) => [...prev, { description: "", quantity: "1", unitPrice: "" }])}
+                    data-testid="button-add-custom-item"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Add custom item
+                  </Button>
+                </div>
+              )}
+
+              {selectedBusiness && (
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
@@ -465,7 +555,7 @@ export default function MyInvoices() {
           <DialogFooter>
             <Button variant="outline" onClick={resetCreate}>Cancel</Button>
             <Button
-              disabled={!selectedBusiness || selectedJobs.size === 0 || createMutation.isPending}
+              disabled={!selectedBusiness || (selectedJobs.size === 0 && validCustomItems.length === 0) || createMutation.isPending}
               onClick={() => createMutation.mutate()}
               data-testid="button-send-sub-invoice"
             >

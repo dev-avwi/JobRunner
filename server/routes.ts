@@ -48617,6 +48617,17 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.status(403).json({ error: 'Not a subcontractor for this business' });
       }
 
+      // Membership alone isn't enough: only members holding a Subcontractor
+      // role may bill the business (custom items especially — arbitrary
+      // amounts with no job/time-entry anchor — must never be open to
+      // regular workers/office staff).
+      const memberRole = membership[0].roleId
+        ? await db.select({ name: userRoles.name }).from(userRoles).where(eq(userRoles.id, membership[0].roleId)).limit(1)
+        : [];
+      if (!memberRole[0]?.name?.toLowerCase().includes('subcontractor')) {
+        return res.status(403).json({ error: 'Only subcontractors can send invoices to this business' });
+      }
+
       // Fail early if a card payment link was requested but the subbie's own
       // Stripe account isn't ready — never silently drop the option.
       if (requestOnlinePayment) {
@@ -48628,12 +48639,39 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       // Server-side recalculation of amounts from assignments/memberships
       let subtotal = 0;
-      const resolvedItems: Array<{ description: string; hours: string; rate: string; amount: string; jobId: string | null; timeEntryIds: string[]; fallbackRate: number; overrideRate?: number | null }> = [];
+      const resolvedItems: Array<{ description: string; hours: string; rate: string; amount: string; jobId: string | null; timeEntryIds: string[]; fallbackRate: number; overrideRate?: number | null; quantity?: string; unitPrice?: string }> = [];
 
       for (const item of items) {
         const jobId = item.jobId;
         if (!jobId) {
-          return res.status(400).json({ error: 'Each line item must reference a valid job' });
+          // Manual (custom) line item: no job or tracked time required.
+          // Amount is recalculated server-side from quantity x unit price.
+          const description = String(item.description || '').trim();
+          if (!description || description.length > 500) {
+            return res.status(400).json({ error: 'Each custom line item needs a description (max 500 characters)' });
+          }
+          const quantity = parseFloat(String(item.quantity ?? '1'));
+          const unitPrice = parseFloat(String(item.unitPrice));
+          if (!isFinite(quantity) || quantity <= 0 || quantity > 100000) {
+            return res.status(400).json({ error: `Quantity for "${description}" must be greater than 0` });
+          }
+          if (!isFinite(unitPrice) || unitPrice < 0 || unitPrice > 1000000) {
+            return res.status(400).json({ error: `Unit price for "${description}" must be a valid amount` });
+          }
+          const amount = Math.round(quantity * unitPrice * 100) / 100;
+          resolvedItems.push({
+            description,
+            hours: '0',
+            rate: '0',
+            quantity: quantity.toFixed(2),
+            unitPrice: unitPrice.toFixed(2),
+            amount: amount.toFixed(2),
+            jobId: null,
+            timeEntryIds: [],
+            fallbackRate: 0,
+          });
+          subtotal += amount;
+          continue;
         }
 
         // Verify this job belongs to the target business owner
@@ -48822,6 +48860,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
             description: rItem.description,
             hours: rItem.hours,
             rate: rItem.rate,
+            quantity: rItem.quantity ?? null,
+            unitPrice: rItem.unitPrice ?? null,
             amount: rItem.amount,
             jobId: rItem.jobId,
             timeEntryId: null,
@@ -48882,6 +48922,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
               description: ri.description,
               hours: ri.hours,
               rate: ri.rate,
+              quantity: ri.quantity ?? null,
+              unitPrice: ri.unitPrice ?? null,
               amount: ri.amount,
               jobId: ri.jobId,
             })),
@@ -48916,8 +48958,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
             notes: notes || null,
             items: resolvedItems.map(ri => ({
               description: ri.description,
-              quantity: parseFloat(ri.hours || '0'),
-              unitPrice: parseFloat(ri.rate || '0'),
+              quantity: ri.quantity != null ? parseFloat(ri.quantity) : parseFloat(ri.hours || '0'),
+              unitPrice: ri.unitPrice != null ? parseFloat(ri.unitPrice) : parseFloat(ri.rate || '0'),
               total: parseFloat(ri.amount || '0'),
             })),
             subcontractor: {
@@ -49693,6 +49735,16 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         .limit(1);
       if (membership.length === 0) {
         return res.status(403).json({ error: 'Not a subcontractor for this business' });
+      }
+
+      // Only members holding a Subcontractor role may bill the business —
+      // this builder accepts arbitrary custom amounts, so plain workers and
+      // office staff must be rejected even though they are active members.
+      const memberRole = membership[0].roleId
+        ? await db.select({ name: userRoles.name }).from(userRoles).where(eq(userRoles.id, membership[0].roleId)).limit(1)
+        : [];
+      if (!memberRole[0]?.name?.toLowerCase().includes('subcontractor')) {
+        return res.status(403).json({ error: 'Only subcontractors can send invoices to this business' });
       }
 
       // Fail early if a card payment link was requested but the subbie's own
