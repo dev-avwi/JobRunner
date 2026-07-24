@@ -2,6 +2,7 @@ import { Building2 } from "lucide-react";
 import { getTemplateStyles, TemplateId, TemplateCustomization, DEFAULT_TEMPLATE } from "@/lib/document-templates";
 
 interface LineItem {
+  itemCode?: string;
   description: string;
   quantity: number | string;
   unitPrice: number | string;
@@ -375,7 +376,12 @@ export default function LiveDocumentPreview({
                   key={index} 
                   style={getTableRowStyle(index, index === validLineItems.length - 1)}
                 >
-                  <td className="px-3 py-3 align-top">{item.description}</td>
+                  <td className="px-3 py-3 align-top">
+                    {item.itemCode && (
+                      <span className="block text-[10px] text-[#666] font-mono">{item.itemCode}</span>
+                    )}
+                    {item.description}
+                  </td>
                   <td className="px-3 py-3 text-right whitespace-nowrap">
                     {safeParseFloat(item.quantity).toFixed(2)}
                   </td>

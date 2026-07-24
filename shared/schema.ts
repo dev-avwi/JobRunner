@@ -492,6 +492,11 @@ export const businessSettings = pgTable("business_settings", {
   quoteValidityDays: integer("quote_validity_days").default(30),
   invoicePrefix: text("invoice_prefix").default('TT-'),
   quotePrefix: text("quote_prefix").default('QT-'),
+  // Optional simple sequential numbering. When set, new invoice/quote numbers are
+  // generated as `${prefix}${paddedNumber}` (e.g. INV-0042) instead of the
+  // year-based format, and the counter auto-increments from here.
+  invoiceNextNumber: integer("invoice_next_number"),
+  quoteNextNumber: integer("quote_next_number"),
   paymentInstructions: text("payment_instructions"),
   brandColor: text("brand_color").default('#2563EB'),
   // Team/Business Size Settings
@@ -1062,6 +1067,7 @@ export const quoteLineItems = pgTable("quote_line_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   quoteId: varchar("quote_id").notNull().references(() => quotes.id, { onDelete: 'cascade' }),
   optionId: varchar("option_id").references(() => quoteOptions.id, { onDelete: 'cascade' }), // For multi-option quotes
+  itemCode: text("item_code"), // Optional item/service code (e.g. NDIS support item number)
   description: text("description").notNull(),
   quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull().default('1.00'),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull().default('0.00'),
@@ -1168,6 +1174,7 @@ export const invoices = pgTable("invoices", {
 export const invoiceLineItems = pgTable("invoice_line_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   invoiceId: varchar("invoice_id").notNull().references(() => invoices.id, { onDelete: 'cascade' }),
+  itemCode: text("item_code"), // Optional item/service code (e.g. NDIS support item number)
   description: text("description").notNull(),
   quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull().default('1.00'),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull().default('0.00'),
@@ -1316,6 +1323,7 @@ export const lineItemCatalog = pgTable("line_item_catalog", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   tradeType: text("trade_type").notNull(),
+  itemCode: text("item_code"), // Optional item/service code (e.g. NDIS support item number)
   name: text("name").notNull(),
   description: text("description").notNull(),
   unit: text("unit").notNull(), // 'hour', 'item', 'm', 'sqm'

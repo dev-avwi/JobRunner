@@ -19332,7 +19332,7 @@ Be specific about materials, colors, and features that would be included.`
             continue;
           }
           
-          let lineItems: Array<{ description: string; quantity: string; unitPrice: string; total: string }> = [];
+          let lineItems: Array<{ itemCode?: string | null; description: string; quantity: string; unitPrice: string; total: string }> = [];
           
           // Try to get line items from linked quote first
           const quotes = await storage.getQuotes(userContext.effectiveUserId);
@@ -19341,6 +19341,7 @@ Be specific about materials, colors, and features that would be included.`
             const quoteWithItems = await storage.getQuoteWithLineItems(linkedQuote.id, userContext.effectiveUserId);
             if (quoteWithItems?.lineItems?.length) {
               lineItems = quoteWithItems.lineItems.map((li: any) => ({
+                itemCode: li.itemCode || null,
                 description: li.description || li.title || 'Service',
                 quantity: (li.quantity || '1').toString(),
                 unitPrice: (li.unitPrice || '0').toString(),
@@ -19404,6 +19405,7 @@ Be specific about materials, colors, and features that would be included.`
           for (const item of lineItems) {
             await storage.createInvoiceLineItem({
               invoiceId: invoice.id,
+              itemCode: item.itemCode || null,
               description: item.description,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
@@ -21108,6 +21110,7 @@ Be specific about materials, colors, and features that would be included.`
       for (const item of quote.lineItems) {
         await storage.createInvoiceLineItem({
           invoiceId: invoice.id,
+          itemCode: item.itemCode || null,
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
@@ -21148,6 +21151,7 @@ Be specific about materials, colors, and features that would be included.`
         gstAmount: quote.gstAmount,
         total: quote.total,
         lineItems: quote.lineItems.map((item) => ({
+          itemCode: item.itemCode || null,
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
@@ -21216,6 +21220,7 @@ Be specific about materials, colors, and features that would be included.`
       for (const item of source.lineItems) {
         await storage.createQuoteLineItem({
           quoteId: cloned.id,
+          itemCode: item.itemCode || null,
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
@@ -21306,6 +21311,7 @@ Be specific about materials, colors, and features that would be included.`
       for (const item of source.lineItems) {
         await storage.createInvoiceLineItem({
           invoiceId: cloned.id,
+          itemCode: item.itemCode || null,
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unitPrice,

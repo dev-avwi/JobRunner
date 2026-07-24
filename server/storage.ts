@@ -3359,7 +3359,28 @@ export class PostgresStorage implements IStorage {
   async generateQuoteNumber(userId: string): Promise<string> {
     const settings = await this.getBusinessSettings(userId);
     const prefix = settings?.quotePrefix || 'QT-';
-    
+
+    // Simple sequential numbering mode: owner has set a "next quote number".
+    if (settings?.quoteNextNumber && settings.quoteNextNumber > 0) {
+      const { invalidateBusinessSettings } = await import('./cache');
+      // Atomically reserve one counter value per attempt so concurrent creates
+      // never receive the same number (single UPDATE ... RETURNING).
+      for (let attempts = 0; attempts < 1000; attempts++) {
+        const [row] = await db.update(businessSettings)
+          .set({ quoteNextNumber: sql`${businessSettings.quoteNextNumber} + 1`, updatedAt: new Date() })
+          .where(and(eq(businessSettings.id, settings.id), isNotNull(businessSettings.quoteNextNumber)))
+          .returning({ next: businessSettings.quoteNextNumber });
+        if (!row?.next) break; // numbering was turned off concurrently
+        invalidateBusinessSettings(settings.userId);
+        const reserved = row.next - 1;
+        const candidate = `${prefix}${reserved.toString().padStart(4, '0')}`;
+        const clash = await db.select({ id: quotes.id }).from(quotes).where(eq(quotes.number, candidate)).limit(1);
+        if (clash.length === 0) return candidate;
+        // collision with a pre-existing number: counter already advanced, try next
+      }
+      // fall through to classic format if we somehow can't find a free number
+    }
+
     const year = new Date().getFullYear();
     
     // Get the highest quote number for this user this year
@@ -3396,7 +3417,28 @@ export class PostgresStorage implements IStorage {
   async generateInvoiceNumber(userId: string): Promise<string> {
     const settings = await this.getBusinessSettings(userId);
     const prefix = settings?.invoicePrefix || 'TT-';
-    
+
+    // Simple sequential numbering mode: owner has set a "next invoice number".
+    if (settings?.invoiceNextNumber && settings.invoiceNextNumber > 0) {
+      const { invalidateBusinessSettings } = await import('./cache');
+      // Atomically reserve one counter value per attempt so concurrent creates
+      // never receive the same number (single UPDATE ... RETURNING).
+      for (let attempts = 0; attempts < 1000; attempts++) {
+        const [row] = await db.update(businessSettings)
+          .set({ invoiceNextNumber: sql`${businessSettings.invoiceNextNumber} + 1`, updatedAt: new Date() })
+          .where(and(eq(businessSettings.id, settings.id), isNotNull(businessSettings.invoiceNextNumber)))
+          .returning({ next: businessSettings.invoiceNextNumber });
+        if (!row?.next) break; // numbering was turned off concurrently
+        invalidateBusinessSettings(settings.userId);
+        const reserved = row.next - 1;
+        const candidate = `${prefix}${reserved.toString().padStart(4, '0')}`;
+        const clash = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.number, candidate)).limit(1);
+        if (clash.length === 0) return candidate;
+        // collision with a pre-existing number: counter already advanced, try next
+      }
+      // fall through to classic format if we somehow can't find a free number
+    }
+
     const year = new Date().getFullYear();
     
     // Get the highest invoice number for this user this year

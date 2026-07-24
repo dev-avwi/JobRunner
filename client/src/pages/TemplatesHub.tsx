@@ -1117,6 +1117,7 @@ function LineItemsCatalogSection() {
   const [itemToDelete, setItemToDelete] = useState<LineItemCatalog | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    itemCode: "",
     description: "",
     unit: "item",
     unitPrice: "0.00",
@@ -1135,6 +1136,7 @@ function LineItemsCatalogSection() {
   const resetFormData = () => {
     setFormData({
       name: "",
+      itemCode: "",
       description: "",
       unit: "item",
       unitPrice: "0.00",
@@ -1193,6 +1195,7 @@ function LineItemsCatalogSection() {
     setEditingItem(item);
     setFormData({
       name: item.name,
+      itemCode: (item as any).itemCode || "",
       description: item.description || "",
       unit: item.unit || "item",
       unitPrice: String(item.unitPrice || "0.00"),
@@ -1223,7 +1226,8 @@ function LineItemsCatalogSection() {
 
   const filteredItems = catalogItems.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item as any).itemCode?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (isLoading) {
@@ -1297,7 +1301,12 @@ function LineItemsCatalogSection() {
                     </Button>
                   </div>
                 </div>
-                <Badge variant="outline">${item.unitPrice}/{item.unit}</Badge>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline">${item.unitPrice}/{item.unit}</Badge>
+                  {(item as any).itemCode && (
+                    <Badge variant="secondary" className="font-mono text-xs">{(item as any).itemCode}</Badge>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -1318,6 +1327,17 @@ function LineItemsCatalogSection() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., Labour - Standard"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="item-code">Item Code (optional)</Label>
+              <Input
+                id="item-code"
+                value={formData.itemCode}
+                onChange={(e) => setFormData({ ...formData, itemCode: e.target.value })}
+                placeholder="e.g. NDIS 01_801_0138_1_1 or SKU"
+                data-testid="input-catalog-item-code"
               />
             </div>
 

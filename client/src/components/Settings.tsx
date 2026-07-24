@@ -288,6 +288,8 @@ export default function Settings({
     invoicePrefix: "TT-",
     quotePrefix: "QT-",
     jobPrefix: "",
+    invoiceNextNumber: "",
+    quoteNextNumber: "",
     customThemeEnabled: false
   });
   
@@ -614,6 +616,8 @@ export default function Settings({
           invoicePrefix: businessSettings.invoicePrefix || "TT-",
           quotePrefix: businessSettings.quotePrefix || "QT-",
           jobPrefix: businessSettings.jobPrefix || "",
+          invoiceNextNumber: businessSettings.invoiceNextNumber != null ? String(businessSettings.invoiceNextNumber) : "",
+          quoteNextNumber: businessSettings.quoteNextNumber != null ? String(businessSettings.quoteNextNumber) : "",
           customThemeEnabled: serverCustomEnabled
         });
       }
@@ -725,6 +729,8 @@ export default function Settings({
       primaryColor: brandingData.color,
       invoicePrefix: brandingData.invoicePrefix,
       quotePrefix: brandingData.quotePrefix,
+      invoiceNextNumber: brandingData.invoiceNextNumber.trim() !== "" && parseInt(brandingData.invoiceNextNumber, 10) > 0 ? parseInt(brandingData.invoiceNextNumber, 10) : null,
+      quoteNextNumber: brandingData.quoteNextNumber.trim() !== "" && parseInt(brandingData.quoteNextNumber, 10) > 0 ? parseInt(brandingData.quoteNextNumber, 10) : null,
       customThemeEnabled: brandingData.customThemeEnabled,
       defaultHourlyRate: paymentData.defaultHourlyRate.toString(),
       calloutFee: paymentData.calloutFee.toString(),
@@ -2260,6 +2266,42 @@ export default function Settings({
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-next-number">Next Invoice Number</Label>
+                  <Input
+                    id="invoice-next-number"
+                    type="number"
+                    min="1"
+                    value={brandingData.invoiceNextNumber}
+                    onChange={(e) => {
+                      setBrandingDirty(true);
+                      setBrandingData(prev => ({ ...prev, invoiceNextNumber: e.target.value }));
+                    }}
+                    placeholder="e.g. 100"
+                    data-testid="input-invoice-next-number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-next-number">Next Quote Number</Label>
+                  <Input
+                    id="quote-next-number"
+                    type="number"
+                    min="1"
+                    value={brandingData.quoteNextNumber}
+                    onChange={(e) => {
+                      setBrandingDirty(true);
+                      setBrandingData(prev => ({ ...prev, quoteNextNumber: e.target.value }));
+                    }}
+                    placeholder="e.g. 100"
+                    data-testid="input-quote-next-number"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Set a next number to use simple sequential numbering (e.g. INV-0100, INV-0101). Leave blank to keep automatic year-based numbers. The counter increases automatically as you create documents.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

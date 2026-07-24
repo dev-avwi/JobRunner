@@ -53,6 +53,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 const lineItemSchema = z.object({
+  itemCode: z.string().optional(),
   description: z.string().min(1, "Description required"),
   quantity: z.string().min(1, "Quantity required"),
   unitPrice: z.string().min(1, "Price required"),
@@ -91,7 +92,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
   
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ description: "", quantity: "1", unitPrice: "" });
+  const [editForm, setEditForm] = useState({ itemCode: "", description: "", quantity: "1", unitPrice: "" });
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(urlQuoteId || undefined);
@@ -189,6 +190,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
       dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().split('T')[0] : "",
       notes: inv.notes || "",
       lineItems: (inv.lineItems || []).map((li: any) => ({
+        itemCode: li.itemCode || "",
         description: li.description || "",
         quantity: String(li.quantity || "1"),
         unitPrice: String(li.unitPrice || "0"),
@@ -658,13 +660,14 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
   };
 
   const handleAddLineItem = () => {
-    setEditForm({ description: "", quantity: "1", unitPrice: "" });
+    setEditForm({ itemCode: "", description: "", quantity: "1", unitPrice: "" });
     setEditingLineIndex(-1);
   };
 
   const handleEditLineItem = (index: number) => {
     const item = lineItems[index];
     setEditForm({
+      itemCode: (item as any).itemCode || "",
       description: item.description || "",
       quantity: String(item.quantity || "1"),
       unitPrice: String(item.unitPrice || "")
@@ -705,6 +708,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
     
     // Create new item
     const newItem = {
+      itemCode: item.itemCode || "",
       description: itemDescription,
       quantity: String(item.defaultQuantity || 1),
       unitPrice: String(item.unitPrice || 0),
@@ -753,6 +757,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         notes: data.notes,
         lineItems: data.lineItems.map(item => ({
+          itemCode: item.itemCode?.trim() || null,
           description: item.description,
           quantity: parseFloat(item.quantity),
           unitPrice: parseFloat(item.unitPrice),
@@ -868,6 +873,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
   } : null;
 
   const previewLineItems = lineItems?.map(item => ({
+    itemCode: (item as any).itemCode?.trim() || undefined,
     description: item.description,
     quantity: parseFloat(item.quantity) || 0,
     unitPrice: parseFloat(item.unitPrice) || 0,
@@ -1121,7 +1127,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{item?.description || 'Untitled'}</p>
                           <p className="text-xs text-muted-foreground">
-                            {item?.quantity} × {formatCurrency(parseFloat(item?.unitPrice || "0"))}
+                            {(item as any)?.itemCode ? `${(item as any).itemCode} · ` : ''}{item?.quantity} × {formatCurrency(parseFloat(item?.unitPrice || "0"))}
                           </p>
                         </div>
                         <div className="text-right">
@@ -1375,6 +1381,16 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
             <SheetTitle>{editingLineIndex === -1 ? 'Add Item' : 'Edit Item'}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 pb-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Item Code (optional)</Label>
+              <Input
+                value={editForm.itemCode}
+                onChange={(e) => setEditForm({ ...editForm, itemCode: e.target.value })}
+                placeholder="e.g. 01_801_0138_1_1 or SKU"
+                className="h-12 rounded-xl mt-1"
+                data-testid="input-item-code"
+              />
+            </div>
             <div>
               <Label className="text-xs text-muted-foreground">Description</Label>
               <Input

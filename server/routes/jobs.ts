@@ -5247,6 +5247,7 @@ import { logSystemEvent } from "../systemEventService";
         for (const item of quoteLineItems) {
           await storage.createInvoiceLineItem({
             invoiceId: invoice.id,
+            itemCode: item.itemCode || null,
             description: item.description,
             quantity: String(item.quantity),
             unitPrice: item.unitPrice,
@@ -5257,6 +5258,7 @@ import { logSystemEvent } from "../systemEventService";
         for (const item of lineItems) {
           await storage.createInvoiceLineItem({
             invoiceId: invoice.id,
+            itemCode: item.itemCode || null,
             description: item.description || 'Item',
             quantity: String(item.quantity || 1),
             unitPrice: String(item.unitPrice || item.total || 0),

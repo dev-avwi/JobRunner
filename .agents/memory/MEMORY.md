@@ -153,3 +153,4 @@
 - [Form submission edit/versioning](form-submission-versioning.md) — job-card edits snapshot prior data (fail-loud), atomic version numbering; reused $1 param needs ::varchar cast (42P08).
 - [Android billing library strip](android-billing-library-strip.md) — Android is Stripe-links only; react-native-iap excluded from Android build (react-native.config.js) to satisfy Play Billing 8 rule; never re-add store flavor without migrating to expo-iap.
 - [Subbie invoice card payment links](subbie-invoice-payment-links.md) — reuse payment_requests; refuse platform-charge fallback, atomic pending→paid flip, cancel on all terminal states; prod needs subcontractor_invoice_id ALTER.
+- [NDIS item codes + numbering](ndis-item-codes-numbering.md) — 5 prod ALTERs pending at publish; sequential counters must reserve via atomic UPDATE...RETURNING, never select-then-update; new quote→invoice paths must thread itemCode.

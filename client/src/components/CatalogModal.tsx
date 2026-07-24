@@ -36,7 +36,8 @@ export default function CatalogModal({ open, onOpenChange, onSelectItem, tradeTy
   const filteredItems = catalogItems.filter(item => {
     const matchesSearch = searchTerm === "" || 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item as any).itemCode?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesTradeType = selectedCategory === "" || selectedCategory === "all" || item.tradeType === selectedCategory;
     
@@ -140,6 +141,9 @@ export default function CatalogModal({ open, onOpenChange, onSelectItem, tradeTy
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-medium text-sm">{item.name}</h3>
+                      {(item as any).itemCode && (
+                        <p className="text-xs text-muted-foreground font-mono">{(item as any).itemCode}</p>
+                      )}
                       <Button
                         size="icon"
                         variant="ghost"

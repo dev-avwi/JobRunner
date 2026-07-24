@@ -1039,7 +1039,7 @@ export const generateQuotePDF = (data: QuoteWithDetails): string => {
       <tbody>
         ${lineItems.map(item => `
           <tr>
-            <td>${item.description}</td>
+            <td>${(item as any).itemCode ? `<div style="font-size: 9px; color: #666; font-family: monospace;">${escapeHtml((item as any).itemCode)}</div>` : ''}${item.description}</td>
             <td>${parseFloat(item.quantity as unknown as string).toFixed(2)}</td>
             <td>${formatCurrency(item.unitPrice)}</td>
             <td>${formatCurrency(calculateLineItemTotal(item))}</td>
@@ -1458,7 +1458,7 @@ export const generateInvoicePDF = (data: InvoiceWithDetails): string => {
       <tbody>
         ${lineItems.map(item => `
           <tr>
-            <td>${item.description}</td>
+            <td>${(item as any).itemCode ? `<div style="font-size: 9px; color: #666; font-family: monospace;">${escapeHtml((item as any).itemCode)}</div>` : ''}${item.description}</td>
             <td>${parseFloat(item.quantity as unknown as string).toFixed(2)}</td>
             <td>${formatCurrency(item.unitPrice)}</td>
             <td>${formatCurrency(calculateLineItemTotal(item))}</td>
@@ -2653,7 +2653,7 @@ export const generateQuoteAcceptancePage = (data: QuoteWithDetails, acceptanceUr
           ${lineItems.map(item => `
             <div class="line-item">
               <div class="line-item-desc">
-                ${item.description}
+                ${(item as any).itemCode ? `<small style="color: #666; font-family: monospace;">${escapeHtml((item as any).itemCode)}</small><br>` : ''}${item.description}
                 <br><small>${parseFloat(item.quantity as unknown as string)} × ${formatCurrency(item.unitPrice)}</small>
               </div>
               <div class="line-item-amount">${formatCurrency(calculateLineItemTotal(item))}</div>
@@ -4733,7 +4733,7 @@ export async function generateSubcontractorInvoicePdf(data: SubcontractorInvoice
     const price = priceVal != null && priceVal !== '' ? formatCurrency(priceVal) : '-';
     return `
       <tr>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${(item as any).itemCode ? `<div style="font-size: 9px; color: #666; font-family: monospace;">${escapeHtml((item as any).itemCode)}</div>` : ''}${escapeHtml(item.description)}</td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${qty}</td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${price}</td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(item.amount)}</td>

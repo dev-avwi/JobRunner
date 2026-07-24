@@ -51,6 +51,7 @@ import {
 import AIQuoteGenerator from "@/components/AIQuoteGenerator";
 
 const lineItemSchema = z.object({
+  itemCode: z.string().optional(),
   description: z.string().min(1, "Description required"),
   quantity: z.string().min(1, "Quantity required"),
   unitPrice: z.string().min(1, "Price required"),
@@ -94,7 +95,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
   
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ description: "", quantity: "1", unitPrice: "", cost: "" });
+  const [editForm, setEditForm] = useState({ itemCode: "", description: "", quantity: "1", unitPrice: "", cost: "" });
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [showMarginMode, setShowMarginMode] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
@@ -205,7 +206,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
   });
 
   // Use useState for line items - now that Router is fixed, this should work correctly
-  const [lineItems, setLineItems] = useState<Array<{ description: string; quantity: string; unitPrice: string; cost?: string }>>([]);
+  const [lineItems, setLineItems] = useState<Array<{ itemCode?: string; description: string; quantity: string; unitPrice: string; cost?: string }>>([]);
   
   // Sync line items to form for submission
   useEffect(() => {
@@ -225,6 +226,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
       depositRequired: q.depositRequired || false,
       depositPercent: q.depositPercent ? Number(q.depositPercent) : 50,
       lineItems: (q.lineItems || []).map((li: any) => ({
+        itemCode: li.itemCode || "",
         description: li.description || "",
         quantity: String(li.quantity || "1"),
         unitPrice: String(li.unitPrice || "0"),
@@ -232,6 +234,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
       })),
     });
     setLineItems((q.lineItems || []).map((li: any) => ({
+      itemCode: li.itemCode || "",
       description: li.description || "",
       quantity: String(li.quantity || "1"),
       unitPrice: String(li.unitPrice || "0"),
@@ -243,7 +246,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
   }, [isEditMode, editQuoteData, editLoaded]);
 
   // Line item management functions
-  const appendLineItem = (item: { description: string; quantity: string; unitPrice: string; cost?: string }) => {
+  const appendLineItem = (item: { itemCode?: string; description: string; quantity: string; unitPrice: string; cost?: string }) => {
     setLineItems(prev => [...prev, item]);
   };
   
@@ -255,7 +258,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
     setLineItems(prev => prev.map((existing, i) => i === index ? item : existing));
   };
   
-  const replaceLineItems = (items: Array<{ description: string; quantity: string; unitPrice: string; cost?: string }>) => {
+  const replaceLineItems = (items: Array<{ itemCode?: string; description: string; quantity: string; unitPrice: string; cost?: string }>) => {
     setLineItems(items);
   };
 
@@ -442,13 +445,14 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
   };
 
   const handleAddLineItem = () => {
-    setEditForm({ description: "", quantity: "1", unitPrice: "", cost: "" });
+    setEditForm({ itemCode: "", description: "", quantity: "1", unitPrice: "", cost: "" });
     setEditingLineIndex(-1);
   };
 
   const handleEditLineItem = (index: number) => {
     const item = lineItems[index];
     setEditForm({
+      itemCode: item.itemCode || "",
       description: item.description || "",
       quantity: String(item.quantity || "1"),
       unitPrice: String(item.unitPrice || ""),
@@ -490,6 +494,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
     
     // Create the new item
     const newItem = {
+      itemCode: item.itemCode || "",
       description: itemDescription,
       quantity: String(item.defaultQuantity || 1),
       unitPrice: String(item.unitPrice || 0),
@@ -604,6 +609,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
         depositPercent: data.depositRequired ? String(data.depositPercent) : null,
         depositAmount: data.depositRequired ? (total * (data.depositPercent / 100)).toFixed(2) : null,
         lineItems: data.lineItems.map(item => ({
+          itemCode: item.itemCode?.trim() || null,
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
@@ -695,6 +701,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
   } : null;
 
   const previewLineItems = lineItems.map(item => ({
+    itemCode: item.itemCode?.trim() || undefined,
     description: item.description,
     quantity: parseFloat(item.quantity) || 0,
     unitPrice: parseFloat(item.unitPrice) || 0,
@@ -1066,7 +1073,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{item?.description || 'Untitled'}</p>
                           <p className="text-xs text-muted-foreground">
-                            {item?.quantity} × {formatCurrency(parseFloat(item?.unitPrice || "0"))}
+                            {item?.itemCode ? `${item.itemCode} · ` : ''}{item?.quantity} × {formatCurrency(parseFloat(item?.unitPrice || "0"))}
                           </p>
                         </div>
                         <div className="text-right">
@@ -1422,6 +1429,16 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
             <SheetTitle>{editingLineIndex === -1 ? 'Add Item' : 'Edit Item'}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 pb-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Item Code (optional)</Label>
+              <Input
+                value={editForm.itemCode}
+                onChange={(e) => setEditForm({ ...editForm, itemCode: e.target.value })}
+                placeholder="e.g. 01_801_0138_1_1 or SKU"
+                className="h-12 rounded-xl mt-1"
+                data-testid="input-item-code"
+              />
+            </div>
             <div>
               <Label className="text-xs text-muted-foreground">Description</Label>
               <Input
