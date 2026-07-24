@@ -1747,7 +1747,7 @@ function AppLayout() {
                 onLogoutClick={handleLogout}
               />
               {/* Business Picker for multi-business users */}
-              {userCheck && !userCheck.isOwner && <BusinessPicker userId={userCheck.id} />}
+              {userCheck && <BusinessPicker userId={userCheck.id} />}
               {/* Offline Indicator */}
               <OfflineIndicator />
               {/* WebSocket Reconnecting Indicator */}

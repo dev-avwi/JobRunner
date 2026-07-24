@@ -101,9 +101,17 @@ export default function MyInvoices() {
     enabled: createOpen,
   });
 
-  const businesses = Array.from(
-    new Map((unbilled || []).map((u) => [u.businessOwnerId, u.businessName])).entries()
-  );
+  // All workspaces the subbie belongs to (so any business can be picked, even
+  // when it has no unbilled work yet), merged with businesses seen in unbilled work.
+  const { data: dashboard } = useQuery<{ businesses?: Array<{ id: string; name: string }> }>({
+    queryKey: ["/api/subcontractor/dashboard"],
+    enabled: createOpen,
+    staleTime: 60_000,
+  });
+  const businessMap = new Map<string, string>();
+  (dashboard?.businesses || []).forEach((b) => businessMap.set(b.id, b.name));
+  (unbilled || []).forEach((u) => businessMap.set(u.businessOwnerId, u.businessName));
+  const businesses = Array.from(businessMap.entries());
   const businessJobs = (unbilled || []).filter((u) => u.businessOwnerId === selectedBusiness);
   const selectedTotal = businessJobs
     .filter((j) => selectedJobs.has(j.jobId))
@@ -315,9 +323,9 @@ export default function MyInvoices() {
               <Skeleton className="h-10 w-full rounded-md" />
               <Skeleton className="h-24 w-full rounded-md" />
             </div>
-          ) : !unbilled || unbilled.length === 0 ? (
+          ) : businesses.length === 0 ? (
             <p className="text-sm text-muted-foreground py-2">
-              No unbilled work found. Work shows up here once a job you're assigned to is completed and you've tracked time on it.
+              You're not part of any business yet. Join a business first, then you can invoice them for your work.
             </p>
           ) : (
             <div className="space-y-4">
@@ -338,7 +346,13 @@ export default function MyInvoices() {
                 </Select>
               </div>
 
-              {selectedBusiness && (
+              {selectedBusiness && businessJobs.length === 0 && (
+                <p className="text-sm text-muted-foreground py-1">
+                  No unbilled work for this business yet. Work shows up here once a job you're assigned to is completed and you've tracked time on it.
+                </p>
+              )}
+
+              {selectedBusiness && businessJobs.length > 0 && (
                 <div className="space-y-1.5">
                   <Label>Unbilled jobs</Label>
                   <div className="space-y-2 max-h-56 overflow-y-auto pr-1">

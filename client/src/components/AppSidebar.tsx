@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LogOut, User, LayoutDashboard, Zap, Receipt } from "lucide-react";
+import { LogOut, User, LayoutDashboard, Zap, Receipt, Briefcase, Calendar, Clock, Shield, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -66,10 +66,17 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
 
   const filterOptions = { isTeam, isTradie, isOwner, isManager, userRole, isSimpleMode, hasProSubscription: canUseAIFeatures, extraAllowedUrls: permissionNavUrls };
   const baseMenuItems = getSidebarMenuItems(filterOptions);
-  // Subcontractors get their own invoices page on web (parity with mobile).
-  const visibleMenuItems = isSubcontractor
-    ? [...baseMenuItems, { title: "My Invoices", url: "/my-invoices", icon: Receipt } as NavItem]
-    : baseMenuItems;
+  // Subcontractors get the same pages (and page names) as the mobile app.
+  const subcontractorMenuItems: NavItem[] = [
+    { title: "Dashboard", url: "/", icon: LayoutDashboard },
+    { title: "My Jobs", url: "/jobs", icon: Briefcase },
+    { title: "Schedule", url: "/schedule", icon: Calendar },
+    { title: "Time Tracking", url: "/time-tracking", icon: Clock },
+    { title: "My Invoices", url: "/my-invoices", icon: Receipt },
+    { title: "WHS Safety", url: "/whs", icon: Shield },
+    { title: "Chat", url: "/chat", icon: MessageCircle },
+  ];
+  const visibleMenuItems = isSubcontractor ? subcontractorMenuItems : baseMenuItems;
   const visibleSettingsItems = getSidebarSettingsItems(filterOptions);
 
   // Get badge count for specific menu items

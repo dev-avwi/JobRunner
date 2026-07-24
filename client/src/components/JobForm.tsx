@@ -37,10 +37,32 @@ const jobFormSchema = z.object({
   priority: z.enum(["low", "medium", "high"]).default("medium"),
   estimatedHours: z.string().optional(),
   requiresInspection: z.boolean().optional(),
+  isRecurring: z.boolean().optional(),
+  recurrencePattern: z.enum(["weekly", "fortnightly", "monthly", "quarterly", "yearly"]).optional(),
   customFields: z.record(z.any()).optional(),
 });
 
 type JobFormData = z.infer<typeof jobFormSchema>;
+
+const RECURRENCE_OPTIONS: Array<{ value: NonNullable<JobFormData["recurrencePattern"]>; label: string }> = [
+  { value: "weekly", label: "Weekly" },
+  { value: "fortnightly", label: "Fortnightly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "yearly", label: "Yearly" },
+];
+
+function calculateNextRecurrenceDate(base: Date, pattern: string): Date {
+  const next = new Date(base);
+  switch (pattern) {
+    case "weekly": next.setDate(next.getDate() + 7); break;
+    case "fortnightly": next.setDate(next.getDate() + 14); break;
+    case "monthly": next.setMonth(next.getMonth() + 1); break;
+    case "quarterly": next.setMonth(next.getMonth() + 3); break;
+    case "yearly": next.setFullYear(next.getFullYear() + 1); break;
+  }
+  return next;
+}
 
 interface JobFormProps {
   onSubmit?: (jobId: string) => void;
@@ -122,6 +144,8 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
       priority: "medium",
       estimatedHours: "",
       requiresInspection: false,
+      isRecurring: false,
+      recurrencePattern: "monthly",
       customFields: {},
     },
   });
@@ -401,11 +425,19 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
       return;
     }
     try {
+      const recurrenceBase = data.scheduledAt ? new Date(data.scheduledAt) : new Date();
       const jobData = {
         ...data,
         estimatedHours: data.estimatedHours ? parseInt(data.estimatedHours) : undefined,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt).toISOString() : undefined,
         customFields: data.customFields,
+        ...(data.isRecurring && data.recurrencePattern
+          ? {
+              isRecurring: true,
+              recurrencePattern: data.recurrencePattern,
+              nextRecurrenceDate: calculateNextRecurrenceDate(recurrenceBase, data.recurrencePattern).toISOString(),
+            }
+          : { isRecurring: false, recurrencePattern: undefined }),
         ...(urlQuoteId ? { quoteId: urlQuoteId } : {}),
       };
 
@@ -791,6 +823,46 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                   <Search className="w-4 h-4" />
                   Requires site inspection first
                 </Label>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="isRecurring"
+                    checked={!!form.watch("isRecurring")}
+                    onCheckedChange={(checked) => form.setValue("isRecurring", !!checked)}
+                    data-testid="checkbox-is-recurring"
+                  />
+                  <Label htmlFor="isRecurring" className="cursor-pointer text-sm">
+                    Recurring job (repeats automatically)
+                  </Label>
+                </div>
+                {form.watch("isRecurring") && (
+                  <FormField
+                    control={form.control}
+                    name="recurrencePattern"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Repeats</FormLabel>
+                        <Select value={field.value || "monthly"} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-recurrence-pattern">
+                              <SelectValue placeholder="Select frequency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {RECURRENCE_OPTIONS.map((o) => (
+                              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          A new copy of this job is created automatically each period.
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               <div className="flex gap-4">

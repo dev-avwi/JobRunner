@@ -2709,6 +2709,12 @@ import { logSystemEvent } from "../systemEventService";
       if (body.startedAt && typeof body.startedAt === 'string') {
         body.startedAt = new Date(body.startedAt);
       }
+      if (body.nextRecurrenceDate && typeof body.nextRecurrenceDate === 'string') {
+        body.nextRecurrenceDate = new Date(body.nextRecurrenceDate);
+      }
+      if (body.recurrenceEndDate && typeof body.recurrenceEndDate === 'string') {
+        body.recurrenceEndDate = new Date(body.recurrenceEndDate);
+      }
 
       const data = insertJobSchema.parse(body);
 
