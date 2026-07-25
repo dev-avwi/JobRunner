@@ -2211,6 +2211,25 @@ export function extractCallLatencyMs(message: any): number | null {
   return Math.round(avg);
 }
 
+// Vapi has moved the call summary between payload shapes over time:
+// older reports put it at message.summary, newer ones under
+// message.analysis.summary (or call.analysis.summary). Try all known spots
+// so notifications don't say "No summary available" for real calls.
+export function extractCallSummary(message: any): string | null {
+  if (!message || typeof message !== 'object') return null;
+  const call = message.call || {};
+  const candidates = [
+    message.summary,
+    message.analysis?.summary,
+    call.analysis?.summary,
+    call.summary,
+  ];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) return c.trim();
+  }
+  return null;
+}
+
 export async function processWebhookEvent(event: any): Promise<any> {
   const eventType = event.message?.type || event.type;
   console.log(`[Vapi Webhook] Event type: ${eventType}`);
@@ -2284,7 +2303,7 @@ async function handleEndOfCallReport(event: any): Promise<any> {
     console.log(`[Vapi Webhook] No business found for assistant ${assistantId} — treating as support line call`);
     await sendSupportLineNotifications(
       call.customer?.number || null,
-      message.summary || null,
+      extractCallSummary(message),
       message.durationSeconds || call.duration || null,
     );
     return { ok: true };
@@ -2302,7 +2321,7 @@ async function handleEndOfCallReport(event: any): Promise<any> {
     : 'message_taken';
 
   const transcriptText = message.transcript || null;
-  const summaryText = message.summary || null;
+  const summaryText = extractCallSummary(message);
 
   let sentimentResult = { sentiment: 'neutral' as string, sentimentScore: 0.5 };
   try {
@@ -2387,7 +2406,7 @@ async function handleEndOfCallReport(event: any): Promise<any> {
         email: null,
         source: 'ai_receptionist',
         status: 'new',
-        description: message.summary || 'AI Receptionist call — no lead was explicitly captured during the call',
+        description: summaryText || 'AI Receptionist call — no lead was explicitly captured during the call',
         estimatedValue: null,
         notes: `Auto-created from AI Receptionist call ${callId}\nDuration: ${updates.duration || 0}s`,
         followUpDate: null,
@@ -2405,7 +2424,7 @@ async function handleEndOfCallReport(event: any): Promise<any> {
     }
   }
 
-  await sendCallNotifications(business, callId, call.customer?.number, message.summary, updates.duration as number | null);
+  await sendCallNotifications(business, callId, call.customer?.number, summaryText, updates.duration as number | null);
 
   const callDuration = (updates.duration as number | null) || 0;
   if (callDuration > 10 && call.customer?.number && business.dedicatedPhoneNumber) {
@@ -2417,7 +2436,7 @@ async function handleEndOfCallReport(event: any): Promise<any> {
     existingCall?.callerName || 'Unknown caller',
     call.customer?.number || null,
     callRecord?.callerIntent || existingCall?.callerIntent || null,
-    message.summary || null,
+    summaryText,
     callDuration,
   );
 
