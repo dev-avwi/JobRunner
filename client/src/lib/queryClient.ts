@@ -332,14 +332,24 @@ export const getQueryFn = <T,>(options: {
   return async ({ queryKey }) => {
     const url = buildUrlFromQueryKey(queryKey);
     
-    // Detect if this is a detail query (2+ element keys where second element is an ID string, not a path)
-    const isDetailQuery = queryKey.length >= 2 && 
+    // Detect if this is a detail query (exactly [endpoint, id]). Keys with
+    // more segments (e.g. ['/api/jobs', id, 'variations']) are SUB-RESOURCE
+    // LIST queries — returning a single cached job object for those crashes
+    // callers that expect an array (".filter is not a function").
+    const isDetailQuery = queryKey.length === 2 && 
       typeof queryKey[1] === 'string' && 
+      !queryKey[1].startsWith('/');
+    // Sub-resource lists have no offline store of their own — fall back to [].
+    const isSubResourceQuery = queryKey.length > 2 &&
+      typeof queryKey[1] === 'string' &&
       !queryKey[1].startsWith('/');
     
     if (!checkOnline()) {
       const storeName = getStoreNameFromEndpoint(queryKey[0] as string);
       
+      if (isSubResourceQuery) {
+        return [] as T;
+      }
       if (isDetailQuery && storeName) {
         // Detail query - try to get single item, return null if not found
         const item = await getItemFromEndpoint(queryKey[0] as string, queryKey[1] as string);
@@ -374,6 +384,9 @@ export const getQueryFn = <T,>(options: {
       if (!checkOnline() || (error instanceof Error && error.message.includes('Failed to fetch'))) {
         const storeName = getStoreNameFromEndpoint(queryKey[0] as string);
         
+        if (isSubResourceQuery) {
+          return [] as T;
+        }
         if (isDetailQuery && storeName) {
           // Detail query - try to get single item, return null if not found
           const item = await getItemFromEndpoint(queryKey[0] as string, queryKey[1] as string);
