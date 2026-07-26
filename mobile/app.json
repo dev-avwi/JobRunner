@@ -2,7 +2,7 @@
   "expo": {
     "name": "JobRunner",
     "slug": "tradietrack",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "jsEngine": "hermes",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jobrunner.app",
-      "buildNumber": "44",
+      "buildNumber": "45",
       "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.developer.proximity-reader.payment.acceptance": true
