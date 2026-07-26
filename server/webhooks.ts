@@ -219,7 +219,29 @@ export function setupStripeWebhooks(app: Express, stripe: any, storage: any) {
             const updateData: any = {
               subscriptionStatus: effectiveStatus,
             };
-            
+
+            // Sync plan tier from the subscription (covers plan changes made in the Stripe dashboard/portal)
+            try {
+              if (subscription.status === 'active' || subscription.status === 'trialing') {
+                let newTier: string | null = subscription.metadata?.tier || null;
+                if (!newTier) {
+                  const lookupKey: string = subscription.items?.data?.[0]?.price?.lookup_key || '';
+                  if (lookupKey.includes('business')) newTier = 'business';
+                  else if (lookupKey.includes('team')) newTier = 'team';
+                  else if (lookupKey.includes('pro')) newTier = 'pro';
+                }
+                if (newTier && ['pro', 'team', 'business'].includes(newTier)) {
+                  const user = await storage.getUser(businessSettings.userId);
+                  if (user && user.subscriptionTier !== newTier) {
+                    await storage.updateUser(businessSettings.userId, { subscriptionTier: newTier } as any);
+                    console.log(`[Webhook] Tier synced for ${businessSettings.userId}: ${user.subscriptionTier} -> ${newTier}`);
+                  }
+                }
+              }
+            } catch (tierErr) {
+              console.error('[Webhook] Failed to sync tier from subscription:', tierErr);
+            }
+
             if (isPaused) {
               if (!businessSettings.subscriptionPausedAt) {
                 updateData.subscriptionPausedAt = new Date();

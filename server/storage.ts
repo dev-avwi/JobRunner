@@ -9293,6 +9293,23 @@ Thank you for your prompt attention to this matter.`,
   }
 
   async createSubcontractorInvoice(invoice: InsertSubcontractorInvoice): Promise<SubcontractorInvoice> {
+    // If no number was supplied, generate it inside a transaction holding a
+    // per-subcontractor advisory lock so two simultaneous creates can never
+    // compute the same next number (select-then-max race).
+    if (!invoice.invoiceNumber) {
+      return await db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${'subinv:' + invoice.subcontractorUserId}))`);
+        const existing = await tx.select({ invoiceNumber: subcontractorInvoices.invoiceNumber }).from(subcontractorInvoices).where(eq(subcontractorInvoices.subcontractorUserId, invoice.subcontractorUserId));
+        const maxNum = existing.reduce((max, inv) => {
+          const match = inv.invoiceNumber.match(/(\d+)$/);
+          return match ? Math.max(max, parseInt(match[1])) : max;
+        }, 0);
+        const prefix = await this.getSubcontractorInvoicePrefix(invoice.subcontractorUserId);
+        const invoiceNumber = `${prefix}${String(maxNum + 1).padStart(4, '0')}`;
+        const [result] = await tx.insert(subcontractorInvoices).values({ ...invoice, invoiceNumber }).returning();
+        return result;
+      });
+    }
     const [result] = await db.insert(subcontractorInvoices).values(invoice).returning();
     return result;
   }
@@ -9312,6 +9329,11 @@ Thank you for your prompt attention to this matter.`,
       const match = inv.invoiceNumber.match(/(\d+)$/);
       return match ? Math.max(max, parseInt(match[1])) : max;
     }, 0);
+    const prefix = await this.getSubcontractorInvoicePrefix(subcontractorUserId);
+    return `${prefix}${String(maxNum + 1).padStart(4, '0')}`;
+  }
+
+  private async getSubcontractorInvoicePrefix(subcontractorUserId: string): Promise<string> {
     // Number it like a real invoice from the subcontractor's own business:
     // their configured invoice prefix, else initials of their business name, else INV-.
     const settings = await this.getBusinessSettings(subcontractorUserId);
@@ -9328,7 +9350,7 @@ Thank you for your prompt attention to this matter.`,
     }
     if (!prefix) prefix = 'INV-';
     if (!/[-\s]$/.test(prefix)) prefix = `${prefix}-`;
-    return `${prefix}${String(maxNum + 1).padStart(4, '0')}`;
+    return prefix;
   }
 
   // Subcontractor Invoice Items

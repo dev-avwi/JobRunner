@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { isAuthErrorMessage } from './api';
 import offlineStorage, { useOfflineStore } from './offline-storage';
 import { clearRoleCache } from './role-cache';
@@ -410,6 +411,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // timer doesn't linger on the device after switching accounts.
     try { await LiveActivity.end(); } catch {}
     useTimeTrackingStore.setState({ activeTimer: null });
+    // Clear per-device UI flags (tour/onboarding/banner) so the next account
+    // on this device gets fresh first-run state, not the previous account's.
+    try {
+      await AsyncStorage.multiRemove([
+        'jobrunner-mobile-tour-completed',
+        'jobrunner-mobile-tour-completed-skipped',
+        'jobrunner-banner-dismissed',
+        'onboarding_completed',
+      ]);
+    } catch {}
     try {
       // Clear cached auth data for offline access
       await offlineStorage.clearCachedAuthData();

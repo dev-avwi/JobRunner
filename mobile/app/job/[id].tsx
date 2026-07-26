@@ -35,7 +35,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { WebView } from 'react-native-webview';
 import { Slider } from '../../src/components/ui/Slider';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
+import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router';
 import { GlassButton } from '../../src/components/ui/GlassButton';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -2382,6 +2382,24 @@ export default function JobDetailScreen() {
       subscription.remove();
     };
   }, [id]);
+
+  // Refresh core job data whenever the screen regains focus (e.g. after the
+  // office edits the job while a worker was viewing it, or returning from a
+  // sub-screen). Skip the very first focus — the mount effect above already
+  // loads everything.
+  const initialFocusRef = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (initialFocusRef.current) {
+        initialFocusRef.current = false;
+        return;
+      }
+      loadJob();
+      fetchActiveTimer();
+      loadTimeEntries();
+      loadTeamTimers();
+    }, [id])
+  );
 
   // Fire the auto-open exactly once per navAction value, regardless of how
   // many times `job` refetches. Previously a query refetch would clear the

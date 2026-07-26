@@ -18220,7 +18220,26 @@ Be specific about materials, colors, and features that would be included.`
         (data as any).documentTemplate = businessSettings.documentTemplate || 'professional';
         (data as any).documentTemplateSettings = businessSettings.documentTemplateSettings || null;
       }
-      
+
+      // Server recalculates totals from line items (never trust client-sent totals)
+      if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
+        const gstEnabled = businessSettings?.gstEnabled ?? true;
+        let subtotalCents = 0;
+        for (const item of lineItems) {
+          const qty = parseFloat(String(item.quantity ?? '1'));
+          const price = parseFloat(String(item.unitPrice ?? '0'));
+          if (!isNaN(qty) && !isNaN(price)) {
+            subtotalCents += Math.round(qty * price * 100);
+          }
+        }
+        const calcSubtotal = subtotalCents / 100;
+        const calcGst = gstEnabled ? Math.round(subtotalCents * 0.1) / 100 : 0;
+        const calcTotal = Math.round((calcSubtotal + calcGst) * 100) / 100;
+        (data as any).subtotal = calcSubtotal.toFixed(2);
+        (data as any).gstAmount = calcGst.toFixed(2);
+        (data as any).total = calcTotal.toFixed(2);
+      }
+
       const quote = await storage.createQuote({ ...data, userId: userContext.effectiveUserId });
       
       // Add line items if provided
@@ -48812,13 +48831,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const gstAmount = Math.round(subtotal * 0.1 * 100) / 100;
       const totalAmount = Math.round((subtotal + gstAmount) * 100) / 100;
 
-      const invoiceNumber = await storage.getNextSubcontractorInvoiceNumber(userId);
-
       const invoice = await storage.createSubcontractorInvoice({
         subcontractorUserId: userId,
         businessOwnerId,
         status: 'submitted',
-        invoiceNumber,
+        // Empty = storage generates the next number atomically (advisory-locked)
+        invoiceNumber: '',
         subtotalAmount: subtotal.toFixed(2),
         gstAmount: gstAmount.toFixed(2),
         totalAmount: totalAmount.toFixed(2),
@@ -48826,6 +48844,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         submittedAt: new Date(),
         notes: notes || null,
       });
+      const invoiceNumber = invoice.invoiceNumber;
 
       // Create line items — one per resolved item, storing the first timeEntryId for dedup tracking
       for (const rItem of resolvedItems) {
@@ -49825,8 +49844,6 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const gstAmount = gstOn ? Math.round(subtotal * 0.1 * 100) / 100 : 0;
       const totalAmount = Math.round((subtotal + gstAmount) * 100) / 100;
 
-      const invoiceNumber = await storage.getNextSubcontractorInvoiceNumber(userId);
-
       const created = await storage.createSubcontractorInvoice({
         subcontractorUserId: userId,
         businessOwnerId,
@@ -49834,7 +49851,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         title: title || null,
         gstEnabled: gstOn,
         status: 'submitted',
-        invoiceNumber,
+        // Empty = storage generates the next number atomically (advisory-locked)
+        invoiceNumber: '',
         subtotalAmount: subtotal.toFixed(2),
         gstAmount: gstAmount.toFixed(2),
         totalAmount: totalAmount.toFixed(2),
@@ -49843,6 +49861,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         submittedAt: new Date(),
         notes: notes || null,
       });
+      const invoiceNumber = created.invoiceNumber;
 
       for (const ri of resolvedItems) {
         await storage.createSubcontractorInvoiceItem({

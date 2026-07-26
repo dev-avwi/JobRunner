@@ -95,8 +95,11 @@ export default function RecentJobPicker({ type, onSelectJob, selectedJobId }: Re
     staleTime: 30000,
   });
 
+  // Guard: cache can return non-array on odd fallbacks
+  const jobs = Array.isArray(allJobs) ? allJobs : [];
+
   // Filter jobs by status and search term
-  const filteredJobs = allJobs.filter(job => {
+  const filteredJobs = jobs.filter(job => {
     // Status filter
     let matchesStatus = true;
     if (statusFilter === 'done') matchesStatus = job.status === 'done' || job.status === 'completed' || job.status === 'invoiced';
@@ -120,10 +123,10 @@ export default function RecentJobPicker({ type, onSelectJob, selectedJobId }: Re
 
   // Count jobs by status for tab badges
   const statusCounts = {
-    all: allJobs.length,
-    done: allJobs.filter(j => j.status === 'done' || j.status === 'completed' || j.status === 'invoiced').length,
-    in_progress: allJobs.filter(j => j.status === 'in_progress').length,
-    scheduled: allJobs.filter(j => j.status === 'scheduled' || j.status === 'pending').length,
+    all: jobs.length,
+    done: jobs.filter(j => j.status === 'done' || j.status === 'completed' || j.status === 'invoiced').length,
+    in_progress: jobs.filter(j => j.status === 'in_progress').length,
+    scheduled: jobs.filter(j => j.status === 'scheduled' || j.status === 'pending').length,
   };
 
   const handleSelectJob = (job: EnrichedJob) => {
@@ -143,7 +146,7 @@ export default function RecentJobPicker({ type, onSelectJob, selectedJobId }: Re
     );
   }
 
-  if (allJobs.length === 0) {
+  if (jobs.length === 0) {
     return (
       <Card className="p-4">
         <div className="text-center text-muted-foreground text-sm">
