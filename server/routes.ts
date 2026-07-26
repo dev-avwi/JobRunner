@@ -1424,10 +1424,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // BUSINESS OWNER: Get worker requests
-  app.get("/api/worker-requests", async (req: any, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+  app.get("/api/worker-requests", requireAuth, async (req: any, res) => {
     try {
-      const requests = await storage.getWorkerRequests(req.user.id);
+      const requests = await storage.getWorkerRequests(req.effectiveUserId || req.userId);
       res.json(requests);
     } catch (error: any) {
       console.error('Error fetching worker requests:', error);
@@ -1436,8 +1435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // BUSINESS OWNER: Accept/Decline worker request
-  app.patch("/api/worker-requests/:id/status", async (req: any, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+  app.patch("/api/worker-requests/:id/status", requireAuth, async (req: any, res) => {
     try {
       const { status } = req.body;
       if (!['accepted', 'declined'].includes(status)) {
@@ -1695,9 +1693,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // BUSINESS OWNER: Get job requests
-  app.get("/api/job-requests", async (req: any, res) => {
-    const userId = req.session?.userId;
-    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+  app.get("/api/job-requests", requireAuth, async (req: any, res) => {
+    const userId = req.userId;
     try {
       const user = await storage.getUser(userId);
       if (!user) return res.status(401).json({ error: "User not found" });
@@ -1719,9 +1716,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // BUSINESS OWNER: Update job request
-  app.patch("/api/job-requests/:id", async (req: any, res) => {
-    const userId = req.session?.userId;
-    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+  app.patch("/api/job-requests/:id", requireAuth, async (req: any, res) => {
+    const userId = req.userId;
     try {
       const user = await storage.getUser(userId);
       if (!user) return res.status(401).json({ error: "User not found" });
@@ -37988,7 +37984,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create Stripe checkout session for subscription
-  app.post("/api/billing/checkout", requireAuth, async (req: any, res) => {
+  app.post("/api/billing/checkout", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { createSubscriptionCheckout, getPublishableKey } = await import('./billingService');
       const user = await storage.getUser(req.userId!);
@@ -38022,7 +38018,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create Team subscription checkout (flat $99.99/mo, includes up to 5 workers)
-  app.post("/api/billing/checkout/team", requireAuth, async (req: any, res) => {
+  app.post("/api/billing/checkout/team", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { createTeamSubscriptionCheckout, getPublishableKey } = await import('./billingService');
       const user = await storage.getUser(req.userId!);
@@ -38058,7 +38054,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Create Business subscription checkout (flat $199.99/mo, includes up to 15 workers)
-  app.post("/api/billing/checkout/business", requireAuth, async (req: any, res) => {
+  app.post("/api/billing/checkout/business", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const { createBusinessSubscriptionCheckout, getPublishableKey } = await import('./billingService');
       const user = await storage.getUser(req.userId!);

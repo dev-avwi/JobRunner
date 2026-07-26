@@ -494,7 +494,7 @@ function TimesheetExport() {
         format: fmt,
         weekStarting: weekStart.toISOString(),
       });
-      const res = await fetch(`/api/timesheets/export?${params}`, { credentials: 'include' });
+      const res = await fetch(`/api/timesheets/export?${params}`, { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Export failed');
       
       const blob = await res.blob();
@@ -667,7 +667,7 @@ export default function TimeTrackingPage() {
   // Start break timer mutation
   const startBreakMutation = useMutation({
     mutationFn: async () => {
-      const activeRes = await fetch('/api/time-entries/active/current', { credentials: 'include' });
+      const activeRes = await fetch('/api/time-entries/active/current', { credentials: 'include', headers: getAuthHeaders() });
       if (activeRes.ok) {
         const activeTimer = await activeRes.json();
         if (activeTimer && activeTimer.id) {

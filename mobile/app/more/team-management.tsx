@@ -2036,7 +2036,7 @@ export default function TeamManagementScreen() {
     setIsLoadingCodes(true);
     try {
       const res = await api.get<any[]>('/api/team/invite-codes');
-      if (res.data) setInviteCodes(res.data);
+      if (!res.error && Array.isArray(res.data)) setInviteCodes(res.data);
     } catch (error) {
       if (__DEV__) console.log('Error fetching invite codes:', error);
     }

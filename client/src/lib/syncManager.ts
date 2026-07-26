@@ -15,7 +15,7 @@ import {
   type SyncOperation,
   type OfflineStoreName,
 } from './offlineStorage';
-import { apiRequest, queryClient, getStoreNameFromEndpoint } from './queryClient';
+import { apiRequest, queryClient, getStoreNameFromEndpoint, getAuthHeaders } from './queryClient';
 import { withSyncLock } from './syncLock';
 
 const STORE_PRIORITY: Record<string, number> = {
@@ -234,7 +234,7 @@ class SyncManager {
 
     if (uploaded.length > 0 && resolvedEntityId) {
       const entityEndpoint = `/api/${operation.storeName}/${resolvedEntityId}`;
-      const entityResponse = await fetch(entityEndpoint, { credentials: 'include' });
+      const entityResponse = await fetch(entityEndpoint, { credentials: 'include', headers: getAuthHeaders() });
       if (!entityResponse.ok) {
         throw new Error(`Failed to fetch entity for attachment linking: ${entityResponse.status} ${entityResponse.statusText}`);
       }

@@ -224,7 +224,7 @@ export default function JobDetailView({
       Object.entries(proofPackSections).forEach(([key, val]) => {
         if (!val) params.set(`hide_${key}`, '1');
       });
-      const res = await fetch(`/api/jobs/${jobId}/proof-pack/preview?${params.toString()}`, { credentials: 'include' });
+      const res = await fetch(`/api/jobs/${jobId}/proof-pack/preview?${params.toString()}`, { credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || 'Failed to load preview');
