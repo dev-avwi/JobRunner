@@ -2,7 +2,7 @@
 JobRunner is a mobile-first web application for Australian tradespeople: job management, quoting, invoicing, and payment collection with full AU GST/AUD support. AI-powered suggestions, compliance (WHS/SWMS), and communication tools centralize a tradie's whole business.
 
 ### User Preferences
-Preferred communication style: Simple, everyday language. No emojis. Brief replies. "Work basic, don't overthink."
+Preferred communication style: Simple, everyday language. No emojis. No em dashes in any drafted text or copy. Brief replies. "Work basic, don't overthink."
 Demo account for testing: `demo@jobrunner.com.au`.
 
 ### System Architecture
