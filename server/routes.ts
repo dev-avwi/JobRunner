@@ -321,29 +321,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PUBLIC ROUTES (no authentication required)
   // ============================================
 
-  // TEMPORARY one-off maintenance endpoint: move Stripe Connect account from
-  // vogler.ayden@gmail.com to demo@jobrunner.com.au for Apple App Review (Tap to Pay).
-  // Remove after use. Gated by a single-use token; only performs this exact swap.
-  app.post("/api/admin/one-off-ttp-review-swap", async (req: any, res) => {
-    if (req.headers["x-maintenance-token"] !== "a49132f5118c54ea3ad2a6448e245fd6508dba04d6c23983") {
-      return res.status(404).json({ message: "Not found" });
-    }
-    try {
-      const unlink = await db.execute(sql`
-        UPDATE business_settings SET stripe_connect_account_id = NULL
-        WHERE user_id = 'f1a857f3-5b45-44a8-9590-cdc70f76f26b'
-          AND stripe_connect_account_id = 'acct_1Tu14VIyKteHtdmt'
-      `);
-      const link = await db.execute(sql`
-        UPDATE business_settings SET stripe_connect_account_id = 'acct_1Tu14VIyKteHtdmt'
-        WHERE user_id = 'ecbdffcb-668c-41a1-aadb-d7c44c822e6c'
-      `);
-      res.json({ ok: true, unlinked: unlink.rowCount, linked: link.rowCount });
-    } catch (e: any) {
-      res.status(500).json({ ok: false, error: e.message });
-    }
-  });
-
   // Public health check endpoint for deployment monitoring and Apple review
   app.get("/api/health", async (req: any, res) => {
     const startTime = Date.now();
