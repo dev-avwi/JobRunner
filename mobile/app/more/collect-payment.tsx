@@ -2247,7 +2247,7 @@ export default function CollectScreen() {
     const method = pendingPaymentMethod;
     setPendingPaymentMethod(null);
     if (method) {
-      setTimeout(() => proceedToPaymentMethod(method), 400);
+      setTimeout(() => proceedToPaymentMethodRef.current(method), 400);
     }
   };
 
@@ -2261,7 +2261,7 @@ export default function CollectScreen() {
       const method = pendingPaymentMethod;
       setPendingPaymentMethod(null);
       if (method) {
-        setTimeout(() => proceedToPaymentMethod(method), 400);
+        setTimeout(() => proceedToPaymentMethodRef.current(method), 400);
       }
     } else {
       setShowInvoicePickerModal(false);
@@ -2413,6 +2413,17 @@ export default function CollectScreen() {
         break;
     }
   };
+
+  // Latest-ref for the delayed proceed call. The picker handlers set amount /
+  // selectedInvoice state and then proceed after a 400ms modal-collision
+  // delay. Calling proceedToPaymentMethod directly from that setTimeout would
+  // run the closure captured BEFORE those state updates rendered — the method
+  // handler then reads a stale empty amount, thinks nothing was selected and
+  // silently re-opens the picker ("selected a job but nothing happened").
+  // The ref always points at the current render's closure, which sees the
+  // updated amount/invoice.
+  const proceedToPaymentMethodRef = useRef(proceedToPaymentMethod);
+  proceedToPaymentMethodRef.current = proceedToPaymentMethod;
 
   const handleCloseInvoicePickerModal = () => {
     setShowInvoicePickerModal(false);
