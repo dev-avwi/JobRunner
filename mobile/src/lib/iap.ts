@@ -136,13 +136,23 @@ export async function cleanupIAP(): Promise<void> {
     await endConnection();
     isInitialized = false;
   }
+  loadedProductIds.clear();
 }
+
+// Product IDs successfully loaded from the App Store this session. On iOS,
+// requestSubscription() only works for products that were previously fetched via
+// getSubscriptions() — otherwise StoreKit throws "Invalid product ID." even when
+// the product exists and is Approved in App Store Connect.
+const loadedProductIds = new Set<string>();
 
 export async function fetchSubscriptions(): Promise<Subscription[]> {
   if (Platform.OS !== 'ios') return [];
   try {
     if (!isInitialized) await initIAP();
     const subscriptions = await getSubscriptions({ skus: ALL_PRODUCT_IDS });
+    for (const sub of subscriptions) {
+      if (sub?.productId) loadedProductIds.add(sub.productId);
+    }
     console.log('[IAP] Subscriptions fetched:', subscriptions.length);
     return subscriptions;
   } catch (error) {
@@ -158,6 +168,17 @@ export async function fetchSubscriptions(): Promise<Subscription[]> {
 export async function purchaseSubscription(productId: string): Promise<void> {
   if (Platform.OS !== 'ios') throw { code: 'E_IAP_NOT_AVAILABLE' };
   if (!isInitialized) await initIAP();
+
+  // StoreKit requires the product to be loaded before it can be purchased. Screens
+  // like Phone Numbers call this directly without ever visiting the subscription
+  // screen, so make sure the product is fetched first or Apple throws
+  // "Invalid product ID." even for approved, live products.
+  if (!loadedProductIds.has(productId)) {
+    await fetchSubscriptions();
+    if (!loadedProductIds.has(productId)) {
+      throw { code: 'E_PRODUCT_NOT_LOADED', message: 'This product is not available from the App Store right now. Please try again in a moment.' };
+    }
+  }
 
   // Abandon any prior in-flight purchase deferred so its promise can't leak.
   if (activePurchaseDeferred) {
