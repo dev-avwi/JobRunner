@@ -32713,12 +32713,18 @@ Respond with JSON in this format:
         return res.status(400).json({ error: 'Minimum amount is $0.50 (50 cents)' });
       }
 
-      // Demo business: simulated test transaction — no real Stripe charge.
-      // The demo_pi_ prefix is only honoured by /api/terminal/payment-success
-      // when the receiving business is the demo account (server-verified).
+      // Demo business WITHOUT a live Stripe account: simulated test
+      // transaction — no real Stripe charge. The demo_pi_ prefix is only
+      // honoured by /api/terminal/payment-success when the receiving business
+      // is the demo account (server-verified).
+      // If the demo business HAS a live connected Stripe account (it holds
+      // one for Tap to Pay), fall through to the REAL direct-charge path —
+      // the real Terminal SDK on a device rejects the fake demo client
+      // secret with "The client secret is invalid".
       const ttpOwner = await storage.getUser(userId);
       const isDemoTtpBusiness = ttpOwner?.email === DEMO_USER.email || ttpOwner?.email === VISITOR_USER.email || ttpOwner?.email === TRY_DEMO_USER.email;
-      if (isDemoTtpBusiness) {
+      const ttpSettings = await storage.getBusinessSettings(userId);
+      if (isDemoTtpBusiness && !ttpSettings?.stripeConnectAccountId) {
         const demoPiId = `demo_pi_${randomUUID().replace(/-/g, '')}`;
         await storage.createTerminalPayment({
           userId,
@@ -32736,7 +32742,7 @@ Respond with JSON in this format:
         });
       }
 
-      const settings = await storage.getBusinessSettings(userId);
+      const settings = ttpSettings;
       
       if (!settings?.stripeConnectAccountId) {
         return res.status(400).json({ error: 'Stripe Connect account not set up' });
