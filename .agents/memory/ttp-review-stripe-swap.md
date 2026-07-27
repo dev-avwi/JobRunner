@@ -6,4 +6,6 @@ On 2026-07-26, for the 1.1.5 Tap to Pay App Review, prod business_settings was c
 
 **Why:** Tap to Pay enrollment needs a fully KYC-onboarded live Stripe account; the demo account had none usable, and Apple reviewers sign in with demo creds.
 
-**How to apply:** After review approval (or if Ayden needs payments back), reverse the swap: set vogler's row back to acct_1Tu14VIyKteHtdmt and demo's to NULL. Prod data writes require a temporary token-gated maintenance endpoint (executeSql prod is read-only; NEON_DATABASE_URL is NOT prod). Pattern: add route, user publishes, curl with token, verify via prod read replica, remove route.
+**Update 2026-07-26:** 1.1.5 approved (Ready for Distribution). User explicitly chose to KEEP the live Stripe account on the demo account permanently — do NOT reverse the swap unless the user asks.
+
+**How to apply:** If the user ever asks to reverse: set vogler's row back to acct_1Tu14VIyKteHtdmt and demo's to NULL. Prod data writes require a temporary token-gated maintenance endpoint (executeSql prod is read-only; NEON_DATABASE_URL is NOT prod). Pattern: add route, user publishes, curl with token, verify via prod read replica, remove route.
