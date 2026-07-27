@@ -250,8 +250,16 @@ const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>(
       () =>
         PanResponder.create({
           onStartShouldSetPanResponder: () => false,
+          // Only steal the gesture for a CLEAR, deliberate downward swipe.
+          // A normal finger tap drifts a few px before lift-off; the old
+          // 8px threshold cancelled those presses mid-tap (row flashed as
+          // pressed, sheet dipped and sprang back, nothing selected — the
+          // "blind first tap" bug in list pickers). Require real travel AND
+          // vertical dominance so taps and slow scroll starts pass through
+          // to the rows/ScrollView untouched. No velocity gate — a slow,
+          // deliberate drag-down must still be able to dismiss the sheet.
           onMoveShouldSetPanResponder: (_e, g) =>
-            g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
+            g.dy > 24 && Math.abs(g.dy) > Math.abs(g.dx) * 2,
           onPanResponderMove: (_e, g) => {
             translateY.setValue(g.dy > 0 ? g.dy : 0);
           },
