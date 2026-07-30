@@ -43,6 +43,22 @@ const EMAIL_CONFLICT_MESSAGES: Record<EmailConflictSource, { code: string; messa
   },
 };
 
+// Strip fields that must never leave the server (auth secrets, receipt blobs).
+// Use on every response that returns a user object to the client.
+export function sanitizeUserResponse(user: any): any {
+  if (!user || typeof user !== 'object') return user;
+  const {
+    password,
+    emailVerificationToken,
+    emailVerificationExpiresAt,
+    passwordResetToken,
+    passwordResetExpiresAt,
+    appleReceiptData,
+    ...safe
+  } = user;
+  return safe;
+}
+
 export class AuthService {
   /**
    * Look for a conflicting identity for the given email across users, clients,

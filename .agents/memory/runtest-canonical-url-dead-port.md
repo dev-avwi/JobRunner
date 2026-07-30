@@ -19,6 +19,15 @@ hand-edited; the stale entry is supposed to clear once nothing binds the port.
 `runTest` works. Tear it down at the end (`removeWorkflow` + delete the script)
 so nothing stays bound to 23636.
 
+**Update 2026-07: the mockup-sandbox artifact is BACK and owns 23636.** Its
+platform-managed workflow ("Component Preview Server", defined in
+`artifacts/mockup-sandbox/.replit-artifact/artifact.toml`) auto-restarts and
+reclaims the port, so an ad-hoc TCP forwarder gets steamrolled. Working fix:
+temporarily add a vite proxy to `artifacts/mockup-sandbox/vite.config.ts` —
+`server.proxy: { "^/(?!__mockup)": { target: "http://127.0.0.1:5000", ws: true } }`
+— restart the mockup workflow, run tests, then REVERT the config and restart
+again. Don't pkill the vite process; the workflow supervisor restarts it.
+
 **Bigger gotcha — 429 false failures:** even with the forwarder, `runTest` does a
 **full page reload per route**, refiring `/api/auth/me` + prefetch + all page
 queries ~16x in seconds through the single forwarder hop. This trips the

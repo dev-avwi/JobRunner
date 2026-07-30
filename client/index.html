@@ -86,6 +86,19 @@
         console.log('[GA4] Initialized for', window.location.hostname, isProduction ? '(production)' : '(debug)');
       }
     </script>
+    <!-- Apply saved theme before first paint to avoid flash of wrong theme.
+         Default is light; dark only when explicitly saved (or saved "system" on a dark OS). -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('jobrunner-ui-theme');
+          var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.add(dark ? 'dark' : 'light');
+        } catch (e) {
+          document.documentElement.classList.add('light');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

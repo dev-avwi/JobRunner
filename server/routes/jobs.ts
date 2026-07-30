@@ -629,7 +629,7 @@ import { logSystemEvent } from "../systemEventService";
       });
     } catch (error: any) {
       console.error('Error creating subcontractor token:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to create subcontractor token" });
     }
   });
 
@@ -674,7 +674,7 @@ import { logSystemEvent } from "../systemEventService";
       res.json(tokensWithActivity);
     } catch (error: any) {
       console.error('Error getting subcontractor tokens:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to load subcontractor tokens" });
     }
   });
 
@@ -688,7 +688,7 @@ import { logSystemEvent } from "../systemEventService";
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error revoking subcontractor token:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to revoke subcontractor token" });
     }
   });
 
@@ -1014,9 +1014,9 @@ import { logSystemEvent } from "../systemEventService";
     } catch (error: any) {
       console.error('Error in streaming photo analysis:', error);
       if (!res.headersSent) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: "Failed to analyze photos" });
       } else {
-        res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+        res.write(`data: ${JSON.stringify({ error: "Failed to analyze photos" })}\n\n`);
         res.end();
       }
     }

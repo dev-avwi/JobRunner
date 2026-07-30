@@ -529,7 +529,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemScheme = useColorScheme();
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
   const [themeLoaded, setThemeLoaded] = useState(false);
   const { businessSettings } = useAuthStore();
   const brandColorFromSettings = businessSettings?.brandColor || businessSettings?.primaryColor || null;

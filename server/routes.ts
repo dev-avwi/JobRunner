@@ -7,7 +7,7 @@ import multer from "multer";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
-import { AuthService } from "./auth";
+import { AuthService, sanitizeUserResponse } from "./auth";
 import { setupGoogleAuth } from "./googleAuth";
 import { verifyAppleIdentityToken, type AppleTokenPayload } from "./appleAuth";
 import { setupXeroAuth } from "./xeroAuth";
@@ -1901,7 +1901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error('Error fetching subcontractor info:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to load subcontractor info" });
     }
   });
 
@@ -2123,7 +2123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error accepting subcontractor job:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to accept job" });
     }
   });
 
@@ -2144,7 +2144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error declining subcontractor job:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to decline job" });
     }
   });
 
@@ -2205,7 +2205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, status });
     } catch (error: any) {
       console.error('Error updating subcontractor status:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to update status" });
     }
   });
 
@@ -2229,7 +2229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error adding subcontractor note:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to add note" });
     }
   });
 
@@ -2269,7 +2269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, photo: result });
     } catch (error: any) {
       console.error('Error uploading subcontractor photo:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to upload photo" });
     }
   });
 
@@ -2303,7 +2303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error storing subcontractor location:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to store location" });
     }
   });
 
@@ -2316,7 +2316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error logging out subcontractor:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Failed to log out" });
     }
   });
 
@@ -3293,7 +3293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             res.json({
               success: true,
-              user: result.user,
+              user: sanitizeUserResponse(result.user),
               sessionToken: req.sessionID,
               preVerified: true,
               message: 'Account created — welcome aboard!',
@@ -3356,7 +3356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(500).json({ error: "Failed to create session" });
           }
           // Return session token for iOS/Safari fallback where cookies may not work
-          res.json({ success: true, user: result.user, sessionToken: req.sessionID });
+          res.json({ success: true, user: sanitizeUserResponse(result.user), sessionToken: req.sessionID });
         });
       } else {
         res.status(401).json({ error: result.error });
@@ -3447,7 +3447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ error: "Failed to create session" });
         }
         // Return session token for iOS/Safari fallback where cookies may not work
-        res.json({ success: true, user, sessionToken: req.sessionID });
+        res.json({ success: true, user: sanitizeUserResponse(user), sessionToken: req.sessionID });
       });
     } catch (error) {
       console.error("Verify code error:", error);
@@ -4358,7 +4358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const isNewUser = !(result.user as any)?.onboardingCompleted;
           res.json({ 
             success: true, 
-            user: result.user, 
+            user: sanitizeUserResponse(result.user), 
             message: 'Email verified successfully!', 
             sessionToken: req.sessionID,
             isNewUser
@@ -4516,7 +4516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ error: "Failed to create session" });
         }
         // Return session token and isNewUser flag for mobile auth
-        res.json({ success: true, user, sessionToken: req.sessionID, isNewUser });
+        res.json({ success: true, user: sanitizeUserResponse(user), sessionToken: req.sessionID, isNewUser });
       });
     } catch (error: any) {
       console.error("Mobile Google auth error:", error);
@@ -4659,7 +4659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Return session token and isNewUser flag for mobile auth
         res.json({ 
           success: true, 
-          user: { ...user, password: undefined },
+          user: sanitizeUserResponse(user),
           sessionToken: req.sessionID, 
           isNewUser 
         });
@@ -6106,109 +6106,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/subscription/verify-apple-receipt - Verifies a fresh IAP purchase receipt
-  // Called by the mobile global IAP listener immediately after a successful purchase.
-  // Returns 200 even on verification failure (with success:false) so the client
-  // can recover gracefully instead of treating it as a network error.
-  app.post("/api/subscription/verify-apple-receipt", requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.userId!;
-      const { receiptData, productId } = req.body;
-
-      if (!receiptData || !productId) {
-        return res.json({ success: false, message: 'Receipt data and product ID are required' });
-      }
-
-      const tierMap: Record<string, string> = {
-        'com.jobrunner.pro.monthly': 'pro',
-        'com.jobrunner.team.monthly': 'team',
-        'com.jobrunner.business.monthly': 'business',
-      };
-
-      const newTier = tierMap[productId];
-      if (!newTier) {
-        return res.json({ success: false, message: 'Invalid product ID' });
-      }
-
-      const verifyUrl = process.env.NODE_ENV === 'production'
-        ? 'https://buy.itunes.apple.com/verifyReceipt'
-        : 'https://sandbox.itunes.apple.com/verifyReceipt';
-
-      const appleResponse = await fetch(verifyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          'receipt-data': receiptData,
-          password: process.env.APP_STORE_SHARED_SECRET || '',
-        }),
-      });
-      const appleResult = await appleResponse.json();
-
-      let verified = appleResult.status === 0;
-      // Status 21007 means this is a sandbox receipt sent to production - retry against sandbox
-      if (!verified && appleResult.status === 21007) {
-        const sandboxResponse = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            'receipt-data': receiptData,
-            password: process.env.APP_STORE_SHARED_SECRET || '',
-          }),
-        });
-        const sandboxResult = await sandboxResponse.json();
-        verified = sandboxResult.status === 0;
-      }
-
-      if (!verified) {
-        console.warn(`[IAP] Receipt verification failed for user ${userId}, product ${productId}, status ${appleResult.status}`);
-        return res.json({ success: false, message: `Receipt verification failed (status ${appleResult.status})` });
-      }
-
-      // Extract originalTransactionId from the receipt for future webhook lookups
-      let originalTransactionId: string | undefined;
-      try {
-        const verifiedReceipt = (appleResult.status === 0 ? appleResult : (appleResult.latest_receipt_info ? appleResult : null));
-        const latestInfo = verifiedReceipt?.latest_receipt_info;
-        if (Array.isArray(latestInfo) && latestInfo.length > 0) {
-          // Pick the most recent transaction matching this productId
-          const matching = latestInfo
-            .filter((t: any) => t.product_id === productId)
-            .sort((a: any, b: any) => Number(b.purchase_date_ms || 0) - Number(a.purchase_date_ms || 0));
-          originalTransactionId = matching[0]?.original_transaction_id || latestInfo[0]?.original_transaction_id;
-        }
-      } catch (e) {
-        console.warn('[IAP] Could not extract originalTransactionId from receipt:', e);
-      }
-
-      await storage.updateUser(userId, {
-        subscriptionTier: newTier,
-        subscriptionStatus: 'active',
-        subscriptionSource: 'apple',
-        appleProductId: productId,
-        appleReceiptData: receiptData,
-        ...(originalTransactionId ? { appleOriginalTransactionId: originalTransactionId } : {}),
-      } as any);
-
-      if (newTier === 'team' || newTier === 'business') {
-        const bs = await storage.getBusinessSettings(userId);
-        if (bs && (!bs.teamSize || bs.teamSize === 'solo')) {
-          await storage.updateBusinessSettings(userId, { teamSize: 'small' });
-        }
-      }
-
-      console.log(`[IAP] User ${userId} upgraded to ${newTier} via Apple IAP (verified, txn=${originalTransactionId || 'unknown'})`);
-
-      res.json({
-        success: true,
-        tier: newTier,
-        message: `Subscription activated: ${newTier}`,
-      });
-    } catch (error: any) {
-      console.error('[IAP] Error verifying Apple receipt:', error);
-      // Return 200 with success:false so the client can show a graceful message
-      res.json({ success: false, message: error.message || 'Failed to verify receipt' });
-    }
-  });
 
   // POST /api/iap/apple-notifications is registered in server/index.ts BEFORE
   // express.json() so the raw JWS body is available for signature verification
@@ -6760,7 +6657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...(profileImageUrl !== undefined ? { profileImageUrl } : {}),
       });
       
-      res.json({ success: true, user: updatedUser });
+      res.json({ success: true, user: sanitizeUserResponse(updatedUser) });
     } catch (error) {
       console.error("Profile update error:", error);
       res.status(500).json({ error: "Failed to update profile" });
@@ -10889,16 +10786,6 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  // Get chart of accounts
-  app.get("/api/integrations/xero/accounts", requireAuth, async (req: any, res) => {
-    try {
-      const accounts = await xeroService.getChartOfAccounts(req.userId);
-      res.json({ accounts });
-    } catch (error: any) {
-      console.error("Error fetching Xero accounts:", error);
-      res.status(500).json({ error: error.message || "Failed to fetch Xero accounts" });
-    }
-  });
 
   // Get bank accounts for payment mapping
   app.get("/api/integrations/xero/bank-accounts", requireAuth, async (req: any, res) => {
@@ -10911,16 +10798,6 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  // Get tax rates (for GST handling)
-  app.get("/api/integrations/xero/tax-rates", requireAuth, async (req: any, res) => {
-    try {
-      const taxRates = await xeroService.getTaxRates(req.userId);
-      res.json({ taxRates });
-    } catch (error: any) {
-      console.error("Error fetching Xero tax rates:", error);
-      res.status(500).json({ error: error.message || "Failed to fetch Xero tax rates" });
-    }
-  });
 
   // Get sync summary for dashboard
   app.get("/api/integrations/xero/sync-summary", requireAuth, async (req: any, res) => {
@@ -13668,91 +13545,6 @@ Be specific about materials, colors, and features that would be included.`
     });
   });
 
-  // Unified integrations status endpoint for mobile and web
-  app.get("/api/integrations/status", requireAuth, async (req: any, res) => {
-    try {
-      const { isGoogleCalendarConnected, getCalendarInfo, isGoogleCalendarConfigured } = await import('./googleCalendarClient');
-      const xeroService = await import('./xeroService');
-      
-      const userContext = await getUserContext(req.userId);
-      
-      // Google Calendar status (per-user)
-      let googleCalendarStatus = {
-        configured: isGoogleCalendarConfigured(),
-        connected: false,
-        email: undefined as string | undefined,
-        message: undefined as string | undefined
-      };
-      try {
-        const calendarConnected = await isGoogleCalendarConnected(userContext.effectiveUserId);
-        if (calendarConnected) {
-          const calendarInfo = await getCalendarInfo(userContext.effectiveUserId);
-          googleCalendarStatus.connected = true;
-          googleCalendarStatus.email = calendarInfo?.email;
-        }
-      } catch (e: any) {
-        // Calendar not connected for this user
-        googleCalendarStatus.message = e.message || 'Google Calendar not connected';
-      }
-      
-      // Xero status
-      let xeroStatus = {
-        configured: !!(process.env.XERO_CLIENT_ID && process.env.XERO_CLIENT_SECRET),
-        connected: false,
-        organisationName: undefined as string | undefined
-      };
-      try {
-        const xeroConnected = await xeroService.isXeroConnected(userContext.effectiveUserId);
-        if (xeroConnected) {
-          xeroStatus.connected = true;
-          const xeroOrg = await xeroService.getXeroOrganisation(userContext.effectiveUserId);
-          xeroStatus.organisationName = xeroOrg?.name ?? undefined;
-        }
-      } catch (e) {
-        // Xero not connected
-      }
-      
-      // QuickBooks status
-      let quickbooksStatus = {
-        configured: quickbooksService.isQuickbooksConfigured(),
-        connected: false,
-        companyName: undefined as string | undefined,
-        lastSyncAt: undefined as string | undefined
-      };
-      try {
-        const qbStatus = await quickbooksService.getConnectionStatus(userContext.effectiveUserId);
-        quickbooksStatus.connected = qbStatus.connected;
-        quickbooksStatus.companyName = qbStatus.companyName;
-        quickbooksStatus.lastSyncAt = qbStatus.lastSyncAt ? new Date(qbStatus.lastSyncAt).toISOString() : undefined;
-      } catch (e) {
-        // QuickBooks not connected
-      }
-      
-      // Stripe status
-      const stripeStatus = {
-        configured: !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PUBLISHABLE_KEY),
-        connected: !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PUBLISHABLE_KEY)
-      };
-      
-      // Twilio status - check connector and env vars
-      const twilioAvailability = await checkTwilioAvailability();
-      const twilioStatus = {
-        configured: twilioAvailability.configured,
-        connected: twilioAvailability.connected && twilioAvailability.hasPhoneNumber
-      };
-      
-      res.json({
-        googleCalendar: googleCalendarStatus,
-        xero: xeroStatus,
-        quickbooks: quickbooksStatus,
-        stripe: stripeStatus,
-        twilio: twilioStatus
-      });
-    } catch (error: any) {
-      console.error("Error getting integrations status:", error);
-      res.status(500).json({ error: error.message || "Failed to get integrations status" });
-    }
-  });
 
   // Recent activity endpoint - shows user's recent system activity with navigation links
   app.get("/api/activity/recent/:limit?", requireAuth, async (req: any, res) => {
@@ -32264,34 +32056,6 @@ Respond with JSON in this format:
 
   // ===== STRIPE CONNECT EXPRESS ROUTES =====
   
-  // Get Connect account status
-  app.get("/api/stripe-connect/status", requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.userId!;
-      const settings = await storage.getBusinessSettings(userId);
-      
-      if (!settings?.stripeConnectAccountId) {
-        return res.json({ 
-          connected: false,
-          onboardingStatus: 'not_started',
-        });
-      }
-      
-      const { getConnectAccountStatus } = await import('./stripeConnect');
-      const status = await getConnectAccountStatus(settings.stripeConnectAccountId);
-      
-      res.json({
-        connected: status.chargesEnabled && status.payoutsEnabled,
-        onboardingStatus: status.detailsSubmitted ? 'complete' : 'pending',
-        chargesEnabled: status.chargesEnabled,
-        payoutsEnabled: status.payoutsEnabled,
-        requirementsCurrentlyDue: status.requirementsCurrentlyDue,
-      });
-    } catch (error: any) {
-      console.error('Error getting Connect status:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
   
   // Create Connect account and start onboarding
   app.post("/api/stripe-connect/onboard", requireAuth, async (req: any, res) => {
@@ -37955,18 +37719,6 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
   // ===== SUBSCRIPTION & USAGE ROUTES =====
   
-  // Get current user's subscription and usage status
-  app.get("/api/subscription/status", requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.userId!;
-      const { getUserUsageStatus } = await import('./subscriptionService');
-      const status = await getUserUsageStatus(userId);
-      res.json(status);
-    } catch (error: any) {
-      console.error('Error getting subscription status:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
   
   // Start free trial
   app.post("/api/subscription/trial", requireAuth, ownerOnly(), async (req: any, res) => {

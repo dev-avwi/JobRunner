@@ -77,7 +77,7 @@ type ThemeProviderState = {
 };
 
 const initialState: ThemeProviderState = {
-  theme: 'system',
+  theme: 'light',
   setTheme: () => null,
   setThemeWithSync: () => null,
   brandTheme: {
@@ -242,7 +242,7 @@ function generateColorVariations(baseColor: string, isDarkMode: boolean) {
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'system',
+  defaultTheme = 'light',
   storageKey = 'jobrunner-ui-theme',
   initialBrandTheme,
   ...props
