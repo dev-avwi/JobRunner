@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Sparkles, Check, ChevronRight, DollarSign, Clock, FileCheck, Package, Pencil, MousePointerClick } from "lucide-react";
+import { FileText, Sparkles, Check, ChevronDown, DollarSign, Clock, Package, Pencil } from "lucide-react";
 import { useDocumentTemplates, type DocumentTemplate } from "@/hooks/use-templates";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -185,120 +185,85 @@ export default function TemplateSelector({ type, onApplyTemplate, className, use
                     )}
                     
                     {(!totals || totals.total === 0) && (
-                      <ChevronRight className={cn(
+                      <ChevronDown className={cn(
                         "h-4 w-4 text-muted-foreground transition-transform",
-                        isSelected && "rotate-90"
+                        !isSelected && "-rotate-90"
                       )} />
                     )}
                   </div>
+
+                  {/* Inline preview inside the selected card */}
+                  {isSelected && (
+                    <div className="mt-3 pt-3 border-t space-y-2 text-sm" data-testid="template-preview">
+                      {template.defaults?.title && (
+                        <div className="flex items-start gap-2">
+                          <Check className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-muted-foreground">Title:</span>{" "}
+                            <span className="font-medium">{template.defaults.title}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {template.defaults?.description && (
+                        <div className="flex items-start gap-2">
+                          <Check className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-muted-foreground">Description:</span>{" "}
+                            <span className="font-medium line-clamp-2">{template.defaults.description}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {hasLineItems && (
+                        <div className="flex items-start gap-2">
+                          <Check className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-muted-foreground">Line items:</span>
+                            <ul className="mt-1 space-y-0.5">
+                              {template.defaultLineItems.map((item, idx) => (
+                                <li key={idx} className="flex justify-between gap-2 text-xs bg-background/60 dark:bg-background/30 rounded px-2 py-1">
+                                  <span className="truncate flex-1">{item.description}</span>
+                                  {item.unitPrice > 0 && (
+                                    <span className="font-medium text-right whitespace-nowrap">
+                                      {item.qty} × {formatCurrency(item.unitPrice)}
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pl-5">
+                        {template.defaults?.terms && <span>Terms included</span>}
+                        {template.defaults?.gstEnabled !== false && <span>GST (10%) auto-calculated</span>}
+                      </div>
+
+                      {totals && totals.total > 0 && (
+                        <div className="pt-2 border-t space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Subtotal</span>
+                            <span>{formatCurrency(totals.subtotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">GST (10%)</span>
+                            <span>{formatCurrency(totals.gst)}</span>
+                          </div>
+                          <div className="flex justify-between font-semibold text-sm pt-1">
+                            <span>Estimated Total</span>
+                            <span className="text-primary">{formatCurrency(totals.total)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
-
-        {/* Preview placeholder when nothing selected */}
-        {!selectedTemplate && (
-          <div className="border border-dashed rounded-lg p-4 text-center">
-            <MousePointerClick className="h-5 w-5 mx-auto mb-1.5 text-muted-foreground/60" />
-            <p className="text-sm text-muted-foreground">
-              Tap a template to preview exactly what it fills in
-            </p>
-            <p className="text-xs text-muted-foreground/70 mt-0.5">
-              Title, description, line items and totals
-            </p>
-          </div>
-        )}
-
-        {/* Detailed Preview Panel */}
-        {selectedTemplate && (
-          <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
-            <div className="flex items-center gap-2">
-              <FileCheck className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm">What gets applied:</span>
-            </div>
-            
-            {/* Applied content list */}
-            <div className="space-y-2 text-sm">
-              {selectedTemplate.defaults?.title && (
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <span className="text-muted-foreground">Title:</span>{" "}
-                    <span className="font-medium">{selectedTemplate.defaults.title}</span>
-                  </div>
-                </div>
-              )}
-              
-              {selectedTemplate.defaults?.description && (
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <span className="text-muted-foreground">Description:</span>{" "}
-                    <span className="font-medium line-clamp-2">{selectedTemplate.defaults.description}</span>
-                  </div>
-                </div>
-              )}
-              
-              {selectedTemplate.defaultLineItems?.length > 0 && (
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <span className="text-muted-foreground">Line items:</span>
-                    <ul className="mt-1 space-y-0.5">
-                      {selectedTemplate.defaultLineItems.map((item, idx) => (
-                        <li key={idx} className="flex justify-between text-xs bg-background/50 rounded px-2 py-1">
-                          <span className="truncate flex-1">{item.description}</span>
-                          {item.unitPrice > 0 && (
-                            <span className="font-medium text-right ml-2">
-                              {item.qty} × {formatCurrency(item.unitPrice)}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-              
-              {selectedTemplate.defaults?.terms && (
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <span className="text-muted-foreground">Terms & conditions included</span>
-                  </div>
-                </div>
-              )}
-              
-              {selectedTemplate.defaults?.gstEnabled !== false && (
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <span className="text-muted-foreground">GST (10%) auto-calculated</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Total breakdown - only show if there are actual prices */}
-            {calculateTemplateTotal(selectedTemplate) && calculateTemplateTotal(selectedTemplate)!.total > 0 && (
-              <div className="pt-2 border-t space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>{formatCurrency(calculateTemplateTotal(selectedTemplate)!.subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">GST (10%)</span>
-                  <span>{formatCurrency(calculateTemplateTotal(selectedTemplate)!.gst)}</span>
-                </div>
-                <div className="flex justify-between font-semibold text-sm pt-1">
-                  <span>Estimated Total</span>
-                  <span className="text-primary">{formatCurrency(calculateTemplateTotal(selectedTemplate)!.total)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Manage templates link */}
         <Link
