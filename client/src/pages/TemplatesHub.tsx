@@ -55,7 +55,9 @@ import {
   MessageSquare,
   Mail,
   Download,
+  Briefcase,
 } from "lucide-react";
+import TemplateManagement from "@/components/TemplateManagement";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -3340,8 +3342,13 @@ function MessagingTemplatesTab() {
 export default function TemplatesHub() {
   const search = useSearch();
   const [, setLocation] = useLocation();
-  const tabParam = new URLSearchParams(search).get('tab');
-  const activeTab = ['styles', 'components', 'sms-templates', 'job-cards', 'forms'].includes(tabParam || '')
+  const searchParams = new URLSearchParams(search);
+  const tabParam = searchParams.get('tab');
+  const typeParam = searchParams.get('type');
+  const templateType = ['quote', 'invoice', 'job'].includes(typeParam || '')
+    ? (typeParam as 'quote' | 'invoice' | 'job')
+    : 'job';
+  const activeTab = ['styles', 'components', 'quick-templates', 'sms-templates', 'job-cards', 'forms'].includes(tabParam || '')
     ? (tabParam as string)
     : 'styles';
   return (
@@ -3367,6 +3374,10 @@ export default function TemplatesHub() {
               <Layers className="h-4 w-4" />
               Components
             </TabsTrigger>
+            <TabsTrigger value="quick-templates" className="gap-2">
+              <Briefcase className="h-4 w-4" />
+              Quick Templates
+            </TabsTrigger>
             <TabsTrigger value="sms-templates" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               Messaging
@@ -3387,6 +3398,10 @@ export default function TemplatesHub() {
           
           <TabsContent value="components">
             <ComponentsTab />
+          </TabsContent>
+          
+          <TabsContent value="quick-templates">
+            <TemplateManagement key={templateType} embedded defaultType={templateType} />
           </TabsContent>
           
           <TabsContent value="sms-templates">

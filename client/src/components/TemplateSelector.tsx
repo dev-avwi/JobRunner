@@ -1,9 +1,9 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Sparkles, Check, ChevronRight, DollarSign, Clock, FileCheck, Package } from "lucide-react";
+import { FileText, Sparkles, Check, ChevronRight, DollarSign, Clock, FileCheck, Package, Pencil, MousePointerClick } from "lucide-react";
 import { useDocumentTemplates, type DocumentTemplate } from "@/hooks/use-templates";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -122,7 +122,7 @@ export default function TemplateSelector({ type, onApplyTemplate, className, use
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Template Cards */}
-        <div className="max-h-[280px] overflow-y-auto -mr-2 pr-2">
+        <div className="max-h-[360px] overflow-y-auto -mr-2 pr-2">
           <div className="space-y-2">
             {templates.map(template => {
               const totals = calculateTemplateTotal(template);
@@ -196,6 +196,19 @@ export default function TemplateSelector({ type, onApplyTemplate, className, use
             })}
           </div>
         </div>
+
+        {/* Preview placeholder when nothing selected */}
+        {!selectedTemplate && (
+          <div className="border border-dashed rounded-lg p-4 text-center">
+            <MousePointerClick className="h-5 w-5 mx-auto mb-1.5 text-muted-foreground/60" />
+            <p className="text-sm text-muted-foreground">
+              Tap a template to preview exactly what it fills in
+            </p>
+            <p className="text-xs text-muted-foreground/70 mt-0.5">
+              Title, description, line items and totals
+            </p>
+          </div>
+        )}
 
         {/* Detailed Preview Panel */}
         {selectedTemplate && (
@@ -286,6 +299,16 @@ export default function TemplateSelector({ type, onApplyTemplate, className, use
             )}
           </div>
         )}
+
+        {/* Manage templates link */}
+        <Link
+          href={`/templates?tab=quick-templates&type=${type}`}
+          className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground pt-1"
+          data-testid="link-edit-templates"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Edit {type} templates
+        </Link>
       </CardContent>
     </Card>
   );

@@ -18,8 +18,13 @@ const tradeTypes = [
   'landscaping', 'tiling', 'flooring', 'renovation', 'handyman'
 ];
 
-export default function TemplateManagement() {
-  const [filterType, setFilterType] = useState<string>('all');
+interface TemplateManagementProps {
+  embedded?: boolean;
+  defaultType?: 'quote' | 'invoice' | 'job';
+}
+
+export default function TemplateManagement({ embedded = false, defaultType }: TemplateManagementProps = {}) {
+  const [filterType, setFilterType] = useState<string>(defaultType || 'all');
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const { toast } = useToast();
@@ -104,21 +109,26 @@ export default function TemplateManagement() {
   };
 
   if (isLoading) {
-    return (
-      <PageShell>
-        <div className="flex items-center justify-center h-64">
-          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </PageShell>
+    const spinner = (
+      <div className="flex items-center justify-center h-64">
+        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
     );
+    return embedded ? spinner : <PageShell>{spinner}</PageShell>;
   }
 
+  const Wrapper = embedded ? 'div' : PageShell;
+
   return (
-    <PageShell data-testid="page-template-management">
-      <PageHeader
-        title="Templates"
-        subtitle="Pre-built templates for quotes, invoices, and jobs"
-        action={
+    <Wrapper data-testid="page-template-management">
+      {embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">Quick Templates</h2>
+            <p className="text-sm text-muted-foreground">
+              Pre-built templates for quotes, invoices, and jobs
+            </p>
+          </div>
           <Button 
             onClick={handleCreateTemplate}
             data-testid="button-create-template"
@@ -131,8 +141,27 @@ export default function TemplateManagement() {
             <Plus className="h-4 w-4 mr-2" />
             Create Template
           </Button>
-        }
-      />
+        </div>
+      ) : (
+        <PageHeader
+          title="Templates"
+          subtitle="Pre-built templates for quotes, invoices, and jobs"
+          action={
+            <Button 
+              onClick={handleCreateTemplate}
+              data-testid="button-create-template"
+              style={{
+                backgroundColor: 'hsl(var(--trade))',
+                borderColor: 'hsl(var(--trade-border))',
+                color: 'white'
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Template
+            </Button>
+          }
+        />
+      )}
 
       <div className="flex flex-wrap gap-2 mb-6">
         <Select value={filterType} onValueChange={setFilterType}>
@@ -288,6 +317,6 @@ export default function TemplateManagement() {
           />
         </SheetContent>
       </Sheet>
-    </PageShell>
+    </Wrapper>
   );
 }
