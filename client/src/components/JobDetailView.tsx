@@ -2927,6 +2927,106 @@ export default function JobDetailView({
           {/* Uploaded Documents - external quotes, invoices, PDFs */}
           <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} />
 
+          {/* Job Timeline */}
+          <Card data-testid="job-activity-feed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <History className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
+                Job Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {activitiesLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : jobActivities.length === 0 ? (
+                <div className="text-center py-6">
+                  <div 
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+                    style={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
+                  >
+                    <History className="h-6 w-6 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-1">No activity yet</p>
+                  <p className="text-xs text-muted-foreground/70">
+                    Status changes, emails sent, and other events will appear here
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  {(() => {
+                    const displayedActivities = showAllActivities ? jobActivities : jobActivities.slice(0, 6);
+                    const dateGroups = groupActivitiesByDate(displayedActivities);
+                    return (
+                      <>
+                        <div className="relative">
+                          <div className="absolute left-[15px] top-0 bottom-0 w-px bg-border" />
+
+                          {dateGroups.map((group, groupIndex) => (
+                            <div key={group.date}>
+                              <div className={`relative flex items-center gap-3 mb-3 ${groupIndex > 0 ? 'mt-4' : ''}`}>
+                                <div className="w-8 h-5 bg-card z-10 flex items-center justify-center">
+                                  <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+                                </div>
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                  {group.label}
+                                </span>
+                              </div>
+
+                              {group.activities.map((activity) => {
+                                const Icon = activityIcons[activity.type] || Briefcase;
+                                const colors = activityColors[activity.type] || { bg: 'hsl(var(--muted) / 0.5)', icon: 'hsl(var(--muted-foreground))' };
+
+                                return (
+                                  <div
+                                    key={activity.id}
+                                    className="relative flex gap-3 pb-4 last:pb-0"
+                                    data-testid={`activity-item-${activity.id}`}
+                                  >
+                                    <div className="relative z-10 shrink-0">
+                                      <div
+                                        className="w-8 h-8 rounded-full flex items-center justify-center bg-card border-2"
+                                        style={{ borderColor: colors.bg }}
+                                      >
+                                        <Icon className="h-3.5 w-3.5" style={{ color: colors.icon }} />
+                                      </div>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0 pt-1">
+                                      <p className="text-sm font-medium">{activity.title}</p>
+                                      {activity.description && (
+                                        <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
+                                      )}
+                                      <p className="text-[11px] text-muted-foreground/70 mt-1">
+                                        {formatHistoryDate(activity.timestamp)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                        {jobActivities.length > 6 && (
+                          <div className="pt-2">
+                            <Button
+                              variant="ghost"
+                              className="w-full text-xs"
+                              onClick={() => setShowAllActivities(!showAllActivities)}
+                            >
+                              {showAllActivities ? 'Show less' : `View all (${jobActivities.length})`}
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Right column - Secondary/supporting content */}
@@ -3949,105 +4049,6 @@ export default function JobDetailView({
         </div>
       </div>
 
-      {/* Full-width Job Timeline below both columns */}
-      <Card className="mt-4" data-testid="job-activity-feed">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <History className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-            Job Timeline
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {activitiesLoading ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : jobActivities.length === 0 ? (
-            <div className="text-center py-6">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-                style={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
-              >
-                <History className="h-6 w-6 text-muted-foreground/40" />
-              </div>
-              <p className="text-sm text-muted-foreground mb-1">No activity yet</p>
-              <p className="text-xs text-muted-foreground/70">
-                Status changes, emails sent, and other events will appear here
-              </p>
-            </div>
-          ) : (
-            <div>
-              {(() => {
-                const displayedActivities = showAllActivities ? jobActivities : jobActivities.slice(0, 6);
-                const dateGroups = groupActivitiesByDate(displayedActivities);
-                return (
-                  <>
-                    <div className="relative">
-                      <div className="absolute left-[15px] top-0 bottom-0 w-px bg-border" />
-
-                      {dateGroups.map((group, groupIndex) => (
-                        <div key={group.date}>
-                          <div className={`relative flex items-center gap-3 mb-3 ${groupIndex > 0 ? 'mt-4' : ''}`}>
-                            <div className="w-8 h-5 bg-card z-10 flex items-center justify-center">
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
-                            </div>
-                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                              {group.label}
-                            </span>
-                          </div>
-
-                          {group.activities.map((activity) => {
-                            const Icon = activityIcons[activity.type] || Briefcase;
-                            const colors = activityColors[activity.type] || { bg: 'hsl(var(--muted) / 0.5)', icon: 'hsl(var(--muted-foreground))' };
-
-                            return (
-                              <div
-                                key={activity.id}
-                                className="relative flex gap-3 pb-4 last:pb-0"
-                                data-testid={`activity-item-${activity.id}`}
-                              >
-                                <div className="relative z-10 shrink-0">
-                                  <div
-                                    className="w-8 h-8 rounded-full flex items-center justify-center bg-card border-2"
-                                    style={{ borderColor: colors.bg }}
-                                  >
-                                    <Icon className="h-3.5 w-3.5" style={{ color: colors.icon }} />
-                                  </div>
-                                </div>
-
-                                <div className="flex-1 min-w-0 pt-1">
-                                  <p className="text-sm font-medium">{activity.title}</p>
-                                  {activity.description && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
-                                  )}
-                                  <p className="text-[11px] text-muted-foreground/70 mt-1">
-                                    {formatHistoryDate(activity.timestamp)}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
-                    {jobActivities.length > 6 && (
-                      <div className="pt-2">
-                        <Button
-                          variant="ghost"
-                          className="w-full text-xs"
-                          onClick={() => setShowAllActivities(!showAllActivities)}
-                        >
-                          {showAllActivities ? 'Show less' : `View all (${jobActivities.length})`}
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Email Template Editor Dialog */}
       {editingAction && (

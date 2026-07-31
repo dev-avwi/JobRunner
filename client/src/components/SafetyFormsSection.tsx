@@ -370,13 +370,13 @@ export function SafetyFormsSection({ jobId, jobStatus, jobTitle, jobAddress, onS
           )}
 
           {jobStatus !== 'invoiced' && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => {
                   setEditingSwmsId(undefined);
                   setShowSwmsBuilder(true);
                 }}
-                className="flex-1"
+                className="flex-1 min-w-[150px]"
                 variant={!hasAnySafetyContent ? "default" : "outline"}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -385,7 +385,7 @@ export function SafetyFormsSection({ jobId, jobStatus, jobTitle, jobAddress, onS
               {safetyForms.length > 0 && (
                 <Button
                   onClick={() => setShowFormPicker(true)}
-                  className="flex-1"
+                  className="flex-1 min-w-[150px]"
                   variant="outline"
                   data-testid="button-add-safety-form"
                 >
