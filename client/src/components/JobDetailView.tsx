@@ -1688,51 +1688,53 @@ export default function JobDetailView({
 
   return (
     <PageShell data-testid="job-detail-view">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack} data-testid="button-back">
-            <ArrowLeft className="h-4 w-4" />
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start gap-1">
+          <Button variant="ghost" size="icon" className="-ml-2 shrink-0 mt-0.5" onClick={onBack} data-testid="button-back">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
+          <div className="min-w-0 flex flex-col gap-1">
             <div 
               className="flex items-center gap-2 group cursor-pointer"
               onClick={handleOpenRenameDialog}
               title="Click to rename job"
             >
-              <h1 className="text-lg font-semibold">{job.title}</h1>
-              <Edit className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              <h1 className="text-2xl font-bold tracking-tight text-foreground truncate">{job.title}</h1>
+              <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </div>
-            {client?.name && (
-              <span 
-                className="text-sm text-muted-foreground hover:underline cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  job.clientId && onViewClient?.(job.clientId);
-                }}
-                data-testid="link-client"
-              >
-                {client.name}
-              </span>
-            )}
-            <PresenceIndicator editors={collaboration.otherEditors} />
+            <div className="flex items-center gap-3 flex-wrap">
+              {client?.name && (
+                <span 
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground hover:underline cursor-pointer transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    job.clientId && onViewClient?.(job.clientId);
+                  }}
+                  data-testid="link-client"
+                >
+                  {client.name}
+                </span>
+              )}
+              <PresenceIndicator editors={collaboration.otherEditors} />
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 ml-4">
           {!isTradie && (
-            <Button variant="outline" size="icon" onClick={handleOpenInviteModal} data-testid="button-invite">
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleOpenInviteModal} data-testid="button-invite">
               <UserPlus className="h-4 w-4" />
             </Button>
           )}
           {onEditJob && (
-            <Button variant="outline" size="icon" onClick={() => onEditJob(jobId)} data-testid="button-edit-job">
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => onEditJob(jobId)} data-testid="button-edit-job">
               <Edit className="h-4 w-4" />
             </Button>
           )}
           {!isTradie && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" data-testid="button-job-actions-menu">
+                <Button variant="outline" size="icon" className="h-9 w-9" data-testid="button-job-actions-menu">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -1915,13 +1917,13 @@ export default function JobDetailView({
                       return (
                         <div key={step.key} className="flex items-center flex-1 last:flex-none">
                           <div className="flex flex-col items-center gap-1">
-                            <div className={`h-3 w-3 rounded-full border-2 shrink-0 ${
+                            <div className={`h-4 w-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
                               isCompleted ? 'bg-green-500 border-green-500' :
                               isActive ? 'border-[hsl(var(--trade))] bg-[hsl(var(--trade))] animate-pulse' :
                               'border-muted-foreground/30 bg-transparent'
                             }`}>
                               {isCompleted && (
-                                <Check className="h-2 w-2 text-white m-auto" style={{ display: 'block', marginTop: '1px' }} />
+                                <Check className="h-2.5 w-2.5 text-white" />
                               )}
                             </div>
                             <span className={`text-[10px] leading-tight text-center whitespace-nowrap ${
@@ -2136,9 +2138,9 @@ export default function JobDetailView({
       </div>
 
       {/* Two-column layout on desktop, single column on mobile */}
-      <div className="lg:grid lg:grid-cols-5 lg:gap-6 space-y-4 lg:space-y-0 mt-4">
+      <div className="lg:grid lg:grid-cols-12 lg:gap-8 space-y-6 lg:space-y-0 mt-6">
         {/* Left column - Primary content */}
-        <div className="flex flex-col gap-4 lg:col-span-3">
+        <div className="flex flex-col gap-6 lg:col-span-7 xl:col-span-8">
           {/* Action Buttons - follows 5-stage workflow: pending → scheduled → in_progress → done → invoiced */}
           <div className="flex flex-col gap-2 pb-2">
             {/* Pending → Schedule */}
@@ -2164,61 +2166,61 @@ export default function JobDetailView({
               </div>
             )}
 
-            {/* Quick actions row - all 5 in one row */}
-            <div className="grid grid-cols-5 gap-1.5">
+            {/* Quick actions row */}
+            <div className="flex flex-wrap gap-2 [&>button]:flex-1 [&>div]:flex-1">
               {currentUser && !isSolo && (
-                <div ref={chatSectionRef} data-testid="section-job-chat">
+                <div ref={chatSectionRef} data-testid="section-job-chat" className="min-w-[70px]">
                   <Button
                     variant="outline"
-                    className="w-full gap-1 px-2 text-xs"
+                    className="w-full gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent"
                     onClick={() => navigate(`/chat?job=${jobId}`)}
                   >
                     <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate">Chat</span>
+                    <span className="truncate hidden sm:inline-block">Chat</span>
                   </Button>
                 </div>
               )}
               {client?.email && (
                 <Button
                   variant="outline"
-                  className="gap-1 px-2 text-xs"
+                  className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]"
                   onClick={() => { setUnifiedSendDefaultTab('email'); setShowUnifiedSendModal(true); }}
                   data-testid="button-email-client"
                 >
                   <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate">Email</span>
+                  <span className="truncate hidden sm:inline-block">Email</span>
                 </Button>
               )}
               {client?.phone && (
                 <Button
                   variant="outline"
-                  className="gap-1 px-2 text-xs"
+                  className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]"
                   onClick={() => { setUnifiedSendDefaultTab('sms'); setShowUnifiedSendModal(true); }}
                   data-testid="button-sms-client"
                 >
                   <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate">SMS</span>
+                  <span className="truncate hidden sm:inline-block">SMS</span>
                 </Button>
               )}
               {job.status !== 'invoiced' && job.status !== 'pending' && (
                 <Button
                   variant="outline"
-                  className="gap-1 px-2 text-xs"
+                  className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]"
                   onClick={() => setShowSiteUpdateDialog(true)}
                   data-testid="button-log-site-update"
                 >
                   <PenLine className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate">Update</span>
+                  <span className="truncate hidden sm:inline-block">Update</span>
                 </Button>
               )}
               <Button
                 variant="outline"
-                className="gap-1 px-2 text-xs"
+                className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]"
                 onClick={() => setProofPackPreviewOpen(true)}
                 data-testid="button-proof-pack"
               >
                 <FileDown className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="truncate">Proof</span>
+                <span className="truncate hidden sm:inline-block">Proof</span>
               </Button>
             </div>
           </div>
@@ -2378,10 +2380,10 @@ export default function JobDetailView({
 
               {/* Assign Worker - Only for team owners/managers */}
               {!isTradie && !isSolo && teamMembers.length > 0 && (
-                <div className="pt-2 border-t">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="pt-4 border-t">
+                  <div className="flex items-center gap-2 mb-3">
                     <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Assign Workers</span>
+                    <span className="text-sm font-semibold tracking-tight">Assign Workers</span>
                   </div>
                   <Popover open={workerPopoverOpen} onOpenChange={setWorkerPopoverOpen}>
                     <PopoverTrigger asChild>
@@ -2928,7 +2930,7 @@ export default function JobDetailView({
         </div>
 
         {/* Right column - Secondary/supporting content */}
-        <div className="flex flex-col gap-4 lg:col-span-2">
+        <div className="flex flex-col gap-6 lg:col-span-5 xl:col-span-4">
           {job.requiresInspection && !job.inspectionCompletedAt && !isTradie && (
             <Card className="border-2" style={{ borderColor: 'hsl(45 93% 47% / 0.5)' }} data-testid="card-inspection-required">
               <CardContent className="py-4">

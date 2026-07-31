@@ -496,9 +496,9 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
         </div>
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="flex flex-col lg:flex-row-reverse gap-8 items-start">
         {/* Template Selector */}
-        <div>
+        <div className="w-full lg:w-80 shrink-0 lg:sticky lg:top-6">
           <TemplateSelector 
             type="job" 
             onApplyTemplate={handleApplyTemplate}
@@ -508,14 +508,16 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
         </div>
         
         {/* Job Form */}
-        <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Job</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="flex-1 w-full">
+        <Card className="border-muted shadow-sm">
+          <CardContent className="p-0 sm:p-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8 p-4 sm:p-0">
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="pb-2 border-b">
+                    <h3 className="text-lg font-semibold tracking-tight">Basic Details</h3>
+                  </div>
               <FormField
                 control={form.control}
                 name="title"
@@ -573,7 +575,12 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                   </FormItem>
                 )}
               />
+              </div>
 
+              <div className="space-y-4 pt-2">
+                <div className="pb-2 border-b">
+                  <h3 className="text-lg font-semibold tracking-tight">Client & Location</h3>
+                </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -772,7 +779,12 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                   </FormItem>
                 )}
               />
+              </div>
 
+              <div className="space-y-4 pt-4">
+                <div className="pb-2 border-b">
+                  <h3 className="text-lg font-semibold tracking-tight">Schedule & Priority</h3>
+                </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -811,7 +823,12 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                   )}
                 />
               </div>
+              </div>
 
+              <div className="space-y-4 pt-4">
+                <div className="pb-2 border-b">
+                  <h3 className="text-lg font-semibold tracking-tight">Job Options</h3>
+                </div>
               <div className="flex items-center space-x-3 pt-2">
                 <Checkbox
                   id="requiresInspection"
@@ -864,16 +881,18 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                   />
                 )}
               </div>
+              </div>
+              </div>
 
-              <div className="flex gap-4">
-                <Button type="submit" disabled={createJobMutation.isPending} data-testid="button-submit-job">
-                  {createJobMutation.isPending ? "Creating..." : "Create Job"}
-                </Button>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 mt-6 border-t border-border">
                 {onCancel && (
-                  <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel-job">
+                  <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel-job" className="w-full sm:w-auto">
                     Cancel
                   </Button>
                 )}
+                <Button type="submit" disabled={createJobMutation.isPending} data-testid="button-submit-job" className="w-full sm:w-auto">
+                  {createJobMutation.isPending ? "Creating..." : "Create Job"}
+                </Button>
               </div>
             </form>
           </Form>
