@@ -3528,8 +3528,8 @@ export default function JobDetailView({
                       installed: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
                     };
                     return (
-                      <div key={mat.id} className="flex items-start gap-3 p-2 rounded-lg border bg-background">
-                        <div className="flex-1 min-w-0">
+                      <div key={mat.id} className="p-3 rounded-lg border bg-background space-y-2">
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium">{mat.name}</span>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${statusColors[mat.status] || statusColors.needed}`}>
@@ -3633,7 +3633,7 @@ export default function JobDetailView({
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <Button
                             size="sm"
                             variant={mat.receiptPhotoUrl ? "ghost" : "outline"}

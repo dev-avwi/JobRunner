@@ -496,9 +496,9 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
         </div>
       )}
       
-      <div className="flex flex-col lg:flex-row-reverse gap-8 items-start">
+      <div className="flex flex-col lg:flex-row-reverse gap-6 items-start">
         {/* Template Selector */}
-        <div className="w-full lg:w-80 shrink-0 lg:sticky lg:top-6">
+        <div className="w-full lg:w-[340px] xl:w-96 shrink-0 lg:sticky lg:top-6">
           <TemplateSelector 
             type="job" 
             onApplyTemplate={handleApplyTemplate}
@@ -510,13 +510,13 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
         {/* Job Form */}
         <div className="flex-1 w-full">
         <Card className="border-muted shadow-sm">
-          <CardContent className="p-0 sm:p-6">
+          <CardContent className="p-4 sm:p-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8 p-4 sm:p-0">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
               <div className="space-y-6">
                 <div className="space-y-4">
                   <div className="pb-2 border-b">
-                    <h3 className="text-lg font-semibold tracking-tight">Basic Details</h3>
+                    <h3 className="text-base font-semibold">Basic Details</h3>
                   </div>
               <FormField
                 control={form.control}
@@ -579,7 +579,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
 
               <div className="space-y-4 pt-2">
                 <div className="pb-2 border-b">
-                  <h3 className="text-lg font-semibold tracking-tight">Client & Location</h3>
+                  <h3 className="text-base font-semibold">Client & Location</h3>
                 </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -783,7 +783,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
 
               <div className="space-y-4 pt-4">
                 <div className="pb-2 border-b">
-                  <h3 className="text-lg font-semibold tracking-tight">Schedule & Priority</h3>
+                  <h3 className="text-base font-semibold">Schedule & Priority</h3>
                 </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -827,7 +827,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
 
               <div className="space-y-4 pt-4">
                 <div className="pb-2 border-b">
-                  <h3 className="text-lg font-semibold tracking-tight">Job Options</h3>
+                  <h3 className="text-base font-semibold">Job Options</h3>
                 </div>
               <div className="flex items-center space-x-3 pt-2">
                 <Checkbox

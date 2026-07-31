@@ -122,7 +122,7 @@ export default function TemplateSelector({ type, onApplyTemplate, className, use
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Template Cards */}
-        <ScrollArea className="h-[200px] pr-3">
+        <div className="max-h-[280px] overflow-y-auto -mr-2 pr-2">
           <div className="space-y-2">
             {templates.map(template => {
               const totals = calculateTemplateTotal(template);
@@ -195,7 +195,7 @@ export default function TemplateSelector({ type, onApplyTemplate, className, use
               );
             })}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Detailed Preview Panel */}
         {selectedTemplate && (
