@@ -319,10 +319,12 @@ export default function TeamPage() {
             >
               <Activity className="w-3.5 h-3.5 text-success" /> Live operations
             </Button>
-            <Button variant="outline" size="sm" data-testid="button-team-filters">
-              <Filter className="w-3.5 h-3.5" /> Filters
-            </Button>
-            <Button variant="outline" size="sm" data-testid="button-team-insights">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation("/insights")}
+              data-testid="button-team-insights"
+            >
               <Sparkles className="w-3.5 h-3.5 text-purple-500" /> Insights
             </Button>
             <DropdownMenu open={addOpen} onOpenChange={setAddOpen}>

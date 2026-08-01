@@ -4164,6 +4164,7 @@ function StatCard({
 
 export default function TeamOperations() {
   const { isOwner, isManager } = useAppMode();
+  const [, headerNavigate] = useLocation();
   const canManageTeam = isOwner || isManager;
   const [activeTab, setActiveTab] = useState<"live" | "admin" | "scheduling" | "performance">("live");
 
@@ -4212,10 +4213,12 @@ export default function TeamOperations() {
             </p>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Button variant="outline" size="sm" data-testid="button-team-ops-filters">
-              <Filter className="w-3.5 h-3.5" /> Filters
-            </Button>
-            <Button variant="outline" size="sm" data-testid="button-team-ops-insights">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => headerNavigate("/insights")}
+              data-testid="button-team-ops-insights"
+            >
               <Sparkles className="w-3.5 h-3.5 text-purple-500" /> Insights
             </Button>
             <Button
