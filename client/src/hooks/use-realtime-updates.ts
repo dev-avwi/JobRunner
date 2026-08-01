@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { safeInvalidateQueries, isRemoteChange, queryClient } from '@/lib/queryClient';
+import { safeInvalidateQueries, isRemoteChange, queryClient, getSessionToken } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -412,7 +412,7 @@ export function useRealtimeUpdates({
     }
   }, [toast]);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!enabled || !businessId) return;
     // Don't attempt connection if auth is still loading or user is not authenticated
     if (authLoading || !isAuthenticated) return;
@@ -422,7 +422,27 @@ export function useRealtimeUpdates({
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws/location?businessId=${businessId}&isTradie=false`;
+
+    // The web app authenticates with a Bearer token which browsers can't send
+    // on a WebSocket upgrade. Get a short-lived single-use ticket instead of
+    // ever putting the session token in the URL.
+    let ticket = '';
+    if (getSessionToken()) {
+      try {
+        const res = await fetch('/api/ws-ticket', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${getSessionToken()}` },
+          credentials: 'include',
+        });
+        if (res.ok) {
+          ticket = (await res.json()).ticket || '';
+        }
+      } catch {
+        // fall through: cookie-based auth may still work
+      }
+    }
+
+    const wsUrl = `${protocol}//${host}/ws/location?businessId=${businessId}&isTradie=false${ticket ? `&ticket=${encodeURIComponent(ticket)}` : ''}`;
 
     try {
       const ws = new WebSocket(wsUrl);

@@ -1,3 +1,4 @@
+import JobPicker from "@/components/JobPicker";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -1025,18 +1026,12 @@ export function TimesheetList({
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="entry-job">Job</Label>
-            <Select value={entryJobId} onValueChange={setEntryJobId}>
-              <SelectTrigger id="entry-job" data-testid="select-entry-job">
-                <SelectValue placeholder="Select a job" />
-              </SelectTrigger>
-              <SelectContent>
-                {jobsForEntry.map((job: any) => (
-                  <SelectItem key={job.id} value={String(job.id)}>
-                    {job.title || job.jobNumber || `Job ${job.id}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <JobPicker
+              value={entryJobId}
+              onChange={setEntryJobId}
+              label={null}
+              filterJobs={(job) => jobsForEntry.some((j: any) => String(j.id) === String(job.id))}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="entry-date">Date</Label>

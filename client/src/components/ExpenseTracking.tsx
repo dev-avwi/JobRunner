@@ -1,3 +1,4 @@
+import JobPicker from "@/components/JobPicker";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -888,21 +889,13 @@ export function ExpenseTracking() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Job (Optional)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-expense-job">
-                            <SelectValue placeholder="Select job" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">No Job</SelectItem>
-                          {Array.isArray(jobs) && jobs.map((job: any) => (
-                            <SelectItem key={job.id} value={job.id}>
-                              {job.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <JobPicker
+                          value={field.value === "none" ? "" : (field.value || "")}
+                          onChange={(jobId) => field.onChange(jobId || "none")}
+                          label={null}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

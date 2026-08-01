@@ -1,3 +1,4 @@
+import JobPicker from "@/components/JobPicker";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
@@ -1050,23 +1051,15 @@ function LiveOpsTab() {
           </DialogHeader>
           <div className="py-4">
             <Label>Select Job</Label>
-            <Select value={selectedJobToAssign} onValueChange={setSelectedJobToAssign}>
-              <SelectTrigger className="mt-2" data-testid="select-job-to-assign">
-                <SelectValue placeholder="Choose a job..." />
-              </SelectTrigger>
-              <SelectContent>
-                {unassignedJobs.map((job) => (
-                  <SelectItem key={job.id} value={job.id}>
-                    <div className="flex flex-col">
-                      <span>{job.title}</span>
-                      {job.clientName && (
-                        <span className="text-xs text-muted-foreground">{job.clientName}</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="mt-2">
+              <JobPicker
+                value={selectedJobToAssign}
+                onChange={setSelectedJobToAssign}
+                label={null}
+                placeholder="Search unassigned jobs..."
+                filterJobs={(job) => unassignedJobs.some((j: any) => j.id === job.id)}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignJobDialogOpen(false)}>

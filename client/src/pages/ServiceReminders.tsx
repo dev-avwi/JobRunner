@@ -1,3 +1,4 @@
+import JobPicker from "@/components/JobPicker";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -462,22 +463,11 @@ export default function ServiceRemindersPage() {
 
             <div className="grid gap-2">
               <Label htmlFor="jobId">Related Job (Optional)</Label>
-              <Select
+              <JobPicker
                 value={formData.jobId}
-                onValueChange={(v) => setFormData({ ...formData, jobId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select job" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No linked job</SelectItem>
-                  {jobs.map((job) => (
-                    <SelectItem key={job.id} value={job.id}>
-                      {job.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(jobId) => setFormData({ ...formData, jobId })}
+                label={null}
+              />
             </div>
 
             <div className="grid gap-2">

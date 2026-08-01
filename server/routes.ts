@@ -1423,6 +1423,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Short-lived, single-use WebSocket auth ticket (Bearer-token clients can't
+  // send cookies to the WS upgrade and must never put tokens in query strings)
+  app.post("/api/ws-ticket", requireAuth, async (req: any, res) => {
+    const { createWsTicket } = await import("./websocket");
+    res.json({ ticket: createWsTicket(req.userId) });
+  });
+
   // BUSINESS OWNER: Get worker requests
   app.get("/api/worker-requests", requireAuth, async (req: any, res) => {
     try {

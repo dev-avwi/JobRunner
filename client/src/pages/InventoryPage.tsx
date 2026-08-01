@@ -2243,6 +2243,26 @@ function ItemDialog({
     location: "",
     supplierId: "",
   });
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const { toast } = useToast();
+
+  const inlineCategoryMutation = useMutation({
+    mutationFn: (data: { name: string }) => apiRequest("POST", "/api/inventory/categories", data),
+    onSuccess: async (res: Response) => {
+      const created = await res.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/categories"] });
+      if (created?.id) {
+        setFormData((prev) => ({ ...prev, categoryId: created.id }));
+      }
+      setShowNewCategory(false);
+      setNewCategoryName("");
+      toast({ title: "Category created" });
+    },
+    onError: () => {
+      toast({ title: "Could not create category", variant: "destructive" });
+    },
+  });
 
   const resetForm = () => {
     if (item) {
@@ -2382,11 +2402,15 @@ function ItemDialog({
             <Label>Category</Label>
             <Select
               value={formData.categoryId || "none"}
-              onValueChange={(v) =>
-                setFormData({ ...formData, categoryId: v === "none" ? "" : v })
-              }
+              onValueChange={(v) => {
+                if (v === "__create__") {
+                  setShowNewCategory(true);
+                  return;
+                }
+                setFormData({ ...formData, categoryId: v === "none" ? "" : v });
+              }}
             >
-              <SelectTrigger>
+              <SelectTrigger data-testid="select-item-category">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
@@ -2396,8 +2420,43 @@ function ItemDialog({
                     {cat.name}
                   </SelectItem>
                 ))}
+                <SelectItem value="__create__" data-testid="option-create-category">
+                  + Create new category
+                </SelectItem>
               </SelectContent>
             </Select>
+            {showNewCategory && (
+              <div className="flex gap-2 pt-1">
+                <Input
+                  autoFocus
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Category name"
+                  data-testid="input-new-category-name"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (newCategoryName.trim()) inlineCategoryMutation.mutate({ name: newCategoryName.trim() });
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  disabled={!newCategoryName.trim() || inlineCategoryMutation.isPending}
+                  onClick={() => inlineCategoryMutation.mutate({ name: newCategoryName.trim() })}
+                  data-testid="button-save-new-category"
+                >
+                  {inlineCategoryMutation.isPending ? "Adding..." : "Add"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => { setShowNewCategory(false); setNewCategoryName(""); }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">

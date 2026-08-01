@@ -2,6 +2,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { Server, IncomingMessage } from 'http';
 import { parse } from 'url';
 import cookie from 'cookie';
+import { randomBytes } from 'crypto';
 import { storage } from './storage';
 
 interface LocationUpdate {
@@ -57,6 +58,28 @@ export function getWorkerTravelLocation(jobId: string): PortalLocationData | und
 
 let wss: WebSocketServer | null = null;
 let sessionStore: any = null;
+
+// Short-lived, single-use WebSocket auth tickets. The web app authenticates
+// with a Bearer token (no cookie), which must never travel in a query string.
+// Instead the client POSTs /api/ws-ticket (authenticated) to get a 60s nonce.
+const wsTickets = new Map<string, { userId: string; expiresAt: number }>();
+
+export function createWsTicket(userId: string): string {
+  // Prune expired tickets opportunistically
+  const now = Date.now();
+  wsTickets.forEach((t, k) => { if (t.expiresAt < now) wsTickets.delete(k); });
+  const ticket = randomBytes(32).toString('hex');
+  wsTickets.set(ticket, { userId, expiresAt: now + 60_000 });
+  return ticket;
+}
+
+function redeemWsTicket(ticket: string): { userId: string } | null {
+  const entry = wsTickets.get(ticket);
+  if (!entry) return null;
+  wsTickets.delete(ticket); // single use
+  if (entry.expiresAt < Date.now()) return null;
+  return { userId: entry.userId };
+}
 
 export function setupWebSocket(server: Server, store?: any) {
   wss = new WebSocketServer({ server, path: '/ws/location' });
@@ -134,8 +157,17 @@ async function authenticateConnection(req: IncomingMessage): Promise<{ userId: s
   const cookies = cookie.parse(req.headers.cookie || '');
   const sessionId = cookies['jobrunner.sid'];
 
+  // Single-use ticket fallback: the web app authenticates with a Bearer token
+  // (no cookie), so it first POSTs /api/ws-ticket and passes the short-lived
+  // nonce here. Never accept raw session tokens in the query string.
+  const queryTicket = parse(req.url || '', true).query.ticket as string | undefined;
+  if (queryTicket) {
+    const redeemed = redeemWsTicket(queryTicket);
+    if (redeemed) return redeemed;
+  }
+
   if (!sessionId) {
-    console.log('[WebSocket] No session cookie found');
+    console.log('[WebSocket] No session cookie or valid ticket found');
     return null;
   }
 
@@ -147,16 +179,21 @@ async function authenticateConnection(req: IncomingMessage): Promise<{ userId: s
 
   // Try to get session from store
   if (sessionStore) {
-    return new Promise((resolve) => {
-      sessionStore.get(rawSessionId, (err: any, session: any) => {
+    const lookup = (sid: string) => new Promise<{ userId: string } | null>((resolve) => {
+      sessionStore.get(sid, (err: any, session: any) => {
         if (err || !session || !session.userId) {
-          console.log('[WebSocket] Session not found or expired');
           resolve(null);
           return;
         }
         resolve({ userId: session.userId });
       });
     });
+
+    const result = await lookup(rawSessionId);
+    if (!result) {
+      console.log('[WebSocket] Session not found or expired');
+    }
+    return result;
   }
 
   console.log('[WebSocket] No session store available');

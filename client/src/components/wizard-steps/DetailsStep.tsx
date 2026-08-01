@@ -1,3 +1,4 @@
+import JobPicker from "@/components/JobPicker";
 import { useFormContext } from "react-hook-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -178,26 +179,11 @@ export default function DetailsStep({
                 <Briefcase className="h-4 w-4" />
                 Link to Job (Optional)
               </Label>
-              <Select 
-                onValueChange={(value) => form.setValue("jobId", value === "none" ? "" : value)}
-                defaultValue={form.watch("jobId") || "none"}
-              >
-                <SelectTrigger 
-                  className="min-h-[48px]" 
-                  style={{ borderRadius: '10px' }}
-                  data-testid="select-job"
-                >
-                  <SelectValue placeholder="Select a job" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No job selected</SelectItem>
-                  {(jobs as any[]).map((job) => (
-                    <SelectItem key={job.id} value={job.id}>
-                      {job.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <JobPicker
+                value={form.watch("jobId") || ""}
+                onChange={(jobId) => form.setValue("jobId", jobId)}
+                label={null}
+              />
             </div>
           )}
 

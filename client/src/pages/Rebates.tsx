@@ -1,3 +1,4 @@
+import JobPicker from "@/components/JobPicker";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -361,22 +362,11 @@ export default function RebatesPage() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="jobId">Job (Optional)</Label>
-          <Select
+          <JobPicker
             value={formData.jobId}
-            onValueChange={(value) => setFormData({ ...formData, jobId: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select job" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">None</SelectItem>
-              {jobs.map((job) => (
-                <SelectItem key={job.id} value={job.id}>
-                  {job.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(jobId) => setFormData({ ...formData, jobId })}
+            label={null}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="invoiceId">Invoice (Optional)</Label>

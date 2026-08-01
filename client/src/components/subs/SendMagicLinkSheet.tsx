@@ -1,3 +1,4 @@
+import JobPicker from "@/components/JobPicker";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
@@ -187,18 +188,13 @@ export default function SendMagicLinkSheet({
 
             <div className="space-y-1.5">
               <Label htmlFor="sub-job">Which job?</Label>
-              <Select value={jobId} onValueChange={setJobId}>
-                <SelectTrigger id="sub-job" data-testid="select-sub-job">
-                  <SelectValue placeholder="Pick a job…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {jobs.map((j) => (
-                    <SelectItem key={j.id} value={j.id}>
-                      {j.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <JobPicker
+                value={jobId || ""}
+                onChange={setJobId}
+                label={null}
+                placeholder="Pick a job..."
+                filterJobs={(job) => jobs.some((j: any) => j.id === job.id)}
+              />
             </div>
 
             <div className="space-y-1.5">

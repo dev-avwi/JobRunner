@@ -1,3 +1,4 @@
+import JobPicker from "@/components/JobPicker";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
@@ -1414,25 +1415,12 @@ export default function CollectPayment() {
 
               <div className="space-y-2">
                 <Label>Job (optional)</Label>
-                <Select value={tapToPayJobId} onValueChange={(value) => {
-                  if (value === "_none") {
-                    setTapToPayJobId("");
-                  } else {
-                    setTapToPayJobId(value);
-                  }
-                }}>
-                  <SelectTrigger data-testid="select-tap-to-pay-job">
-                    <SelectValue placeholder="Select job" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">No job</SelectItem>
-                    {jobs?.filter(job => !tapToPayClientId || job.clientId === tapToPayClientId).map((job) => (
-                      <SelectItem key={job.id} value={job.id}>
-                        {job.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <JobPicker
+                  value={tapToPayJobId}
+                  onChange={setTapToPayJobId}
+                  label={null}
+                  filterJobs={(job) => job.status !== 'cancelled' && (!tapToPayClientId || job.clientId === tapToPayClientId)}
+                />
               </div>
 
               <DialogFooter className="gap-2">

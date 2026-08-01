@@ -97,6 +97,14 @@ export default function TemplateSelector({ type, onApplyTemplate, className, use
           <p className="text-xs text-muted-foreground mt-1">
             Templates help you create {type}s faster
           </p>
+          <Link
+            href={`/templates?tab=quick-templates&type=${type}`}
+            className="inline-flex items-center justify-center gap-1.5 text-sm text-primary hover:underline mt-3"
+            data-testid="link-create-templates"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Create {type} templates
+          </Link>
         </CardContent>
       </Card>
     );

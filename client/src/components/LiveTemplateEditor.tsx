@@ -754,12 +754,73 @@ export default function LiveTemplateEditor({ editingTemplate, onSave, onCancel }
                 gstEnabled={watchedValues.defaults?.gstEnabled}
               />
             ) : (
-              <Card className="p-6">
-                <div className="text-center text-muted-foreground">
-                  <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">Job Template Preview</p>
-                  <p className="text-sm mt-1">Job templates don't have a document preview.</p>
-                  <p className="text-sm">They define default values for job creation.</p>
+              <Card className="p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Briefcase className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-sm">What this template fills in on a new job</span>
+                </div>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Job title</p>
+                    <p className={watchedValues.defaults?.title ? "font-medium" : "text-muted-foreground italic"}>
+                      {watchedValues.defaults?.title || "Not set"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Description</p>
+                    <p className={watchedValues.defaults?.description ? "whitespace-pre-wrap" : "text-muted-foreground italic"}>
+                      {watchedValues.defaults?.description || "Not set"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Line items</p>
+                    {previewLineItems.length > 0 ? (
+                      <ul className="space-y-1">
+                        {previewLineItems.map((item, idx) => (
+                          <li key={idx} className="flex justify-between gap-2 text-xs bg-muted/50 rounded px-2 py-1.5">
+                            <span className="truncate flex-1">{item.description || "Untitled item"}</span>
+                            <span className="font-medium whitespace-nowrap">
+                              {item.quantity} × ${Number(item.unitPrice || 0).toFixed(2)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-muted-foreground italic">None</p>
+                    )}
+                  </div>
+                  {previewLineItems.length > 0 && (
+                    <div className="pt-2 border-t space-y-1">
+                      {(() => {
+                        const subtotal = previewLineItems.reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0), 0);
+                        const gst = watchedValues.defaults?.gstEnabled !== false ? subtotal * 0.1 : 0;
+                        return (
+                          <>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Subtotal</span>
+                              <span>${subtotal.toFixed(2)}</span>
+                            </div>
+                            {gst > 0 && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">GST (10%)</span>
+                                <span>${gst.toFixed(2)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between font-semibold text-sm pt-1">
+                              <span>Estimated total</span>
+                              <span className="text-primary">${(subtotal + gst).toFixed(2)}</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t">
+                    {watchedValues.defaults?.gstEnabled !== false && <span>GST auto-calculated</span>}
+                    {(watchedValues.defaults?.dueTermDays || 0) > 0 && <span>{watchedValues.defaults?.dueTermDays} day terms</span>}
+                    {(watchedValues.defaults?.depositPct || 0) > 0 && <span>{watchedValues.defaults?.depositPct}% deposit</span>}
+                    {watchedValues.defaults?.terms && <span>Terms included</span>}
+                  </div>
                 </div>
               </Card>
             )}
