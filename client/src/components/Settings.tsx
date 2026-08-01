@@ -204,6 +204,7 @@ export default function Settings({
   // Remember which tab the user was on - all users can access 'account' tab
   const defaultTab = 'account';
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const [showAllPermissions, setShowAllPermissions] = useState(false);
   
   // Sync with localStorage on client side only (respect role restrictions)
   useEffect(() => {
@@ -1280,7 +1281,7 @@ export default function Settings({
                     <h4 className="text-sm font-medium mb-3">Your Permissions</h4>
                     <div className="flex flex-wrap gap-2">
                       {profile.permissions && profile.permissions.length > 0 ? (
-                        profile.permissions.map((perm) => (
+                        (showAllPermissions ? profile.permissions : profile.permissions.slice(0, 8)).map((perm) => (
                           <Badge key={perm} variant="secondary" className="text-xs">
                             {permissionLabels[perm] || perm}
                           </Badge>
@@ -1291,6 +1292,17 @@ export default function Settings({
                         </p>
                       )}
                     </div>
+                    {profile.permissions && profile.permissions.length > 8 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => setShowAllPermissions(!showAllPermissions)}
+                        data-testid="button-toggle-permissions"
+                      >
+                        {showAllPermissions ? "Show less" : `Show all ${profile.permissions.length} permissions`}
+                      </Button>
+                    )}
                   </div>
 
                   {profile.isOwner && (
@@ -1749,135 +1761,6 @@ export default function Settings({
         <TabsContent value="business" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2">
-                <SettingsIcon className="w-5 h-5" style={{ color: 'hsl(var(--trade))' }} />
-                <CardTitle>Site Safety (WHS)</CardTitle>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Enforce safety steps before a worker can start a job.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <Label>Require pre-start (Take 5) before starting a job</Label>
-                  <p className="text-sm text-muted-foreground">A safety or inspection form must be completed for the job first</p>
-                </div>
-                <Switch
-                  checked={!!(businessSettings as any)?.requireTake5BeforeStart}
-                  onCheckedChange={(checked) => handleBusinessSave({ requireTake5BeforeStart: checked } as any)}
-                  data-testid="switch-require-take5"
-                />
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <Label>Block job start on expired licence/compliance</Label>
-                  <p className="text-sm text-muted-foreground">Stop a job starting when the worker or business has an expired licence, white card, cert, insurance or rego</p>
-                </div>
-                <Switch
-                  checked={!!(businessSettings as any)?.blockJobStartOnExpiredCompliance}
-                  onCheckedChange={(checked) => handleBusinessSave({ blockJobStartOnExpiredCompliance: checked } as any)}
-                  data-testid="switch-block-expired-compliance"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" style={{ color: 'hsl(var(--trade))' }} />
-                <CardTitle>Team Location Tracking Hours</CardTitle>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Save your team's battery by only tracking GPS during work hours. Outside these hours and on non-work days, phones stop tracking — unless a worker is clocked into a job or on their way to one.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <Label>Limit tracking to work hours</Label>
-                  <p className="text-sm text-muted-foreground">When off, phones track whenever a worker has tracking enabled.</p>
-                </div>
-                <Switch
-                  checked={!!(businessSettings as any)?.trackingHoursEnabled}
-                  onCheckedChange={(checked) => handleBusinessSave({ trackingHoursEnabled: checked } as any)}
-                  data-testid="switch-tracking-hours-enabled"
-                />
-              </div>
-
-              {!!(businessSettings as any)?.trackingHoursEnabled && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="tracking-start" className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-muted-foreground" /> Start time
-                      </Label>
-                      <Input
-                        id="tracking-start"
-                        type="time"
-                        value={(businessSettings as any)?.workHoursStart || '07:00'}
-                        onChange={(e) => handleBusinessSave({ workHoursStart: e.target.value } as any)}
-                        data-testid="input-tracking-start"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="tracking-end" className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-muted-foreground" /> End time
-                      </Label>
-                      <Input
-                        id="tracking-end"
-                        type="time"
-                        value={(businessSettings as any)?.workHoursEnd || '17:00'}
-                        onChange={(e) => handleBusinessSave({ workHoursEnd: e.target.value } as any)}
-                        data-testid="input-tracking-end"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Work days</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { value: 1, label: 'Mon' },
-                        { value: 2, label: 'Tue' },
-                        { value: 3, label: 'Wed' },
-                        { value: 4, label: 'Thu' },
-                        { value: 5, label: 'Fri' },
-                        { value: 6, label: 'Sat' },
-                        { value: 0, label: 'Sun' },
-                      ].map((day) => {
-                        const currentDays: number[] = Array.isArray((businessSettings as any)?.workDays)
-                          ? (businessSettings as any).workDays
-                          : [1, 2, 3, 4, 5];
-                        const active = currentDays.includes(day.value);
-                        return (
-                          <Button
-                            key={day.value}
-                            type="button"
-                            variant={active ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => {
-                              const next = active
-                                ? currentDays.filter((d) => d !== day.value)
-                                : [...currentDays, day.value].sort((a, b) => a - b);
-                              handleBusinessSave({ workDays: next } as any);
-                            }}
-                            data-testid={`button-tracking-day-${day.value}`}
-                          >
-                            {day.label}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Business Profile</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -2103,6 +1986,136 @@ export default function Settings({
           </Card>
 
 
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <SettingsIcon className="w-5 h-5" style={{ color: 'hsl(var(--trade))' }} />
+                <CardTitle>Site Safety (WHS)</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Enforce safety steps before a worker can start a job.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label>Require pre-start (Take 5) before starting a job</Label>
+                  <p className="text-sm text-muted-foreground">A safety or inspection form must be completed for the job first</p>
+                </div>
+                <Switch
+                  checked={!!(businessSettings as any)?.requireTake5BeforeStart}
+                  onCheckedChange={(checked) => handleBusinessSave({ requireTake5BeforeStart: checked } as any)}
+                  data-testid="switch-require-take5"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label>Block job start on expired licence/compliance</Label>
+                  <p className="text-sm text-muted-foreground">Stop a job starting when the worker or business has an expired licence, white card, cert, insurance or rego</p>
+                </div>
+                <Switch
+                  checked={!!(businessSettings as any)?.blockJobStartOnExpiredCompliance}
+                  onCheckedChange={(checked) => handleBusinessSave({ blockJobStartOnExpiredCompliance: checked } as any)}
+                  data-testid="switch-block-expired-compliance"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" style={{ color: 'hsl(var(--trade))' }} />
+                <CardTitle>Team Location Tracking Hours</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Save your team's battery by only tracking GPS during work hours. Outside these hours and on non-work days, phones stop tracking — unless a worker is clocked into a job or on their way to one.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label>Limit tracking to work hours</Label>
+                  <p className="text-sm text-muted-foreground">When off, phones track whenever a worker has tracking enabled.</p>
+                </div>
+                <Switch
+                  checked={!!(businessSettings as any)?.trackingHoursEnabled}
+                  onCheckedChange={(checked) => handleBusinessSave({ trackingHoursEnabled: checked } as any)}
+                  data-testid="switch-tracking-hours-enabled"
+                />
+              </div>
+
+              {!!(businessSettings as any)?.trackingHoursEnabled && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="tracking-start" className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-muted-foreground" /> Start time
+                      </Label>
+                      <Input
+                        id="tracking-start"
+                        type="time"
+                        value={(businessSettings as any)?.workHoursStart || '07:00'}
+                        onChange={(e) => handleBusinessSave({ workHoursStart: e.target.value } as any)}
+                        data-testid="input-tracking-start"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tracking-end" className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-muted-foreground" /> End time
+                      </Label>
+                      <Input
+                        id="tracking-end"
+                        type="time"
+                        value={(businessSettings as any)?.workHoursEnd || '17:00'}
+                        onChange={(e) => handleBusinessSave({ workHoursEnd: e.target.value } as any)}
+                        data-testid="input-tracking-end"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Work days</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 1, label: 'Mon' },
+                        { value: 2, label: 'Tue' },
+                        { value: 3, label: 'Wed' },
+                        { value: 4, label: 'Thu' },
+                        { value: 5, label: 'Fri' },
+                        { value: 6, label: 'Sat' },
+                        { value: 0, label: 'Sun' },
+                      ].map((day) => {
+                        const currentDays: number[] = Array.isArray((businessSettings as any)?.workDays)
+                          ? (businessSettings as any).workDays
+                          : [1, 2, 3, 4, 5];
+                        const active = currentDays.includes(day.value);
+                        return (
+                          <Button
+                            key={day.value}
+                            type="button"
+                            variant={active ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => {
+                              const next = active
+                                ? currentDays.filter((d) => d !== day.value)
+                                : [...currentDays, day.value].sort((a, b) => a - b);
+                              handleBusinessSave({ workDays: next } as any);
+                            }}
+                            data-testid={`button-tracking-day-${day.value}`}
+                          >
+                            {day.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+
           {/* AI Features Card */}
           <Card>
             <CardHeader>
@@ -2304,107 +2317,8 @@ export default function Settings({
               </p>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="payment" className="space-y-6">
-          {/* Card 1: Rates & Defaults */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Rates & Defaults</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="hourly-rate">Default Hourly Rate ($)</Label>
-                  <Input
-                    id="hourly-rate"
-                    type="number"
-                    value={paymentData.defaultHourlyRate}
-                    onChange={(e) => setPaymentData(prev => ({ ...prev, defaultHourlyRate: Number(e.target.value) }))}
-                    data-testid="input-hourly-rate"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="callout-fee">Callout Fee ($)</Label>
-                  <Input
-                    id="callout-fee"
-                    type="number"
-                    value={paymentData.calloutFee}
-                    onChange={(e) => setPaymentData(prev => ({ ...prev, calloutFee: Number(e.target.value) }))}
-                    data-testid="input-callout-fee"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="quote-validity">Quote Validity (Days)</Label>
-                  <Input
-                    id="quote-validity"
-                    type="number"
-                    value={paymentData.quoteValidityDays}
-                    onChange={(e) => setPaymentData(prev => ({ ...prev, quoteValidityDays: Number(e.target.value) }))}
-                    data-testid="input-quote-validity"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="payment-terms-days">Payment Due (Days)</Label>
-                  <Input
-                    id="payment-terms-days"
-                    type="number"
-                    value={paymentData.defaultPaymentTermsDays}
-                    onChange={(e) => setPaymentData(prev => ({ ...prev, defaultPaymentTermsDays: Number(e.target.value) }))}
-                    data-testid="input-payment-terms-days"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="late-fee-rate">Late Fee Rate</Label>
-                  <Input
-                    id="late-fee-rate"
-                    value={paymentData.lateFeeRate}
-                    onChange={(e) => setPaymentData(prev => ({ ...prev, lateFeeRate: e.target.value }))}
-                    placeholder="1.5% per month"
-                    data-testid="input-late-fee-rate"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="warranty-period">Warranty Period</Label>
-                  <Input
-                    id="warranty-period"
-                    value={paymentData.warrantyPeriod}
-                    onChange={(e) => setPaymentData(prev => ({ ...prev, warrantyPeriod: e.target.value }))}
-                    placeholder="12 months"
-                    data-testid="input-warranty-period"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <Button
-                  onClick={handleSave}
-                  disabled={saveSettingsMutation.isPending}
-                  data-testid="button-save-rates"
-                >
-                  {saveSettingsMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Rates
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Card 2: Bank & Payment Methods */}
-          <PaymentMethodsSettings />
-
-          {/* Card 3: Documents & Signature */}
+          {/* Documents & Signature */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -2517,6 +2431,106 @@ export default function Settings({
               </div>
             </CardContent>
           </Card>
+
+        </TabsContent>
+
+        <TabsContent value="payment" className="space-y-6">
+          {/* Card 1: Rates & Defaults */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Rates & Defaults</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hourly-rate">Default Hourly Rate ($)</Label>
+                  <Input
+                    id="hourly-rate"
+                    type="number"
+                    value={paymentData.defaultHourlyRate}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, defaultHourlyRate: Number(e.target.value) }))}
+                    data-testid="input-hourly-rate"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="callout-fee">Callout Fee ($)</Label>
+                  <Input
+                    id="callout-fee"
+                    type="number"
+                    value={paymentData.calloutFee}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, calloutFee: Number(e.target.value) }))}
+                    data-testid="input-callout-fee"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-validity">Quote Validity (Days)</Label>
+                  <Input
+                    id="quote-validity"
+                    type="number"
+                    value={paymentData.quoteValidityDays}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, quoteValidityDays: Number(e.target.value) }))}
+                    data-testid="input-quote-validity"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="payment-terms-days">Payment Due (Days)</Label>
+                  <Input
+                    id="payment-terms-days"
+                    type="number"
+                    value={paymentData.defaultPaymentTermsDays}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, defaultPaymentTermsDays: Number(e.target.value) }))}
+                    data-testid="input-payment-terms-days"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="late-fee-rate">Late Fee Rate</Label>
+                  <Input
+                    id="late-fee-rate"
+                    value={paymentData.lateFeeRate}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, lateFeeRate: e.target.value }))}
+                    placeholder="1.5% per month"
+                    data-testid="input-late-fee-rate"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="warranty-period">Warranty Period</Label>
+                  <Input
+                    id="warranty-period"
+                    value={paymentData.warrantyPeriod}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, warrantyPeriod: e.target.value }))}
+                    placeholder="12 months"
+                    data-testid="input-warranty-period"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  onClick={handleSave}
+                  disabled={saveSettingsMutation.isPending}
+                  data-testid="button-save-rates"
+                >
+                  {saveSettingsMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Rates
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card 2: Bank & Payment Methods */}
+          <PaymentMethodsSettings />
 
           <Card>
             <CardHeader>
