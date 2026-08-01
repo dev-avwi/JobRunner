@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import JobPicker from "@/components/JobPicker";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -1369,48 +1370,37 @@ export default function CollectPayment() {
 
               <div className="space-y-2">
                 <Label>Link to Invoice (optional)</Label>
-                <Select value={tapToPayInvoiceId} onValueChange={(value) => {
-                  if (value === "_none") {
-                    setTapToPayInvoiceId("");
-                  } else {
-                    setTapToPayInvoiceId(value);
-                  }
-                }}>
-                  <SelectTrigger data-testid="select-tap-to-pay-invoice">
-                    <SelectValue placeholder="Select invoice to auto-fill" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">No invoice (quick collect)</SelectItem>
-                    {unpaidInvoices.map((invoice) => (
-                      <SelectItem key={invoice.id} value={invoice.id}>
-                        {invoice.number} - {invoice.title} (${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : invoice.total})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={tapToPayInvoiceId || "_none"}
+                  onValueChange={(value) => setTapToPayInvoiceId(value === "_none" ? "" : value)}
+                  placeholder="Select invoice to auto-fill"
+                  searchPlaceholder="Search invoices..."
+                  emptyMessage="No unpaid invoices found."
+                  options={[
+                    { value: "_none", label: "No invoice (quick collect)" },
+                    ...unpaidInvoices.map((invoice) => ({
+                      value: invoice.id,
+                      label: `${invoice.number} - ${invoice.title} ($${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : invoice.total})`,
+                    })),
+                  ]}
+                  data-testid="select-tap-to-pay-invoice"
+                />
               </div>
 
               <div className="space-y-2">
                 <Label>Client (optional)</Label>
-                <Select value={tapToPayClientId} onValueChange={(value) => {
-                  if (value === "_none") {
-                    setTapToPayClientId("");
-                  } else {
-                    setTapToPayClientId(value);
-                  }
-                }}>
-                  <SelectTrigger data-testid="select-tap-to-pay-client">
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">No client</SelectItem>
-                    {clients?.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={tapToPayClientId || "_none"}
+                  onValueChange={(value) => setTapToPayClientId(value === "_none" ? "" : value)}
+                  placeholder="Select client"
+                  searchPlaceholder="Search clients..."
+                  emptyMessage="No clients found."
+                  options={[
+                    { value: "_none", label: "No client" },
+                    ...(clients?.map((client) => ({ value: client.id, label: client.name })) || []),
+                  ]}
+                  data-testid="select-tap-to-pay-client"
+                />
               </div>
 
               <div className="space-y-2">
@@ -1630,39 +1620,36 @@ export default function CollectPayment() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Client</Label>
-              <Select value={recordClientId} onValueChange={(value) => {
-                setRecordClientId(value);
-                setRecordInvoiceId("");
-              }}>
-                <SelectTrigger data-testid="select-record-client">
-                  <SelectValue placeholder="Select client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients?.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={recordClientId}
+                onValueChange={(value) => {
+                  setRecordClientId(value);
+                  setRecordInvoiceId("");
+                }}
+                placeholder="Select client"
+                searchPlaceholder="Search clients..."
+                emptyMessage="No clients found."
+                options={clients?.map((client) => ({ value: client.id, label: client.name })) || []}
+                data-testid="select-record-client"
+              />
             </div>
 
             <div className="space-y-2">
               <Label>Invoice</Label>
-              <Select value={recordInvoiceId} onValueChange={setRecordInvoiceId}>
-                <SelectTrigger data-testid="select-record-invoice">
-                  <SelectValue placeholder="Select invoice" />
-                </SelectTrigger>
-                <SelectContent>
-                  {unpaidInvoices
-                    .filter(inv => !recordClientId || inv.clientId === recordClientId)
-                    .map((invoice) => (
-                    <SelectItem key={invoice.id} value={invoice.id}>
-                      {invoice.number} - ${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : invoice.total}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={recordInvoiceId}
+                onValueChange={setRecordInvoiceId}
+                placeholder="Select invoice"
+                searchPlaceholder="Search invoices..."
+                emptyMessage="No unpaid invoices found."
+                options={unpaidInvoices
+                  .filter(inv => !recordClientId || inv.clientId === recordClientId)
+                  .map((invoice) => ({
+                    value: invoice.id,
+                    label: `${invoice.number} - $${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : invoice.total}`,
+                  }))}
+                data-testid="select-record-invoice"
+              />
             </div>
 
             <div className="space-y-2">

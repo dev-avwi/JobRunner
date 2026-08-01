@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import JobPicker from "@/components/JobPicker";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -444,21 +445,15 @@ export default function ServiceRemindersPage() {
 
             <div className="grid gap-2">
               <Label htmlFor="clientId">Client</Label>
-              <Select
+              <SearchableSelect
                 value={formData.clientId}
                 onValueChange={(v) => setFormData({ ...formData, clientId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select client"
+                searchPlaceholder="Search clients..."
+                emptyMessage="No clients found."
+                options={clients.map((client) => ({ value: client.id, label: client.name }))}
+                data-testid="select-reminder-client"
+              />
             </div>
 
             <div className="grid gap-2">

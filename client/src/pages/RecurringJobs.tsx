@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -365,18 +366,15 @@ export default function RecurringJobs() {
 
             <div className="space-y-2">
               <Label htmlFor="client">Client</Label>
-              <Select value={formData.clientId} onValueChange={(v) => setFormData({ ...formData, clientId: v })}>
-                <SelectTrigger data-testid="select-recurring-job-client">
-                  <SelectValue placeholder="Select a client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={formData.clientId}
+                onValueChange={(v) => setFormData({ ...formData, clientId: v })}
+                placeholder="Select a client"
+                searchPlaceholder="Search clients..."
+                emptyMessage="No clients found."
+                options={clients.map((client) => ({ value: client.id, label: client.name }))}
+                data-testid="select-recurring-job-client"
+              />
             </div>
 
             <div className="space-y-2">

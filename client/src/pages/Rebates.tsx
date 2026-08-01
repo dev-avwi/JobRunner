@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import JobPicker from "@/components/JobPicker";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -343,22 +344,18 @@ export default function RebatesPage() {
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="clientId">Client (Optional)</Label>
-          <Select
-            value={formData.clientId}
-            onValueChange={(value) => setFormData({ ...formData, clientId: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select client" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">None</SelectItem>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={formData.clientId || "_none"}
+            onValueChange={(value) => setFormData({ ...formData, clientId: value === "_none" ? "" : value })}
+            placeholder="Select client"
+            searchPlaceholder="Search clients..."
+            emptyMessage="No clients found."
+            options={[
+              { value: "_none", label: "None" },
+              ...clients.map((client) => ({ value: client.id, label: client.name })),
+            ]}
+            data-testid="select-rebate-client"
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="jobId">Job (Optional)</Label>

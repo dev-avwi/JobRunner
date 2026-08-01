@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState, useRef, useEffect } from "react";
 import { getAuthHeaders } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -773,18 +774,19 @@ export default function DocumentEditor({ type, onSave, onCancel }: DocumentEdito
                   Client sees this
                 </Badge>
               </div>
-              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger className="w-full" data-testid="select-client">
-                  <SelectValue placeholder="Click to select client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(clients as any[]).map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={selectedClientId}
+                onValueChange={setSelectedClientId}
+                placeholder="Click to select client"
+                searchPlaceholder="Search clients..."
+                emptyMessage="No clients found."
+                options={(clients as any[]).map((client) => ({
+                  value: client.id,
+                  label: client.name,
+                  description: client.phone || undefined,
+                }))}
+                data-testid="select-client"
+              />
               {selectedClient && (
                 <div className="mt-2 text-sm space-y-0.5">
                   {selectedClient.address && <p>{selectedClient.address}</p>}

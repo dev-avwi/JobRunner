@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -589,31 +590,22 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                     <FormItem>
                       <FormLabel>Client</FormLabel>
                       <div className="flex gap-2">
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-client" className="flex-1">
-                              <SelectValue placeholder="Select a client" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {(clients as any[]).length === 0 ? (
-                              <div className="p-3 text-center text-sm text-muted-foreground">
-                                No clients yet. Add your first client!
-                              </div>
-                            ) : (
-                              (clients as any[]).map((client) => (
-                                <SelectItem key={client.id} value={client.id}>
-                                  <div className="flex flex-col">
-                                    <span>{client.name}</span>
-                                    {client.phone && (
-                                      <span className="text-xs text-muted-foreground">{client.phone}</span>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Select a client"
+                            searchPlaceholder="Search clients..."
+                            emptyMessage="No clients yet. Add your first client!"
+                            className="flex-1"
+                            options={(clients as any[]).map((client) => ({
+                              value: client.id,
+                              label: client.name,
+                              description: client.phone || undefined,
+                            }))}
+                            data-testid="select-client"
+                          />
+                        </FormControl>
                         {field.value && (
                           <Button
                             type="button"
