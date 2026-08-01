@@ -3419,7 +3419,7 @@ function DedicatedNumberAddon() {
                 <p className="text-xs text-muted-foreground">Cancel anytime. Replaces the shared JobRunner number with your own.</p>
               </div>
               <Button variant="outline" asChild>
-                <a href="/chat">
+                <a href="/chat?setup=number">
                   <Phone className="h-4 w-4 mr-1.5" />
                   Set Up in Chat Hub
                 </a>

@@ -52,6 +52,7 @@ import {
   Wrench,
   UserPlus,
   Link2,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -930,6 +931,10 @@ export default function ChatHub() {
 
   useEffect(() => {
     const params = new URLSearchParams(searchString);
+    if (params.get('setup') === 'number') {
+      setShowSmsUpgrade(true);
+      setLocation('/chat', { replace: true });
+    }
     const targetUserId = params.get('to');
     const targetType = params.get('type');
     const smsClientId = params.get('smsClientId');
@@ -1707,14 +1712,24 @@ export default function ChatHub() {
             </div>
           </div>
           {!isTradie && (
-            <Button
-              onClick={() => canTwoWayText ? setNewSmsDialogOpen(true) : undefined}
-              size="icon"
-              variant="ghost"
-              data-testid="button-new-sms"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center">
+              <Button
+                onClick={() => setShowSmsUpgrade(true)}
+                size="icon"
+                variant="ghost"
+                data-testid="button-sms-settings"
+              >
+                <SettingsIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => canTwoWayText ? setNewSmsDialogOpen(true) : undefined}
+                size="icon"
+                variant="ghost"
+                data-testid="button-new-sms"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </div>
 

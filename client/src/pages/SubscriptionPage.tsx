@@ -618,7 +618,7 @@ export default function SubscriptionPage() {
               {hasPaidPlan ? (
                 <Button 
                   variant="outline"
-                  onClick={() => setLocation('/chat-hub')}
+                  onClick={() => setLocation('/chat?setup=number')}
                 >
                   <Phone className="h-4 w-4 mr-1.5" />
                   {status?.addons?.dedicatedNumber ? 'Manage Number' : 'Set Up in Chat Hub'}
