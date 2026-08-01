@@ -153,4 +153,5 @@
 - [queryClient offline fallback vs sub-resource keys](queryclient-offline-detail-fallback.md) — web default queryFn offline fallback returned cached parent OBJECT for ['/api/jobs', id, 'sub'] list keys → ".filter is not a function"; detail = exactly 2 segments.
 - [NDIS item codes + numbering](ndis-item-codes-numbering.md) — 5 prod ALTERs pending at publish; sequential counters must reserve via atomic UPDATE...RETURNING, never select-then-update; new quote→invoice paths must thread itemCode.
 - [TTP App Review Stripe swap](ttp-review-stripe-swap.md) — prod demo account holds Ayden's live Stripe Connect account (done for Tap to Pay review); user chose to KEEP it after 1.1.5 approval — do not reverse unless asked.
+- [Deploy blocked by dependency vulns](deploy-blocked-dependency-vulns.md) — publish scan reads ALL lockfiles incl mobile/; fix transitive CVEs via lockfile surgery + tarball drop-in, not installs.
 - [WebSocket auth tickets](ws-auth-ticket.md) — web is Bearer-only and WS upgrades cannot carry headers; use the single-use /api/ws-ticket nonce flow, never cookies or raw tokens in the URL.
