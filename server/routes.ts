@@ -4549,7 +4549,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
 
-      
       // Verify the Apple identity token's signature against Apple's published
       // JWKS (plus issuer + expiry) before trusting any of its claims. A forged
       // or tampered token throws here and is rejected.
@@ -4734,7 +4733,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Apple auth: Missing code or id_token');
         return res.redirect('/auth?error=missing_credentials');
       }
-
 
 
       // Verify the Apple identity token's signature against Apple's published
@@ -8329,7 +8327,6 @@ Be specific about materials, colors, and features that would be included.`
       hideSections,
     };
   }
-
 
 
   // Streaming AI Photo Analysis - Analyse job photos with GPT-4o vision
@@ -14931,7 +14928,6 @@ Be specific about materials, colors, and features that would be included.`
   // Archive/Unarchive job
 
 
-
   // Jobs assigned to the current user (for staff tradie dashboard)
 
   // Available jobs for team members to request assignment (minimal info for privacy)
@@ -15450,16 +15446,11 @@ Be specific about materials, colors, and features that would be included.`
   });
 
 
-
   // Get linked documents (quote, invoice, receipts) for a specific job
   // This is a dedicated efficient endpoint for job detail views
 
   // Get activity history for a specific job
   // Returns all activity logs related to this job (job events + linked quote/invoice events)
-
-
-
-
 
 
   // Staff-specific endpoint to update job status (on assigned jobs only)
@@ -16793,11 +16784,6 @@ Be specific about materials, colors, and features that would be included.`
   // ============================================
   // PORTAL LINK MANAGEMENT
   // ============================================
-
-
-
-
-
 
 
   // ============================================
@@ -33693,7 +33679,6 @@ Respond with JSON in this format:
   // AI Transcribe voice note (converts speech to text using Whisper)
 
 
-  
   // Delete voice note (team-aware)
   
   // View/stream a voice note (for when signedUrl is not available)
@@ -33703,9 +33688,6 @@ Respond with JSON in this format:
 
   // ===== JOB NOTES ROUTES (Timestamped notes tied to moments) =====
   
-
-
-
 
   // ===== JOB VARIATIONS / CHANGE ORDERS ROUTES =====
   
@@ -44485,7 +44467,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     try {
       const userContext = await getUserContext(req.userId);
       const userId = userContext.effectiveUserId;
-      const { title, description, jobId, siteAddress, workActivityDescription, ppeRequirements, emergencyContact, firstAidLocation, status, hazards } = req.body;
+      const { title, description, jobId, siteAddress, workActivityDescription, ppeRequirements, emergencyContact, firstAidLocation, status, hazards, attachmentUrl, attachmentType } = req.body;
       if (!title) return res.status(400).json({ error: 'Title is required' });
 
       let resolvedAddress = siteAddress;
@@ -44507,6 +44489,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         emergencyContact: emergencyContact || null,
         firstAidLocation: firstAidLocation || null,
         status: status || 'draft',
+        attachmentUrl: attachmentUrl || null,
+        attachmentType: attachmentType || null,
       }).returning();
 
       if (hazards && Array.isArray(hazards) && hazards.length > 0) {
@@ -50027,4 +50011,3 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   const httpServer = createServer(app);
   return httpServer;
 }
-

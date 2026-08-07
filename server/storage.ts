@@ -1451,6 +1451,20 @@ pool
     console.error('[Schema] Failed to ensure subcontractor/payroll payment tables:', err.message);
   });
 
+// Bulk safety & compliance document upload: uploaded SWMS PDFs and training
+// certificates attach to their existing records. Added idempotently with raw
+// SQL at startup (we do NOT use drizzle-kit push on this database).
+pool
+  .query(`
+    ALTER TABLE swms_documents ADD COLUMN IF NOT EXISTS attachment_url text;
+    ALTER TABLE swms_documents ADD COLUMN IF NOT EXISTS attachment_type text;
+    ALTER TABLE training_records ADD COLUMN IF NOT EXISTS attachment_url text;
+    ALTER TABLE training_records ADD COLUMN IF NOT EXISTS attachment_type text;
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure document attachment columns:', err.message);
+  });
+
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
   async upsertUser(userData: UpsertUser): Promise<User> {

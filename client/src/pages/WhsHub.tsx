@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { SwmsBuilder } from "@/components/SwmsBuilder";
+import { BulkDocumentUpload } from "@/components/BulkDocumentUpload";
 import JobPicker from "@/components/JobPicker";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SearchBar, FilterChips } from "@/components/ui/filter-chips";
@@ -41,6 +42,21 @@ const SEVERITY_COLORS: Record<string, string> = {
   serious: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   critical: "bg-red-200 text-red-900 dark:bg-red-950 dark:text-red-100",
 };
+
+// Private compliance attachments (/objects/.private/compliance/...) cannot be
+// opened via a plain <a href> — the /objects route needs auth the browser tab
+// can't send (web is Bearer-token based). Mint a short-lived signed URL first.
+async function openPrivateAttachment(attachmentUrl: string) {
+  const win = window.open("", "_blank");
+  try {
+    const res = await apiRequest("POST", "/api/objects/sign-download", { path: attachmentUrl });
+    const { url } = await res.json();
+    if (win) win.location.href = url;
+    else window.open(url, "_blank");
+  } catch {
+    win?.close();
+  }
+}
 
 const SIGN_CATEGORY_ICONS: Record<string, { icon: typeof Shield; color: string }> = {
   mandatory: { icon: Shield, color: "text-blue-600" },
@@ -1497,6 +1513,13 @@ function TrainingRecordsTab() {
                         {r.expiryDate ? ` | Expires: ${r.expiryDate}` : ""}
                       </p>
                       {r.certificateNumber && <p className="text-xs text-muted-foreground">Cert #: {r.certificateNumber}</p>}
+                      {r.attachmentUrl && (
+                        <button type="button"
+                          className="text-xs text-primary hover:underline flex items-center gap-1 mt-1 w-fit"
+                          onClick={(e) => { e.stopPropagation(); openPrivateAttachment(r.attachmentUrl); }}>
+                          <FileText className="w-3 h-3" /> View certificate
+                        </button>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={getStatusColor(effectiveStatus) as any}>{getStatusLabel(effectiveStatus)}</Badge>
@@ -1880,11 +1903,19 @@ function SwmsDocumentsTab() {
             <Badge variant={doc.status === 'approved' || doc.status === 'signed' || doc.status === 'active' ? 'default' : 'secondary'}>
               {doc.status ? doc.status.charAt(0).toUpperCase() + doc.status.slice(1) : 'Draft'}
             </Badge>
-            <a href={`/api/swms/${doc.id}/pdf`} target="_blank" rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-xs text-primary hover:underline flex items-center gap-1">
-              <FileText className="w-3 h-3" /> PDF
-            </a>
+            {doc.attachmentUrl ? (
+              <button type="button"
+                onClick={(e) => { e.stopPropagation(); openPrivateAttachment(doc.attachmentUrl); }}
+                className="text-xs text-primary hover:underline flex items-center gap-1">
+                <FileText className="w-3 h-3" /> Document
+              </button>
+            ) : (
+              <a href={`/api/swms/${doc.id}/pdf`} target="_blank" rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs text-primary hover:underline flex items-center gap-1">
+                <FileText className="w-3 h-3" /> PDF
+              </a>
+            )}
           </div>
         </div>
 
@@ -2239,6 +2270,7 @@ export default function WhsHub() {
   const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<string>("overview");
   const [overviewPreviewSwmsId, setOverviewPreviewSwmsId] = useState<string | null>(null);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   // Aggregate query: fetches all 7 lists used by the overview/sidebar in a
   // single round-trip (was 7 parallel requests). Sub-tab components still
@@ -2501,6 +2533,10 @@ export default function WhsHub() {
               <HardHat className="h-3.5 w-3.5 mr-1" />
               PPE
             </Button>
+            <Button variant="outline" size="sm" className="press-scale" onClick={() => setShowBulkUpload(true)} data-testid="button-bulk-upload">
+              <Download className="h-3.5 w-3.5 mr-1 rotate-180" />
+              Bulk Upload
+            </Button>
           </div>
         </div>
 
@@ -2548,6 +2584,12 @@ export default function WhsHub() {
           </div>
         )}
       </div>
+
+      <BulkDocumentUpload
+        open={showBulkUpload}
+        onOpenChange={setShowBulkUpload}
+        onNavigateSection={(section) => setActiveSection(section)}
+      />
 
       {overviewPreviewSwmsId && (() => {
         const previewDoc = swmsDocs.find((d: any) => d.id === overviewPreviewSwmsId);

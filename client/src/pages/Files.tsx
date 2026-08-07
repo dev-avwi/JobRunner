@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +74,36 @@ import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { ComplianceDocument } from "@shared/schema";
+
+function isPrivateObjectUrl(url: string): boolean {
+  return url.startsWith("/objects/.private/") || url.includes("/objects/.private/");
+}
+
+// Renders an attachment image; private compliance objects can't be loaded via a
+// direct <img src> (the request can't carry the auth token), so mint a signed URL first.
+function AttachmentImage({ url, className }: { url: string; className?: string }) {
+  const [src, setSrc] = useState<string | null>(isPrivateObjectUrl(url) ? null : url);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (isPrivateObjectUrl(url)) {
+      setSrc(null);
+      setFailed(false);
+      apiRequest("POST", "/api/objects/sign-download", { path: url })
+        .then(res => res.json())
+        .then(({ url: signed }) => { if (!cancelled) setSrc(signed); })
+        .catch(() => { if (!cancelled) setFailed(true); });
+    } else {
+      setSrc(url);
+    }
+    return () => { cancelled = true; };
+  }, [url]);
+
+  if (failed) return <p className="text-xs text-muted-foreground">Couldn't load attachment preview</p>;
+  if (!src) return <div className={`bg-muted animate-pulse h-40 ${className || ""}`} />;
+  return <img src={src} alt="Document attachment" className={className} />;
+}
 
 const typeConfig: Record<string, { label: string; icon: typeof Shield }> = {
   licence: { label: "Licence", icon: Shield },
@@ -313,6 +343,23 @@ export default function FilesPage() {
   function isImageUrl(url: string | null): boolean {
     if (!url) return false;
     return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+  }
+
+  async function openAttachment(url: string) {
+    if (!isPrivateObjectUrl(url)) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const win = window.open("", "_blank");
+    try {
+      const res = await apiRequest("POST", "/api/objects/sign-download", { path: url });
+      const { url: signed } = await res.json();
+      if (win) win.location.href = signed;
+      else window.open(signed, "_blank");
+    } catch {
+      win?.close();
+      toast({ title: "Couldn't open attachment", variant: "destructive" });
+    }
   }
 
   if (isLoading) {
@@ -813,21 +860,19 @@ export default function FilesPage() {
                     <div className="space-y-2">
                       <p className="text-xs text-muted-foreground">Attachment</p>
                       {isImageUrl(selectedItem.attachmentUrl) ? (
-                        <img
-                          src={selectedItem.attachmentUrl}
-                          alt="Document attachment"
+                        <AttachmentImage
+                          url={selectedItem.attachmentUrl}
                           className="rounded-md max-w-full border"
                         />
                       ) : (
-                        <a
-                          href={selectedItem.attachmentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 text-sm text-primary"
+                        <button
+                          type="button"
+                          onClick={() => selectedItem.attachmentUrl && openAttachment(selectedItem.attachmentUrl)}
+                          className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                         >
                           <ExternalLink className="h-4 w-4" />
                           View Attachment
-                        </a>
+                        </button>
                       )}
                     </div>
                   )}

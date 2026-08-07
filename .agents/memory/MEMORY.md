@@ -155,3 +155,4 @@
 - [TTP App Review Stripe swap](ttp-review-stripe-swap.md) — prod demo account holds Ayden's live Stripe Connect account (done for Tap to Pay review); user chose to KEEP it after 1.1.5 approval — do not reverse unless asked.
 - [Deploy blocked by dependency vulns](deploy-blocked-dependency-vulns.md) — publish scan reads ALL lockfiles incl mobile/; fix transitive CVEs via lockfile surgery + tarball drop-in, not installs.
 - [WebSocket auth tickets](ws-auth-ticket.md) — web is Bearer-only and WS upgrades cannot carry headers; use the single-use /api/ws-ticket nonce flow, never cookies or raw tokens in the URL.
+- [Private compliance attachment links](compliance-attachment-links.md) — /objects/.private/compliance links 401 from plain <a href> (web is Bearer-only); open via POST /api/objects/sign-download then window.open. Prod needs attachment_url/attachment_type ALTERs on swms_documents + training_records at publish.

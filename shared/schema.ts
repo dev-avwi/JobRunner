@@ -4941,6 +4941,8 @@ export const swmsDocuments = pgTable("swms_documents", {
   emergencyContact: text("emergency_contact"),
   firstAidLocation: text("first_aid_location"),
   status: text("status").notNull().default('draft'),
+  attachmentUrl: text("attachment_url"),
+  attachmentType: text("attachment_type"), // 'pdf', 'image', 'doc'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -5214,6 +5216,8 @@ export const trainingRecords = pgTable("training_records", {
   expiryDate: text("expiry_date"),
   certificateNumber: text("certificate_number"),
   status: text("status").notNull().default('current'),
+  attachmentUrl: text("attachment_url"),
+  attachmentType: text("attachment_type"), // 'pdf', 'image', 'doc'
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
