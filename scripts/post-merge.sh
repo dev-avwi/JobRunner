@@ -149,6 +149,12 @@ psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_payroll_payments_worker 
 psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_payroll_payments_period ON payroll_payments (period_start, period_end);" 2>/dev/null || true
 psql "$DATABASE_URL" -c "CREATE UNIQUE INDEX IF NOT EXISTS uq_payroll_payments_worker_period ON payroll_payments (business_owner_id, worker_user_id, period_start, period_end);" 2>/dev/null || true
 
+# Compliance attachment columns (safety docs upload)
+psql "$DATABASE_URL" -c "ALTER TABLE swms_documents ADD COLUMN IF NOT EXISTS attachment_type text;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE swms_documents ADD COLUMN IF NOT EXISTS attachment_url text;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE training_records ADD COLUMN IF NOT EXISTS attachment_type text;" 2>/dev/null || true
+psql "$DATABASE_URL" -c "ALTER TABLE training_records ADD COLUMN IF NOT EXISTS attachment_url text;" 2>/dev/null || true
+
 # Drift guard rail (Task #108): refuse to deploy if schema.ts and the live DB
 # disagree after the ALTERs above. Logs the diff and exits non-zero.
 echo "Verifying schema is in sync with shared/schema.ts..."
