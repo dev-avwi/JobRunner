@@ -19,3 +19,5 @@ Replit's package firewall (`package-firewall.replit.local`, Socket Security) blo
 **Why:** Socket flagged a critical CVE in shell-quote (Replit-side policy, not agent-overridable). The user's Mac dev env is unaffected (no firewall) — `eas build`/`eas update`/`expo start` run there; restoring Replit's copy is only for workspace functionality (typechecks, agent edits).
 
 **NEVER** run `npm ci` for `mobile/` here — it wipes node_modules first and the firewall block then leaves you unable to restore via plain install (the whole reason this topic exists).
+
+**Adding a NEW mobile dependency (proven 2026-08):** never `npm install` in mobile/. Instead: curl the exact tarball from registry.npmjs.org → extract into `mobile/node_modules/<pkg>`, hand-add the entry to `mobile/package.json` AND `mobile/package-lock.json` (`packages[""].dependencies` + `packages["node_modules/<pkg>"]` with version/resolved/integrity/peerDeps). Pick the SDK-matched version from `mobile/node_modules/expo/bundledNativeModules.json`. Native modules also need the app.json plugin + a local rebuild on the user's Mac; guard runtime with `requireOptionalNativeModule` so older builds don't crash.

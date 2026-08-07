@@ -397,10 +397,15 @@ export default function ClientsScreen() {
           <Text style={styles.pageTitle}>Clients</Text>
           <Text style={styles.pageSubtitle}>All your clients in one place</Text>
         </View>
-        <PressableRow style={styles.newButton} onPress={handleCreateClient} >
-          <Feather name="plus" size={18} color={colors.primaryForeground} />
-          <Text style={styles.newButtonText}>New Client</Text>
-        </PressableRow>
+        <View style={styles.headerActions}>
+          <PressableRow style={styles.importButton} onPress={() => router.push('/more/import-contacts')} >
+            <Feather name="download" size={18} color={colors.primary} />
+          </PressableRow>
+          <PressableRow style={styles.newButton} onPress={handleCreateClient} >
+            <Feather name="plus" size={18} color={colors.primaryForeground} />
+            <Text style={styles.newButtonText}>New Client</Text>
+          </PressableRow>
+        </View>
       </View>
 
       <View style={styles.searchBar}>
@@ -598,6 +603,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: colors.mutedForeground,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  importButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: spacing.md,
+    minHeight: 40,
+    minWidth: 40,
   },
   newButton: {
     flexDirection: 'row',

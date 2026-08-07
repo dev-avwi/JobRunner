@@ -342,6 +342,12 @@
         }
       ],
       [
+        "expo-contacts",
+        {
+          "contactsPermission": "JobRunner accesses your contacts only when you choose to import them, so you can bring existing customers into your client list. Contacts are never read in the background or shared."
+        }
+      ],
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "JobRunner uses your background location so your team's live positions appear on the dispatch map and to automatically clock you in and out when you arrive at or leave a job site using geofence technology. Your location is only shared with your team owner or manager.",
