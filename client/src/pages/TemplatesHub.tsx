@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { AIImportDialog, type AIFormDraft } from "@/components/CustomFormBuilder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +68,7 @@ import LiveDocumentPreview from "@/components/LiveDocumentPreview";
 import { SwmsBuilder } from "@/components/SwmsBuilder";
 import { useBusinessSettings } from "@/hooks/use-business-settings";
 import { TemplateId, TemplateCustomization, DOCUMENT_TEMPLATES, DOCUMENT_ACCENT_COLOR } from "@/lib/document-templates";
-import { Check, Settings } from "lucide-react";
+import { Check, Settings, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useBusinessTemplates, getPurposesForFamily, PURPOSE_LABELS } from "@/hooks/use-business-templates";
 import type { BusinessTemplate, BusinessTemplatePurpose } from "@/hooks/use-business-templates";
@@ -1860,6 +1861,12 @@ function FormsTab() {
   const [swmsDeleteConfirmOpen, setSwmsDeleteConfirmOpen] = useState(false);
   const [swmsToDelete, setSwmsToDelete] = useState<any>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [aiImportOpen, setAiImportOpen] = useState(false);
+  const handleAiDraft = (draft: AIFormDraft) => {
+    setAiImportOpen(false);
+    try { sessionStorage.setItem('aiFormDraft', JSON.stringify(draft)); } catch {}
+    setLocation('/forms/new?aiDraft=1&returnTab=forms');
+  };
   const [exportFormId, setExportFormId] = useState<string>('all');
   const [exportFormat, setExportFormat] = useState<'csv' | 'tsv'>('csv');
   const [exportFrom, setExportFrom] = useState('');
@@ -2254,12 +2261,17 @@ function FormsTab() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
+            <Button size="sm" variant="outline" data-testid="button-ai-import" onClick={() => setAiImportOpen(true)}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Rebuild with AI
+            </Button>
             <Button size="sm" data-testid="button-create-form" onClick={() => setLocation('/forms/new')}>
               <Plus className="h-4 w-4 mr-2" />
               Create Form
             </Button>
           </div>
         </div>
+        <AIImportDialog open={aiImportOpen} onOpenChange={setAiImportOpen} onDraft={handleAiDraft} />
 
         {totalForms === 0 && !formSearch ? (
           <Card className="p-6 text-center">

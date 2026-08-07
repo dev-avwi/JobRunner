@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, getAuthHeaders } from "@/lib/queryClient";
 import {
   AlertTriangle,
   CheckCircle,
@@ -141,7 +141,7 @@ export function SmartImportFlow({ onDone }: { onDone?: () => void }) {
   useEffect(() => stopPolling, []);
 
   const fetchJob = useCallback(async (id: string): Promise<SmartJob | null> => {
-    const res = await fetch(`/api/import/smart/jobs/${id}`, { credentials: 'include' });
+    const res = await fetch(`/api/import/smart/jobs/${id}`, { credentials: 'include', headers: getAuthHeaders() });
     if (!res.ok) return null;
     return res.json();
   }, []);
@@ -167,7 +167,7 @@ export function SmartImportFlow({ onDone }: { onDone?: () => void }) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('/api/import/smart/upload', { method: 'POST', body: formData, credentials: 'include' });
+      const res = await fetch('/api/import/smart/upload', { method: 'POST', body: formData, credentials: 'include', headers: getAuthHeaders() });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       setJobId(data.jobId);
@@ -251,7 +251,7 @@ export function SmartImportFlow({ onDone }: { onDone?: () => void }) {
     recheckTimer.current = setTimeout(async () => {
       try {
         const res = await fetch(`/api/import/smart/jobs/${jobId}/recheck`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, credentials: 'include',
           body: JSON.stringify({ type: newType, mappings: newMappings, rows: rowsRef.current }),
         });
         if (!res.ok) return;
@@ -312,7 +312,7 @@ export function SmartImportFlow({ onDone }: { onDone?: () => void }) {
     setCommitting(true);
     try {
       const res = await fetch(`/api/import/smart/jobs/${jobId}/commit`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, credentials: 'include',
         body: JSON.stringify({
           type,
           mappings: activeMappings,
@@ -327,7 +327,7 @@ export function SmartImportFlow({ onDone }: { onDone?: () => void }) {
         (j) => {
           setCommitting(false);
           if (j.status === 'committed') {
-            ['/api/clients', '/api/jobs', '/api/quotes', '/api/invoices', '/api/catalog'].forEach(k =>
+            ['/api/clients', '/api/jobs', '/api/quotes', '/api/invoices', '/api/catalog', '/api/import/history'].forEach(k =>
               queryClient.invalidateQueries({ queryKey: [k] }));
             toast({ title: `Imported ${j.result?.imported ?? 0} ${TYPE_LABELS[type].toLowerCase()}${(j.result?.merged || 0) > 0 ? `, updated ${j.result!.merged} existing` : ''}` });
           } else {

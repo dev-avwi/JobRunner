@@ -308,15 +308,30 @@ export function FormBuilder({ formId, onBack, initialDraft }: FormBuilderProps) 
     }
   };
 
-  const isAiDraft = !isEditing && !!initialDraft;
-  const [formName, setFormName] = useState(initialDraft?.name || "");
-  const [formDescription, setFormDescription] = useState(initialDraft?.description || "");
-  const [formType, setFormType] = useState(initialDraft?.formType || "general");
-  const [requiresSignature, setRequiresSignature] = useState(initialDraft?.requiresSignature || false);
+  // A draft can also arrive via the /forms/new?aiDraft=1 route (stored in
+  // sessionStorage by the "Rebuild with AI" entry point on the Templates hub).
+  const [storedDraft] = useState<AIFormDraft | undefined>(() => {
+    if (initialDraft || isEditing) return undefined;
+    if (new URLSearchParams(search).get('aiDraft') !== '1') return undefined;
+    try {
+      // Left in place until the form is saved, so a reload doesn't lose the draft.
+      const raw = sessionStorage.getItem('aiFormDraft');
+      if (!raw) return undefined;
+      return JSON.parse(raw) as AIFormDraft;
+    } catch {
+      return undefined;
+    }
+  });
+  const draft = initialDraft || storedDraft;
+  const isAiDraft = !isEditing && !!draft;
+  const [formName, setFormName] = useState(draft?.name || "");
+  const [formDescription, setFormDescription] = useState(draft?.description || "");
+  const [formType, setFormType] = useState(draft?.formType || "general");
+  const [requiresSignature, setRequiresSignature] = useState(draft?.requiresSignature || false);
   const [isJobCard, setIsJobCard] = useState(initialJobCard);
   const [blockJobCompletion, setBlockJobCompletion] = useState(false);
   const [taskRules, setTaskRules] = useState<Array<{ fieldId: string; operator: string; value: string; taskTitle: string }>>([]);
-  const [fields, setFields] = useState<FormField[]>(initialDraft?.fields || []);
+  const [fields, setFields] = useState<FormField[]>(draft?.fields || []);
   const [editingField, setEditingField] = useState<FormField | null>(null);
   const [showFieldDialog, setShowFieldDialog] = useState(false);
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
@@ -351,6 +366,7 @@ export function FormBuilder({ formId, onBack, initialDraft }: FormBuilderProps) 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-forms'] });
+      if (isAiDraft) { try { sessionStorage.removeItem('aiFormDraft'); } catch {} }
       toast({ title: `${entityLabel} created`, description: `Your ${entityLabelLower} has been saved.` });
       handleBack();
     },
@@ -1382,7 +1398,7 @@ function SubmissionsViewer({ formId, formName, fields }: { formId: string; formN
   );
 }
 
-function AIImportDialog({ open, onOpenChange, onDraft }: {
+export function AIImportDialog({ open, onOpenChange, onDraft }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDraft: (draft: AIFormDraft) => void;

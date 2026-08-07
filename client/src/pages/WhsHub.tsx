@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { useToast, toast } from "@/hooks/use-toast";
 import {
   AlertTriangle, Shield, ClipboardList, MapPin, Phone,
   Plus, Trash2, Edit, CheckCircle2, XCircle, Clock,
@@ -56,6 +56,53 @@ async function openPrivateAttachment(attachmentUrl: string) {
   } catch {
     win?.close();
   }
+}
+
+// Server-generated PDFs (/api/.../pdf) also need auth a plain <a href> can't
+// send in Bearer-token sessions. Fetch with auth headers and open as a blob.
+async function openGeneratedPdf(path: string) {
+  const win = window.open("", "_blank");
+  try {
+    const res = await apiRequest("GET", path);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    if (win) win.location.href = url;
+    else window.open(url, "_blank");
+    // Give the new tab time to load the blob before releasing it.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch {
+    win?.close();
+    toast({ variant: "destructive", title: "Couldn't open the PDF", description: "Please try again." });
+  }
+}
+
+// Authenticated iframe preview: iframes can't send the Bearer header, so fetch
+// the document with auth and hand the iframe a local blob URL instead.
+function AuthedPdfFrame({ path, title }: { path: string; title: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiRequest("GET", path);
+        const blob = await res.blob();
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [path]);
+  if (failed) return <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground rounded border bg-white">Couldn't load the preview.</div>;
+  if (!src) return <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground rounded border bg-white">Loading preview…</div>;
+  return <iframe src={src} className="w-full h-full rounded border bg-white" title={title} />;
 }
 
 const SIGN_CATEGORY_ICONS: Record<string, { icon: typeof Shield; color: string }> = {
@@ -443,9 +490,7 @@ function IncidentReportsTab() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <a href={`/api/whs/incidents/${report.id}/pdf`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                      <Button size="icon" variant="ghost"><Download className="w-4 h-4" /></Button>
-                    </a>
+                    <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); openGeneratedPdf(`/api/whs/incidents/${report.id}/pdf`); }}><Download className="w-4 h-4" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => handleEdit(report)}><Edit className="w-4 h-4" /></Button>
                     {report.status === "open" && (
                       <Button size="icon" variant="ghost" onClick={() => updateMutation.mutate({ id: report.id, data: { status: "closed" } })}>
@@ -1176,9 +1221,7 @@ function PpeChecklistTab() {
                     <Badge variant={c.allCorrect ? "default" : "secondary"}>
                       {checkedCount(c)}/{ppeItems.length} items
                     </Badge>
-                    <a href={`/api/whs/ppe-checklists/${c.id}/pdf`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                      <Button size="icon" variant="ghost"><Download className="w-4 h-4" /></Button>
-                    </a>
+                    <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); openGeneratedPdf(`/api/whs/ppe-checklists/${c.id}/pdf`); }}><Download className="w-4 h-4" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(c.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -1817,9 +1860,7 @@ function HazardReportsTab() {
                     )}
                   </div>
                   <div className="flex gap-1">
-                    <a href={`/api/whs/hazard-reports/${h.id}/pdf`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                      <Button size="icon" variant="ghost"><Download className="w-4 h-4" /></Button>
-                    </a>
+                    <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); openGeneratedPdf(`/api/whs/hazard-reports/${h.id}/pdf`); }}><Download className="w-4 h-4" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => startEdit(h)}><Edit className="w-4 h-4" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(h.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                   </div>
@@ -1910,11 +1951,11 @@ function SwmsDocumentsTab() {
                 <FileText className="w-3 h-3" /> Document
               </button>
             ) : (
-              <a href={`/api/swms/${doc.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
+              <button type="button"
+                onClick={(e) => { e.stopPropagation(); openGeneratedPdf(`/api/swms/${doc.id}/pdf`); }}
                 className="text-xs text-primary hover:underline flex items-center gap-1">
                 <FileText className="w-3 h-3" /> PDF
-              </a>
+              </button>
             )}
           </div>
         </div>
@@ -2178,20 +2219,14 @@ function SwmsDocumentsTab() {
                       <ExternalLink className="w-3 h-3 mr-1" /> View Job
                     </Button>
                   )}
-                  <a href={`/api/swms/${previewSwmsId}/pdf`} onClick={(e) => e.stopPropagation()}>
-                    <Button size="sm" variant="outline">
-                      <Download className="w-3 h-3 mr-1" /> Download
-                    </Button>
-                  </a>
+                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); openGeneratedPdf(`/api/swms/${previewSwmsId}/pdf`); }}>
+                    <Download className="w-3 h-3 mr-1" /> Download
+                  </Button>
                 </div>
               </DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-hidden px-4 pb-4">
-              <iframe
-                src={`/api/swms/${previewSwmsId}/pdf?format=html`}
-                className="w-full h-full rounded border bg-white"
-                title="SWMS Preview"
-              />
+              <AuthedPdfFrame path={`/api/swms/${previewSwmsId}/pdf?format=html`} title="SWMS Preview" />
             </div>
           </DialogContent>
         </Dialog>
@@ -2605,20 +2640,14 @@ export default function WhsHub() {
                       <ExternalLink className="w-3 h-3 mr-1" /> View Job
                     </Button>
                   )}
-                  <a href={`/api/swms/${overviewPreviewSwmsId}/pdf`} onClick={(e) => e.stopPropagation()}>
-                    <Button size="sm" variant="outline">
-                      <Download className="w-3 h-3 mr-1" /> Download
-                    </Button>
-                  </a>
+                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); openGeneratedPdf(`/api/swms/${overviewPreviewSwmsId}/pdf`); }}>
+                    <Download className="w-3 h-3 mr-1" /> Download
+                  </Button>
                 </div>
               </DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-hidden px-4 pb-4">
-              <iframe
-                src={`/api/swms/${overviewPreviewSwmsId}/pdf?format=html`}
-                className="w-full h-full rounded border bg-white"
-                title="SWMS Preview"
-              />
+              <AuthedPdfFrame path={`/api/swms/${overviewPreviewSwmsId}/pdf?format=html`} title="SWMS Preview" />
             </div>
           </DialogContent>
         </Dialog>

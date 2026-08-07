@@ -21,7 +21,7 @@ import { useBusinessSettings } from "@/hooks/use-business-settings";
 import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { useTheme } from "@/components/ThemeProvider";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getAuthHeaders } from "@/lib/queryClient";
 import { useAppMode } from "@/hooks/use-app-mode";
 import { 
   Building, 
@@ -84,7 +84,7 @@ import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogoUpload } from "./LogoUpload";
 import { QuickRepliesSettings } from "./QuickRepliesSettings";
-import { useToast } from "@/hooks/use-toast";
+import { useToast, toast } from "@/hooks/use-toast";
 import DataSafetyBanner from "./DataSafetyBanner";
 import { SmartImportFlow } from "./SmartImportFlow";
 import { TemplateId, TemplateCustomization } from "@/lib/document-templates";
@@ -140,7 +140,7 @@ export function ClearSampleDataCard() {
         try {
           await fetch('/api/onboarding/clear-demo-data', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             credentials: 'include',
           });
         } catch {}
@@ -149,6 +149,7 @@ export function ClearSampleDataCard() {
         const r = await fetch('/api/onboarding/sample-data', {
           method: 'DELETE',
           credentials: 'include',
+          headers: getAuthHeaders(),
         });
         if (!r.ok) {
           const data = await r.json().catch(() => ({}));
@@ -233,6 +234,26 @@ interface ImportPreviewData {
   formatWarning?: string;
 }
 
+// Template downloads need auth headers a plain window.open can't send
+// (Bearer-token sessions), so fetch to a blob and trigger the download.
+async function downloadTemplate(type: string) {
+  try {
+    const res = await fetch(`/api/import/templates/${type}`, { credentials: 'include', headers: getAuthHeaders() });
+    if (!res.ok) throw new Error(String(res.status));
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type}-template.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  } catch {
+    toast({ variant: 'destructive', title: "Couldn't download the template", description: 'Please try again.' });
+  }
+}
+
 function CompetitorImportFlow({ platform, onClose }: { platform: ImportPlatform; onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -249,7 +270,7 @@ function CompetitorImportFlow({ platform, onClose }: { platform: ImportPlatform;
     formData.append('file', file);
     formData.append('platform', platform);
     try {
-      const res = await fetch('/api/import/preview', { method: 'POST', body: formData, credentials: 'include' });
+      const res = await fetch('/api/import/preview', { method: 'POST', body: formData, credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to parse file');
       setPreview(await res.json());
     } catch {
@@ -262,7 +283,7 @@ function CompetitorImportFlow({ platform, onClose }: { platform: ImportPlatform;
     setIsImporting(true);
     try {
       const res = await fetch('/api/import/execute', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, credentials: 'include',
         body: JSON.stringify({
           type: preview.detectedType,
           data: preview.rows,
@@ -276,7 +297,7 @@ function CompetitorImportFlow({ platform, onClose }: { platform: ImportPlatform;
       if (!res.ok) throw new Error(data.error || 'Import failed');
       setResult(data);
       if (data.imported > 0) {
-        const keys = ['/api/clients', '/api/jobs', '/api/quotes', '/api/invoices', '/api/catalog'];
+        const keys = ['/api/clients', '/api/jobs', '/api/quotes', '/api/invoices', '/api/catalog', '/api/import/history'];
         keys.forEach(k => queryClient.invalidateQueries({ queryKey: [k] }));
         toast({ title: `Imported ${data.imported} ${preview.detectedType}` });
       }
@@ -415,7 +436,7 @@ export function ImportDataCard() {
     formData.append('file', file);
     formData.append('type', importType);
     try {
-      const res = await fetch('/api/import/preview', { method: 'POST', body: formData, credentials: 'include' });
+      const res = await fetch('/api/import/preview', { method: 'POST', body: formData, credentials: 'include', headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to parse file');
       setPreview(await res.json());
     } catch {
@@ -428,7 +449,7 @@ export function ImportDataCard() {
     setIsImporting(true);
     try {
       const res = await fetch('/api/import/execute', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, credentials: 'include',
         body: JSON.stringify({ type: importType, data: preview.rows, mappings: preview.suggestedMappings, skipDuplicates: true, importRunId: preview.importRunId }),
       });
       const data = await res.json();
@@ -437,6 +458,7 @@ export function ImportDataCard() {
       if (data.imported > 0) {
         const queryKeyMap: Record<string, string> = { clients: '/api/clients', catalog: '/api/catalog', jobs: '/api/jobs', quotes: '/api/quotes', invoices: '/api/invoices' };
         queryClient.invalidateQueries({ queryKey: [queryKeyMap[importType]] });
+        queryClient.invalidateQueries({ queryKey: ['/api/import/history'] });
         const typeLabels: Record<string, string> = { clients: 'clients', catalog: 'items', jobs: 'jobs', quotes: 'quotes', invoices: 'invoices' };
         toast({ title: `Imported ${data.imported} ${typeLabels[importType] || 'records'}` });
       }
@@ -492,7 +514,7 @@ export function ImportDataCard() {
                 {(['clients', 'catalog', 'jobs', 'quotes', 'invoices'] as const).map((t, i) => (
                   <span key={t}>
                     {i > 0 && ' · '}
-                    <button type="button" className="underline hover:text-foreground" onClick={() => window.open(`/api/import/templates/${t}`, '_blank')}>
+                    <button type="button" className="underline hover:text-foreground" onClick={() => downloadTemplate(t)}>
                       {t === 'catalog' ? 'price list' : t} template
                     </button>
                   </span>
@@ -509,7 +531,7 @@ export function ImportDataCard() {
             <input ref={fileRef} type="file" accept=".csv" onChange={handleFileSelect} className="hidden" />
             <div className="flex gap-2 flex-wrap">
               <Button size="sm" onClick={() => fileRef.current?.click()}>Choose CSV File</Button>
-              <Button variant="ghost" size="sm" onClick={() => window.open(`/api/import/templates/${importType}`, '_blank')}>
+              <Button variant="ghost" size="sm" onClick={() => downloadTemplate(importType)}>
                 Download template
               </Button>
               <Button variant="ghost" size="sm" onClick={reset}>Cancel</Button>

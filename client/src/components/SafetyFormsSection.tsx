@@ -112,7 +112,7 @@ export function SafetyFormsSection({ jobId, jobStatus, jobTitle, jobAddress, onS
 
   const handleDownloadPdf = async (swmsId: string) => {
     try {
-      const response = await fetch(`/api/swms/${swmsId}/pdf`, { credentials: 'include' });
+      const response = await fetch(`/api/swms/${swmsId}/pdf`, { credentials: 'include', headers: getAuthHeaders() });
       if (!response.ok) throw new Error('Failed to download');
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
