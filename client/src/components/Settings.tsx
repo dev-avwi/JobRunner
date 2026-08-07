@@ -110,6 +110,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ClearSampleDataCard, ImportDataCard, TimezoneField } from "./SettingsImportCards";
+import { ImportHistoryCard } from "./ImportHistoryCard";
 
 // Types for MyAccount tab
 interface ColorOption {
@@ -1508,6 +1509,9 @@ export default function Settings({
 
           {/* Import Data Card */}
           <ImportDataCard />
+
+          {/* Import History - traceability + undo for every import (Task 300) */}
+          <ImportHistoryCard />
         </TabsContent>
 
         <TabsContent value="appearance" className="space-y-6">

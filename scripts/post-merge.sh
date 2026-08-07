@@ -157,6 +157,15 @@ psql "$DATABASE_URL" -c "ALTER TABLE training_records ADD COLUMN IF NOT EXISTS a
 
 # Drift guard rail (Task #108): refuse to deploy if schema.ts and the live DB
 # disagree after the ALTERs above. Logs the diff and exits non-zero.
+# Task 300: import traceability (import_runs + origin tags)
+psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS import_runs (id varchar PRIMARY KEY DEFAULT gen_random_uuid(), user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE, file_name text NOT NULL, file_path text, file_size integer, source text NOT NULL DEFAULT 'csv', platform text, type text NOT NULL DEFAULT 'unknown', status text NOT NULL DEFAULT 'pending', records_imported integer NOT NULL DEFAULT 0, records_merged integer NOT NULL DEFAULT 0, records_skipped integer NOT NULL DEFAULT 0, records_removed integer NOT NULL DEFAULT 0, completed_at timestamp, undone_at timestamp, created_at timestamp DEFAULT now(), updated_at timestamp DEFAULT now());" 2>/dev/null || true
+psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_import_runs_user_id ON import_runs(user_id);" 2>/dev/null || true
+for t in clients jobs quotes invoices line_item_catalog; do
+  psql "$DATABASE_URL" -c "ALTER TABLE $t ADD COLUMN IF NOT EXISTS import_run_id varchar;" 2>/dev/null || true
+  psql "$DATABASE_URL" -c "ALTER TABLE $t ADD COLUMN IF NOT EXISTS import_row_number integer;" 2>/dev/null || true
+  psql "$DATABASE_URL" -c "CREATE INDEX IF NOT EXISTS idx_${t}_import_run_id ON $t(import_run_id) WHERE import_run_id IS NOT NULL;" 2>/dev/null || true
+done
+
 echo "Verifying schema is in sync with shared/schema.ts..."
 node scripts/check-schema-drift.mjs
 

@@ -262,6 +262,13 @@ import { registerInventoryRoutes } from "./routes/inventory";
 import { registerCustomFormsRoutes } from "./routes/custom-forms";
 import { registerRebatesRoutes } from "./routes/rebates";
 import { registerSmartImportRoutes } from "./routes/smart-import";
+import {
+  registerImportHistoryRoutes,
+  persistImportFile,
+  createPendingImportRun,
+  resolvePendingImportRun,
+  finalizeImportRun,
+} from "./routes/import-history";
 import { registerTeamGroupsRoutes } from "./routes/team-groups";
 
 // Mass-assignment guard: strip server-controlled identity/ownership/timestamp
@@ -12996,7 +13003,21 @@ Be specific about materials, colors, and features that would be included.`
         duplicates = await detectDuplicates(userId, detectedType, allRows, mappings);
       }
 
+      // Task 300: retain the original file + open a pending import run so the
+      // subsequent execute call is fully traceable and undoable.
+      const filePath = await persistImportFile(file.originalname, file.buffer, file.mimetype || 'text/csv');
+      const importRunId = await createPendingImportRun({
+        userId: req.userId!,
+        fileName: file.originalname || 'import.csv',
+        filePath,
+        fileSize: file.size ?? file.buffer.length,
+        source: 'csv',
+        platform: detectedPlatform,
+        type: detectedType,
+      });
+
       res.json({
+        importRunId,
         headers,
         preview: previewRows,
         rows: allRows,
@@ -13179,7 +13200,7 @@ Be specific about materials, colors, and features that would be included.`
     return mapped;
   }
 
-  async function findOrCreateClient(userId: string, clientName: string, clientEmail?: string): Promise<string> {
+  async function findOrCreateClient(userId: string, clientName: string, clientEmail?: string, origin?: { importRunId: string | null; importRowNumber: number }): Promise<string> {
     const existingClients = await storage.getClients(userId);
     if (clientEmail) {
       const byEmail = existingClients.find(c => c.email?.toLowerCase() === clientEmail.toLowerCase());
@@ -13194,6 +13215,8 @@ Be specific about materials, colors, and features that would be included.`
       phone: null,
       address: null,
       notes: null,
+      importRunId: origin?.importRunId ?? null,
+      importRowNumber: origin?.importRowNumber ?? null,
     } as any);
     return newClient.id;
   }
@@ -13202,6 +13225,20 @@ Be specific about materials, colors, and features that would be included.`
     try {
       const { type, data, mappings, skipDuplicates, platform } = req.body;
       const userId = req.userId!;
+
+      // Task 300: resolve the pending import run opened at preview time (owner
+      // + status checked server-side). Falls back to a fresh run so imports
+      // remain traceable even when the client didn't send one.
+      let importRunId = await resolvePendingImportRun(userId, req.body?.importRunId);
+      if (!importRunId) {
+        importRunId = await createPendingImportRun({
+          userId,
+          fileName: typeof req.body?.fileName === 'string' && req.body.fileName ? req.body.fileName : 'CSV import',
+          source: 'csv',
+          platform: typeof platform === 'string' ? platform : null,
+          type: typeof type === 'string' ? type : 'unknown',
+        });
+      }
 
       const validTypes: ImportDataType[] = ['clients', 'catalog', 'jobs', 'quotes', 'invoices'];
       if (!type || !validTypes.includes(type)) {
@@ -13250,6 +13287,8 @@ Be specific about materials, colors, and features that would be included.`
               phone: mapped.phone || null,
               address: mapped.address || null,
               notes: mapped.notes || null,
+              importRunId,
+              importRowNumber: i + 2,
             } as any);
             imported++;
           } catch (err: any) {
@@ -13300,6 +13339,8 @@ Be specific about materials, colors, and features that would be included.`
               unitPrice: unitPrice.toFixed(2),
               defaultQty: isNaN(defaultQty) ? '1.00' : defaultQty.toFixed(2),
               tags: [],
+              importRunId,
+              importRowNumber: i + 2,
             } as any);
             imported++;
           } catch (err: any) {
@@ -13323,7 +13364,7 @@ Be specific about materials, colors, and features that would be included.`
               continue;
             }
 
-            const clientId = await findOrCreateClient(userId, mapped.clientName, mapped.clientEmail);
+            const clientId = await findOrCreateClient(userId, mapped.clientName, mapped.clientEmail, { importRunId, importRowNumber: i + 2 });
             const status = mapped.status ? mapStatusToJobRunner(mapped.status, 'jobs', (platform as ImportPlatform) || 'generic') : 'pending';
             const title = mapped.title || `Job ${mapped.refNumber || ''}`.trim();
 
@@ -13340,6 +13381,8 @@ Be specific about materials, colors, and features that would be included.`
               status,
               scheduledAt: scheduledAt || null,
               notes: jobNotes || null,
+              importRunId,
+              importRowNumber: i + 2,
             } as any);
             imported++;
           } catch (err: any) {
@@ -13358,7 +13401,7 @@ Be specific about materials, colors, and features that would be included.`
               continue;
             }
 
-            const clientId = await findOrCreateClient(userId, mapped.clientName, mapped.clientEmail);
+            const clientId = await findOrCreateClient(userId, mapped.clientName, mapped.clientEmail, { importRunId, importRowNumber: i + 2 });
             const status = mapped.status ? mapStatusToJobRunner(mapped.status, 'quotes', (platform as ImportPlatform) || 'generic') : 'draft';
             const title = mapped.title || `Quote ${mapped.refNumber || ''}`.trim();
             const total = parseFloat(mapped.total || '0');
@@ -13383,6 +13426,8 @@ Be specific about materials, colors, and features that would be included.`
               total: (isNaN(total) ? 0 : total).toFixed(2),
               validUntil: validUntil || null,
               notes: quoteNotes || null,
+              importRunId,
+              importRowNumber: i + 2,
             } as any);
 
             if (mapped.lineDescription) {
@@ -13423,7 +13468,7 @@ Be specific about materials, colors, and features that would be included.`
               continue;
             }
 
-            const clientId = await findOrCreateClient(userId, mapped.clientName, mapped.clientEmail);
+            const clientId = await findOrCreateClient(userId, mapped.clientName, mapped.clientEmail, { importRunId, importRowNumber: i + 2 });
             const status = mapped.status ? mapStatusToJobRunner(mapped.status, 'invoices', (platform as ImportPlatform) || 'generic') : 'draft';
             const title = mapped.title || `Invoice ${mapped.refNumber || ''}`.trim();
             const total = parseFloat(mapped.total || '0');
@@ -13448,6 +13493,8 @@ Be specific about materials, colors, and features that would be included.`
               total: (isNaN(total) ? 0 : total).toFixed(2),
               dueDate: dueDate || null,
               notes: invoiceNotes || null,
+              importRunId,
+              importRowNumber: i + 2,
             } as any);
 
             if (mapped.lineDescription) {
@@ -13479,7 +13526,19 @@ Be specific about materials, colors, and features that would be included.`
         }
       }
 
-      res.json({ imported, skipped, duplicatesSkipped, errors });
+      // Task 300: close out the import run so it appears in Import History.
+      try {
+        await finalizeImportRun(importRunId, {
+          type,
+          imported,
+          skipped,
+          platform: typeof platform === 'string' ? platform : null,
+        });
+      } catch (finalizeErr) {
+        console.error('Failed to finalize import run:', finalizeErr);
+      }
+
+      res.json({ imported, skipped, duplicatesSkipped, errors, importRunId });
     } catch (error: any) {
       console.error('CSV import execution error:', error);
       res.status(500).json({ error: error.message || 'Failed to execute import' });
@@ -14921,6 +14980,7 @@ Be specific about materials, colors, and features that would be included.`
   registerCustomFormsRoutes(app);
   registerRebatesRoutes(app);
   registerSmartImportRoutes(app);
+  registerImportHistoryRoutes(app);
   registerTeamGroupsRoutes(app);
   // Get site photos for all jobs (for chat list display)
   // Optimized: batches photo lookups and generates signed URLs in parallel

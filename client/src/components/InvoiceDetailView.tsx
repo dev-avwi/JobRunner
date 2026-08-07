@@ -22,6 +22,7 @@ import StatusBadge from "./StatusBadge";
 import SendDocumentModal from "./SendDocumentModal";
 import { getTemplateStyles, TemplateId, DEFAULT_TEMPLATE } from "@/lib/document-templates";
 import type { BusinessTemplate } from "@shared/schema";
+import { ImportOriginBadge } from "./ImportOriginBadge";
 
 function getAuthHeaders(): HeadersInit {
   const headers: HeadersInit = {};
@@ -869,6 +870,7 @@ ${businessSettings.email ? `Email: ${businessSettings.email}` : ''}`
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <h1 className="text-xl font-bold">Invoice Details</h1>
+            <ImportOriginBadge importRunId={(invoice as any).importRunId} rowNumber={(invoice as any).importRowNumber} />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

@@ -78,6 +78,7 @@ import { formatHistoryDate } from "@shared/dateUtils";
 import { getWorkerDisplayName } from "@shared/displayName";
 import { useAppMode } from "@/hooks/use-app-mode";
 import { useIntegrationHealth, isTwilioReady } from "@/hooks/use-integration-health";
+import { ImportOriginBadge } from "./ImportOriginBadge";
 import type {
   Photo,
   JobStatus,
@@ -1716,6 +1717,7 @@ export default function JobDetailView({
                 </span>
               )}
               <PresenceIndicator editors={collaboration.otherEditors} />
+              <ImportOriginBadge importRunId={(job as any).importRunId} rowNumber={(job as any).importRowNumber} />
             </div>
           </div>
         </div>

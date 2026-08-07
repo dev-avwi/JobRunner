@@ -834,6 +834,30 @@ export const insertActivityFeedSchema = createInsertSchema(activityFeed).omit({ 
 export type InsertActivityFeed = z.infer<typeof insertActivityFeedSchema>;
 
 // Clients
+// Import runs — one row per data import (CSV/smart import). Keeps the original
+// file in object storage and lets the owner review + undo the whole import.
+export const importRuns = pgTable("import_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path"), // /objects/imports/... path of the retained original upload
+  fileSize: integer("file_size"),
+  source: text("source").notNull().default('csv'), // 'csv' | 'smart'
+  platform: text("platform"), // 'generic' | 'tradify' | 'servicem8' | null
+  type: text("type").notNull().default('unknown'), // clients|catalog|jobs|quotes|invoices
+  status: text("status").notNull().default('pending'), // pending|completed|undone
+  recordsImported: integer("records_imported").notNull().default(0),
+  recordsMerged: integer("records_merged").notNull().default(0),
+  recordsSkipped: integer("records_skipped").notNull().default(0),
+  recordsRemoved: integer("records_removed").notNull().default(0),
+  completedAt: timestamp("completed_at"),
+  undoneAt: timestamp("undone_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_import_runs_user_id").on(table.userId),
+]);
+
 export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -851,6 +875,9 @@ export const clients = pgTable("clients", {
   xeroSyncedAt: timestamp("xero_synced_at"),
   // Task #115: marks rows created by the "Try with sample data" onboarding toggle.
   isSample: boolean("is_sample").default(false).notNull(),
+  // Import traceability: which import created this row (null = created in-app)
+  importRunId: varchar("import_run_id"),
+  importRowNumber: integer("import_row_number"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -918,6 +945,9 @@ export const jobs = pgTable("jobs", {
   version: integer("version").notNull().default(1),
   // Task #115: marks rows created by the "Try with sample data" onboarding toggle.
   isSample: boolean("is_sample").default(false).notNull(),
+  // Import traceability: which import created this row (null = created in-app)
+  importRunId: varchar("import_run_id"),
+  importRowNumber: integer("import_row_number"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1034,6 +1064,9 @@ export const quotes = pgTable("quotes", {
   documentTemplateSettings: json("document_template_settings"), // Custom overrides for template - copied from business settings at creation
   // Task #115: marks rows created by the "Try with sample data" onboarding toggle.
   isSample: boolean("is_sample").default(false).notNull(),
+  // Import traceability: which import created this row (null = created in-app)
+  importRunId: varchar("import_run_id"),
+  importRowNumber: integer("import_row_number"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1161,6 +1194,9 @@ export const invoices = pgTable("invoices", {
   depositPaidAt: timestamp("deposit_paid_at"),
   // Task #115: marks rows created by the "Try with sample data" onboarding toggle.
   isSample: boolean("is_sample").default(false).notNull(),
+  // Import traceability: which import created this row (null = created in-app)
+  importRunId: varchar("import_run_id"),
+  importRowNumber: integer("import_row_number"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1330,6 +1366,9 @@ export const lineItemCatalog = pgTable("line_item_catalog", {
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull().default('0.00'),
   defaultQty: decimal("default_qty", { precision: 10, scale: 2 }).default('1.00'),
   tags: json("tags").default([]), // string[]
+  // Import traceability: which import created this row (null = created in-app)
+  importRunId: varchar("import_run_id"),
+  importRowNumber: integer("import_row_number"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1561,6 +1600,8 @@ export type BusinessSettings = typeof businessSettings.$inferSelect;
 
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clients.$inferSelect;
+export type ImportRun = typeof importRuns.$inferSelect;
+export type InsertImportRun = typeof importRuns.$inferInsert;
 
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Job = typeof jobs.$inferSelect;

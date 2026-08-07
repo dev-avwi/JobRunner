@@ -28,6 +28,7 @@ import StatusBadge from "./StatusBadge";
 import SendDocumentModal from "./SendDocumentModal";
 import { getTemplateStyles, TemplateId, DEFAULT_TEMPLATE } from "@/lib/document-templates";
 import type { BusinessTemplate } from "@shared/schema";
+import { ImportOriginBadge } from "./ImportOriginBadge";
 
 function getAuthHeaders(): HeadersInit {
   const headers: HeadersInit = {};
@@ -587,6 +588,7 @@ export default function QuoteDetailView({ quoteId, onBack, onSend }: QuoteDetail
                 Pushed to Xero
               </Badge>
             )}
+            <ImportOriginBadge importRunId={(quote as any).importRunId} rowNumber={(quote as any).importRowNumber} />
 
             {/* Divider between workflow actions and document tools */}
             <div className="hidden sm:block w-px h-6 bg-border" />

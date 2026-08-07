@@ -19,6 +19,7 @@ import { requireAuth } from "./middleware";
 import { ownerOnly } from "../permissions";
 import { createNotification } from "../notifications";
 import { logger } from "../logger";
+import { persistImportFile, createPendingImportRun, finalizeImportRun } from "./import-history";
 
 // ============================================================
 // Smart Import: AI column mapping + edit-in-preview
@@ -151,6 +152,8 @@ interface SmartImportJob {
   // commit progress
   commitProgress?: { total: number; done: number };
   result?: { imported: number; merged: number; skipped: number };
+  // Task 300: import traceability — pending import_runs row + retained file
+  importRunId?: string;
 }
 
 const jobs = new Map<string, SmartImportJob>();
@@ -690,7 +693,7 @@ async function runCommit(job: SmartImportJob, req: CommitRequest) {
     await db.transaction(async (tx) => {
       const nextQuoteNumber = makeNumberGenerator(tx, 'quote');
       const nextInvoiceNumber = makeNumberGenerator(tx, 'invoice');
-      const findOrCreateClient = async (name: string, email?: string): Promise<string> => {
+      const findOrCreateClient = async (name: string, email?: string, rowNumber?: number): Promise<string> => {
         if (email) {
           const c = clientByEmail.get(email.toLowerCase());
           if (c) return c.id;
@@ -699,6 +702,7 @@ async function runCommit(job: SmartImportJob, req: CommitRequest) {
         if (byName) return byName.id;
         const [created] = await tx.insert(clients).values({
           userId, name, email: email || null, phone: null, address: null, notes: null,
+          importRunId: job.importRunId ?? null, importRowNumber: rowNumber ?? null,
         } as any).returning();
         clientByName.set(name.toLowerCase().trim(), created);
         if (email) clientByEmail.set(email.toLowerCase(), created);
@@ -708,6 +712,9 @@ async function runCommit(job: SmartImportJob, req: CommitRequest) {
       for (const r of included) {
         const mapped = applyMappings(r.data, mappings);
         const resolution = effectiveResolution(r.index);
+        // Spreadsheet row number (1-based data rows + header row)
+        const sourceRow = r.index + 2;
+        const origin = { importRunId: job.importRunId ?? null, importRowNumber: sourceRow };
 
         if (type === 'clients') {
           const dup = dupByRow.get(r.index);
@@ -734,6 +741,7 @@ async function runCommit(job: SmartImportJob, req: CommitRequest) {
               phone: mapped.phone || null,
               address: mapped.address || null,
               notes: mapped.notes || null,
+              ...origin,
             } as any);
             imported++;
           }
@@ -752,10 +760,11 @@ async function runCommit(job: SmartImportJob, req: CommitRequest) {
             unitPrice: unitPrice.toFixed(2),
             defaultQty: defaultQty.toFixed(2),
             tags: [],
+            ...origin,
           } as any);
           imported++;
         } else if (type === 'jobs') {
-          const clientId = await findOrCreateClient(mapped.clientName, mapped.clientEmail);
+          const clientId = await findOrCreateClient(mapped.clientName, mapped.clientEmail, sourceRow);
           const refTag = mapped.refNumber ? `[Imported-Ref:${mapped.refNumber}]` : '';
           await tx.insert(jobsTable).values({
             userId,
@@ -766,10 +775,11 @@ async function runCommit(job: SmartImportJob, req: CommitRequest) {
             status: mapped.status ? mapStatus(mapped.status, 'jobs') : 'pending',
             scheduledAt: parseImportDate(mapped.scheduledAt) || null,
             notes: [mapped.notes, refTag].filter(Boolean).join(' ') || null,
+            ...origin,
           } as any);
           imported++;
         } else if (type === 'quotes' || type === 'invoices') {
-          const clientId = await findOrCreateClient(mapped.clientName, mapped.clientEmail);
+          const clientId = await findOrCreateClient(mapped.clientName, mapped.clientEmail, sourceRow);
           const total = parseImportNumber(mapped.total) ?? 0;
           const subtotal = parseImportNumber(mapped.subtotal) ?? total;
           const gstAmount = parseImportNumber(mapped.gstAmount) ?? 0;
@@ -785,6 +795,7 @@ async function runCommit(job: SmartImportJob, req: CommitRequest) {
               subtotal: subtotal.toFixed(2), gstAmount: gstAmount.toFixed(2), total: total.toFixed(2),
               validUntil: parseImportDate(mapped.validUntil) || null,
               notes,
+              ...origin,
             } as any).returning();
             if (mapped.lineDescription) {
               const qty = parseImportNumber(mapped.lineQty) ?? 1;
@@ -809,6 +820,7 @@ async function runCommit(job: SmartImportJob, req: CommitRequest) {
               subtotal: subtotal.toFixed(2), gstAmount: gstAmount.toFixed(2), total: total.toFixed(2),
               dueDate: parseImportDate(mapped.dueDate) || null,
               notes,
+              ...origin,
             } as any).returning();
             if (mapped.lineDescription) {
               const qty = parseImportNumber(mapped.lineQty) ?? 1;
@@ -844,6 +856,15 @@ async function runCommit(job: SmartImportJob, req: CommitRequest) {
     job.status = 'committed';
     // Free row buffers now the import finished.
     job.rows = undefined;
+
+    // Task 300: close out the import run so it appears in Import History.
+    if (job.importRunId) {
+      try {
+        await finalizeImportRun(job.importRunId, { type, imported, merged, skipped });
+      } catch (err) {
+        logger.warn?.('background', `Failed to finalize import run for job ${job.id}`, { error: err } as any);
+      }
+    }
 
     // Best-effort post-commit work: caches + notification. Never fatal.
     try {
@@ -923,7 +944,23 @@ export function registerSmartImportRoutes(app: Express): void {
       };
       jobs.set(job.id, job);
       // Run in the background — the upload response never blocks on parsing/AI.
-      setImmediate(() => {
+      setImmediate(async () => {
+        // Task 300: retain the original file + open a pending import run so a
+        // committed import is traceable and undoable. Best-effort — a storage
+        // hiccup must never block the import itself.
+        try {
+          const filePath = await persistImportFile(file.originalname, file.buffer, file.mimetype);
+          job.importRunId = await createPendingImportRun({
+            userId: job.userId,
+            fileName: job.fileName,
+            filePath,
+            fileSize: file.size ?? file.buffer.length,
+            source: 'smart',
+            type: requestedType,
+          });
+        } catch (err) {
+          logger.warn?.('background', 'Smart import: failed to open import run', { error: err } as any);
+        }
         processPreviewJob(job, file.buffer, requestedType).catch((err) => {
           job.status = 'failed';
           job.error = err?.message || 'Failed to process file';

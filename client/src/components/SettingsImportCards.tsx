@@ -229,6 +229,7 @@ interface ImportPreviewData {
   detectedType: ImportDataType;
   duplicates: { row: number; reason: string }[];
   duplicateCount: number;
+  importRunId?: string;
   formatWarning?: string;
 }
 
@@ -268,6 +269,7 @@ function CompetitorImportFlow({ platform, onClose }: { platform: ImportPlatform;
           mappings: preview.suggestedMappings,
           platform,
           skipDuplicates: true,
+          importRunId: preview.importRunId,
         }),
       });
       const data = await res.json();
@@ -427,7 +429,7 @@ export function ImportDataCard() {
     try {
       const res = await fetch('/api/import/execute', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ type: importType, data: preview.rows, mappings: preview.suggestedMappings, skipDuplicates: true }),
+        body: JSON.stringify({ type: importType, data: preview.rows, mappings: preview.suggestedMappings, skipDuplicates: true, importRunId: preview.importRunId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Import failed');

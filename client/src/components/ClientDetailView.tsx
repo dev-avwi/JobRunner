@@ -53,6 +53,7 @@ import KPIBox from "./KPIBox";
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { ImportOriginBadge } from "./ImportOriginBadge";
 
 interface ClientDetailViewProps {
   clientId: string;
@@ -817,6 +818,11 @@ export default function ClientDetailView({
             </Popover>
           </div>
 
+          {(client as any).importRunId && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <ImportOriginBadge importRunId={(client as any).importRunId} rowNumber={(client as any).importRowNumber} />
+            </div>
+          )}
           {client.referralSource && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <UserCheck className="h-3.5 w-3.5" />
