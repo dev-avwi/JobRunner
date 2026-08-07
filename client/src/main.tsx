@@ -15,6 +15,8 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     tracesSampleRate: 0.2,
     ignoreErrors: [
       /Failed to construct 'WebSocket'.*localhost:undefined/,
+      // Benign browser noise — observer delivery deferred a frame, nothing breaks.
+      /ResizeObserver loop/,
     ],
     beforeSend(event) {
       const msg = event.exception?.values?.[0]?.value || '';

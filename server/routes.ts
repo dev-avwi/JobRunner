@@ -40242,6 +40242,14 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.json({ received: true, ignored: true });
       }
 
+      // Drop benign browser noise: "ResizeObserver loop completed with
+      // undelivered notifications." (and the older "loop limit exceeded"
+      // variant) just means the browser deferred observer delivery one frame.
+      // Nothing breaks and no user is affected — it was spamming email alerts.
+      if (msgStr.includes('ResizeObserver loop')) {
+        return res.json({ received: true, ignored: true });
+      }
+
       // Drop errors thrown inside automation/headless-browser injected scripts
       // (Playwright/Puppeteer bots, uptime monitors, scrapers). These come from
       // scripts the tool injects into the page (UtilityScript.evaluate /

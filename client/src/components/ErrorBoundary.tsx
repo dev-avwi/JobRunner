@@ -15,6 +15,15 @@ function isBenignWebSocketNoise(msg?: string): boolean {
   return false;
 }
 
+// Benign browser noise: "ResizeObserver loop completed with undelivered
+// notifications." (and the older "loop limit exceeded" variant) just means the
+// browser deferred observer delivery one frame. Nothing breaks and no user is
+// affected — never report it.
+function isBenignResizeObserverNoise(msg?: string): boolean {
+  if (!msg) return false;
+  return msg.includes('ResizeObserver loop');
+}
+
 function reportErrorToServer(data: {
   message: string;
   stack?: string;
@@ -22,6 +31,7 @@ function reportErrorToServer(data: {
   url?: string;
 }) {
   if (isBenignWebSocketNoise(data.message)) return;
+  if (isBenignResizeObserverNoise(data.message)) return;
   try {
     fetch('/api/client-errors', {
       method: 'POST',
