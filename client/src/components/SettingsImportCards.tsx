@@ -86,6 +86,7 @@ import { LogoUpload } from "./LogoUpload";
 import { QuickRepliesSettings } from "./QuickRepliesSettings";
 import { useToast } from "@/hooks/use-toast";
 import DataSafetyBanner from "./DataSafetyBanner";
+import { SmartImportFlow } from "./SmartImportFlow";
 import { TemplateId, TemplateCustomization } from "@/lib/document-templates";
 import { PRICING } from "@shared/schema";
 import { tradeCatalog, getTradeDefinition } from "@shared/tradeCatalog";
@@ -479,29 +480,22 @@ export function ImportDataCard() {
             </div>
             <Separator />
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Generic CSV import</p>
-              <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" size="sm" onClick={() => setImportType('clients')}>
-                  <Users className="h-4 w-4 mr-1" />
-                  Clients
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setImportType('catalog')}>
-                  <FileText className="h-4 w-4 mr-1" />
-                  Price List
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setImportType('jobs')}>
-                  <Briefcase className="h-4 w-4 mr-1" />
-                  Jobs
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setImportType('quotes')}>
-                  <ClipboardList className="h-4 w-4 mr-1" />
-                  Quotes
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setImportType('invoices')}>
-                  <Receipt className="h-4 w-4 mr-1" />
-                  Invoices
-                </Button>
-              </div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5" />
+                Smart import (any spreadsheet)
+              </p>
+              <SmartImportFlow />
+              <p className="text-xs text-muted-foreground">
+                Need a starting point?{' '}
+                {(['clients', 'catalog', 'jobs', 'quotes', 'invoices'] as const).map((t, i) => (
+                  <span key={t}>
+                    {i > 0 && ' · '}
+                    <button type="button" className="underline hover:text-foreground" onClick={() => window.open(`/api/import/templates/${t}`, '_blank')}>
+                      {t === 'catalog' ? 'price list' : t} template
+                    </button>
+                  </span>
+                ))}
+              </p>
             </div>
           </>
         )}

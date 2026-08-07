@@ -261,6 +261,7 @@ import { registerReportsRoutes } from "./routes/reports";
 import { registerInventoryRoutes } from "./routes/inventory";
 import { registerCustomFormsRoutes } from "./routes/custom-forms";
 import { registerRebatesRoutes } from "./routes/rebates";
+import { registerSmartImportRoutes } from "./routes/smart-import";
 import { registerTeamGroupsRoutes } from "./routes/team-groups";
 
 // Mass-assignment guard: strip server-controlled identity/ownership/timestamp
@@ -14919,6 +14920,7 @@ Be specific about materials, colors, and features that would be included.`
   registerInventoryRoutes(app);
   registerCustomFormsRoutes(app);
   registerRebatesRoutes(app);
+  registerSmartImportRoutes(app);
   registerTeamGroupsRoutes(app);
   // Get site photos for all jobs (for chat list display)
   // Optimized: batches photo lookups and generates signed URLs in parallel

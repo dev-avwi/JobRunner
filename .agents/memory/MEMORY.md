@@ -1,3 +1,4 @@
+- [LLM echoes prompt formatting](smart-import-ai-mapping.md) — gpt-5-mini returns enum values in the decorated format the prompt listed them (`name (Name)`); normalise when parsing + demand bare ids.
 - [Security audit 2026-07](security-audit-2026-07.md) — SQLi sweep clean (one sql.raw hardened); HoundDog criticals false positives; audit severity is object `.level`; deps patched, transitive highs remain; SAST infra-cancels.
 - [Offline cache logout wipe](offline-cache-logout-wipe.md) — every new mobile cache (SQLite table or subscription_cache key) must be added to clearCache() or it leaks across accounts; local_ jobs load cache-first then fall through to fetch.
 - [Follow-up tasks (task-to-form linking)](job-tasks-followup.md) — task mutations strict ownerOnly (managers 403); gate task UI on strict owner; all 3 form-submission POSTs need taskRules hook + cross-tenant guards.
