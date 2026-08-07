@@ -42,6 +42,44 @@ interface InsightsProps {
   onNavigate?: (path: string) => void;
 }
 
+type PeriodId = "week" | "month" | "quarter" | "year" | "last12";
+
+const periods: Array<{ id: PeriodId; label: string; shortLabel: string }> = [
+  { id: "week", label: "This Week", shortLabel: "this week" },
+  { id: "month", label: "This Month", shortLabel: "this month" },
+  { id: "quarter", label: "This Quarter", shortLabel: "this quarter" },
+  { id: "year", label: "This Year", shortLabel: "this year" },
+  { id: "last12", label: "Last 12 Months", shortLabel: "last 12 months" },
+];
+
+function getPeriodRange(period: PeriodId): { startDate: string; endDate: string } {
+  const now = new Date();
+  let start: Date;
+  switch (period) {
+    case "week": {
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      start.setDate(start.getDate() - start.getDay());
+      break;
+    }
+    case "quarter": {
+      const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+      start = new Date(now.getFullYear(), quarterMonth, 1);
+      break;
+    }
+    case "year":
+      start = new Date(now.getFullYear(), 0, 1);
+      break;
+    case "last12":
+      start = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      break;
+    case "month":
+    default:
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+  }
+  return { startDate: start.toISOString(), endDate: now.toISOString() };
+}
+
 interface ProfitSnapshot {
   revenueToday: number;
   revenueThisWeek: number;
@@ -71,6 +109,56 @@ interface KPIData {
   jobsToInvoice: number;
   weeklyEarnings: number;
   monthlyEarnings: number;
+  activeJobs: number;
+  scheduledJobs: number;
+  paidInvoicesCount: number;
+  paidInvoicesTotal: number;
+}
+
+// Server payloads can arrive partial (sparse or freshly imported data).
+// Normalise the whole object once with safe defaults so the page never
+// renders NaN/undefined or broken charts.
+const num = (v: any): number => (typeof v === "number" && isFinite(v) ? v : Number(v) || 0);
+
+function normalizeProfit(p: any): ProfitSnapshot {
+  return {
+    revenueToday: num(p?.revenueToday),
+    revenueThisWeek: num(p?.revenueThisWeek),
+    revenueThisMonth: num(p?.revenueThisMonth),
+    labourCostThisMonth: num(p?.labourCostThisMonth),
+    materialCostThisMonth: num(p?.materialCostThisMonth),
+    grossProfit: num(p?.grossProfit),
+    grossMargin: num(p?.grossMargin),
+    cashCollectedToday: num(p?.cashCollectedToday),
+  };
+}
+
+function normalizeCashflow(c: any): CashflowData {
+  return {
+    thisMonthCollected: num(c?.thisMonthCollected ?? c?.collectedThisMonth),
+    lastMonthCollected: num(c?.lastMonthCollected ?? c?.collectedLastMonth),
+    dueThisWeek: num(c?.dueThisWeek),
+    overdueTotal: num(c?.overdueTotal),
+    overdueCount: num(c?.overdueCount),
+    overdueBreakdown: Array.isArray(c?.overdueBreakdown) ? c.overdueBreakdown : [],
+    weeklyCollections: Array.isArray(c?.weeklyCollections) ? c.weeklyCollections : [],
+  };
+}
+
+function normalizeKpis(k: any): KPIData {
+  return {
+    jobsToday: num(k?.jobsToday),
+    unpaidInvoicesCount: num(k?.unpaidInvoicesCount),
+    unpaidInvoicesTotal: num(k?.unpaidInvoicesTotal),
+    quotesAwaiting: num(k?.quotesAwaiting),
+    jobsToInvoice: num(k?.jobsToInvoice),
+    weeklyEarnings: num(k?.weeklyEarnings),
+    monthlyEarnings: num(k?.monthlyEarnings),
+    activeJobs: num(k?.activeJobs),
+    scheduledJobs: num(k?.scheduledJobs),
+    paidInvoicesCount: num(k?.paidInvoicesCount),
+    paidInvoicesTotal: num(k?.paidInvoicesTotal),
+  };
 }
 
 interface MonthlyRevenue {
@@ -296,8 +384,8 @@ function CashflowComparisonChart({
   thisMonth: number; lastMonth: number; dueThisWeek: number; overdueTotal: number;
 }) {
   const data = [
-    { name: "Last Month", value: lastMonth, fill: "hsl(var(--muted-foreground) / 0.5)" },
-    { name: "This Month", value: thisMonth, fill: "hsl(var(--trade))" },
+    { name: "Prior Period", value: lastMonth, fill: "hsl(var(--muted-foreground) / 0.5)" },
+    { name: "This Period", value: thisMonth, fill: "hsl(var(--trade))" },
     { name: "Due This Week", value: dueThisWeek, fill: "hsl(38 92% 50%)" },
     { name: "Overdue", value: overdueTotal, fill: "hsl(0 84.2% 60.2%)" },
   ];
@@ -367,6 +455,55 @@ function QuoteConversionDonut({ awaiting, total }: { awaiting: number; total: nu
   );
 }
 
+function PipelineStrip({
+  stages, onNavigate,
+}: {
+  stages: Array<{ label: string; count: number; color: string; path: string }>;
+  onNavigate?: (path: string) => void;
+}) {
+  const allEmpty = stages.every(s => s.count === 0);
+  return (
+    <div className="feed-card p-4 animate-fade-up stagger-delay-1" style={{ opacity: 0 }} data-testid="pipeline-strip">
+      <p className="ios-label mb-3">JOB PIPELINE</p>
+      {allEmpty ? (
+        <p className="ios-caption">As quotes go out and jobs get done, you'll see your work move through the pipeline here.</p>
+      ) : (
+        <div className="flex items-stretch gap-1.5 overflow-x-auto no-scrollbar">
+          {stages.map((stage, i) => (
+            <div key={stage.label} className="flex items-stretch gap-1.5 flex-1 min-w-0">
+              <button
+                type="button"
+                className="flex-1 min-w-[72px] rounded-xl px-2 py-2.5 text-center card-press cursor-pointer"
+                style={{ backgroundColor: `${stage.color.replace(")", " / 0.08)")}` }}
+                onClick={() => onNavigate?.(stage.path)}
+                data-testid={`pipeline-stage-${i}`}
+              >
+                <p className="text-xl font-bold leading-none" style={{ color: stage.color }}>{stage.count}</p>
+                <p className="text-[10px] font-medium text-muted-foreground mt-1.5 leading-tight">{stage.label}</p>
+              </button>
+              {i < stages.length - 1 && (
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0 self-center" />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmptyChartHint({ label, hint }: { label: string; hint: string }) {
+  return (
+    <div className="feed-card p-4 animate-fade-up stagger-delay-3" style={{ opacity: 0 }}>
+      <p className="ios-label mb-2">{label}</p>
+      <div className="py-6 text-center">
+        <LineChartIcon className="h-6 w-6 mx-auto mb-2 text-muted-foreground/50" />
+        <p className="ios-caption max-w-[240px] mx-auto">{hint}</p>
+      </div>
+    </div>
+  );
+}
+
 function SkeletonGrid() {
   return (
     <div className="section-gap">
@@ -393,6 +530,7 @@ function SkeletonGrid() {
 
 export default function Insights({ onNavigate }: InsightsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("profit");
+  const [period, setPeriod] = useState<PeriodId>("month");
   const searchParams = useSearch();
 
   useEffect(() => {
@@ -403,17 +541,34 @@ export default function Insights({ onNavigate }: InsightsProps) {
     }
   }, [searchParams]);
 
-  const { data: profit, isLoading: profitLoading } = useQuery<ProfitSnapshot>({
-    queryKey: ["/api/dashboard/profit-snapshot"],
+  const range = getPeriodRange(period);
+  const rangeQs = `startDate=${encodeURIComponent(range.startDate)}&endDate=${encodeURIComponent(range.endDate)}`;
+  const periodLabel = periods.find(p => p.id === period)?.shortLabel ?? "this month";
+
+  const fetchJson = async (url: string) => {
+    const res = await fetch(url, { credentials: 'include', headers: getAuthHeaders() });
+    if (!res.ok) throw new Error(`Failed to fetch ${url}`);
+    return res.json();
+  };
+
+  const { data: profitRaw, isLoading: profitLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/profit-snapshot", period],
+    queryFn: () => fetchJson(`/api/dashboard/profit-snapshot?${rangeQs}`),
   });
 
-  const { data: cashflow, isLoading: cashflowLoading } = useQuery<CashflowData>({
-    queryKey: ["/api/dashboard/cashflow"],
+  const { data: cashflowRaw, isLoading: cashflowLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/cashflow", period],
+    queryFn: () => fetchJson(`/api/dashboard/cashflow?${rangeQs}`),
   });
 
-  const { data: kpis, isLoading: kpisLoading } = useQuery<KPIData>({
-    queryKey: ["/api/dashboard/kpis"],
+  const { data: kpisRaw, isLoading: kpisLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/kpis", "insights", period],
+    queryFn: () => fetchJson(`/api/dashboard/kpis?${rangeQs}`),
   });
+
+  const profit = profitRaw ? normalizeProfit(profitRaw) : undefined;
+  const cashflow = cashflowRaw ? normalizeCashflow(cashflowRaw) : undefined;
+  const kpis = kpisRaw ? normalizeKpis(kpisRaw) : undefined;
 
   const { data: revenueData } = useQuery<MonthlyRevenue>({
     queryKey: ['/api/reports/revenue', new Date().getFullYear().toString()],
@@ -457,6 +612,39 @@ export default function Insights({ onNavigate }: InsightsProps) {
       </div>
 
       {!hasNoData && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar" data-testid="period-picker">
+          {periods.map((p) => {
+            const isActive = period === p.id;
+            return isActive ? (
+              <Button key={p.id} size="sm" className="text-white font-medium flex-shrink-0 rounded-full"
+                style={{ backgroundColor: "hsl(var(--trade))", borderColor: "hsl(var(--trade))" }}
+                onClick={() => setPeriod(p.id)} data-testid={`period-${p.id}`}>
+                {p.label}
+              </Button>
+            ) : (
+              <Button key={p.id} variant="outline" size="sm" className="flex-shrink-0 rounded-full"
+                onClick={() => setPeriod(p.id)} data-testid={`period-${p.id}`}>
+                {p.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
+      {!hasNoData && !isLoading && (
+        <PipelineStrip
+          onNavigate={onNavigate}
+          stages={[
+            { label: "Quotes awaiting", count: kpis?.quotesAwaiting ?? 0, color: "hsl(38 92% 50%)", path: "/documents?tab=quotes" },
+            { label: "Scheduled", count: kpis?.scheduledJobs ?? 0, color: "hsl(217 91% 60%)", path: "/work" },
+            { label: "In progress", count: kpis?.activeJobs ?? 0, color: "hsl(262 83% 58%)", path: "/work" },
+            { label: "To invoice", count: kpis?.jobsToInvoice ?? 0, color: "hsl(0 84.2% 60.2%)", path: "/work" },
+            { label: "Paid", count: kpis?.paidInvoicesCount ?? 0, color: "hsl(142.1 76.2% 36.3%)", path: "/documents?tab=invoices&filter=paid" },
+          ]}
+        />
+      )}
+
+      {!hasNoData && (
         <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -491,6 +679,15 @@ export default function Insights({ onNavigate }: InsightsProps) {
             </div>
             <p className="text-lg font-semibold text-foreground mb-1">No insights yet</p>
             <p className="ios-caption max-w-xs mx-auto">Create your first job, quote, or invoice and your numbers will start showing up here.</p>
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <Button size="sm" className="text-white" style={{ backgroundColor: "hsl(var(--trade))" }}
+                onClick={() => onNavigate?.("/work")} data-testid="button-empty-create-job">
+                Create a job
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onNavigate?.("/settings")} data-testid="button-empty-import">
+                Import your data
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
@@ -498,7 +695,7 @@ export default function Insights({ onNavigate }: InsightsProps) {
           {activeTab === "profit" && (
             <div className="section-gap">
               <HeroMetricCard
-                label="REVENUE THIS MONTH"
+                label={`REVENUE ${periodLabel.toUpperCase()}`}
                 value={fmtAud(profit?.revenueThisMonth ?? 0)}
                 icon={DollarSign}
                 context={`This week: ${fmtAud(profit?.revenueThisWeek ?? 0)}`}
@@ -520,18 +717,23 @@ export default function Insights({ onNavigate }: InsightsProps) {
 
               <MarginArc margin={profit?.grossMargin ?? 0} />
 
-              {revenueData?.months && revenueData.months.length > 0 && (
+              {revenueData?.months && revenueData.months.some(m => (m.revenue ?? 0) > 0) ? (
                 <RevenueChart months={revenueData.months} />
+              ) : (
+                <EmptyChartHint
+                  label="REVENUE TREND (6 MONTHS)"
+                  hint="Your revenue trend will appear here once invoices start getting paid."
+                />
               )}
 
               <div>
-                <p className="ios-label mb-3">COSTS THIS MONTH</p>
+                <p className="ios-label mb-3">COSTS {periodLabel.toUpperCase()}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <MetricCard
                     label="LABOUR COST"
                     value={fmtAud(profit?.labourCostThisMonth ?? 0)}
                     icon={Clock}
-                    context="This month"
+                    context={periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1)}
                     onClick={() => onNavigate?.("/time-tracking")}
                     animClass="animate-fade-up stagger-delay-5"
                     iconBg="hsl(38 92% 50% / 0.1)"
@@ -541,7 +743,7 @@ export default function Insights({ onNavigate }: InsightsProps) {
                     label="MATERIAL COST"
                     value={fmtAud(profit?.materialCostThisMonth ?? 0)}
                     icon={BarChart3}
-                    context="This month"
+                    context={periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1)}
                     onClick={() => onNavigate?.("/work")}
                     animClass="animate-fade-up stagger-delay-6"
                     iconBg="hsl(262 83% 58% / 0.1)"
@@ -599,7 +801,7 @@ export default function Insights({ onNavigate }: InsightsProps) {
                 <div className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
-                      <p className="ios-label mb-1">THIS MONTH COLLECTED</p>
+                      <p className="ios-label mb-1">COLLECTED {periodLabel.toUpperCase()}</p>
                       <p className="text-xl font-bold">{fmtAud(cashflow?.thisMonthCollected ?? 0)}</p>
                     </div>
                     <div className="flex items-center gap-1">
@@ -607,7 +809,7 @@ export default function Insights({ onNavigate }: InsightsProps) {
                         ? <ArrowUpRight className="h-5 w-5" style={{ color: "hsl(142.1 76.2% 36.3%)" }} />
                         : <ArrowDownRight className="h-5 w-5" style={{ color: "hsl(0 84.2% 60.2%)" }} />}
                       <span className="text-sm font-semibold" style={{ color: collectionUp ? "hsl(142.1 76.2% 36.3%)" : "hsl(0 84.2% 60.2%)" }}>
-                        {fmtAud(Math.abs(collectionDiff))} vs last month
+                        {fmtAud(Math.abs(collectionDiff))} vs prior period
                       </span>
                     </div>
                   </div>
@@ -660,7 +862,7 @@ export default function Insights({ onNavigate }: InsightsProps) {
           {activeTab === "efficiency" && (
             <div className="section-gap">
               <HeroMetricCard
-                label="MONTHLY EARNINGS"
+                label={`EARNINGS ${periodLabel.toUpperCase()}`}
                 value={fmtAud(kpis?.monthlyEarnings ?? 0)}
                 icon={DollarSign}
                 onClick={() => onNavigate?.("/time-tracking")}
@@ -711,8 +913,13 @@ export default function Insights({ onNavigate }: InsightsProps) {
                 </div>
               </div>
 
-              {revenueData?.months && revenueData.months.length > 0 && (
+              {revenueData?.months && revenueData.months.some(m => (m.revenue ?? 0) > 0) ? (
                 <RevenueChart months={revenueData.months} />
+              ) : (
+                <EmptyChartHint
+                  label="REVENUE TREND (6 MONTHS)"
+                  hint="Your revenue trend will appear here once invoices start getting paid."
+                />
               )}
             </div>
           )}

@@ -21247,6 +21247,18 @@ Be specific about materials, colors, and features that would be included.`
       startOfWeek.setDate(today.getDate() - today.getDay());
       startOfWeek.setHours(0, 0, 0, 0);
       const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      // Optional date range (Insights period picker). When absent, behavior is
+      // unchanged (legacy today/week/month windows) for existing consumers.
+      const parseRangeDate = (v: any): Date | null => {
+        if (!v || typeof v !== 'string') return null;
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? null : d;
+      };
+      const rangeStart = parseRangeDate(req.query.startDate);
+      const rangeEnd = parseRangeDate(req.query.endDate);
+      const hasRange = !!(rangeStart && rangeEnd && rangeStart < rangeEnd);
+      const periodStart = hasRange ? rangeStart! : currentMonth;
+      const periodEnd = hasRange ? rangeEnd! : new Date();
 
       const jobsTodayConditions = [
         eq(jobs.userId, uid),
@@ -21275,6 +21287,8 @@ Be specific about materials, colors, and features that would be included.`
         weeklyResult,
         monthlyResult,
         jobsToInvoiceResult,
+        scheduledJobsResult,
+        paidInPeriodResult,
       ] = await Promise.all([
         db.select({ count: sql<number>`count(*)::int` }).from(jobs).where(and(...jobsTodayConditions)),
         db.select({ count: sql<number>`count(*)::int` }).from(jobs).where(and(...activeJobsConditions)),
@@ -21301,7 +21315,8 @@ Be specific about materials, colors, and features that would be included.`
             eq(invoices.userId, uid),
             isNull(invoices.archivedAt),
             eq(invoices.status, 'paid'),
-            gte(invoices.paidAt, startOfWeek),
+            gte(invoices.paidAt, hasRange ? periodStart : startOfWeek),
+            ...(hasRange ? [lte(invoices.paidAt, periodEnd)] : []),
           )),
         isStaffView ? Promise.resolve([{ total: 0 }]) :
           db.select({
@@ -21310,7 +21325,8 @@ Be specific about materials, colors, and features that would be included.`
             eq(invoices.userId, uid),
             isNull(invoices.archivedAt),
             eq(invoices.status, 'paid'),
-            gte(invoices.paidAt, currentMonth),
+            gte(invoices.paidAt, periodStart),
+            ...(hasRange ? [lte(invoices.paidAt, periodEnd)] : []),
           )),
         isStaffView ? Promise.resolve([{ count: 0 }]) :
           db.select({ count: sql<number>`count(*)::int` }).from(jobs).where(and(
@@ -21318,6 +21334,26 @@ Be specific about materials, colors, and features that would be included.`
             isNull(jobs.archivedAt),
             eq(jobs.status, 'done'),
             sql`${jobs.id} NOT IN (SELECT job_id FROM invoices WHERE job_id IS NOT NULL AND user_id = ${uid} AND archived_at IS NULL)`,
+          )),
+        // Pipeline: upcoming scheduled jobs (not yet started)
+        db.select({ count: sql<number>`count(*)::int` }).from(jobs).where(and(
+          eq(jobs.userId, uid),
+          isNull(jobs.archivedAt),
+          inArray(jobs.status, ['pending', 'scheduled']),
+          isNotNull(jobs.scheduledAt),
+          ...(isStaffView && userContext.teamMemberId ? [eq(jobs.assignedTo, userContext.teamMemberId)] : []),
+        )),
+        // Pipeline: invoices paid within the selected period
+        isStaffView ? Promise.resolve([{ count: 0, total: 0 }]) :
+          db.select({
+            count: sql<number>`count(*)::int`,
+            total: sql<number>`coalesce(sum(${invoices.total}), 0)::numeric`,
+          }).from(invoices).where(and(
+            eq(invoices.userId, uid),
+            isNull(invoices.archivedAt),
+            eq(invoices.status, 'paid'),
+            gte(invoices.paidAt, periodStart),
+            lte(invoices.paidAt, periodEnd),
           )),
       ]);
 
@@ -21330,6 +21366,12 @@ Be specific about materials, colors, and features that would be included.`
         weeklyEarnings: Number(weeklyResult[0]?.total ?? 0),
         jobsToInvoice: jobsToInvoiceResult[0]?.count ?? 0,
         activeJobs: activeJobsResult[0]?.count ?? 0,
+        scheduledJobs: scheduledJobsResult[0]?.count ?? 0,
+        paidInvoicesCount: paidInPeriodResult[0]?.count ?? 0,
+        paidInvoicesTotal: Number(paidInPeriodResult[0]?.total ?? 0),
+        period: hasRange
+          ? { start: periodStart.toISOString(), end: periodEnd.toISOString() }
+          : null,
       });
     } catch (error) {
       logger.error('api', 'Dashboard KPIs failed', { error, userId: req.userId });
@@ -22378,6 +22420,19 @@ Be specific about materials, colors, and features that would be included.`
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
+      // Optional date range (Insights period picker). Without params the
+      // legacy this-month window applies, so existing consumers are unchanged.
+      const parseRangeDate = (v: any): Date | null => {
+        if (!v || typeof v !== 'string') return null;
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? null : d;
+      };
+      const rangeStart = parseRangeDate(req.query.startDate);
+      const rangeEnd = parseRangeDate(req.query.endDate);
+      const hasRange = !!(rangeStart && rangeEnd && rangeStart < rangeEnd);
+      const periodStart = hasRange ? rangeStart! : monthStart;
+      const periodEnd = hasRange ? rangeEnd! : now;
+
       const [allInvoices, allJobs] = await Promise.all([
         storage.getInvoices(effectiveUserId),
         storage.getJobs(effectiveUserId),
@@ -22394,14 +22449,14 @@ Be specific about materials, colors, and features that would be included.`
         .reduce((sum, i) => sum + parseFloat(i.total || '0'), 0);
 
       const revenueThisMonth = paidInvoices
-        .filter(i => new Date(i.paidAt!) >= monthStart)
+        .filter(i => { const d = new Date(i.paidAt!); return d >= periodStart && d <= periodEnd; })
         .reduce((sum, i) => sum + parseFloat(i.total || '0'), 0);
 
       const cashCollectedToday = revenueToday;
 
       let labourCostThisMonth = 0;
       try {
-        const timeEntries = await storage.getTimeEntriesInRange(effectiveUserId, monthStart, now);
+        const timeEntries = await storage.getTimeEntriesInRange(effectiveUserId, periodStart, periodEnd);
         labourCostThisMonth = timeEntries
           .filter(e => e.endTime)
           .reduce((sum, e) => {
@@ -22422,6 +22477,7 @@ Be specific about materials, colors, and features that would be included.`
             .where(and(
               eq(jobMaterials.userId, effectiveUserId),
               inArray(jobMaterials.jobId, allJobIds),
+              ...(hasRange ? [gte(jobMaterials.createdAt, periodStart), lte(jobMaterials.createdAt, periodEnd)] : []),
             ));
           materialCostThisMonth = parseFloat(totalRow[0]?.total?.toString() || '0');
         }
@@ -22439,6 +22495,9 @@ Be specific about materials, colors, and features that would be included.`
         grossProfit,
         grossMargin: parseFloat(grossMargin.toFixed(1)),
         cashCollectedToday,
+        period: hasRange
+          ? { start: periodStart.toISOString(), end: periodEnd.toISOString() }
+          : null,
       });
     } catch (error) {
       console.error("Error fetching profit snapshot:", error);
@@ -22460,6 +22519,24 @@ Be specific about materials, colors, and features that would be included.`
       const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
       const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      // Optional date range (Insights period picker). Collected totals compare
+      // the selected period against the immediately preceding period of equal
+      // length. Without params the legacy this-month/last-month windows apply.
+      const parseRangeDate = (v: any): Date | null => {
+        if (!v || typeof v !== 'string') return null;
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? null : d;
+      };
+      const rangeStart = parseRangeDate(req.query.startDate);
+      const rangeEnd = parseRangeDate(req.query.endDate);
+      const hasRange = !!(rangeStart && rangeEnd && rangeStart < rangeEnd);
+      const curStart = hasRange ? rangeStart! : startOfMonth;
+      const curEnd = hasRange ? rangeEnd! : now;
+      const prevStart = hasRange
+        ? new Date(rangeStart!.getTime() - (rangeEnd!.getTime() - rangeStart!.getTime()))
+        : startOfLastMonth;
+      const prevEnd = hasRange ? rangeStart! : endOfLastMonth;
 
       const openStatuses = ['sent', 'viewed'];
 
@@ -22505,15 +22582,16 @@ Be specific about materials, colors, and features that would be included.`
         }).from(invoices).where(and(
           eq(invoices.userId, uid),
           eq(invoices.status, 'paid'),
-          gte(invoices.paidAt, startOfMonth),
+          gte(invoices.paidAt, curStart),
+          lte(invoices.paidAt, curEnd),
         )),
         db.select({
           total: sql<number>`coalesce(sum(${invoices.total}), 0)::numeric`,
         }).from(invoices).where(and(
           eq(invoices.userId, uid),
           eq(invoices.status, 'paid'),
-          gte(invoices.paidAt, startOfLastMonth),
-          lte(invoices.paidAt, endOfLastMonth),
+          gte(invoices.paidAt, prevStart),
+          lte(invoices.paidAt, prevEnd),
         )),
         db.select({
           id: invoices.id,
@@ -22533,7 +22611,8 @@ Be specific about materials, colors, and features that would be included.`
         }).from(invoices).where(and(
           eq(invoices.userId, uid),
           eq(invoices.status, 'paid'),
-          gte(invoices.paidAt, new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000)),
+          gte(invoices.paidAt, hasRange ? curStart : new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000)),
+          ...(hasRange ? [lte(invoices.paidAt, curEnd)] : []),
         )).groupBy(sql`date_trunc('week', ${invoices.paidAt})`).orderBy(sql`date_trunc('week', ${invoices.paidAt})`),
       ]);
 
@@ -22560,6 +22639,15 @@ Be specific about materials, colors, and features that would be included.`
         collectedLastMonth: Math.round(collectedLastMonth),
         collectedTrend: collectedLastMonth > 0 ? Math.round(((collectedThisMonth - collectedLastMonth) / collectedLastMonth) * 100) : 0,
         revenueByWeek: revenueByWeekResult.map(r => ({ week: r.week, amount: Number(r.amount) })),
+        // Aliases: web + mobile Insights read these names (they previously
+        // resolved to undefined and rendered as $0).
+        thisMonthCollected: Math.round(collectedThisMonth),
+        lastMonthCollected: Math.round(collectedLastMonth),
+        overdueBreakdown: overdueInvoicesList,
+        weeklyCollections: revenueByWeekResult.map(r => ({ week: r.week, amount: Number(r.amount) })),
+        period: hasRange
+          ? { start: curStart.toISOString(), end: curEnd.toISOString() }
+          : null,
       });
     } catch (error: any) {
       logger.error('api', 'Cashflow endpoint failed', { error, userId: req.userId });

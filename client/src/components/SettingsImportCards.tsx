@@ -381,7 +381,15 @@ function CompetitorImportFlow({ platform, onClose }: { platform: ImportPlatform;
               {(result.skipped - (result.duplicatesSkipped || 0)) > 0 ? ` (${result.skipped - (result.duplicatesSkipped || 0)} errors)` : ''}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => { setPreview(null); setResult(null); }}>Import another file</Button>
+          <div className="flex gap-2 flex-wrap">
+            <Link href="/insights">
+              <Button size="sm" data-testid="button-see-insights">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                See your business live
+              </Button>
+            </Link>
+            <Button variant="outline" size="sm" onClick={() => { setPreview(null); setResult(null); }}>Import another file</Button>
+          </div>
         </div>
       )}
     </div>
@@ -540,7 +548,15 @@ export function ImportDataCard() {
                 {result.skipped > 0 && result.skipped !== (result.duplicatesSkipped || 0) ? ` (${result.skipped - (result.duplicatesSkipped || 0)} errors)` : ''}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={reset}>Import more</Button>
+            <div className="flex gap-2 flex-wrap">
+              <Link href="/insights">
+                <Button size="sm" data-testid="button-see-insights-generic">
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  See your business live
+                </Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={reset}>Import more</Button>
+            </div>
           </div>
         )}
       </CardContent>
