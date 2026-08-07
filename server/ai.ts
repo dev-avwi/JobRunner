@@ -2638,3 +2638,143 @@ Keep each tip to 1-2 sentences.`;
     return 'Unable to generate recommendations at this time.';
   }
 }
+
+// ============================================================
+// AI form rebuild from uploaded checklists (images/PDF/Excel)
+// ============================================================
+
+export interface ExtractedFormField {
+  id: string;
+  type: 'text' | 'number' | 'email' | 'phone' | 'textarea' | 'checkbox' | 'radio' | 'select' | 'date' | 'time' | 'photo' | 'signature' | 'section';
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  options?: string[];
+  description?: string;
+}
+
+export interface ExtractedFormDraft {
+  name: string;
+  description: string;
+  formType: 'general' | 'safety' | 'compliance' | 'inspection';
+  requiresSignature: boolean;
+  fields: ExtractedFormField[];
+  disclaimer: string;
+}
+
+const FORM_EXTRACT_VALID_TYPES = ['text', 'number', 'email', 'phone', 'textarea', 'checkbox', 'radio', 'select', 'date', 'time', 'photo', 'signature', 'section'] as const;
+const FORM_EXTRACT_VALID_FORM_TYPES = ['general', 'safety', 'compliance', 'inspection'] as const;
+
+const FORM_EXTRACT_PROMPT = `You are helping an Australian trade business rebuild their existing paper checklist or form as a digital custom form. The content of their original form is provided (as images or extracted text).
+
+Rebuild it faithfully: keep the ORIGINAL wording, labels and ORDER of the items. Do not invent fields that are not on the original, do not reword items, and do not reorder them. Use section fields for headings/groups that appear on the original.
+
+Map each item to the best field type:
+- checkbox: yes/no tick items, pass/fail checks, "completed" ticks
+- text: short free-text answers (names, IDs, locations)
+- textarea: comments, notes, descriptions, multi-line answers
+- number: quantities, readings, measurements
+- date / time: date or time entries
+- radio / select: a choice among listed options (include the options verbatim; use radio for few visible options, select for long lists)
+- photo: where the form asks for a photo/evidence
+- signature: signature lines for a specific person (e.g. "Supervisor signature")
+- email / phone: email address or phone number entries
+- section: headings or group titles (not answerable items)
+
+Also decide:
+- name: the form's original title (or a concise descriptive title if none)
+- description: one short sentence describing the form
+- formType: one of general, safety, compliance, inspection
+- requiresSignature: true only if the form ends with a general sign-off signature of the person completing it
+- required: mark a field required only if the original clearly marks it mandatory (e.g. asterisk, "required")
+
+Return ONLY a JSON object in this exact format:
+{
+  "name": "string",
+  "description": "string",
+  "formType": "general|safety|compliance|inspection",
+  "requiresSignature": boolean,
+  "fields": [
+    { "type": "string", "label": "string", "required": boolean, "options": ["string"] (only for radio/select), "placeholder": "string" (optional), "description": "string" (optional helper text from the original) }
+  ]
+}
+
+Maximum 120 fields.`;
+
+function sanitizeExtractedFormDraft(parsed: any): ExtractedFormDraft {
+  const rawFields = Array.isArray(parsed?.fields) ? parsed.fields.slice(0, 120) : [];
+  const fields: ExtractedFormField[] = rawFields
+    .filter((f: any) => f && typeof f.label === 'string' && f.label.trim())
+    .map((f: any) => {
+      const type = FORM_EXTRACT_VALID_TYPES.includes(f.type) ? f.type : 'text';
+      const field: ExtractedFormField = {
+        id: `field_${crypto.randomUUID()}`,
+        type,
+        label: String(f.label).slice(0, 300).trim(),
+        required: f.required === true,
+      };
+      if (type === 'radio' || type === 'select') {
+        const options = Array.isArray(f.options)
+          ? f.options.filter((o: any) => typeof o === 'string' && o.trim()).map((o: string) => o.slice(0, 200))
+          : [];
+        field.options = options.length > 0 ? options : ['Option 1', 'Option 2'];
+      }
+      if (typeof f.placeholder === 'string' && f.placeholder.trim()) field.placeholder = f.placeholder.slice(0, 200);
+      if (typeof f.description === 'string' && f.description.trim()) field.description = f.description.slice(0, 500);
+      return field;
+    });
+
+  return {
+    name: typeof parsed?.name === 'string' && parsed.name.trim() ? parsed.name.slice(0, 200).trim() : 'Imported Form',
+    description: typeof parsed?.description === 'string' ? parsed.description.slice(0, 500) : '',
+    formType: FORM_EXTRACT_VALID_FORM_TYPES.includes(parsed?.formType) ? parsed.formType : 'general',
+    requiresSignature: parsed?.requiresSignature === true,
+    fields,
+    disclaimer: 'AI-rebuilt draft — review every field against your original form before saving.',
+  };
+}
+
+export async function extractFormFromImages(images: Array<{ buffer: Buffer; mimeType: string }>): Promise<ExtractedFormDraft> {
+  const imageContents = images.map(({ buffer, mimeType }) => ({
+    type: "image_url" as const,
+    image_url: {
+      url: `data:${mimeType};base64,${buffer.toString('base64')}`,
+      detail: "high" as const,
+    },
+  }));
+
+  const response = await visionQueue.run(() => openai.chat.completions.create({
+    model: "gpt-5",
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: FORM_EXTRACT_PROMPT },
+          ...imageContents,
+        ],
+      },
+    ],
+    response_format: { type: "json_object" },
+    max_completion_tokens: 8000,
+  }));
+
+  const content = response.choices[0]?.message?.content || '{}';
+  return sanitizeExtractedFormDraft(JSON.parse(content));
+}
+
+export async function extractFormFromText(documentText: string): Promise<ExtractedFormDraft> {
+  const response = await aiQueue.run(() => openai.chat.completions.create({
+    model: "gpt-5",
+    messages: [
+      {
+        role: "user",
+        content: `${FORM_EXTRACT_PROMPT}\n\n--- ORIGINAL FORM CONTENT ---\n${documentText.slice(0, 60000)}`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    max_completion_tokens: 8000,
+  }));
+
+  const content = response.choices[0]?.message?.content || '{}';
+  return sanitizeExtractedFormDraft(JSON.parse(content));
+}

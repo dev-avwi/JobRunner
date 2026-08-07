@@ -72,6 +72,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import type { CustomForm, FormSubmission } from "@shared/schema";
 import { format } from "date-fns";
@@ -277,12 +279,21 @@ function FormPreview({ fields, formName, requiresSignature, isJobCard }: {
   );
 }
 
+export interface AIFormDraft {
+  name: string;
+  description: string;
+  formType: string;
+  requiresSignature: boolean;
+  fields: FormField[];
+}
+
 interface FormBuilderProps {
   formId?: string;
   onBack: () => void;
+  initialDraft?: AIFormDraft;
 }
 
-export function FormBuilder({ formId, onBack }: FormBuilderProps) {
+export function FormBuilder({ formId, onBack, initialDraft }: FormBuilderProps) {
   const { toast } = useToast();
   const isEditing = !!formId;
   const search = useSearch();
@@ -297,14 +308,15 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
     }
   };
 
-  const [formName, setFormName] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formType, setFormType] = useState("general");
-  const [requiresSignature, setRequiresSignature] = useState(false);
+  const isAiDraft = !isEditing && !!initialDraft;
+  const [formName, setFormName] = useState(initialDraft?.name || "");
+  const [formDescription, setFormDescription] = useState(initialDraft?.description || "");
+  const [formType, setFormType] = useState(initialDraft?.formType || "general");
+  const [requiresSignature, setRequiresSignature] = useState(initialDraft?.requiresSignature || false);
   const [isJobCard, setIsJobCard] = useState(initialJobCard);
   const [blockJobCompletion, setBlockJobCompletion] = useState(false);
   const [taskRules, setTaskRules] = useState<Array<{ fieldId: string; operator: string; value: string; taskTitle: string }>>([]);
-  const [fields, setFields] = useState<FormField[]>([]);
+  const [fields, setFields] = useState<FormField[]>(initialDraft?.fields || []);
   const [editingField, setEditingField] = useState<FormField | null>(null);
   const [showFieldDialog, setShowFieldDialog] = useState(false);
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
@@ -518,6 +530,12 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <h1 className="ios-title text-xl font-semibold">{isEditing ? `Edit ${entityLabel}` : `New ${entityLabel}`}</h1>
+                {isAiDraft && (
+                  <Badge variant="outline" className="border-dashed text-xs font-semibold" data-testid="badge-ai-draft">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    AI draft — not saved yet
+                  </Badge>
+                )}
               </div>
               <Badge 
                 className="px-3 py-1.5 text-xs font-semibold" 
@@ -1364,15 +1382,134 @@ function SubmissionsViewer({ formId, formName, fields }: { formId: string; formN
   );
 }
 
+function AIImportDialog({ open, onOpenChange, onDraft }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDraft: (draft: AIFormDraft) => void;
+}) {
+  const { toast } = useToast();
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const reset = () => {
+    setSelectedFiles([]);
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleImport = async () => {
+    if (selectedFiles.length === 0) return;
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      for (const file of selectedFiles) formData.append('files', file);
+      const response = await fetch('/api/custom-forms/ai-import', {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAuthHeaders(),
+        body: formData,
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body?.error || 'Failed to read that file. Please try again.');
+      }
+      const draft = body?.draft;
+      if (!draft || !Array.isArray(draft.fields) || draft.fields.length === 0) {
+        throw new Error("Couldn't find any form fields in that file.");
+      }
+      toast({
+        title: "Draft ready",
+        description: `Found ${draft.fields.length} fields. Review and edit before saving — nothing is saved yet.`,
+      });
+      onOpenChange(false);
+      reset();
+      onDraft(draft as AIFormDraft);
+    } catch (error: any) {
+      toast({ title: "Couldn't rebuild form", description: error.message, variant: "destructive" });
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!isUploading) { onOpenChange(o); if (!o) reset(); } }}>
+      <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
+            Rebuild a form with AI
+          </DialogTitle>
+          <DialogDescription>
+            Upload a photo, PDF or Excel file of your existing checklist or form. AI will rebuild it as a draft with the same fields, wording and order — you review and edit before anything is saved.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp,application/pdf,.pdf,.xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => setSelectedFiles(Array.from(e.target.files || []).slice(0, 5))}
+            data-testid="input-ai-import-files"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="w-full h-28 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+            data-testid="button-ai-import-pick"
+          >
+            <Upload className="h-6 w-6" />
+            <span className="text-sm">
+              {selectedFiles.length > 0
+                ? selectedFiles.map(f => f.name).join(', ')
+                : 'Tap to choose a photo, PDF or Excel file'}
+            </span>
+          </button>
+          <p className="text-xs text-muted-foreground">
+            Up to 5 photos of the same form (e.g. multiple pages), or one PDF/Excel file. Max 15MB per file.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" className="rounded-xl" disabled={isUploading} onClick={() => { onOpenChange(false); reset(); }}>
+            Cancel
+          </Button>
+          <Button
+            className="rounded-xl"
+            disabled={selectedFiles.length === 0 || isUploading}
+            onClick={handleImport}
+            data-testid="button-ai-import-run"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Rebuilding…
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Rebuild with AI
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 interface FormListProps {
   onCreateNew: () => void;
   onEdit: (formId: string) => void;
   onViewSubmissions?: (formId: string) => void;
+  onAiDraft?: (draft: AIFormDraft) => void;
   hideHeader?: boolean;
 }
 
-export function FormList({ onCreateNew, onEdit, onViewSubmissions, hideHeader = false }: FormListProps) {
+export function FormList({ onCreateNew, onEdit, onViewSubmissions, onAiDraft, hideHeader = false }: FormListProps) {
   const { toast } = useToast();
+  const [aiImportOpen, setAiImportOpen] = useState(false);
   
   const { data: user } = useQuery<{ tradeType?: string }>({
     queryKey: ['/api/auth/me'],
@@ -1425,22 +1562,42 @@ export function FormList({ onCreateNew, onEdit, onViewSubmissions, hideHeader = 
             <h1 className="text-xl font-semibold">Custom Forms</h1>
             <p className="text-sm text-muted-foreground">Create and manage form templates for your jobs</p>
           </div>
-          <Button onClick={onCreateNew} className="rounded-xl" data-testid="button-create-form">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Form
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {onAiDraft && (
+              <Button variant="outline" onClick={() => setAiImportOpen(true)} className="rounded-xl" data-testid="button-ai-import">
+                <Sparkles className="h-4 w-4 mr-2" />
+                Rebuild with AI
+              </Button>
+            )}
+            <Button onClick={onCreateNew} className="rounded-xl" data-testid="button-create-form">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Form
+            </Button>
+          </div>
         </div>
+      )}
+
+      {onAiDraft && (
+        <AIImportDialog open={aiImportOpen} onOpenChange={setAiImportOpen} onDraft={onAiDraft} />
       )}
 
       {!forms || forms.length === 0 ? (
         <Card className="p-12 text-center rounded-2xl">
           <ClipboardList className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">No forms yet</h3>
-          <p className="text-muted-foreground mb-4">Create your first custom form template</p>
-          <Button onClick={onCreateNew} className="rounded-xl">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Form
-          </Button>
+          <p className="text-muted-foreground mb-4">Create your first custom form template, or upload an existing paper checklist and let AI rebuild it</p>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {onAiDraft && (
+              <Button variant="outline" onClick={() => setAiImportOpen(true)} className="rounded-xl">
+                <Sparkles className="h-4 w-4 mr-2" />
+                Rebuild with AI
+              </Button>
+            )}
+            <Button onClick={onCreateNew} className="rounded-xl">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Form
+            </Button>
+          </div>
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1531,6 +1688,7 @@ export function CustomFormsPage({ hideHeader = false }: CustomFormsPageProps) {
   const [view, setView] = useState<'list' | 'create' | 'edit' | 'submissions'>('list');
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [submissionsFormId, setSubmissionsFormId] = useState<string | null>(null);
+  const [aiDraft, setAiDraft] = useState<AIFormDraft | null>(null);
 
   const { data: forms } = useQuery<CustomForm[]>({
     queryKey: ['/api/custom-forms'],
@@ -1550,10 +1708,16 @@ export function CustomFormsPage({ hideHeader = false }: CustomFormsPageProps) {
     setView('list');
     setEditingFormId(null);
     setSubmissionsFormId(null);
+    setAiDraft(null);
+  };
+
+  const handleAiDraft = (draft: AIFormDraft) => {
+    setAiDraft(draft);
+    setView('create');
   };
 
   if (view === 'create') {
-    return <FormBuilder onBack={handleBack} />;
+    return <FormBuilder onBack={handleBack} initialDraft={aiDraft || undefined} />;
   }
 
   if (view === 'edit' && editingFormId) {
@@ -1587,6 +1751,7 @@ export function CustomFormsPage({ hideHeader = false }: CustomFormsPageProps) {
       onCreateNew={() => setView('create')} 
       onEdit={handleEdit} 
       onViewSubmissions={handleViewSubmissions}
+      onAiDraft={handleAiDraft}
       hideHeader={hideHeader} 
     />
   );
