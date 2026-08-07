@@ -677,6 +677,23 @@ export const businessSettings = pgTable("business_settings", {
   workHoursStart: text("work_hours_start").default('07:00'),
   workHoursEnd: text("work_hours_end").default('17:00'),
   workDays: json("work_days").$type<number[]>().default([1, 2, 3, 4, 5]),
+  // ─── One-way spreadsheet sync (Sheet Sync) ───
+  // JobRunner is the source of truth; data is pushed OUT on a schedule only.
+  // Columns added via raw ALTER on the live DB (drizzle push is not used).
+  sheetSyncEnabled: boolean("sheet_sync_enabled").default(false),
+  sheetSyncTarget: text("sheet_sync_target").default('google_sheets'), // 'google_sheets' | 'excel_email'
+  sheetSyncFrequency: text("sheet_sync_frequency").default('daily'), // 'daily' | 'weekly'
+  sheetSyncDataTypes: json("sheet_sync_data_types").$type<string[]>().default(['clients', 'jobs', 'invoices', 'payments']),
+  googleSheetsConnected: boolean("google_sheets_connected").default(false),
+  googleSheetsAccessToken: text("google_sheets_access_token"),
+  googleSheetsRefreshToken: text("google_sheets_refresh_token"),
+  googleSheetsTokenExpiry: timestamp("google_sheets_token_expiry"),
+  googleSheetsEmail: text("google_sheets_email"),
+  sheetSyncSpreadsheetId: text("sheet_sync_spreadsheet_id"),
+  sheetSyncSpreadsheetUrl: text("sheet_sync_spreadsheet_url"),
+  sheetSyncLastRunAt: timestamp("sheet_sync_last_run_at"),
+  sheetSyncLastStatus: text("sheet_sync_last_status"), // 'success' | 'error'
+  sheetSyncLastError: text("sheet_sync_last_error"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1456,6 +1473,8 @@ export const insertBusinessSettingsSchema = createInsertSchema(businessSettings)
   // match the typed number[] Drizzle expects on insert/update. Pin it so the
   // storage layer's typed .set()/.values() accept the owner's work-day list.
   workDays: z.array(z.number()).optional().nullable(),
+  // Same drizzle-zod json inference quirk for the sheet sync data-type list.
+  sheetSyncDataTypes: z.array(z.string()).optional().nullable(),
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({

@@ -1465,6 +1465,39 @@ pool
     console.error('[Schema] Failed to ensure document attachment columns:', err.message);
   });
 
+// Task #306 (One-way Excel/Google Sheets sync): sheet sync settings + Google
+// Sheets OAuth tokens live on business_settings. Added idempotently with raw
+// SQL at startup (we do NOT use drizzle-kit push on this database).
+pool
+  .query(`
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_enabled boolean DEFAULT false;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_target text DEFAULT 'google_sheets';
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_frequency text DEFAULT 'daily';
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_data_types json DEFAULT '["clients","jobs","invoices","payments"]';
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS google_sheets_connected boolean DEFAULT false;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS google_sheets_access_token text;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS google_sheets_refresh_token text;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS google_sheets_token_expiry timestamp;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS google_sheets_email text;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_spreadsheet_id text;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_spreadsheet_url text;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_last_run_at timestamp;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_last_status text;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_last_error text;
+    -- Tokens must be encrypted at rest ('enc:v1:' prefix). Invalidate any
+    -- legacy plaintext values so the owner safely reconnects instead.
+    UPDATE business_settings
+    SET google_sheets_connected = false,
+        google_sheets_access_token = NULL,
+        google_sheets_refresh_token = NULL,
+        google_sheets_token_expiry = NULL
+    WHERE (google_sheets_access_token IS NOT NULL AND google_sheets_access_token NOT LIKE 'enc:v1:%')
+       OR (google_sheets_refresh_token IS NOT NULL AND google_sheets_refresh_token NOT LIKE 'enc:v1:%');
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure sheet sync columns:', err.message);
+  });
+
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
   async upsertUser(userData: UpsertUser): Promise<User> {

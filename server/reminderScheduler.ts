@@ -19,6 +19,7 @@ let smsAutomationInterval: NodeJS.Timeout | null = null;
 let billingReminderInterval: NodeJS.Timeout | null = null;
 let installmentReminderInterval: NodeJS.Timeout | null = null;
 let complianceExpiryInterval: NodeJS.Timeout | null = null;
+let sheetSyncInterval: NodeJS.Timeout | null = null;
 
 const REMINDER_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const RECURRING_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
@@ -29,6 +30,7 @@ const SMS_AUTOMATION_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const BILLING_REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (daily)
 const INSTALLMENT_REMINDER_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 hours (twice daily)
 const COMPLIANCE_EXPIRY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (daily)
+const SHEET_SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes (poll for due one-way spreadsheet syncs)
 
 async function processAllUserReminders(): Promise<void> {
   console.log('[Scheduler] Processing automatic reminders...');
@@ -1051,6 +1053,31 @@ export function startComplianceExpiryScheduler(): void {
   console.log(`[Scheduler] Compliance expiry scheduler running every ${COMPLIANCE_EXPIRY_INTERVAL_MS / 3600000} hours`);
 }
 
+// One-way Excel/Google Sheets sync (Task #306): polls for owners whose
+// scheduled export is due and pushes their data out. Strictly outbound.
+async function processSheetSyncs(): Promise<void> {
+  try {
+    const { processDueSheetSyncs } = await import('./sheetSync');
+    await processDueSheetSyncs();
+  } catch (error) {
+    console.error('[Scheduler] Error processing sheet syncs:', error);
+  }
+}
+
+export function startSheetSyncScheduler(): void {
+  console.log('[Scheduler] Starting sheet sync scheduler...');
+
+  if (sheetSyncInterval) {
+    clearInterval(sheetSyncInterval);
+  }
+
+  setTimeout(processSheetSyncs, 20000);
+
+  sheetSyncInterval = setInterval(processSheetSyncs, SHEET_SYNC_INTERVAL_MS);
+
+  console.log(`[Scheduler] Sheet sync scheduler running every ${SHEET_SYNC_INTERVAL_MS / 60000} minutes`);
+}
+
 export function startAllSchedulers(): void {
   startReminderScheduler();
   startRecurringScheduler();
@@ -1062,6 +1089,7 @@ export function startAllSchedulers(): void {
   startInstallmentReminderScheduler();
   startQuoteFollowUpScheduler();
   startComplianceExpiryScheduler();
+  startSheetSyncScheduler();
 }
 
 export function stopAllSchedulers(): void {
@@ -1113,6 +1141,11 @@ export function stopAllSchedulers(): void {
   if (complianceExpiryInterval) {
     clearInterval(complianceExpiryInterval);
     complianceExpiryInterval = null;
+  }
+  
+  if (sheetSyncInterval) {
+    clearInterval(sheetSyncInterval);
+    sheetSyncInterval = null;
   }
   
   console.log('[Scheduler] All schedulers stopped');

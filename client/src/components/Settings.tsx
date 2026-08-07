@@ -111,6 +111,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ClearSampleDataCard, ImportDataCard, TimezoneField } from "./SettingsImportCards";
 import { ImportHistoryCard } from "./ImportHistoryCard";
+import { SheetSyncCard } from "./SheetSyncCard";
 
 // Types for MyAccount tab
 interface ColorOption {
@@ -3902,6 +3903,8 @@ function DataExportTab() {
           </div>
         </CardContent>
       </Card>
+      
+      <SheetSyncCard />
       
       <Card>
         <CardHeader>

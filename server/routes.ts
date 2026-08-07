@@ -270,6 +270,7 @@ import {
   finalizeImportRun,
 } from "./routes/import-history";
 import { registerTeamGroupsRoutes } from "./routes/team-groups";
+import { registerSheetSyncRoutes } from "./routes/sheet-sync";
 
 // Mass-assignment guard: strip server-controlled identity/ownership/timestamp
 // fields from a client-supplied update payload before it reaches a storage
@@ -8553,6 +8554,21 @@ Be specific about materials, colors, and features that would be included.`
     trialEndDate: true,
     trialConverted: true,
     onboardingCompleted: true,
+    // Sheet Sync is server-controlled — configured only via /api/sheet-sync/*
+    sheetSyncEnabled: true,
+    sheetSyncTarget: true,
+    sheetSyncFrequency: true,
+    sheetSyncDataTypes: true,
+    googleSheetsConnected: true,
+    googleSheetsAccessToken: true,
+    googleSheetsRefreshToken: true,
+    googleSheetsTokenExpiry: true,
+    googleSheetsEmail: true,
+    sheetSyncSpreadsheetId: true,
+    sheetSyncSpreadsheetUrl: true,
+    sheetSyncLastRunAt: true,
+    sheetSyncLastStatus: true,
+    sheetSyncLastError: true,
   });
 
   app.post("/api/business-settings", requireAuth, ownerOnly(), async (req: any, res) => {
@@ -14982,6 +14998,7 @@ Be specific about materials, colors, and features that would be included.`
   registerSmartImportRoutes(app);
   registerImportHistoryRoutes(app);
   registerTeamGroupsRoutes(app);
+  registerSheetSyncRoutes(app);
   // Get site photos for all jobs (for chat list display)
   // Optimized: batches photo lookups and generates signed URLs in parallel
   const sitePhotoCache = new Map<string, { url: string; expires: number }>();
