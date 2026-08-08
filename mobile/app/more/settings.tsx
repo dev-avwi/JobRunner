@@ -1017,7 +1017,7 @@ export default function SettingsScreen() {
   const confirm = useConfirmDialog();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const { user, refreshUser, roleInfo } = useAuthStore();
+  const { user, refreshUser, roleInfo, isOwner } = useAuthStore();
   const subRoleName = roleInfo?.roleName?.toLowerCase();
   const isSubcontractor = subRoleName === 'subcontractor' || subRoleName === 'sub_contractor';
   const visibleTabs = useMemo(() => (
@@ -3112,6 +3112,26 @@ export default function SettingsScreen() {
                 </View>
                 <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
               </PressableRow>
+
+              {isOwner() && (
+                <>
+                  <Text style={styles.sectionLabel}>YOUR DATA</Text>
+                  <PressableRow
+                    style={styles.settingsCard}
+                    onPress={() => router.push('/more/bring-your-business')}
+                    data-testid="button-bring-your-business"
+                  >
+                    <View style={styles.settingsCardHeader}>
+                      <Feather name="briefcase" size={20} color={colors.primary} />
+                      <View style={styles.settingsCardInfo}>
+                        <Text style={styles.settingsCardTitle}>Bring My Existing Business Across</Text>
+                        <Text style={styles.settingsCardSubtitle}>Import clients, set trade defaults & more</Text>
+                      </View>
+                    </View>
+                    <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+                  </PressableRow>
+                </>
+              )}
 
               <Text style={styles.sectionLabel}>DATA EXPORT</Text>
 

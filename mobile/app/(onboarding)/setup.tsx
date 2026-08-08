@@ -441,6 +441,24 @@ export default function OnboardingSetupScreen() {
     setShowMagic(true);
   };
 
+  // "Bring my existing business across" from the final owner step: save the
+  // business settings, mark onboarding complete (awaited — we're leaving the
+  // onboarding stack, so the guard needs onboardingCompleted=true before we
+  // land in /more), then open the native migration screen.
+  const handleBringBusinessAcross = async () => {
+    const saved = await handleSaveBusinessSettings();
+    if (!saved) return;
+    clearOnboardingDraft();
+    setIsLoading(true);
+    try {
+      useAuthStore.getState().setOnboardingFinishing(true);
+      await markOnboardingComplete(loadSampleData);
+      router.replace('/more/bring-your-business?from=onboarding');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const proceedToNotifications = () => {
     router.replace('/(onboarding)/notifications-permission');
   };
@@ -927,6 +945,23 @@ export default function OnboardingSetupScreen() {
               <Ionicons name="arrow-forward" size={18} color={colors.primaryForeground} />
             </>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bringBusinessLink}
+          onPress={() => {
+            if (!businessData.teamSize) {
+              Alert.alert('Required', 'Please select your team size');
+              return;
+            }
+            handleBringBusinessAcross();
+          }}
+          disabled={isLoading}
+          activeOpacity={0.7}
+          testID="button-bring-business"
+        >
+          <Ionicons name="briefcase-outline" size={16} color={colors.primary} />
+          <Text style={styles.bringBusinessLinkText}>Already running a business? Bring it across</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -1720,6 +1755,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   ctaText: {
     color: colors.primaryForeground,
     fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
+  },
+  bringBusinessLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: 14,
+    marginTop: spacing.sm,
+  },
+  bringBusinessLinkText: {
+    fontSize: typography.sizes.sm,
+    color: colors.primary,
     fontWeight: fontWeights.semibold,
   },
 
