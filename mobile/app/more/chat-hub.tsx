@@ -25,7 +25,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import api, { API_URL } from '../../src/lib/api';
-import { handleDedicatedNumberError } from '../../src/lib/smsGate';
+import { handleDedicatedNumberError, showGetNumberPrompt } from '../../src/lib/smsGate';
 import { useAuthStore } from '../../src/lib/store';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
@@ -1125,7 +1125,13 @@ export default function ChatHubScreen() {
     });
   };
 
+  const smsLocked = twilioStatus !== null && !twilioConnected;
+
   const handleConversationPress = (item: ConversationItem) => {
+    if (smsLocked && (item.type === 'sms' || (item.type === 'job' && item.data?.linkedSms))) {
+      showGetNumberPrompt();
+      return;
+    }
     if (item.type === 'team') {
       router.push('/more/team-chat');
     } else if (item.type === 'job') {
@@ -1249,7 +1255,7 @@ export default function ChatHubScreen() {
           ) : item.type === 'team' ? (
             <Feather name="users" size={20} color={colors.info} />
           ) : item.type === 'sms' ? (
-            <Feather name="smartphone" size={20} color={colors.success} />
+            <Feather name={smsLocked ? 'lock' : 'smartphone'} size={20} color={smsLocked ? colors.mutedForeground : colors.success} />
           ) : (item.type === 'direct' || item.type === 'member') ? (
             <TeamAvatar
               name={item.title}
@@ -1415,8 +1421,8 @@ export default function ChatHubScreen() {
           </PressableRow>
           {!isSubcontractor && (
             <>
-              <PressableRow style={[styles.quickActionButton, styles.quickActionButtonSuccess]} onPress={() => router.push('/more/new-sms-conversation' as any)} >
-                <Feather name="edit-3" size={18} color={colors.white} />
+              <PressableRow style={[styles.quickActionButton, styles.quickActionButtonSuccess, smsLocked && { opacity: 0.6 }]} onPress={() => { if (smsLocked) { showGetNumberPrompt(); return; } router.push('/more/new-sms-conversation' as any); }} >
+                <Feather name={smsLocked ? 'lock' : 'edit-3'} size={18} color={colors.white} />
                 <Text style={[styles.quickActionText, styles.quickActionTextSuccess]}>New SMS</Text>
               </PressableRow>
               <PressableRow style={[styles.quickActionButton, styles.quickActionButtonSecondary]} onPress={() => router.push('/more/clients')} >
