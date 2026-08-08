@@ -33,6 +33,14 @@ const sheetSyncSettingsSchema = z.object({
   target: z.enum(SHEET_SYNC_TARGETS).optional(),
   frequency: z.enum(SHEET_SYNC_FREQUENCIES).optional(),
   dataTypes: z.array(z.enum(SHEET_SYNC_DATA_TYPES)).min(1).optional(),
+  // Optional bookkeeper recipients for the emailed Excel export. Empty array
+  // means "send to the owner" (the default). Normalised lower/trimmed and
+  // de-duplicated so display + delivery are consistent.
+  recipients: z
+    .array(z.string().trim().toLowerCase().email("Invalid recipient email"))
+    .max(5, "You can add up to 5 recipient emails")
+    .optional()
+    .transform((arr) => (arr ? Array.from(new Set(arr)) : arr)),
 });
 
 export function registerSheetSyncRoutes(app: Express) {
@@ -67,6 +75,8 @@ export function registerSheetSyncRoutes(app: Express) {
         lastRunAt: settings?.sheetSyncLastRunAt || null,
         lastStatus: settings?.sheetSyncLastStatus || null,
         lastError: settings?.sheetSyncLastError || null,
+        recipients: Array.isArray(settings?.sheetSyncRecipients) ? settings!.sheetSyncRecipients : [],
+        ownerEmail: settings?.email || (await storage.getUser(userContext.effectiveUserId))?.email || null,
       });
     } catch (error: any) {
       console.error("Error getting sheet sync status:", error);
@@ -159,12 +169,14 @@ export function registerSheetSyncRoutes(app: Express) {
       }
       if (parsed.frequency !== undefined) updates.sheetSyncFrequency = parsed.frequency;
       if (parsed.dataTypes !== undefined) updates.sheetSyncDataTypes = parsed.dataTypes;
+      if (parsed.recipients !== undefined) updates.sheetSyncRecipients = parsed.recipients;
       const updated = await storage.updateBusinessSettings(userContext.effectiveUserId, updates);
       res.json({
         enabled: updated?.sheetSyncEnabled || false,
         target: updated?.sheetSyncTarget || 'google_sheets',
         frequency: updated?.sheetSyncFrequency || 'daily',
         dataTypes: updated?.sheetSyncDataTypes || ['clients', 'jobs', 'invoices', 'payments'],
+        recipients: Array.isArray(updated?.sheetSyncRecipients) ? updated!.sheetSyncRecipients : [],
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {

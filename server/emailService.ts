@@ -2318,7 +2318,7 @@ export async function sendJobCompletionNotificationEmail(
 
 // Generic email with attachment - used for receipts and other documents
 interface EmailWithAttachmentParams {
-  to: string;
+  to: string | string[]; // SendGrid accepts multiple recipients natively
   subject: string;
   html: string;
   fromName?: string; // Business name to show as sender (defaults to JobRunner)

@@ -2,7 +2,7 @@
 // Owners can push data OUT to a Google Sheet or a scheduled Excel email.
 // Strictly one-way: JobRunner stays the source of truth.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,9 @@ import {
   CheckCircle,
   ArrowRight,
   Sheet as SheetIcon,
+  X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface SheetSyncStatus {
   configured: boolean;
@@ -38,6 +40,8 @@ interface SheetSyncStatus {
   lastRunAt: string | null;
   lastStatus: 'success' | 'error' | null;
   lastError: string | null;
+  recipients: string[];
+  ownerEmail: string | null;
 }
 
 const DATA_TYPE_OPTIONS = [
@@ -47,8 +51,10 @@ const DATA_TYPE_OPTIONS = [
   { key: 'payments', label: 'Payments' },
 ];
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function SheetSyncCard() {
   const { toast } = useToast();
+  const [recipientInput, setRecipientInput] = useState('');
 
   const { data: status, isLoading, isError } = useQuery<SheetSyncStatus>({
     queryKey: ['/api/sheet-sync/status'],
@@ -78,7 +84,7 @@ export function SheetSyncCard() {
   }, []);
 
   const updateSettings = useMutation({
-    mutationFn: async (updates: Partial<Pick<SheetSyncStatus, 'enabled' | 'target' | 'frequency' | 'dataTypes'>>) => {
+    mutationFn: async (updates: Partial<Pick<SheetSyncStatus, 'enabled' | 'target' | 'frequency' | 'dataTypes'>> & { recipients?: string[] }) => {
       const res = await apiRequest('POST', '/api/sheet-sync/settings', updates);
       return res.json();
     },
@@ -128,7 +134,7 @@ export function SheetSyncCard() {
     onSuccess: (data: { url?: string | null }) => {
       toast({
         title: 'Sync complete',
-        description: data.url ? 'Your Google Sheet has been refreshed.' : 'Your Excel export has been emailed to you.',
+        description: data.url ? 'Your Google Sheet has been refreshed.' : 'Your Excel export has been emailed.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/sheet-sync/status'] });
     },
@@ -143,6 +149,30 @@ export function SheetSyncCard() {
 
   const usingGoogle = status.target === 'google_sheets';
   const canEnable = !usingGoogle || status.googleConnected;
+  const recipients = Array.isArray(status.recipients) ? status.recipients : [];
+
+  const addRecipient = () => {
+    const email = recipientInput.trim().toLowerCase();
+    if (!email) return;
+    if (!EMAIL_RE.test(email)) {
+      toast({ title: 'Invalid email address', description: 'Please enter a valid email, e.g. bookkeeper@example.com', variant: 'destructive' });
+      return;
+    }
+    if (recipients.includes(email)) {
+      setRecipientInput('');
+      return;
+    }
+    if (recipients.length >= 5) {
+      toast({ title: 'Maximum of 5 recipients', variant: 'destructive' });
+      return;
+    }
+    updateSettings.mutate({ recipients: [...recipients, email] });
+    setRecipientInput('');
+  };
+
+  const removeRecipient = (email: string) => {
+    updateSettings.mutate({ recipients: recipients.filter((r) => r !== email) });
+  };
 
   const toggleDataType = (key: string, checked: boolean) => {
     const next = checked
@@ -223,10 +253,70 @@ export function SheetSyncCard() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="google_sheets">Google Sheet (kept up to date)</SelectItem>
-              <SelectItem value="excel_email">Excel file emailed to me</SelectItem>
+              <SelectItem value="excel_email">Excel file sent by email</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        {/* Email recipients (Excel email target only) */}
+        {!usingGoogle && (
+          <div className="space-y-2" data-testid="section-excel-recipients">
+            <Label className="text-sm">Email the export to</Label>
+            <p className="text-xs text-muted-foreground">
+              Add your bookkeeper or accountant here. Leave empty to send it to you
+              {status.ownerEmail ? ` (${status.ownerEmail})` : ''}.
+            </p>
+            {recipients.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {recipients.map((email) => (
+                  <Badge key={email} variant="secondary" className="gap-1 pr-1" data-testid={`badge-recipient-${email}`}>
+                    {email}
+                    <button
+                      type="button"
+                      onClick={() => removeRecipient(email)}
+                      className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                      aria-label={`Remove ${email}`}
+                      data-testid={`button-remove-recipient-${email}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="bookkeeper@example.com"
+                value={recipientInput}
+                onChange={(e) => setRecipientInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addRecipient();
+                  }
+                }}
+                className="h-9"
+                data-testid="input-recipient-email"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={addRecipient}
+                disabled={updateSettings.isPending || !recipientInput.trim()}
+                data-testid="button-add-recipient"
+              >
+                Add
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground" data-testid="text-recipient-summary">
+              {recipients.length > 0
+                ? `Exports will be emailed to: ${recipients.join(', ')}`
+                : `Exports will be emailed to you${status.ownerEmail ? ` (${status.ownerEmail})` : ''}`}
+            </p>
+          </div>
+        )}
 
         {/* Google connection */}
         {usingGoogle && (

@@ -694,6 +694,7 @@ export const businessSettings = pgTable("business_settings", {
   sheetSyncLastRunAt: timestamp("sheet_sync_last_run_at"),
   sheetSyncLastStatus: text("sheet_sync_last_status"), // 'success' | 'error'
   sheetSyncLastError: text("sheet_sync_last_error"),
+  sheetSyncRecipients: json("sheet_sync_recipients").$type<string[]>().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1475,6 +1476,7 @@ export const insertBusinessSettingsSchema = createInsertSchema(businessSettings)
   workDays: z.array(z.number()).optional().nullable(),
   // Same drizzle-zod json inference quirk for the sheet sync data-type list.
   sheetSyncDataTypes: z.array(z.string()).optional().nullable(),
+  sheetSyncRecipients: z.array(z.string()).optional().nullable(),
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({

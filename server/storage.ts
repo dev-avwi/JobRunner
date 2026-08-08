@@ -1484,6 +1484,7 @@ pool
     ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_last_run_at timestamp;
     ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_last_status text;
     ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_last_error text;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_recipients json DEFAULT '[]'::json;
     -- Tokens must be encrypted at rest ('enc:v1:' prefix). Invalidate any
     -- legacy plaintext values so the owner safely reconnects instead.
     UPDATE business_settings

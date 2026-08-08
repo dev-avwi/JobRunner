@@ -8571,6 +8571,7 @@ Be specific about materials, colors, and features that would be included.`
     sheetSyncLastRunAt: true,
     sheetSyncLastStatus: true,
     sheetSyncLastError: true,
+    sheetSyncRecipients: true,
   });
 
   app.post("/api/business-settings", requireAuth, ownerOnly(), async (req: any, res) => {

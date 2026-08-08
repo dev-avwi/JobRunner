@@ -426,14 +426,22 @@ export async function runSheetSync(userId: string, opts?: { manual?: boolean }):
   try {
     let url: string | undefined;
     if (target === 'excel_email') {
-      const user = await storage.getUser(userId);
-      const toEmail = settings.email || user?.email;
-      if (!toEmail) throw new Error('No email address on file to send the Excel export to');
+      // Custom recipients (e.g. the bookkeeper) win; otherwise default to the owner.
+      const customRecipients = Array.isArray(settings.sheetSyncRecipients)
+        ? settings.sheetSyncRecipients.filter((e: any) => typeof e === 'string' && e.includes('@'))
+        : [];
+      let toEmails: string[] = customRecipients;
+      if (toEmails.length === 0) {
+        const user = await storage.getUser(userId);
+        const ownerEmail = settings.email || user?.email;
+        if (!ownerEmail) throw new Error('No email address on file to send the Excel export to');
+        toEmails = [ownerEmail];
+      }
       const buffer = await buildExcelWorkbook(userId, dataTypes);
       const { sendEmailWithAttachment } = await import('./emailService');
       const dateStr = new Date().toISOString().slice(0, 10);
       await sendEmailWithAttachment({
-        to: toEmail,
+        to: toEmails,
         subject: `Your JobRunner data export — ${dateStr}`,
         html: `
           <p>G'day,</p>

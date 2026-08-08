@@ -167,7 +167,7 @@ for t in clients jobs quotes invoices line_item_catalog; do
 done
 
 # Task 306: one-way Excel/Google Sheets sync settings + OAuth tokens
-for col in "sheet_sync_enabled boolean DEFAULT false" "sheet_sync_target text DEFAULT 'google_sheets'" "sheet_sync_frequency text DEFAULT 'daily'" "sheet_sync_data_types json DEFAULT '[\"clients\",\"jobs\",\"invoices\",\"payments\"]'" "google_sheets_connected boolean DEFAULT false" "google_sheets_access_token text" "google_sheets_refresh_token text" "google_sheets_token_expiry timestamp" "google_sheets_email text" "sheet_sync_spreadsheet_id text" "sheet_sync_spreadsheet_url text" "sheet_sync_last_run_at timestamp" "sheet_sync_last_status text" "sheet_sync_last_error text"; do
+for col in "sheet_sync_enabled boolean DEFAULT false" "sheet_sync_target text DEFAULT 'google_sheets'" "sheet_sync_frequency text DEFAULT 'daily'" "sheet_sync_data_types json DEFAULT '[\"clients\",\"jobs\",\"invoices\",\"payments\"]'" "google_sheets_connected boolean DEFAULT false" "google_sheets_access_token text" "google_sheets_refresh_token text" "google_sheets_token_expiry timestamp" "google_sheets_email text" "sheet_sync_spreadsheet_id text" "sheet_sync_spreadsheet_url text" "sheet_sync_last_run_at timestamp" "sheet_sync_last_status text" "sheet_sync_last_error text" "sheet_sync_recipients json DEFAULT '[]'"; do
   psql "$DATABASE_URL" -c "ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS $col;" 2>/dev/null || true
 done
 # Google Sheets tokens must be encrypted at rest ('enc:v1:' prefix); invalidate legacy plaintext values

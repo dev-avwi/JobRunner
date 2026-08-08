@@ -12,3 +12,7 @@ description: Design constraints of the outbound Excel/Google Sheets sync feature
 - Scheduler polls every 30 min via `processDueSheetSyncs()` (due = elapsed ≥ frequency − 25 min tolerance); scheduled failures notify the owner in-app, manual runs return the error.
 - Google OAuth tokens are stored AES-256-GCM encrypted with an `enc:v1:` prefix (seal/open helpers in the sync module); values without the prefix or failing decryption are treated as invalid → connection wiped, owner reconnects. Never persist a raw token. Completion review REJECTS plaintext OAuth tokens at rest — use `server/encryption.ts` for any new integration credentials.
 - drizzle-zod json-array columns (e.g. the data-type list) need an explicit `z.array(...)` pin in the insert schema extend (same quirk as `workDays`) or typecheck fails with a huge record-type error.
+
+## Excel export recipients
+- `business_settings.sheet_sync_recipients` (json array of emails) — custom bookkeeper recipients for the emailed Excel export; empty = send to owner. Startup ALTERs in storage.ts + post-merge.sh provision the column (same pattern as all sheet_sync cols — new sheet-sync columns MUST be added to BOTH lists or deployed DBs break).
+- Writable ONLY via /api/sheet-sync/settings (omitted from businessSettingsWriteSchema like all sheetSync* cols).
