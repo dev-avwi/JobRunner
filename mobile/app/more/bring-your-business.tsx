@@ -18,6 +18,7 @@ import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, typography, iconSizes, pageShell, fontWeights } from '../../src/lib/design-tokens';
 import api, { API_URL } from '../../src/lib/api';
+import { useAuthStore } from '../../src/lib/store';
 
 // Trade ids must match shared/tradeCatalog.ts — POST /api/onboarding/quick-setup
 // rejects unknown ids with "Unknown trade type". (The onboarding wizard's own
@@ -127,6 +128,11 @@ export default function BringYourBusinessScreen() {
 
   const handleDone = () => {
     if (fromOnboarding) {
+      // Re-suppress the onboarding guard: landing on this (/more) screen
+      // cleared onboardingFinishing, so navigating back into the (onboarding)
+      // stack with onboardingCompleted=true would otherwise get immediately
+      // redirected to /(tabs), skipping the notifications-permission step.
+      useAuthStore.getState().setOnboardingFinishing(true);
       router.replace('/(onboarding)/notifications-permission');
     } else {
       router.back();

@@ -354,7 +354,7 @@ export default function OnboardingSetupScreen() {
     }
   };
 
-  const markOnboardingComplete = async (seedSample: boolean) => {
+  const markOnboardingComplete = async (seedSample: boolean): Promise<{ seedFailed: boolean; completeFailed: boolean }> => {
     const userId = useAuthStore.getState().user?.id;
     let seedFailed = false;
     let completeFailed = false;
@@ -395,6 +395,7 @@ export default function OnboardingSetupScreen() {
     } else {
       await clearOnboardingSetupFailure(userId);
     }
+    return { seedFailed, completeFailed };
   };
 
   // Marks onboarding complete for joiners (workers/subcontractors). This runs
@@ -452,7 +453,20 @@ export default function OnboardingSetupScreen() {
     setIsLoading(true);
     try {
       useAuthStore.getState().setOnboardingFinishing(true);
-      await markOnboardingComplete(loadSampleData);
+      const { completeFailed } = await markOnboardingComplete(loadSampleData);
+      if (completeFailed) {
+        // Completion didn't commit server-side (offline / server error). If we
+        // redirected anyway, the owner would land in /more with
+        // onboardingCompleted=false and bounce between the onboarding guard
+        // and the migration screen. Stay in the wizard with a clear error so
+        // they can retry.
+        useAuthStore.getState().setOnboardingFinishing(false);
+        Alert.alert(
+          "Couldn't finish setup",
+          'We saved your business details, but could not complete setup. Check your connection and tap "Bring it across" again.'
+        );
+        return;
+      }
       router.replace('/more/bring-your-business?from=onboarding');
     } finally {
       setIsLoading(false);
