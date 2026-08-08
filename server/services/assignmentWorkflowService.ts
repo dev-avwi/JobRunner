@@ -38,7 +38,15 @@ interface OnMyWayResult {
   smsSent?: boolean;
   antiSpamBlocked?: boolean;
   error?: string;
+  // Set when the state change succeeded but the client SMS could not be sent
+  // (e.g. the business has no dedicated number). Lets clients show a
+  // non-blocking "get your business number" prompt without implying the
+  // status change failed.
+  smsFailed?: boolean;
+  smsErrorCode?: string;
 }
+
+const DEDICATED_NUMBER_RE = /dedicated (phone )?number/i;
 
 export async function handleOnMyWay(params: OnMyWayParams): Promise<OnMyWayResult> {
   const { jobId, assignmentId, actorUserId, workerLatitude, workerLongitude, customMessage, baseUrl } = params;
@@ -84,6 +92,13 @@ export async function handleOnMyWay(params: OnMyWayParams): Promise<OnMyWayResul
   const businessName = business?.businessName || 'Your tradesperson';
   const ownerPhone = business?.phone || '';
   const ownerName = businessName;
+
+  // Pre-flight: the whole point of "on my way" is the client SMS. If the
+  // business has no dedicated number, fail BEFORE any state writes so a retry
+  // after purchasing a number doesn't duplicate status changes/events.
+  if (client.phone && !business?.dedicatedPhoneNumber) {
+    return { success: false, error: 'No business phone number configured. Purchase a dedicated number to send SMS.' };
+  }
 
   const worker = await storage.getUser(assignment.userId);
   const workerName = assignment.workerDisplayNameSnapshot || 
@@ -189,7 +204,7 @@ export async function handleOnMyWay(params: OnMyWayParams): Promise<OnMyWayResul
         `JobRunner — ${businessName}: ${workerName} is on the way. ETA ${etaText}. Track live: ${portalUrl}. Questions? Call ${contactInfo}.`;
 
       try {
-        await sendSmsToClient({
+        const smsMessage = await sendSmsToClient({
           businessOwnerId: effectiveUserId,
           clientId: job.clientId,
           clientPhone: client.phone,
@@ -200,6 +215,13 @@ export async function handleOnMyWay(params: OnMyWayParams): Promise<OnMyWayResul
           isQuickAction: true,
           quickActionType: 'on_my_way',
         });
+
+        if (smsMessage.status === 'failed') {
+          // Dedicated-number absence is pre-checked before any writes; any
+          // failure here is transient — log it, don't fail the state change.
+          console.error('[OnMyWay] SMS send failed:', smsMessage.errorMessage);
+          throw new Error(smsMessage.errorMessage || 'SMS send failed');
+        }
 
         smsSent = true;
 
@@ -261,6 +283,9 @@ export async function handleWorkerStatusChange(params: WorkerStatusParams): Prom
   if (assignment.jobId !== jobId) {
     return { success: false, error: 'Assignment does not belong to this job' };
   }
+
+  let statusSmsFailed = false;
+  let statusSmsErrorCode: string | undefined;
 
   const assignmentStatusMap: Record<string, string> = {
     arrived: 'arrived',
@@ -390,7 +415,7 @@ export async function handleWorkerStatusChange(params: WorkerStatusParams): Prom
           // Skip — already logged above
         } else if (!lastSms || new Date(lastSms.sentAt) <= tenMinutesAgo) {
           try {
-            await sendSmsToClient({
+            const smsMessage = await sendSmsToClient({
               businessOwnerId: effectiveUserId,
               clientId: job.clientId,
               clientPhone: client.phone,
@@ -402,19 +427,31 @@ export async function handleWorkerStatusChange(params: WorkerStatusParams): Prom
               quickActionType: `worker_${status}`,
             });
 
-            await storage.createSmsNotificationLog({
-              jobId,
-              assignmentId,
-              userId: actorUserId,
-              clientPhone: client.phone,
-              notificationType: status,
-              portalTokenId: portalToken?.id,
-            });
+            if (smsMessage.status === 'failed') {
+              // Status change already persisted — don't fail it. Surface the
+              // SMS failure separately so clients can show the get-a-number
+              // prompt without implying the status update failed.
+              statusSmsFailed = true;
+              if (DEDICATED_NUMBER_RE.test(smsMessage.errorMessage || '')) {
+                statusSmsErrorCode = 'DEDICATED_NUMBER_REQUIRED';
+              }
+              console.error(`[WorkerStatus] SMS send failed for ${status}:`, smsMessage.errorMessage);
+            } else {
+              await storage.createSmsNotificationLog({
+                jobId,
+                assignmentId,
+                userId: actorUserId,
+                clientPhone: client.phone,
+                notificationType: status,
+                portalTokenId: portalToken?.id,
+              });
 
-            await storage.updateJobAssignment(assignmentId, {
-              lastSmsSentAt: new Date(),
-            });
+              await storage.updateJobAssignment(assignmentId, {
+                lastSmsSentAt: new Date(),
+              });
+            }
           } catch (smsError: unknown) {
+            statusSmsFailed = true;
             console.error(`[WorkerStatus] SMS send failed for ${status}:`, getErrorMessage(smsError));
           }
         }
@@ -422,7 +459,7 @@ export async function handleWorkerStatusChange(params: WorkerStatusParams): Prom
     }
   }
 
-  return { success: true };
+  return { success: true, ...(statusSmsFailed ? { smsFailed: true, smsErrorCode: statusSmsErrorCode } : {}) };
 }
 
 export async function handleDelayedNotification(params: {
@@ -436,6 +473,22 @@ export async function handleDelayedNotification(params: {
 
   const assignment = await storage.getJobAssignment(assignmentId);
   if (!assignment) return { success: false, error: 'Assignment not found' };
+
+  // Pre-flight: the whole point of a delay notification is the client SMS.
+  // Check the dedicated number BEFORE any state writes so a retry after
+  // purchasing a number doesn't duplicate ETA updates/events.
+  {
+    const preJob = await storage.getJob(jobId, assignment.userId);
+    if (preJob?.clientId) {
+      const preClient = await storage.getClient(preJob.clientId, assignment.userId);
+      if (preClient?.phone) {
+        const preBiz = await storage.getBusinessSettings(assignment.userId);
+        if (!preBiz?.dedicatedPhoneNumber) {
+          return { success: false, error: 'No business phone number configured. Purchase a dedicated number to send SMS.' };
+        }
+      }
+    }
+  }
 
   await storage.updateJobAssignment(assignmentId, {
     etaMinutes: newEtaMinutes,
@@ -480,7 +533,7 @@ export async function handleDelayedNotification(params: {
 
   if (!lastSms || new Date(lastSms.sentAt) <= tenMinutesAgo) {
     try {
-      await sendSmsToClient({
+      const smsMessage = await sendSmsToClient({
         businessOwnerId: assignment.userId,
         clientId: job.clientId,
         clientPhone: client.phone,
@@ -491,6 +544,12 @@ export async function handleDelayedNotification(params: {
         isQuickAction: true,
         quickActionType: 'worker_delayed',
       });
+
+      if (smsMessage.status === 'failed') {
+        // Dedicated-number absence is pre-checked before any writes; a
+        // failure here is transient — log it, don't fail the state change.
+        throw new Error(smsMessage.errorMessage || 'SMS send failed');
+      }
 
       await storage.createSmsNotificationLog({
         jobId,

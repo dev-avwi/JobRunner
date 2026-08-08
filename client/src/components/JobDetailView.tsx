@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { TimerWidget } from "./TimeTracking";
 import { useLocation, useSearch } from "wouter";
+import { ToastAction } from "@/components/ui/toast";
+import { isDedicatedNumberError, GET_NUMBER_TOAST, GET_NUMBER_URL } from "@/lib/dedicatedNumber";
 import { getJobUrgency, getInProgressDuration } from "@/lib/jobUrgency";
 import JobPhotoGallery from "./JobPhotoGallery";
 import { JobVoiceNotes } from "./JobVoiceNotes";
@@ -1319,6 +1321,17 @@ export default function JobDetailView({
 
   // Helper to parse error messages and detect SMS configuration issues
   const handleSmsError = (error: any) => {
+    if (isDedicatedNumberError(error)) {
+      toast({
+        ...GET_NUMBER_TOAST,
+        action: (
+          <ToastAction altText="Get number" onClick={() => navigate(GET_NUMBER_URL)}>
+            Get number
+          </ToastAction>
+        ),
+      });
+      return;
+    }
     let errorMessage = error.message || "Failed to send notification";
     // Parse "400: {json}" style errors
     if (errorMessage.includes(': ')) {
@@ -1399,11 +1412,25 @@ export default function JobDetailView({
         workerEta: etaLabel,
       });
     },
-    onSuccess: () => {
+    onSuccess: async (res: Response) => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId] });
       setSelectedDurationEstimate('');
+      let data: any = null;
+      try { data = await res.json(); } catch {}
+      if (data?.smsErrorCode === 'DEDICATED_NUMBER_REQUIRED') {
+        toast({
+          title: "Arrived — status updated",
+          description: GET_NUMBER_TOAST.description,
+          action: (
+            <ToastAction altText="Get number" onClick={() => navigate(GET_NUMBER_URL)}>
+              Get number
+            </ToastAction>
+          ),
+        });
+        return;
+      }
       toast({
-        title: "Arrived - client notified",
+        title: data?.smsFailed ? "Arrived — status updated (SMS not sent)" : "Arrived - client notified",
       });
     },
     onError: handleSmsError,

@@ -25,6 +25,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import api, { API_URL } from '../../src/lib/api';
+import { handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { useAuthStore } from '../../src/lib/store';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
@@ -979,7 +980,9 @@ export default function ChatHubScreen() {
         jobId,
       });
       if (response.error) {
-        Alert.alert('Error', 'Could not send SMS. Please try again.');
+        if (!handleDedicatedNumberError(response)) {
+          Alert.alert('Error', 'Could not send SMS. Please try again.');
+        }
       } else {
         Alert.alert('Sent', `"${template.label}" message sent successfully.`);
         handleRefresh();
@@ -1086,7 +1089,9 @@ export default function ChatHubScreen() {
       });
 
       if (response.error) {
-        Alert.alert('Error', 'Photo uploaded but SMS failed to send.');
+        if (!handleDedicatedNumberError(response)) {
+          Alert.alert('Error', 'Photo uploaded but SMS failed to send.');
+        }
       } else {
         Alert.alert('Sent', 'Photo message sent successfully via MMS.');
         handleRefresh();
@@ -1152,6 +1157,7 @@ export default function ChatHubScreen() {
         clientId,
       });
       if (response.error) {
+        if (handleDedicatedNumberError(response)) return;
         confirm({
           title: 'Send via SMS App?',
           message: 'Could not send directly. Would you like to open your messaging app instead?',

@@ -27,6 +27,7 @@ import { locationTracking } from '../../src/lib/location-tracking';
 import { useAuthStore, useJobsStore, useDashboardStore, useClientsStore, useTimeTrackingStore } from '../../src/lib/store';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
 import { api } from '../../src/lib/api';
+import { handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { formatCurrency as formatCurrencyUtil } from '../../src/lib/format';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
@@ -1618,6 +1619,7 @@ function TodayJobCard({
           jobId: job.id,
         });
         if (response.error) {
+          if (handleDedicatedNumberError(response)) return;
           Alert.alert(
             'Send via SMS App?',
             'Could not send directly. Would you like to open your messaging app instead?',
@@ -3234,6 +3236,10 @@ function OwnerDashboardScreen() {
                   latitude: coords?.latitude,
                   longitude: coords?.longitude,
                 });
+                if (response.error && handleDedicatedNumberError(response)) {
+                  router.push(`/job/${jobId}`);
+                  return;
+                }
                 if ((response.data as any)?.demoMode) {
                   showToast({ type: 'info', message: 'SMS Not Configured', description: 'Twilio SMS is not set up. The "On My Way" action was logged but no message was sent to the client.\n\nSet up Twilio in Settings > Integrations to enable real SMS notifications.' });
                   router.push(`/job/${jobId}`);

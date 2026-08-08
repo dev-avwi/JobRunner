@@ -57,6 +57,7 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
+import { isDedicatedNumberError, GET_NUMBER_TOAST } from "@/lib/dedicatedNumber";
 import { useAppMode } from "@/hooks/use-app-mode";
 import { useSmsSocket } from "@/hooks/use-sms-socket";
 import { useIntegrationHealth, isTwilioReady } from "@/hooks/use-integration-health";
@@ -650,6 +651,11 @@ export default function ChatHub() {
       });
     },
     onError: (error: any) => {
+      if (isDedicatedNumberError(error)) {
+        toast({ ...GET_NUMBER_TOAST });
+        setShowSmsUpgrade(true);
+        return;
+      }
       toast({
         title: "Failed to send SMS",
         description: error.message || "Please try again",
@@ -681,6 +687,11 @@ export default function ChatHub() {
       });
     },
     onError: (error: any) => {
+      if (isDedicatedNumberError(error)) {
+        toast({ ...GET_NUMBER_TOAST });
+        setShowSmsUpgrade(true);
+        return;
+      }
       toast({
         title: "Failed to send",
         description: error.message || "Please try again",

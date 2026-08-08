@@ -7210,6 +7210,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: `SMS sent to ${action.data.clientName}!` 
           });
         } else {
+          if (/dedicated (phone )?number/i.test(smsResult.error || '')) {
+            return res.status(402).json({
+              success: false,
+              error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+              code: 'DEDICATED_NUMBER_REQUIRED',
+              message: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+            });
+          }
           return res.json({ 
             success: false, 
             message: smsResult.notConfigured 
@@ -7627,8 +7635,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const smsMessage = `Reminder: Invoice ${invoice.number || ''} for $${invoiceTotal} is ${action.data.daysPastDue} days overdue. - ${business?.businessName || ''}`;
             const { sendCustomerReply: sendCustReply } = await import('./services/smsService');
-            await sendCustReply(client.phone, smsMessage, userContext.effectiveUserId);
-            results.push('SMS sent');
+            const smsRes = await sendCustReply(client.phone, smsMessage, userContext.effectiveUserId);
+            if (!smsRes.success && /dedicated (phone )?number/i.test(smsRes.error || '') && !results.includes('Email sent')) {
+              return res.status(402).json({
+                success: false,
+                error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+                code: 'DEDICATED_NUMBER_REQUIRED',
+                message: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+              });
+            }
+            results.push(smsRes.success ? 'SMS sent' : 'SMS failed');
           } catch {
             results.push('SMS failed');
           }
@@ -18681,6 +18697,12 @@ Be specific about materials, colors, and features that would be included.`
       });
       
       if (smsMessage.status === 'failed') {
+        if (/dedicated (phone )?number/i.test(smsMessage.errorMessage || '')) {
+          return res.status(402).json({ 
+            error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+            code: 'DEDICATED_NUMBER_REQUIRED',
+          });
+        }
         return res.status(500).json({ 
           error: smsMessage.errorMessage || 'SMS failed to send',
           notConfigured: smsMessage.errorMessage?.includes('not configured'),
@@ -19938,6 +19960,12 @@ Be specific about materials, colors, and features that would be included.`
       });
       
       if (smsMessage.status === 'failed') {
+        if (/dedicated (phone )?number/i.test(smsMessage.errorMessage || '')) {
+          return res.status(402).json({ 
+            error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+            code: 'DEDICATED_NUMBER_REQUIRED',
+          });
+        }
         return res.status(500).json({ 
           error: smsMessage.errorMessage || 'SMS failed to send',
           notConfigured: smsMessage.errorMessage?.includes('not configured'),
@@ -23808,6 +23836,12 @@ Be specific about materials, colors, and features that would be included.`
       // Check if SMS actually sent - the service returns message with status
       if (smsResult.status === 'failed') {
         const errorMsg = smsResult.errorMessage || 'SMS service unavailable';
+        if (/dedicated (phone )?number/i.test(errorMsg)) {
+          return res.status(402).json({ 
+            error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+            code: 'DEDICATED_NUMBER_REQUIRED',
+          });
+        }
         // Check for "not configured" type errors
         if (errorMsg.toLowerCase().includes('not configured') || 
             errorMsg.toLowerCase().includes('twilio') ||
@@ -25307,6 +25341,12 @@ Be specific about materials, colors, and features that would be included.`
       });
       
       if (smsMessage.status === 'failed') {
+        if (/dedicated (phone )?number/i.test(smsMessage.errorMessage || '')) {
+          return res.status(402).json({ 
+            error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+            code: 'DEDICATED_NUMBER_REQUIRED',
+          });
+        }
         return res.status(500).json({ 
           error: smsMessage.errorMessage || 'SMS failed to send',
           notConfigured: smsMessage.errorMessage?.includes('not configured'),
@@ -33180,6 +33220,12 @@ Respond with JSON in this format:
             recipient: phone
           });
         } else {
+          if (/dedicated (phone )?number/i.test(smsResult.error || '')) {
+            return res.status(402).json({
+              error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+              code: 'DEDICATED_NUMBER_REQUIRED',
+            });
+          }
           // SMS failed - return honest error
           return res.status(400).json({ 
             error: smsResult.error || 'Failed to send SMS. Please use email instead.',
@@ -36909,6 +36955,14 @@ Respond with JSON in this format:
       const businessSettings = await storage.getBusinessSettings(businessOwnerId);
       const businessName = businessSettings?.businessName || user?.firstName || 'Your tradie';
       
+      // Business SMS must come from the business's OWN dedicated number.
+      if (!businessSettings?.dedicatedPhoneNumber) {
+        return res.status(402).json({ 
+          error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+          code: 'DEDICATED_NUMBER_REQUIRED',
+        });
+      }
+      
       const { sendQuickAction } = await import('./services/smsService');
       const senderPhone = membership?.phone || undefined;
 
@@ -36922,6 +36976,13 @@ Respond with JSON in this format:
         businessPhone: businessSettings?.phone || undefined,
         senderPhone,
       });
+      
+      if ((smsMessage as any)?.status === 'failed') {
+        return res.status(502).json({
+          error: (smsMessage as any)?.errorMessage || 'SMS failed to send.',
+          message: smsMessage,
+        });
+      }
       
       res.json(smsMessage);
     } catch (error: any) {

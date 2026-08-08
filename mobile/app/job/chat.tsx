@@ -25,6 +25,7 @@ import { getAvatarColor as getAvatarColorUtil } from '../../src/lib/avatar-color
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import api from '../../src/lib/api';
+import { handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { useAuthStore } from '../../src/lib/store';
 
 interface JobChatMessage {
@@ -994,6 +995,7 @@ export default function JobChatScreen() {
               clientId: client.id,
             });
             if (response.error) {
+              if (handleDedicatedNumberError(response)) return;
               Alert.alert(
                 'Send via SMS App?',
                 'Could not send directly. Would you like to open your messaging app instead?',

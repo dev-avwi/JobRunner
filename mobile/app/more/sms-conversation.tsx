@@ -22,6 +22,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, typography, shadows, sizes, fontWeights } from '../../src/lib/design-tokens';
 
 import api from '../../src/lib/api';
+import { handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { useAuthStore } from '../../src/lib/store';
 import { useTeamMemberColors, memberColorFor } from '../../src/lib/team-colors';
 
@@ -541,7 +542,9 @@ export default function SmsConversationScreen() {
         conversationId: id,
       });
       if (response.error) {
-        Alert.alert('Error', 'Failed to send SMS. Please try again.');
+        if (!handleDedicatedNumberError(response)) {
+          Alert.alert('Error', 'Failed to send SMS. Please try again.');
+        }
       } else {
         setMessageText('');
         await loadMessages();
@@ -750,7 +753,7 @@ export default function SmsConversationScreen() {
             <View style={styles.quickRepliesRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRepliesScroll}>
                 {quickReplies.map((template) => (
-                  <PressableRow key={template.id} style={styles.quickChip} onPress={() => { setMessageText(template.message); setShowQuickReplies(false); }} onLongPress={() => { Alert.alert(template.label, template.message, [ { text: 'Edit first', onPress: () => { setMessageText(template.message); setShowQuickReplies(false); }}, { text: 'Send now', onPress: async () => { setShowQuickReplies(false); setMessageText(template.message); setIsSending(true); try { await api.post('/api/sms/send', { clientPhone, message: template.message, conversationId: id }); setMessageText(''); await loadMessages(); scrollRef.current?.scrollToEnd({ animated: true }); } catch { Alert.alert('Error', 'Failed to send SMS.'); } finally { setIsSending(false); } }}, { text: 'Cancel', style: 'cancel' }, ]); }} >
+                  <PressableRow key={template.id} style={styles.quickChip} onPress={() => { setMessageText(template.message); setShowQuickReplies(false); }} onLongPress={() => { Alert.alert(template.label, template.message, [ { text: 'Edit first', onPress: () => { setMessageText(template.message); setShowQuickReplies(false); }}, { text: 'Send now', onPress: async () => { setShowQuickReplies(false); setMessageText(template.message); setIsSending(true); try { const quickRes = await api.post('/api/sms/send', { clientPhone, message: template.message, conversationId: id }); if (quickRes.error) { if (!handleDedicatedNumberError(quickRes)) Alert.alert('Error', 'Failed to send SMS.'); } else { setMessageText(''); await loadMessages(); scrollRef.current?.scrollToEnd({ animated: true }); } } catch { Alert.alert('Error', 'Failed to send SMS.'); } finally { setIsSending(false); } }}, { text: 'Cancel', style: 'cancel' }, ]); }} >
                     <Feather name={template.icon} size={12} color={colors.primary} />
                     <Text style={styles.quickChipText}>{template.label}</Text>
                   </PressableRow>

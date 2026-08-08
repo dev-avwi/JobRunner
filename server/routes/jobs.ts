@@ -484,6 +484,22 @@ import { logSystemEvent } from "../systemEventService";
     return validationErrors;
   }
 
+  // Business SMS requires the business's own dedicated number. When a send
+  // fails for that reason, return the standard 402 shape so clients can show
+  // the friendly "get your business number" prompt instead of a raw error.
+  function smsFailureResponse(res: any, errorMsg?: string | null, notConfigured?: boolean) {
+    if (/dedicated (phone )?number/i.test(errorMsg || '')) {
+      return res.status(402).json({
+        error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+        code: 'DEDICATED_NUMBER_REQUIRED',
+      });
+    }
+    return res.status(400).json({
+      error: errorMsg || 'Failed to send SMS',
+      notConfigured: notConfigured || false,
+    });
+  }
+
   export function registerJobsRoutes(app: Express, deps: JobsRoutesDeps): void {
     const {
       trackingTokens,
@@ -4111,6 +4127,14 @@ import { logSystemEvent } from "../systemEventService";
       }
 
       const business = await storage.getBusinessSettings(userContext.effectiveUserId);
+
+      // Pre-flight: the whole point of on-my-way is the client SMS. If the
+      // business has no dedicated number, return the 402 prompt BEFORE any
+      // state writes so retrying after purchase doesn't duplicate updates.
+      if (!business?.dedicatedPhoneNumber) {
+        return smsFailureResponse(res, 'Your business needs its own dedicated phone number to send SMS. Purchase a dedicated number.');
+      }
+
       const businessName = business?.businessName || 'Your tradesperson';
       const user = await storage.getUser(req.userId);
       const workerFirstName = (user?.firstName || '').trim();
@@ -4359,10 +4383,7 @@ import { logSystemEvent } from "../systemEventService";
       );
 
       if (!smsResult.success) {
-        return res.status(400).json({ 
-          error: smsResult.error || 'Failed to send SMS',
-          notConfigured: smsResult.notConfigured || false
-        });
+        return smsFailureResponse(res, smsResult.error, smsResult.notConfigured);
       }
 
       const responsePayload = {
@@ -4552,7 +4573,7 @@ import { logSystemEvent } from "../systemEventService";
       });
 
       if (!result.success) {
-        return res.status(400).json({ error: result.error });
+        return smsFailureResponse(res, result.error);
       }
       res.json(result);
     } catch (error: any) {
@@ -4581,7 +4602,7 @@ import { logSystemEvent } from "../systemEventService";
       });
 
       if (!result.success) {
-        return res.status(400).json({ error: result.error });
+        return smsFailureResponse(res, result.error);
       }
       res.json(result);
     } catch (error: any) {
@@ -4610,7 +4631,7 @@ import { logSystemEvent } from "../systemEventService";
       });
 
       if (!result.success) {
-        return res.status(400).json({ error: result.error });
+        return smsFailureResponse(res, result.error);
       }
       res.json(result);
     } catch (error: any) {
@@ -5071,10 +5092,7 @@ import { logSystemEvent } from "../systemEventService";
       );
 
       if (!smsResult.success) {
-        return res.status(400).json({ 
-          error: smsResult.error || 'Failed to send SMS',
-          notConfigured: smsResult.notConfigured || false
-        });
+        return smsFailureResponse(res, smsResult.error, smsResult.notConfigured);
       }
 
       res.json({ 
@@ -5390,7 +5408,7 @@ import { logSystemEvent } from "../systemEventService";
             baseUrl,
           });
           if (!result.success) {
-            return res.status(400).json({ error: result.error });
+            return smsFailureResponse(res, result.error);
           }
           const updatedJob = await storage.getJob(req.params.id, effectiveUserId);
 
@@ -5424,7 +5442,7 @@ import { logSystemEvent } from "../systemEventService";
             baseUrl,
           });
           if (!result.success) {
-            return res.status(400).json({ error: result.error });
+            return smsFailureResponse(res, result.error);
           }
           const updatedJob = await storage.getJob(req.params.id, effectiveUserId);
 
@@ -5503,11 +5521,16 @@ import { logSystemEvent } from "../systemEventService";
             console.error('[WorkerStatus] Push notification error:', pushError);
           }
 
-          return res.json(updatedJob);
+          return res.json({
+            ...updatedJob,
+            ...(result.smsFailed ? { smsFailed: true, smsErrorCode: result.smsErrorCode } : {}),
+          });
         }
       }
 
       // Fallback: legacy flow for jobs without assignments
+      let legacySmsFailed = false;
+      let legacySmsErrorCode: string | undefined;
       const updateData: any = { 
         workerStatus,
         workerStatusUpdatedAt: new Date(),
@@ -5587,7 +5610,7 @@ import { logSystemEvent } from "../systemEventService";
             }
             
             if (smsBody) {
-              await sendSmsToClient({
+              const smsMessage = await sendSmsToClient({
                 businessOwnerId: effectiveUserId,
                 clientId: job.clientId,
                 clientPhone: client.phone,
@@ -5598,15 +5621,30 @@ import { logSystemEvent } from "../systemEventService";
                 isQuickAction: true,
                 quickActionType: `worker_${workerStatus}`,
               });
-              console.log(`[WorkerStatus] SMS sent to client for ${workerStatus}: ${client.phone}`);
+              if (smsMessage.status === 'failed') {
+                // Status change already persisted — keep it successful but
+                // surface the SMS failure so the app can show a non-blocking
+                // "get your business number" prompt.
+                legacySmsFailed = true;
+                if (/dedicated (phone )?number/i.test(smsMessage.errorMessage || '')) {
+                  legacySmsErrorCode = 'DEDICATED_NUMBER_REQUIRED';
+                }
+                console.error(`[WorkerStatus] SMS send failed for ${workerStatus}:`, smsMessage.errorMessage);
+              } else {
+                console.log(`[WorkerStatus] SMS sent to client for ${workerStatus}: ${client.phone}`);
+              }
             }
           }
         } catch (smsError) {
+          legacySmsFailed = true;
           console.error('[WorkerStatus] Error sending SMS:', smsError);
         }
       }
       
-      res.json(updatedJob);
+      res.json({
+        ...updatedJob,
+        ...(legacySmsFailed ? { smsFailed: true, smsErrorCode: legacySmsErrorCode } : {}),
+      });
     } catch (error: any) {
       console.error('Error updating worker status:', error);
       res.status(500).json({ error: error.message || 'Failed to update worker status' });
@@ -8234,6 +8272,9 @@ import { logSystemEvent } from "../systemEventService";
               message: parsedMessage,
               senderUserId: userId,
             });
+            if ((smsResult as any)?.status === 'failed' && /dedicated (phone )?number/i.test((smsResult as any)?.errorMessage || '')) {
+              return smsFailureResponse(res, (smsResult as any).errorMessage);
+            }
           } catch (smsError: any) {
             console.error('Error sending booking SMS:', smsError);
             smsResult = { error: smsError.message };

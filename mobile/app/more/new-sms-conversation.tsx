@@ -17,6 +17,7 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import api from '../../src/lib/api';
+import { handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import { getAvatarColor as getAvatarColorShared } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
@@ -422,12 +423,14 @@ export default function NewSmsConversation() {
         message: message.trim()
       });
       
-      if (response.data) {
+      if (!response.error && response.data) {
         Alert.alert('Success', `SMS sent to ${selectedClient.firstName} ${selectedClient.lastName}`);
         setMode('select');
         setSelectedClient(null);
         setMessage('');
         router.back();
+      } else if (handleDedicatedNumberError(response)) {
+        // Friendly "get your business number" prompt shown
       } else {
         Alert.alert(
           'Failed to Send SMS',

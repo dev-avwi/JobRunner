@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+import { isDedicatedNumberError, GET_NUMBER_TOAST, GET_NUMBER_URL } from "@/lib/dedicatedNumber";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PageShell, PageHeader } from "@/components/ui/page-shell";
 import { useLocation, useSearch } from "wouter";
@@ -624,6 +625,18 @@ export default function CollectPayment() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/payment-requests'] });
     } catch (error: any) {
+      if (isDedicatedNumberError(error)) {
+        toast({
+          ...GET_NUMBER_TOAST,
+          action: (
+            <ToastAction altText="Get number" onClick={() => navigate(GET_NUMBER_URL)}>
+              Get number
+            </ToastAction>
+          ),
+        });
+        setIsSendingSms(false);
+        return;
+      }
       // Always show error toast
       const rawMessage = error?.message || "Failed to send SMS";
       const lowerMessage = rawMessage.toLowerCase();

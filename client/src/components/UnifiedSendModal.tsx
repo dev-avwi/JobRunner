@@ -20,6 +20,9 @@ import {
   AlertTriangle 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { useLocation } from "wouter";
+import { isDedicatedNumberError, GET_NUMBER_TOAST, GET_NUMBER_URL } from "@/lib/dedicatedNumber";
 import { useIntegrationHealth, isTwilioReady, isSendGridReady, isEmailReady } from "@/hooks/use-integration-health";
 
 interface UnifiedSendModalProps {
@@ -69,6 +72,7 @@ export function UnifiedSendModal({
 }: UnifiedSendModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<'email' | 'sms'>(defaultTab || 'email');
   const [smsMessage, setSmsMessage] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
@@ -137,6 +141,17 @@ export function UnifiedSendModal({
       onOpenChange(false);
     },
     onError: (error: any) => {
+      if (isDedicatedNumberError(error)) {
+        toast({
+          ...GET_NUMBER_TOAST,
+          action: (
+            <ToastAction altText="Get number" onClick={() => { onOpenChange(false); navigate(GET_NUMBER_URL); }}>
+              Get number
+            </ToastAction>
+          ),
+        });
+        return;
+      }
       toast({
         title: "Failed to send SMS",
         description: error.message || "Please try again",

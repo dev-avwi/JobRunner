@@ -6,6 +6,7 @@ import { useTheme, ThemeColors } from '../lib/theme';
 import { spacing, radius, shadows, iconSizes } from '../lib/design-tokens';
 import { JobUrgency } from '../lib/jobUrgency';
 import { api } from '../lib/api';
+import { handleDedicatedNumberError, handleStatusSmsOutcome } from '../lib/smsGate';
 import locationTracking from '../lib/location-tracking';
 import { PressableRow } from './ui/PressableRow';
 
@@ -704,7 +705,10 @@ export function NextActionCard(props: NextActionCardProps) {
         ...(smsCoords ? { latitude: smsCoords.latitude, longitude: smsCoords.longitude } : {}),
       });
       if (response.error) {
+        if (handleDedicatedNumberError(response)) return;
         fallbackToNativeSms(props.clientPhone, smsPreviewMessage);
+      } else if (handleStatusSmsOutcome(response.data)) {
+        // Status/state applied but the client SMS was skipped — prompt shown.
       } else {
         Alert.alert('SMS Sent', props.isOverdue ? 'Running late message sent to client.' : 'On my way message sent to client.');
       }
@@ -1408,7 +1412,10 @@ export function SmsContactCard({
         ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
       });
       if (response.error) {
+        if (handleDedicatedNumberError(response)) return;
         fallbackToNativeSms(clientPhone!, previewMessage);
+      } else if (handleStatusSmsOutcome(response.data)) {
+        // Status/state applied but the client SMS was skipped — prompt shown.
       } else {
         Alert.alert('SMS Sent', isOverdue ? 'Running late message sent to client.' : 'On my way message sent to client.');
       }

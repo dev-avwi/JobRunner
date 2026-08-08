@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { useLocation } from "wouter";
+import { isDedicatedNumberError, GET_NUMBER_TOAST, GET_NUMBER_URL } from "@/lib/dedicatedNumber";
 import { queryClient, apiRequest, getSessionToken } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import type { MessageTemplate } from "@shared/schema";
@@ -125,6 +128,7 @@ export default function SendDocumentModal({
   excludeNotes,
 }: SendDocumentModalProps) {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const { canUseAIFeatures } = useFeatureAccess();
   const [activeTab, setActiveTab] = useState<string>("compose");
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("email");
@@ -416,6 +420,17 @@ export default function SendDocumentModal({
 
       // Check if the response indicates an error (some backends return 200 with error field)
       if (result.error) {
+        if (result.code === 'DEDICATED_NUMBER_REQUIRED' || isDedicatedNumberError(result.error)) {
+          toast({
+            ...GET_NUMBER_TOAST,
+            action: (
+              <ToastAction altText="Get number" onClick={() => navigate(GET_NUMBER_URL)}>
+                Get number
+              </ToastAction>
+            ),
+          });
+          return false;
+        }
         // If SMS isn't configured, show the setup guide
         if (result.notConfigured) {
           setShowSmsSetupGuide(true);
@@ -451,6 +466,19 @@ export default function SendDocumentModal({
         } else {
           errorMessage = error.message;
         }
+      }
+      
+      // Missing dedicated business number → friendly "get a number" prompt
+      if (isDedicatedNumberError(error)) {
+        toast({
+          ...GET_NUMBER_TOAST,
+          action: (
+            <ToastAction altText="Get number" onClick={() => navigate(GET_NUMBER_URL)}>
+              Get number
+            </ToastAction>
+          ),
+        });
+        return false;
       }
       
       // Detect "not configured" errors and show setup guide

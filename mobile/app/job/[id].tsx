@@ -47,6 +47,7 @@ import * as Location from 'expo-location';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import api, { API_URL, isAuthErrorMessage } from '../../src/lib/api';
+import { handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { maybeRequestReview } from '../../src/lib/store-review';
 import { locationTracking } from '../../src/lib/location-tracking';
 import { useJobsStore, useTimeTrackingStore, useAuthStore } from '../../src/lib/store';
@@ -3648,6 +3649,7 @@ export default function JobDetailScreen() {
                 jobId: job.id,
               });
               if (smsResponse.error) {
+                if (handleDedicatedNumberError(smsResponse)) return true;
                 fallbackToNativeSms(client.phone, invoiceSmsMessage);
               } else {
                 showToast({ type: 'success', message: 'SMS Sent', description: `Invoice SMS sent to ${client.name || client.phone}` });
@@ -5195,6 +5197,7 @@ export default function JobDetailScreen() {
       });
 
       if (response.error) {
+        if (handleDedicatedNumberError(response)) return;
         fallbackToNativeSms(phone, message);
       } else {
         showToast({ type: 'info', message: 'MMS Sent', description: `Photo message sent to ${client.name || phone}` });
@@ -5680,7 +5683,9 @@ export default function JobDetailScreen() {
       });
 
       if (response.error) {
-        showToast({ type: 'info', message: 'Could Not Notify', description: response.error || 'Failed to send notification to client. You can still navigate manually.' });
+        if (!handleDedicatedNumberError(response)) {
+          showToast({ type: 'info', message: 'Could Not Notify', description: response.error || 'Failed to send notification to client. You can still navigate manually.' });
+        }
         setIsHeadingToNext(false);
         return;
       }
@@ -5749,7 +5754,9 @@ export default function JobDetailScreen() {
       });
       
       if (response.error) {
-        if (response.data?.notConfigured) {
+        if (handleDedicatedNumberError(response)) {
+          // handled: friendly "get your business number" prompt shown
+        } else if (response.data?.notConfigured) {
           showToast({ type: 'info', message: 'SMS Not Configured', description: 'Twilio SMS is not set up. Set up Twilio in Settings > Integrations to send SMS notifications to clients.' });
         } else {
           showToast({ type: 'error', message: response.error });

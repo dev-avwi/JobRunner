@@ -19,6 +19,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme, ThemeColors } from '../lib/theme';
 import { spacing, radius, typography } from '../lib/design-tokens';
 import { api, API_URL } from '../lib/api';
+import { handleDedicatedNumberError } from '../lib/smsGate';
 
 interface MobileSendModalProps {
   visible: boolean;
@@ -242,6 +243,10 @@ export function MobileSendModal({
       });
 
       if (response.error) {
+        if (handleDedicatedNumberError(response)) {
+          onClose();
+          return;
+        }
         handleSmsFallback();
         return;
       }

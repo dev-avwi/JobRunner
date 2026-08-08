@@ -30,6 +30,7 @@ import { useStripeTerminal } from '../../src/hooks/useServices';
 import { isTapToPayAvailable } from '../../src/lib/stripe-terminal';
 import { useInvoicesStore, useClientsStore, useJobsStore, useAuthStore } from '../../src/lib/store';
 import api from '../../src/lib/api';
+import { handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { Card, CardContent } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
@@ -1930,9 +1931,13 @@ export default function CollectScreen() {
     
     setSendingLink(true);
     try {
-      await api.post(`/api/payment-requests/${paymentLinkRequest.id}/send-sms`, {
+      const linkSmsRes = await api.post(`/api/payment-requests/${paymentLinkRequest.id}/send-sms`, {
         phone,
       });
+      if (linkSmsRes.error) {
+        if (handleDedicatedNumberError(linkSmsRes)) return;
+        throw new Error(linkSmsRes.error);
+      }
       
       showToast({ type: 'success', message: `Payment link sent to ${phone}` });
       handleClosePaymentLinkModal();
@@ -2039,7 +2044,11 @@ export default function CollectScreen() {
     
     setResendingLink(true);
     try {
-      await api.post(`/api/payment-requests/${resendRequest.id}/send-sms`, { phone });
+      const resendSmsRes = await api.post(`/api/payment-requests/${resendRequest.id}/send-sms`, { phone });
+      if (resendSmsRes.error) {
+        if (handleDedicatedNumberError(resendSmsRes)) return;
+        throw new Error(resendSmsRes.error);
+      }
       showToast({ type: 'success', message: `Payment link sent to ${phone}` });
       setShowResendModal(false);
       setResendRequest(null);
@@ -2173,7 +2182,11 @@ export default function CollectScreen() {
       }
       
       try {
-        await api.post(`/api/receipts/${recordPaymentSuccess.receiptId}/send-sms`, { phone });
+        const receiptSmsRes = await api.post(`/api/receipts/${recordPaymentSuccess.receiptId}/send-sms`, { phone });
+        if (receiptSmsRes.error) {
+          if (handleDedicatedNumberError(receiptSmsRes)) return;
+          throw new Error(receiptSmsRes.error);
+        }
         showToast({ type: 'success', message: `Receipt sent to ${phone}` });
       } catch (error) {
         showToast({ type: 'error', message: 'Failed to send receipt SMS' });

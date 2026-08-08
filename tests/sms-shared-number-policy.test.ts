@@ -24,7 +24,7 @@
  */
 
 import { db, storage } from '../server/storage';
-import { users, businessSettings, smsConversations, smsMessages } from '@shared/schema';
+import { users, businessSettings, smsConversations, smsMessages, clients, jobs } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { AuthService } from '../server/auth';
 import { __setSmsTestInterceptor, type SendSMSOptions } from '../server/twilioClient';
@@ -253,6 +253,59 @@ async function main() {
     });
     const testBody = await testRes.json().catch(() => ({}));
     check('/api/integrations/test-sms returns 402 DEDICATED_NUMBER_REQUIRED', testRes.status === 402 && testBody.code === 'DEDICATED_NUMBER_REQUIRED', `status=${testRes.status} body=${JSON.stringify(testBody)}`);
+
+    // ── 6. On-my-way refuses BEFORE any state writes (no dup on retry) ──────
+    console.log('On-my-way pre-flight without dedicated number:');
+    {
+      const [client] = await db.insert(clients).values({
+        userId: user.id,
+        name: 'Policy Client',
+        phone: CLIENT_PHONE,
+      } as any).returning();
+      const [job] = await db.insert(jobs).values({
+        userId: user.id,
+        clientId: client.id,
+        title: 'Policy test job',
+        status: 'scheduled',
+      } as any).returning();
+
+      // Call twice: both must 402 and NEITHER may mutate the job's worker status.
+      for (const attempt of [1, 2]) {
+        const r = await fetch(`${BASE_URL}/api/jobs/${job.id}/on-my-way`, {
+          method: 'POST',
+          headers: auth,
+          body: JSON.stringify({}),
+        });
+        const body = await r.json().catch(() => ({}));
+        check(`on-my-way attempt ${attempt} returns 402 DEDICATED_NUMBER_REQUIRED`,
+          r.status === 402 && body.code === 'DEDICATED_NUMBER_REQUIRED',
+          `status=${r.status} body=${JSON.stringify(body)}`);
+      }
+
+      const [jobRow] = await db.select().from(jobs).where(eq(jobs.id, job.id));
+      check('job worker status untouched (no partial state before 402)',
+        jobRow?.workerStatus == null && jobRow?.status === 'scheduled',
+        `workerStatus=${jobRow?.workerStatus} status=${jobRow?.status}`);
+
+      // ── 7. Status-change routes keep the write successful + surface smsFailed ─
+      // worker-status persists the transition, then reports the skipped SMS
+      // via 200 { smsFailed, smsErrorCode } — NOT an error status.
+      console.log('Worker-status keeps status write successful, surfaces smsFailed:');
+      {
+        const r = await fetch(`${BASE_URL}/api/jobs/${job.id}/worker-status`, {
+          method: 'PATCH',
+          headers: auth,
+          body: JSON.stringify({ workerStatus: 'arrived' }),
+        });
+        const body = await r.json().catch(() => ({}));
+        check('worker-status returns 200 despite missing number', r.status === 200, `status=${r.status} body=${JSON.stringify(body)}`);
+        check('response carries smsFailed + DEDICATED_NUMBER_REQUIRED',
+          body.smsFailed === true && body.smsErrorCode === 'DEDICATED_NUMBER_REQUIRED',
+          JSON.stringify(body));
+        const [rowAfter] = await db.select().from(jobs).where(eq(jobs.id, job.id));
+        check('status transition persisted', rowAfter?.workerStatus === 'arrived', `workerStatus=${rowAfter?.workerStatus}`);
+      }
+    }
 
     await fetch(`${BASE_URL}/api/auth/logout`, { method: 'POST', headers: auth }).catch(() => {});
   }

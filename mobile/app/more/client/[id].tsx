@@ -19,6 +19,7 @@ import { useClientsStore, useJobsStore, useQuotesStore, useInvoicesStore } from 
 import { useTheme, ThemeColors } from '../../../src/lib/theme';
 import { spacing, radius, shadows, typography, iconSizes, sizes, fontWeights } from '../../../src/lib/design-tokens';
 import api from '../../../src/lib/api';
+import { handleDedicatedNumberError } from '../../../src/lib/smsGate';
 import { TeamAvatar } from '../../../src/components/TeamAvatar';
 import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 
@@ -185,6 +186,7 @@ export default function ClientDetailScreen() {
           clientId: client.id,
         });
         if (response.error) {
+          if (handleDedicatedNumberError(response)) return;
           Alert.alert(
             'Send via SMS App?',
             'Could not send directly. Would you like to open your messaging app instead?',

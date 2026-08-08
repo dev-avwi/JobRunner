@@ -23,6 +23,7 @@ import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { spacing, radius, shadows, typography, iconSizes, sizes, pageShell, usePageShell, fontWeights } from '../../src/lib/design-tokens';
 import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable';
 import api from '../../src/lib/api';
+import { handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 
 type FilterKey = 'all' | 'residential' | 'commercial' | 'vip' | 'outstanding' | 'inactive_6mo' | 'with_email' | 'with_phone' | 'with_address';
@@ -317,6 +318,7 @@ export default function ClientsScreen() {
         message,
       });
       if (response.error) {
+        if (handleDedicatedNumberError(response)) return;
         Alert.alert(
           'Send via SMS App?',
           'Could not send directly. Would you like to open your messaging app instead?',
