@@ -177,3 +177,17 @@ uri = "file://attached_assets/profile_option_C_cream.png"
 type = "image"
 title = "Option C — Warm cream"
 description = "Logo on a warm cream gradient, 1024x1024."
+
+[[outputs]]
+id = "hLBT0uyRj1TBPZ3VQ5fSJ"
+uri = "file://attached_assets/profile_design_navy.png"
+type = "image"
+title = "Design 1 — Speed streaks"
+description = "Navy with bold blue/orange diagonal streaks, logo in white circle. 1024x1024."
+
+[[outputs]]
+id = "m_p3RhBTRAkkNrjhx9tzK"
+uri = "file://attached_assets/profile_design_swoosh.png"
+type = "image"
+title = "Design 2 — Blue swoosh"
+description = "Bright blue with orange swoosh curves and halftone dots, logo in white circle. 1024x1024."
