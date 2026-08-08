@@ -35,3 +35,11 @@ correct split (layout on outer only, inner fills) is hard to get right for every
   make the inner pressable element a PressableRow carrying ONLY non-percentage visual style
   (padding/bg/radius). Never stack two percentage maxWidths in the chain.
 - If you ever DO harden PressableRow itself, do it behind a guarded refactor + broad test pass.
+
+## UPDATE 2026-08-08 — root cause fixed in the component
+PressableRow (iOS branch) now strips the extracted layout keys (margins, width/height,
+alignSelf, position, flex) from the inner Animated.View style and gives the inner view
+width/height 100% when the outer has sizing. Margins and % widths are applied ONCE, on the
+outer Pressable only. Symptom fixed: tappable cards with marginHorizontal rendered narrower
+than sibling plain-View cards (double margin). Per-call-site pixel-width workarounds remain
+valid. New call sites can use % widths/margins normally.

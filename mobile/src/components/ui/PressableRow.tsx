@@ -95,9 +95,10 @@ const PressableRow = forwardRef<View, PressableRowProps>(function PressableRow(
       }
     : undefined;
 
-  const outerLayoutStyle = useMemo<ViewStyle>(() => {
+  const { outerLayoutStyle, innerStyle } = useMemo(() => {
     const flat = (StyleSheet.flatten(style) as ViewStyle) || {};
     const out: ViewStyle = {};
+    const inner: ViewStyle = { ...flat };
     const keys: (keyof ViewStyle)[] = [
       'flex', 'flexGrow', 'flexShrink', 'flexBasis',
       'width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight',
@@ -106,9 +107,23 @@ const PressableRow = forwardRef<View, PressableRowProps>(function PressableRow(
       'marginHorizontal', 'marginVertical', 'marginStart', 'marginEnd',
     ];
     for (const k of keys) {
-      if (flat[k] !== undefined) (out as Record<string, unknown>)[k] = flat[k];
+      if (flat[k] !== undefined) {
+        (out as Record<string, unknown>)[k] = flat[k];
+        // Layout keys live on the outer Pressable only; leaving them on the
+        // inner view too double-applies margins/offsets (cards render
+        // narrower than siblings).
+        delete (inner as Record<string, unknown>)[k];
+      }
     }
-    return out;
+    // Sizing must transfer to the inner view so the visible card fills the
+    // outer layout box.
+    if (flat.width !== undefined || flat.alignSelf === 'stretch' || flat.flex !== undefined || flat.flexGrow !== undefined) {
+      inner.width = '100%';
+    }
+    if (flat.height !== undefined) {
+      inner.height = '100%';
+    }
+    return { outerLayoutStyle: out, innerStyle: inner };
   }, [style]);
 
   if (isAndroid) {
@@ -136,7 +151,7 @@ const PressableRow = forwardRef<View, PressableRowProps>(function PressableRow(
       style={outerLayoutStyle}
       {...rest}
     >
-      <Animated.View style={[style, { transform: [{ scale }], opacity }]}>
+      <Animated.View style={[innerStyle, { transform: [{ scale }], opacity }]}>
         {children}
       </Animated.View>
     </Pressable>
