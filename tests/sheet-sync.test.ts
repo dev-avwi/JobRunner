@@ -11,7 +11,8 @@
  *   BASE_URL=http://localhost:5000 tsx tests/sheet-sync.test.ts
  */
 
-import { sealToken, openToken } from '../server/sheetSync';
+import { sealToken, openToken, buildExportSheets, SHEET_SYNC_DATA_TYPES } from '../server/sheetSync';
+import { storage } from '../server/storage';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
 
@@ -60,6 +61,77 @@ console.log('Due-time logic:');
   check('23h-old daily sync is not due', !isDue(now - 23 * 60 * 60 * 1000, DAY, now));
   check('6-day-old weekly sync is not due', !isDue(now - 6 * DAY, WEEK, now));
   check('7-day-old weekly sync is due', isDue(now - 7 * DAY, WEEK, now));
+  check('weekly boundary: due exactly at tolerance edge', isDue(now - (WEEK - TOL), WEEK, now));
+  check('weekly boundary: 1ms inside tolerance edge is not due', !isDue(now - (WEEK - TOL - 1), WEEK, now));
+}
+
+// ── buildExportSheets output shapes (storage stubbed — pure unit tests) ─────
+async function exportShapeChecks() {
+  console.log('Export sheet shapes:');
+
+  const origGetClients = storage.getClients;
+  const origGetJobs = storage.getJobs;
+  const origGetInvoices = storage.getInvoices;
+  const origGetReceipts = storage.getReceipts;
+
+  const client = {
+    id: 'c1', name: 'Acme Plumbing', email: 'acme@example.com', phone: '0400 000 000',
+    address: '1 Test St', notes: 'VIP', createdAt: '2026-01-05T00:00:00.000Z',
+  };
+  (storage as any).getClients = async () => [client];
+  (storage as any).getJobs = async () => [{
+    id: 'j1', title: 'Fix tap', clientId: 'c1', status: 'done', address: '1 Test St',
+    scheduledAt: '2026-02-10T00:00:00.000Z', description: 'Leaky tap', createdAt: '2026-02-01T00:00:00.000Z',
+  }];
+  (storage as any).getInvoices = async () => [{
+    id: 'i1', number: 'INV-0001', clientId: 'c1', title: 'Tap repair', status: 'paid',
+    subtotal: '100', gstAmount: '10', total: 110.5,
+    dueDate: '2026-03-01T00:00:00.000Z', paidAt: '2026-02-20T00:00:00.000Z', createdAt: '2026-02-15T00:00:00.000Z',
+  }];
+  (storage as any).getReceipts = async () => [{
+    id: 'r1', receiptNumber: 'RCPT-0001', clientId: 'other-client', amount: 'not-a-number', gstAmount: null,
+    paymentMethod: 'card', paymentReference: 'ref-1', description: 'Payment', paidAt: 'garbage-date',
+  }];
+
+  try {
+    const sheets = await buildExportSheets('u1', [...SHEET_SYNC_DATA_TYPES]);
+    check('all four data types produce a sheet each', sheets.length === 4);
+    check('sheet titles + order are stable', JSON.stringify(sheets.map((s) => s.title)) === JSON.stringify(['Clients', 'Jobs', 'Invoices', 'Payments']));
+
+    const byTitle = new Map(sheets.map((s) => [s.title, s]));
+
+    const clients = byTitle.get('Clients')!;
+    check('Clients headers', JSON.stringify(clients.headers) === JSON.stringify(['Name', 'Email', 'Phone', 'Address', 'Notes', 'Created Date']), JSON.stringify(clients.headers));
+    check('Clients row matches header width', clients.rows.length === 1 && clients.rows[0].length === clients.headers.length);
+    check('Clients row values + AU date format', JSON.stringify(clients.rows[0]) === JSON.stringify(['Acme Plumbing', 'acme@example.com', '0400 000 000', '1 Test St', 'VIP', '05/01/2026']), JSON.stringify(clients.rows[0]));
+
+    const jobs = byTitle.get('Jobs')!;
+    check('Jobs headers', JSON.stringify(jobs.headers) === JSON.stringify(['Title', 'Client Name', 'Status', 'Address', 'Scheduled Date', 'Description', 'Created Date']), JSON.stringify(jobs.headers));
+    check('Jobs row matches header width', jobs.rows.length === 1 && jobs.rows[0].length === jobs.headers.length);
+    check('Jobs client id resolves to client name', jobs.rows[0][1] === 'Acme Plumbing');
+
+    const invoices = byTitle.get('Invoices')!;
+    check('Invoices headers', JSON.stringify(invoices.headers) === JSON.stringify(['Invoice Number', 'Client Name', 'Title', 'Status', 'Subtotal', 'GST', 'Total', 'Due Date', 'Paid Date', 'Created Date']), JSON.stringify(invoices.headers));
+    check('Invoices row matches header width', invoices.rows.length === 1 && invoices.rows[0].length === invoices.headers.length);
+    check('Invoice money fields are 2dp strings', invoices.rows[0][4] === '100.00' && invoices.rows[0][5] === '10.00' && invoices.rows[0][6] === '110.50', JSON.stringify(invoices.rows[0]));
+
+    const payments = byTitle.get('Payments')!;
+    check('Payments headers', JSON.stringify(payments.headers) === JSON.stringify(['Receipt Number', 'Client Name', 'Amount', 'GST', 'Payment Method', 'Reference', 'Description', 'Paid Date']), JSON.stringify(payments.headers));
+    check('Payments row matches header width', payments.rows.length === 1 && payments.rows[0].length === payments.headers.length);
+    check('Unknown client id yields empty client name', payments.rows[0][1] === '');
+    check('Bad amount/GST fall back to 0.00', payments.rows[0][2] === '0.00' && payments.rows[0][3] === '0.00');
+    check('Invalid date renders empty string', payments.rows[0][7] === '');
+
+    const subset = await buildExportSheets('u1', ['jobs', 'clients']);
+    check('subset request keeps canonical order and drops others', JSON.stringify(subset.map((s) => s.title)) === JSON.stringify(['Clients', 'Jobs']));
+    const bogus = await buildExportSheets('u1', ['quotes', 'nonsense']);
+    check('unknown data types are ignored', bogus.length === 0);
+  } finally {
+    (storage as any).getClients = origGetClients;
+    (storage as any).getJobs = origGetJobs;
+    (storage as any).getInvoices = origGetInvoices;
+    (storage as any).getReceipts = origGetReceipts;
+  }
 }
 
 // ── API-level checks against the dev server ────────────────────────────────
@@ -107,7 +179,12 @@ async function apiChecks() {
   await fetch(`${BASE_URL}/api/sheet-sync/settings`, { method: 'POST', headers: auth, body: JSON.stringify({ enabled: false, target: 'google_sheets', frequency: 'daily', dataTypes: ['clients', 'jobs', 'invoices', 'payments'] }) });
 }
 
-apiChecks()
+exportShapeChecks()
+  .catch((e) => {
+    failed++;
+    console.error('Export shape checks crashed:', e);
+  })
+  .then(() => apiChecks())
   .catch((e) => {
     failed++;
     console.error('API checks crashed:', e);
