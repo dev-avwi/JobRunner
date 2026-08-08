@@ -154,3 +154,4 @@
 - [Mobile sidebar gotchas](mobile-sidebar-unknown-role-empty.md) — unknown roles must fall back to staff or menu empties; icon alignment math (sidebar-icon-alignment.md); team gate must derive from teamSize not nonexistent hasTeam (sidebar-team-gate-hasteam.md).
 - [Sheet sync one-way export](sheet-sync-one-way.md) — settings mutate only via /api/sheet-sync/*; any state that makes google_sheets target unusable must also force-disable the sync server-side.
 - [drizzle-zod coercion traps](drizzle-zod-timestamp-string-dates.md) — timestamp cols reject ISO strings (z.coerce.date) and decimal cols reject numbers (coerce to string server-side, see drizzle-zod-decimal-number-rejected.md); both = silent 400s.
+- [Server-tests validation must be one command](validation-server-tests-serial.md) — validation commands run in PARALLEL; separate dev-server test steps kill each other on port 5000; keep them in the single server-tests step.

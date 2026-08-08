@@ -36,7 +36,7 @@ args = "Expo Tunnel"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "insights"
+args = "server-tests"
 
 [[workflows.workflow]]
 name = "Start application"
@@ -73,12 +73,12 @@ args = "cd mobile && npx expo start --tunnel"
 outputType = "console"
 
 [[workflows.workflow]]
-name = "insights"
+name = "server-tests"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bash tests/run-insights-tests.sh"
+args = "bash tests/run-with-server.sh tests/sheet-sync.test.ts tests/webhook-signatures.test.ts tests/bring-business-status.test.ts tests/insights-period.test.ts"
 
 [workflows.workflow.metadata]
 isValidation = true
