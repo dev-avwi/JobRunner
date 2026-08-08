@@ -120,8 +120,26 @@ export default function BringYourBusinessScreen() {
     }
   };
 
-  const openWebWizard = () => {
-    Linking.openURL(`${API_URL}/bring-your-business`).catch(() => {
+  const [openingWizard, setOpeningWizard] = useState(false);
+
+  const openWebWizard = async () => {
+    if (openingWizard) return;
+    setOpeningWizard(true);
+    const fallbackUrl = `${API_URL}/bring-your-business`;
+    let url = fallbackUrl;
+    try {
+      // Mint a short-lived, single-use handoff token so the browser opens
+      // already signed in. If minting fails (offline, demo account, older
+      // server), fall back to the plain URL — the owner just signs in.
+      const res = await api.post<{ handoffToken: string }>('/api/auth/web-handoff', {});
+      if (!res.error && res.data?.handoffToken) {
+        url = `${API_URL}/auth/handoff?token=${encodeURIComponent(res.data.handoffToken)}&next=${encodeURIComponent('/bring-your-business')}`;
+      }
+    } catch {
+      // fall through to plain URL
+    }
+    setOpeningWizard(false);
+    Linking.openURL(url).catch(() => {
       Alert.alert('Could not open browser', `Visit ${API_URL}/bring-your-business on any computer.`);
     });
   };
@@ -345,8 +363,17 @@ export default function BringYourBusinessScreen() {
           <Text style={styles.cardHint}>
             Importing spreadsheets, connecting Xero or QuickBooks, and bulk-uploading documents is easiest on a bigger screen. Open the full wizard in your browser and sign in with the same email.
           </Text>
-          <PressableRow style={styles.outlineButton} onPress={openWebWizard} data-testid="button-byb-open-web">
-            <Feather name="external-link" size={16} color={colors.primary} />
+          <PressableRow
+            style={[styles.outlineButton, openingWizard && { opacity: 0.6 }]}
+            onPress={openWebWizard}
+            disabled={openingWizard}
+            data-testid="button-byb-open-web"
+          >
+            {openingWizard ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Feather name="external-link" size={16} color={colors.primary} />
+            )}
             <Text style={styles.outlineButtonText}>Open the web wizard</Text>
           </PressableRow>
           <Text style={styles.mutedNote}>{API_URL.replace(/^https?:\/\//, '')}/bring-your-business</Text>

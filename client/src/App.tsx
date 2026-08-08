@@ -69,6 +69,7 @@ const Insights = lazyWithReload(() => import("@/pages/Insights"));
 const Autopilot = lazyWithReload(() => import("@/pages/Autopilot"));
 const NotFound = lazyWithReload(() => import("@/pages/not-found"));
 const VerifyEmail = lazyWithReload(() => import("@/pages/VerifyEmail"));
+const AuthHandoff = lazyWithReload(() => import("@/pages/AuthHandoff"));
 const VerifyEmailPending = lazyWithReload(() => import("@/pages/VerifyEmailPending"));
 const ResetPassword = lazyWithReload(() => import("@/pages/ResetPassword"));
 const AcceptInvite = lazyWithReload(() => import("@/pages/AcceptInvite"));
@@ -1887,6 +1888,7 @@ function App() {
               <Route path="/track/:token">{(params) => <TrackArrival token={params.token} />}</Route>
               <Route path="/book/:slug">{(params) => <BookingPage slug={params.slug} />}</Route>
               <Route path="/receipt/:token">{(params) => <PublicReceiptRedirect token={params.token} />}</Route>
+              <Route path="/auth/handoff" component={AuthHandoff} />
               <Route path="/privacy" component={PrivacyPolicy} />
               <Route path="/terms" component={TermsOfService} />
               {/* All other routes go through AppLayout */}

@@ -1441,6 +1441,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ticket: createWsTicket(req.userId) });
   });
 
+  // ============================================
+  // MOBILE → WEB AUTH HANDOFF (single-use nonce)
+  // ============================================
+  // Lets the mobile app open the web import wizard already signed in.
+  // Mirrors the /api/ws-ticket pattern: never put the raw session token in a
+  // URL — mint a short-lived, single-use nonce server-side, redeem it once
+  // from the browser to establish a fresh web session.
+  const webHandoffTokens = new Map<string, { userId: string; expiresAt: number }>();
+  const WEB_HANDOFF_TTL_MS = 2 * 60 * 1000; // 2 minutes — just long enough to open the browser
+
+  const pruneWebHandoffTokens = () => {
+    const now = Date.now();
+    webHandoffTokens.forEach((v, k) => {
+      if (v.expiresAt <= now) webHandoffTokens.delete(k);
+    });
+  };
+
+  // Mint a handoff token (authenticated mobile caller)
+  app.post("/api/auth/web-handoff", requireAuth, rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { error: 'Too many requests. Please try again shortly.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  }), async (req: any, res) => {
+    try {
+      // Never mint browser sessions for the shared demo/visitor accounts
+      const minter = await storage.getUser(req.userId);
+      if (!minter) {
+        return res.status(401).json({ error: 'Account not found' });
+      }
+      const demoEmails = [DEMO_USER.email, VISITOR_USER.email, TRY_DEMO_USER.email].map(e => e.toLowerCase());
+      if (demoEmails.includes((minter.email || '').toLowerCase())) {
+        return res.status(403).json({ error: 'Not available for demo accounts' });
+      }
+      pruneWebHandoffTokens();
+      const token = randomBytes(32).toString('hex');
+      webHandoffTokens.set(token, { userId: req.userId, expiresAt: Date.now() + WEB_HANDOFF_TTL_MS });
+      res.json({ handoffToken: token, expiresInSec: WEB_HANDOFF_TTL_MS / 1000 });
+    } catch (error) {
+      console.error('Web handoff mint error:', error);
+      res.status(500).json({ error: 'Failed to create handoff token' });
+    }
+  });
+
+  // Redeem a handoff token (public — called by the browser). Single-use:
+  // the token is deleted before any other check so a replay always fails.
+  app.post("/api/auth/web-handoff/redeem", rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    message: { error: 'Too many attempts. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  }), async (req: any, res) => {
+    try {
+      const token = typeof req.body?.token === 'string' ? req.body.token : '';
+      if (!token || token.length !== 64) {
+        return res.status(400).json({ error: 'Invalid handoff token' });
+      }
+      const entry = webHandoffTokens.get(token);
+      webHandoffTokens.delete(token); // consume immediately — single use
+      if (!entry || entry.expiresAt <= Date.now()) {
+        return res.status(401).json({ error: 'This sign-in link has expired. Please sign in normally.' });
+      }
+      const user = await storage.getUser(entry.userId);
+      if (!user) {
+        return res.status(401).json({ error: 'Account not found' });
+      }
+      // Establish the web session exactly like /api/auth/login does
+      req.session.userId = user.id;
+      req.session.user = user;
+      delete req.session.isDemo;
+      delete req.session.demoDataUserId;
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Session save error (web handoff):', err);
+          return res.status(500).json({ error: 'Failed to create session' });
+        }
+        res.json({ success: true, user: sanitizeUserResponse(user), sessionToken: req.sessionID });
+      });
+    } catch (error) {
+      console.error('Web handoff redeem error:', error);
+      res.status(500).json({ error: 'Failed to redeem handoff token' });
+    }
+  });
+
   // BUSINESS OWNER: Get worker requests
   app.get("/api/worker-requests", requireAuth, async (req: any, res) => {
     try {
