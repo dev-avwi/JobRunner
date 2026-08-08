@@ -191,3 +191,17 @@ uri = "file://attached_assets/profile_design_swoosh.png"
 type = "image"
 title = "Design 2 — Blue swoosh"
 description = "Bright blue with orange swoosh curves and halftone dots, logo in white circle. 1024x1024."
+
+[[outputs]]
+id = "ZPFv6lktfzh653tKMicb7"
+uri = "file://attached_assets/profile_plain_navy_original.png"
+type = "image"
+title = "Plain navy — original colours"
+description = "JobRunner logo on solid deep navy, 1024x1024."
+
+[[outputs]]
+id = "aQGrDkHyOAfZaWrlRzxVm"
+uri = "file://attached_assets/profile_plain_navy_white.png"
+type = "image"
+title = "Plain navy — white version"
+description = "White + orange logo on solid dark navy, Jobber-style. 1024x1024."
