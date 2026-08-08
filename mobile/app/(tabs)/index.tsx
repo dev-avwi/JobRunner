@@ -31,7 +31,7 @@ import { formatCurrency as formatCurrencyUtil } from '../../src/lib/format';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, iconSizes, sizes, pageShell, usePageShell } from '../../src/lib/design-tokens';
+import { fontWeights, spacing, radius, shadows, typography, iconSizes, sizes, pageShell, usePageShell } from '../../src/lib/design-tokens';
 import { NotificationBell, NotificationsPanel } from '../../src/components/NotificationsPanel';
 import { getAvatarColor } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
@@ -217,7 +217,7 @@ function WeatherWidget() {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <Feather name="cloud-off" size={16} color={colors.mutedForeground} />
-          <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Weather hidden</Text>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Weather hidden</Text>
           <Feather name="settings" size={14} color={colors.mutedForeground} />
         </View>
         {renderSettingsModal()}
@@ -255,8 +255,8 @@ function WeatherWidget() {
             >
               <Feather name="navigation" size={18} color={settings.mode === 'live' ? colors.primary : colors.mutedForeground} />
               <View style={{ marginLeft: spacing.md, flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>Use Live Location</Text>
-                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Weather based on your GPS</Text>
+                <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>Use Live Location</Text>
+                <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Weather based on your GPS</Text>
               </View>
               {settings.mode === 'live' && <Feather name="check" size={18} color={colors.primary} />}
             </TouchableOpacity>
@@ -268,15 +268,15 @@ function WeatherWidget() {
             >
               <Feather name="eye-off" size={18} color={settings.mode === 'hidden' ? colors.primary : colors.mutedForeground} />
               <View style={{ marginLeft: spacing.md, flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>Hide Weather</Text>
-                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Remove from dashboard</Text>
+                <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>Hide Weather</Text>
+                <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Remove from dashboard</Text>
               </View>
               {settings.mode === 'hidden' && <Feather name="check" size={18} color={colors.primary} />}
             </TouchableOpacity>
 
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.sm }}>Or choose a city:</Text>
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: spacing.sm }}>Or choose a city:</Text>
             <TextInput
-              style={{ backgroundColor: colors.background, borderRadius: radius.lg, padding: spacing.md, fontSize: 15, color: colors.foreground, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm }}
+              style={{ backgroundColor: colors.background, borderRadius: radius.lg, padding: spacing.md, fontSize: typography.sizes.md, color: colors.foreground, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm }}
               placeholder="Search cities..."
               placeholderTextColor={colors.mutedForeground}
               value={citySearch}
@@ -294,7 +294,7 @@ function WeatherWidget() {
                   activeOpacity={0.7}
                 >
                   <Feather name="map-pin" size={16} color={settings.manualCity === city.name ? colors.primary : colors.mutedForeground} />
-                  <Text style={{ fontSize: 15, color: settings.manualCity === city.name ? colors.primary : colors.foreground, marginLeft: spacing.sm, fontWeight: settings.manualCity === city.name ? '600' : '400' }}>{city.name}</Text>
+                  <Text style={{ fontSize: typography.sizes.md, color: settings.manualCity === city.name ? colors.primary : colors.foreground, marginLeft: spacing.sm, fontWeight: settings.manualCity === city.name ? '600' : '400' }}>{city.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -344,7 +344,7 @@ function WeatherWidget() {
       {settings.mode === 'manual' && settings.manualCity && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs }}>
           <Feather name="map-pin" size={11} color={colors.mutedForeground} />
-          <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{settings.manualCity}</Text>
+          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>{settings.manualCity}</Text>
         </View>
       )}
       {showRainWarning && (
@@ -941,11 +941,11 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
             disabled={!activeTimer.jobId}
             activeOpacity={0.7}
           >
-            <View style={[styles.todayEntryDot, { backgroundColor: activeTimer.isBreak ? '#f59e0b' : colors.success }]} />
-            <Text style={[styles.todayEntryJobTitle, { color: activeTimer.isBreak ? '#f59e0b' : colors.success }]} numberOfLines={1}>
+            <View style={[styles.todayEntryDot, { backgroundColor: activeTimer.isBreak ? colors.warning : colors.success }]} />
+            <Text style={[styles.todayEntryJobTitle, { color: activeTimer.isBreak ? colors.warning : colors.success }]} numberOfLines={1}>
               {activeTimer.isBreak ? 'On Break' : (activeTimer.description || activeTimer.jobTitle || 'General time')}
             </Text>
-            <Text style={[styles.todayEntryDuration, { color: activeTimer.isBreak ? '#f59e0b' : colors.success }]}>
+            <Text style={[styles.todayEntryDuration, { color: activeTimer.isBreak ? colors.warning : colors.success }]}>
               {activeTimer.isBreak ? 'break' : 'tracking'}
             </Text>
           </TouchableOpacity>
@@ -1101,7 +1101,7 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
         <View style={styles.timeTrackingContent}>
           <View style={[styles.timerIconContainer, styles.timerIconContainerActive, isOnBreak && styles.timerIconContainerBreak]}>
             {isOnBreak ? (
-              <Feather name="coffee" size={24} color="#f59e0b" />
+              <Feather name="coffee" size={24} color={colors.warning} />
             ) : (
               <View style={styles.pulsingDot} />
             )}
@@ -1160,10 +1160,10 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
             data-testid="button-break-timer"
           >
             {isPausing ? (
-              <ActivityIndicator size="small" color="#f59e0b" />
+              <ActivityIndicator size="small" color={colors.warning} />
             ) : (
               <>
-                <Feather name="coffee" size={16} color="#f59e0b" />
+                <Feather name="coffee" size={16} color={colors.warning} />
                 <Text style={styles.breakButtonText}>Break</Text>
               </>
             )}
@@ -1398,16 +1398,16 @@ function OperationalAlertsCard() {
             <View style={{ width: 28, height: 28, borderRadius: radius.md, backgroundColor: colorWithOpacity(colors.destructive, 0.12), alignItems: 'center', justifyContent: 'center' }}>
               <Feather name="radio" size={14} color={colors.destructive} />
             </View>
-            <Text style={{ ...typography.bodySemibold, color: colors.foreground, fontWeight: '700' }}>Attention Needed</Text>
+            <Text style={{ ...typography.bodySemibold, color: colors.foreground, fontWeight: fontWeights.bold }}>Attention Needed</Text>
             {visibleUrgent > 0 && (
               <View style={{ backgroundColor: colorWithOpacity(colors.destructive, 0.15), paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm }}>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: colors.destructive }}>{visibleUrgent} urgent</Text>
+                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.destructive }}>{visibleUrgent} urgent</Text>
               </View>
             )}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <View style={{ backgroundColor: colorWithOpacity(colors.primary, 0.1), paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.full }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>{visibleAlerts.length}</Text>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>{visibleAlerts.length}</Text>
             </View>
             <TouchableOpacity onPress={dismissAll} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Feather name="x" size={16} color={colors.mutedForeground} />
@@ -1454,12 +1454,12 @@ function OperationalAlertsCard() {
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, flexShrink: 1, minWidth: 0 }} numberOfLines={1}>{alert.title}</Text>
+                    <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, flexShrink: 1, minWidth: 0 }} numberOfLines={1}>{alert.title}</Text>
                     {alert.timeInfo && (
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground, flexShrink: 1, minWidth: 0 }} numberOfLines={1} ellipsizeMode="clip">{alert.timeInfo}</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, flexShrink: 1, minWidth: 0 }} numberOfLines={1} ellipsizeMode="clip">{alert.timeInfo}</Text>
                     )}
                   </View>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>{alert.message}</Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>{alert.message}</Text>
                 </View>
               </TouchableOpacity>
               <TouchableOpacity
@@ -1478,8 +1478,8 @@ function OperationalAlertsCard() {
                 <Text
                   numberOfLines={1}
                   style={{
-                    fontSize: 11,
-                    fontWeight: '600',
+                    fontSize: typography.sizes.xs,
+                    fontWeight: fontWeights.semibold,
                     color: alert.severity === 'urgent' ? colors.primaryForeground : colors.primary,
                   }}
                 >{alert.actionLabel}</Text>
@@ -1501,7 +1501,7 @@ function OperationalAlertsCard() {
             onPress={() => setExpanded(!expanded)}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 13, fontWeight: '500', color: colors.primary }}>
+            <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.primary }}>
               {expanded ? 'Show less' : `View all ${visibleAlerts.length} alerts`}
             </Text>
             <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.primary} />
@@ -1811,7 +1811,7 @@ function TodayJobCard({
           {distanceInfo && (
             <View style={styles.jobDetailRow}>
               <Feather name="navigation" size={iconSizes.md} color={colors.info} />
-              <Text style={[styles.jobDetailText, { color: colors.info, fontWeight: '500' }]}>
+              <Text style={[styles.jobDetailText, { color: colors.info, fontWeight: fontWeights.medium }]}>
                 {distanceInfo.distanceKm < 1 
                   ? `${Math.round(distanceInfo.distanceKm * 1000)}m away`
                   : `${distanceInfo.distanceKm} km away`}
@@ -1979,7 +1979,7 @@ function RevenueChart({ isOwner }: { isOwner: boolean }) {
                     </View>
                     <Text style={[
                       styles.revenueBarLabel,
-                      isCurrentMonth && { color: colors.foreground, fontWeight: '600' as const },
+                      isCurrentMonth && { color: colors.foreground, fontWeight: fontWeights.semibold },
                     ]}>
                       {item.month}
                     </Text>
@@ -2093,8 +2093,8 @@ function EmptyTodayState({ onCreateJob }: { onCreateJob: () => void }) {
       <View style={[styles.emptyStateIcon, { backgroundColor: colorWithOpacity(colors.primary, 0.1) }]}>
         <Feather name="calendar" size={sizes.emptyIcon} color={colors.primary} />
       </View>
-      <Text style={[styles.emptyStateTitle, { fontWeight: '600' }]}>Nothing scheduled today</Text>
-      <Text style={[styles.emptyStateTitle, { fontSize: 13, marginBottom: 0, marginTop: -spacing.sm }]}>
+      <Text style={[styles.emptyStateTitle, { fontWeight: fontWeights.semibold }]}>Nothing scheduled today</Text>
+      <Text style={[styles.emptyStateTitle, { fontSize: typography.sizes.sm, marginBottom: 0, marginTop: -spacing.sm }]}>
         Create a job or check your upcoming work
       </Text>
       <TouchableOpacity 
@@ -2200,7 +2200,7 @@ function GettingStartedChecklist() {
       <View style={[styles.gettingStartedCard]}>
         <View style={styles.gettingStartedHeader}>
           <View style={[styles.gettingStartedIcon, { backgroundColor: colorWithOpacity(colors.primary, 0.12) }]}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>{completedCount}/{checklistSteps.length}</Text>
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.primary }}>{completedCount}/{checklistSteps.length}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.gettingStartedTitle}>Get Set Up</Text>
@@ -2240,7 +2240,7 @@ function GettingStartedChecklist() {
               </View>
               {step.completed ? (
                 <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colorWithOpacity(colors.success, 0.12) }}>
-                  <Text style={{ fontSize: 10, fontWeight: '600', color: colors.success }}>Done</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.success }}>Done</Text>
                 </View>
               ) : (
                 <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
@@ -2345,7 +2345,7 @@ function PendingInvitesBanner() {
             <Feather name="users" size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ ...typography.body, color: colors.foreground, fontWeight: '600' }} numberOfLines={1}>
+            <Text style={{ ...typography.body, color: colors.foreground, fontWeight: fontWeights.semibold }} numberOfLines={1}>
               Join {invite.businessName}
             </Text>
             <Text style={{ ...typography.caption, color: colors.mutedForeground }} numberOfLines={1}>
@@ -2366,7 +2366,7 @@ function PendingInvitesBanner() {
             {accepting === invite.id ? (
               <ActivityIndicator size="small" color={colors.primaryForeground} />
             ) : (
-              <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 13 }}>Accept</Text>
+              <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.sizes.sm }}>Accept</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -3363,38 +3363,38 @@ function OwnerDashboardScreen() {
                   paddingVertical: 2,
                   borderRadius: radius.full,
                   backgroundColor: colorWithOpacity(
-                    workerState.state === 'on_job' ? '#f97316' :
-                    workerState.state === 'travelling' ? '#3b82f6' :
-                    workerState.state === 'break' ? '#9ca3af' :
-                    workerState.state === 'delayed' ? '#eab308' :
-                    workerState.state === 'needs_help' ? '#ef4444' :
-                    workerState.state === 'busy' ? '#f59e0b' :
-                    workerState.state === 'unavailable' ? '#9ca3af' : '#22c55e',
+                    workerState.state === 'on_job' ? colors.pending :
+                    workerState.state === 'travelling' ? colors.info :
+                    workerState.state === 'break' ? colors.mutedForeground :
+                    workerState.state === 'delayed' ? colors.warningDark :
+                    workerState.state === 'needs_help' ? colors.destructive :
+                    workerState.state === 'busy' ? colors.warning :
+                    workerState.state === 'unavailable' ? colors.mutedForeground : colors.success,
                     0.15
                   ),
                 }}>
                   <View style={{
                     width: 6, height: 6, borderRadius: 3,
                     backgroundColor:
-                      workerState.state === 'on_job' ? '#f97316' :
-                      workerState.state === 'travelling' ? '#3b82f6' :
-                      workerState.state === 'break' ? '#9ca3af' :
-                      workerState.state === 'delayed' ? '#eab308' :
-                      workerState.state === 'needs_help' ? '#ef4444' :
-                      workerState.state === 'busy' ? '#f59e0b' :
-                      workerState.state === 'unavailable' ? '#9ca3af' : '#22c55e',
+                      workerState.state === 'on_job' ? colors.pending :
+                      workerState.state === 'travelling' ? colors.info :
+                      workerState.state === 'break' ? colors.mutedForeground :
+                      workerState.state === 'delayed' ? colors.warningDark :
+                      workerState.state === 'needs_help' ? colors.destructive :
+                      workerState.state === 'busy' ? colors.warning :
+                      workerState.state === 'unavailable' ? colors.mutedForeground : colors.success,
                   }} />
                   <Text style={{
-                    fontSize: 11,
-                    fontWeight: '600',
+                    fontSize: typography.sizes.xs,
+                    fontWeight: fontWeights.semibold,
                     color:
-                      workerState.state === 'on_job' ? '#f97316' :
-                      workerState.state === 'travelling' ? '#3b82f6' :
-                      workerState.state === 'break' ? '#9ca3af' :
-                      workerState.state === 'delayed' ? '#eab308' :
-                      workerState.state === 'needs_help' ? '#ef4444' :
-                      workerState.state === 'busy' ? '#f59e0b' :
-                      workerState.state === 'unavailable' ? '#9ca3af' : '#22c55e',
+                      workerState.state === 'on_job' ? colors.pending :
+                      workerState.state === 'travelling' ? colors.info :
+                      workerState.state === 'break' ? colors.mutedForeground :
+                      workerState.state === 'delayed' ? colors.warningDark :
+                      workerState.state === 'needs_help' ? colors.destructive :
+                      workerState.state === 'busy' ? colors.warning :
+                      workerState.state === 'unavailable' ? colors.mutedForeground : colors.success,
                   }}>
                     {workerState.state === 'on_job' ? 'On Job' :
                      workerState.state === 'travelling' ? 'Travelling' :
@@ -3506,10 +3506,10 @@ function OwnerDashboardScreen() {
           }}>
             <Feather name="box" size={16} color={colors.info} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                 Sample data loaded
               </Text>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 1 }}>
                 Explore the app with demo jobs, clients & invoices.
               </Text>
             </View>
@@ -3545,7 +3545,7 @@ function OwnerDashboardScreen() {
               {isClearingDemo ? (
                 <ActivityIndicator size="small" color={colors.info} />
               ) : (
-                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.info }}>Clear</Text>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.info }}>Clear</Text>
               )}
             </TouchableOpacity>
             <TouchableOpacity
@@ -4191,7 +4191,7 @@ function OwnerDashboardScreen() {
 
                   {schedulerSearch.trim().length > 0 && filtered.length === 0 && (
                     <View style={{ paddingVertical: spacing.lg, alignItems: 'center' }}>
-                      <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>
+                      <Text style={{ color: colors.mutedForeground, fontSize: typography.button.fontSize }}>
                         No team members match "{schedulerSearch.trim()}"
                       </Text>
                     </View>
@@ -4252,8 +4252,8 @@ function OwnerDashboardScreen() {
                 </View>
                 <Text
                   style={{
-                    fontSize: 16,
-                    fontWeight: '600',
+                    fontSize: typography.subtitle.fontSize,
+                    fontWeight: fontWeights.semibold,
                     color: colors.foreground,
                     marginBottom: 4,
                     textAlign: 'center',
@@ -4263,7 +4263,7 @@ function OwnerDashboardScreen() {
                 </Text>
                 <Text
                   style={{
-                    fontSize: 13,
+                    fontSize: typography.sizes.sm,
                     color: colors.mutedForeground,
                     textAlign: 'center',
                     marginBottom: spacing.md,
@@ -4299,6 +4299,7 @@ function OwnerDashboardScreen() {
   );
 }
 
+// hint: Logic changed on both sides. Requires understanding intent of each change.
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
@@ -4360,7 +4361,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   gettingStartedTitle: {
     ...typography.subtitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   gettingStartedSubtitle: {
@@ -4389,7 +4390,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   gettingStartedStepTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   gettingStartedStepDesc: {
@@ -4412,15 +4413,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   headerTitle: {
     ...typography.pageTitle,
     color: colors.foreground,
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.extrabold,
     letterSpacing: -0.5,
   },
   headerSubtitle: {
     ...typography.caption,
     color: colors.mutedForeground,
     marginTop: spacing.sm,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
   },
   roleBadge: {
     paddingHorizontal: spacing.md,
@@ -4429,7 +4430,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   roleBadgeText: {
     ...typography.captionSmall,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
   },
   headerRight: {
@@ -4526,8 +4527,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...shadows.sm,
   },
   workerStatusLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -4548,7 +4549,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1.5,
   },
   workerStatusBtnText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
   },
   statusCardHeader: {
     flexDirection: 'row',
@@ -4563,7 +4564,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.muted,
     borderRadius: 12,
     padding: 3,
   },
@@ -4575,13 +4576,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 6,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
   },
   segmentActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
+    backgroundColor: colors.card,
+    borderColor: colors.cardBorder,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.12,
@@ -4660,14 +4661,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   kpiValue: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
   },
   kpiTitle: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
@@ -4693,7 +4694,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   schedulerSearchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     paddingVertical: spacing.xs,
   },
@@ -4706,8 +4707,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: spacing.xs,
   },
   schedulerToggleText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   selectionBanner: {
@@ -4729,7 +4730,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   selectionBannerText: {
     ...typography.bodySmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     flex: 1,
   },
@@ -4759,12 +4760,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   unassignedBadgeText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   unassignedLabel: {
     ...typography.bodySmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   unassignedJobsScroll: {
@@ -4785,7 +4786,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   unassignedJobTitle: {
     ...typography.bodySmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: spacing.xs,
   },
@@ -4821,7 +4822,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   teamMemberAvatarText: {
     ...typography.bodySmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   teamMemberInfo: {
@@ -4829,7 +4830,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   teamMemberName: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   teamMemberJobCount: {
@@ -4846,7 +4847,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   tapToAssignText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   memberJobsList: {
@@ -4914,8 +4915,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   timeBoxText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   jobCardTitleArea: {
@@ -4953,8 +4954,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   statusBadgeTextComplete: {
@@ -5011,7 +5012,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   quickContactText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   directionsButton: {
@@ -5040,7 +5041,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   optimizeButtonText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   optimizeButtonTextActive: {
@@ -5058,7 +5059,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   optimizedBadgeText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.success,
   },
   nextJobSuggestion: {
@@ -5088,14 +5089,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   nextJobSuggestionLabel: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.warning,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
   },
   nextJobSuggestionTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: 1,
   },
@@ -5115,7 +5116,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   nextJobGoButtonText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   startRouteButton: {
@@ -5141,7 +5142,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   startRouteText: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.primaryForeground,
     flex: 1,
   },
@@ -5154,8 +5155,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   orderBadgeText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.primaryForeground,
   },
   actionButtonsRow: {
@@ -5188,7 +5189,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   secondaryActionButtonText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   completeActionButton: {
@@ -5196,7 +5197,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   primaryActionButtonText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   outlineActionButton: {
@@ -5211,7 +5212,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   outlineActionButtonText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
 
@@ -5254,7 +5255,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   scheduleJobButtonText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
 
@@ -5279,7 +5280,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.card,
     borderColor: colors.cardBorder,
     borderLeftWidth: 3,
-    borderLeftColor: '#f59e0b',
+    borderLeftColor: colors.warning,
   },
   timeTrackingContent: {
     flexDirection: 'row',
@@ -5310,18 +5311,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.sm,
   },
   elapsedTime: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
     fontVariant: ['tabular-nums'],
     letterSpacing: 1,
     color: colors.primary,
   },
   elapsedTimeBreak: {
-    color: '#f59e0b',
+    color: colors.warning,
   },
   totalTimeToday: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   timerSubtext: {
@@ -5331,7 +5332,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   timerJobTitle: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginTop: 2,
   },
@@ -5339,15 +5340,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.primary,
   },
   breakBadge: {
-    backgroundColor: '#f59e0b20',
+    backgroundColor: colorWithOpacity(colors.warning, 0.13),
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.sm,
   },
   breakBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#f59e0b',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.warning,
     letterSpacing: 0.5,
   },
   pulsingDot: {
@@ -5372,7 +5373,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   timerJobListLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.sm,
     textTransform: 'uppercase',
@@ -5404,7 +5405,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   timerJobItemTitle: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
   },
@@ -5421,7 +5422,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   timerJobItemActionText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   teamOnClockContainer: {
@@ -5448,7 +5449,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   teamOnClockTitle: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   teamOnClockSubtitle: {
@@ -5467,7 +5468,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   teamOnClockName: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   teamOnClockJob: {
@@ -5476,7 +5477,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   teamOnClockTime: {
     ...typography.caption,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     fontVariant: ['tabular-nums'],
   },
   teamOnClockBadge: {
@@ -5494,8 +5495,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 3,
   },
   teamOnClockBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
   },
   todayEntriesContainer: {
     backgroundColor: colors.muted,
@@ -5504,7 +5505,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   todayEntriesTitle: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.xs,
     marginLeft: spacing.xs,
@@ -5531,7 +5532,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   todayEntryDuration: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   timerControlsRow: {
@@ -5554,14 +5555,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   breakButton: {
     flex: 1,
-    backgroundColor: '#f59e0b15',
+    backgroundColor: colorWithOpacity(colors.warning, 0.08),
     borderWidth: 1,
-    borderColor: '#f59e0b40',
+    borderColor: colorWithOpacity(colors.warning, 0.25),
   },
   breakButtonText: {
     ...typography.button,
-    color: '#f59e0b',
-    fontWeight: '600',
+    color: colors.warning,
+    fontWeight: fontWeights.semibold,
   },
   resumeButton: {
     flex: 1,
@@ -5572,7 +5573,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   resumeButtonText: {
     ...typography.button,
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   stopButton: {
     flex: 1,
@@ -5591,7 +5592,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   saveButtonText: {
     ...typography.button,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   cancelButton: {
     backgroundColor: `${colors.destructive}10`,
@@ -5648,7 +5649,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   weekJobTitle: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   weekJobMeta: {
@@ -5706,7 +5707,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   revenueBarValue: {
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
   },
   revenueBarTrack: {
     width: '100%',
@@ -5722,7 +5723,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   revenueBarLabel: {
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
   },
 
   complianceAlertCard: {
@@ -5783,14 +5784,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.xs,
   },
   weatherTemp: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     letterSpacing: -0.5,
   },
   weatherDegree: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   weatherLabel: {
@@ -5824,7 +5825,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   weatherRainText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
 
   daySummaryCard: {
@@ -5880,7 +5881,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   daySummaryStatValue: {
     ...typography.bodySemibold,
     color: colors.foreground,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
   },
   daySummaryStatLabel: {
     ...typography.captionSmall,
@@ -5900,7 +5901,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   daySummaryTomorrowLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   daySummaryTomorrowTitle: {

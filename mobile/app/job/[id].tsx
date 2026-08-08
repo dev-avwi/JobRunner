@@ -57,7 +57,7 @@ import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { BottomSheetScrollView } from '../../src/components/ui/AppBottomSheet';
 import { MobileSendModal } from '../../src/components/MobileSendModal';
-import { spacing, radius, shadows, iconSizes, typography, pageShell } from '../../src/lib/design-tokens';
+import { fontWeights, spacing, radius, shadows, iconSizes, typography, pageShell } from '../../src/lib/design-tokens';
 import { getAvatarColor } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { WorkspaceSwitcher } from '../../src/components/WorkspaceSwitcher';
@@ -378,6 +378,7 @@ const STATUS_ACTIONS = {
   invoiced: null,
 };
 
+// hint: Logic changed on both sides. Requires understanding intent of each change.
 const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
     flex: 1,
@@ -403,8 +404,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   errorText: {
     color: colors.foreground,
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.medium,
     marginBottom: spacing.md,
   },
   errorButton: {
@@ -416,10 +417,10 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   errorButtonText: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   errorPrimaryBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: radius.md,
@@ -430,9 +431,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     minHeight: 40,
   },
   errorPrimaryBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
+    color: colors.primaryForeground,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.button.fontSize,
   },
   errorSecondaryBtn: {
     paddingVertical: 10,
@@ -447,8 +448,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   errorSecondaryBtnText: {
     color: colors.foreground,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.button.fontSize,
   },
   header: {
     marginBottom: spacing.xl,
@@ -475,8 +476,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 3,
   },
   headerUrgencyText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   titleRow: {
     flexDirection: 'row',
@@ -484,14 +485,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: spacing.sm,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     letterSpacing: -0.5,
     flex: 1,
   },
   description: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
     lineHeight: 22,
   },
@@ -522,17 +523,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   cardLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
   cardValue: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   cardActionIcon: {
     marginLeft: spacing.sm,
@@ -561,20 +562,20 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.md,
   },
   clientAvatarText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   clientInfo: {
     flex: 1,
   },
   clientName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   clientEmail: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -594,8 +595,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     minHeight: 44,
   },
   clientActionText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   timerCard: {
@@ -631,21 +632,21 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   timerLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
   timerValue: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginTop: 2,
   },
   timerActiveValue: {
     color: colors.success,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   timerButton: {
     width: 44,
@@ -671,14 +672,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   timerBreakValue: {
     color: colors.warning,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   timerButtonGroup: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
   breakButton: {
-    backgroundColor: colors.warningLight || '#FDE68A',
+    backgroundColor: colors.warningLight,
   },
   resumeButton: {
     backgroundColor: colors.primary,
@@ -687,8 +688,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -715,8 +716,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.sm,
   },
   quickActionText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   notesCard: {
@@ -743,14 +744,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.sm,
   },
   notesLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
     marginRight: spacing.sm,
   },
   notesText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 21,
     marginTop: spacing.xs,
@@ -759,7 +760,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: spacing.md,
   },
   emptyNotesText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     fontStyle: 'italic',
   },
@@ -793,8 +794,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.sm,
   },
   geofenceLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   geofenceBadge: {
@@ -804,8 +805,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.sm,
   },
   geofenceBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.success,
   },
   geofenceSettingRow: {
@@ -825,11 +826,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.sm,
   },
   geofenceSettingLabel: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
   },
   geofenceSettingDescription: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -839,13 +840,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderTopColor: colors.muted,
   },
   geofenceRadiusLabel: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
   geofenceRadiusValue: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
     textAlign: 'center',
     marginBottom: spacing.sm,
@@ -859,7 +860,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: spacing.sm,
   },
   geofenceNoLocationText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginLeft: spacing.sm,
     flex: 1,
@@ -888,8 +889,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.sm,
   },
   photosHeaderLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
   },
@@ -900,8 +901,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.md,
   },
   photosCountText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   photosScrollView: {
@@ -935,12 +936,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.sm,
   },
   morePhotosText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   morePhotosLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
   },
   addPhotoButton: {
@@ -987,8 +988,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.sm,
   },
   takePhotoInlineText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   galleryInlineButton: {
@@ -1007,8 +1008,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.sm,
   },
   galleryInlineText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   actionButtonContainer: {
@@ -1026,13 +1027,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.sm,
   },
   mainActionText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.primaryForeground,
   },
   invoicedMessage: {
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     paddingVertical: spacing.lg,
   },
@@ -1062,13 +1063,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   documentTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 2,
   },
   documentNumber: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   documentStatusBadge: {
@@ -1077,8 +1078,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 12,
   },
   documentStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     textTransform: 'capitalize',
   },
   documentDetails: {
@@ -1090,8 +1091,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderTopColor: colors.border,
   },
   documentAmount: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   documentViewButton: {
@@ -1104,8 +1105,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   documentViewButtonText: {
     color: colors.primaryForeground,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
   },
   costingCard: {
     backgroundColor: colors.card,
@@ -1130,8 +1131,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.md,
   },
   costingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   costingGrid: {
@@ -1145,13 +1146,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.md,
   },
   costingLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginBottom: 4,
   },
   costingValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   paymentReceivedCard: {
@@ -1179,25 +1180,25 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   paymentReceivedTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 2,
   },
   paymentReceivedSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   paymentReceivedAmount: {
     alignItems: 'flex-end',
   },
   paymentReceivedAmountText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.success,
   },
   paymentReceivedDate: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
@@ -1234,8 +1235,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: spacing.sm,
   },
   quickCollectTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
   },
   quickCollectBadge: {
     paddingHorizontal: spacing.sm,
@@ -1243,12 +1244,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.md,
   },
   quickCollectBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
   },
   quickCollectDescription: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     lineHeight: 20,
     marginBottom: spacing.md,
   },
@@ -1262,12 +1263,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.md,
   },
   quickCollectAmountLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
   },
   quickCollectAmountValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
   },
   quickCollectButtons: {
     flexDirection: 'row',
@@ -1284,8 +1285,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.md,
   },
   quickCollectButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   activityCard: {
     backgroundColor: colors.card,
@@ -1311,13 +1312,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   activityTitle: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   activityCount: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     backgroundColor: colors.muted,
     paddingHorizontal: 8,
@@ -1349,18 +1350,18 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   activityDescription: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     marginBottom: 2,
   },
   activityTime: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   activityMore: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     marginTop: spacing.xs,
   },
   sectionHeader: {
@@ -1389,8 +1390,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderBottomColor: colors.border,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   modalContent: {
@@ -1411,7 +1412,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     minHeight: 150,
     textAlignVertical: 'top',
@@ -1423,7 +1424,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     height: 44,
     textAlignVertical: 'center',
@@ -1437,8 +1438,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   saveButtonText: {
     color: colors.primaryForeground,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   photosContainer: {
     padding: spacing.lg,
@@ -1463,7 +1464,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: spacing.xl,
   },
   photosEmptyText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
@@ -1487,8 +1488,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   photoActionText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   photoActionTextSecondary: {
     color: colors.foreground,
@@ -1542,7 +1543,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     minHeight: 56,
   },
   photoToolbarButtonText: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.white,
     marginTop: 4,
     textAlign: 'center',
@@ -1560,8 +1561,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   deletePhotoText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   markupPhotoButton: {
     position: 'absolute',
@@ -1577,8 +1578,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   markupPhotoText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   categoryPhotoButton: {
     position: 'absolute',
@@ -1594,8 +1595,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   categoryPhotoText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   photoCategoryBadge: {
     position: 'absolute',
@@ -1610,8 +1611,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   photoCategoryBadgeText: {
     color: colors.white,
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
   },
   savePhotoButton: {
     position: 'absolute',
@@ -1620,15 +1621,15 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.success || '#22c55e',
+    backgroundColor: colors.success,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
   },
   savePhotoText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   saveVideoButton: {
     position: 'absolute',
@@ -1637,7 +1638,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.success || '#22c55e',
+    backgroundColor: colors.success,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
@@ -1655,8 +1656,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   photoCountText: {
     color: colors.primaryForeground,
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
   },
   tabBar: {
     flexDirection: 'row',
@@ -1690,14 +1691,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.primaryForeground,
   },
   tabLabel: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     letterSpacing: 0.2,
   },
   tabLabelActive: {
     color: colors.primaryForeground,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   fixedHeader: {
     paddingHorizontal: spacing.lg,
@@ -1715,8 +1716,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.lg,
   },
   tabSectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -1737,8 +1738,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderBottomColor: colors.cardBorder,
   },
   completionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   completionScrollContent: {
@@ -1767,8 +1768,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.md,
   },
   completionSectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
   },
@@ -1778,14 +1779,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: spacing.xs,
   },
   completionStatusText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
   },
   completionSectionContent: {
     paddingLeft: 48,
   },
   completionSectionDetail: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
   completionWarning: {
@@ -1803,12 +1804,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: spacing.sm,
   },
   completionWarningTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.warning,
   },
   completionWarningText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     lineHeight: 20,
   },
@@ -1841,8 +1842,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.cardBorder,
   },
   completionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.white,
   },
   completionButtonTextSecondary: {
@@ -1895,8 +1896,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: spacing.sm,
   },
   recordVideoText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   videoPlayerModal: {
@@ -1935,6 +1936,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
 });
 
+// hint: Logic changed on both sides. Requires understanding intent of each change.
 export default function JobDetailScreen() {
   console.log('[LA-DEBUG] LiveActivity module:', typeof LiveActivity, LiveActivity && Object.keys(LiveActivity));
   const { id, action: navAction } = useLocalSearchParams<{ id: string; action?: string }>();
@@ -3245,7 +3247,7 @@ export default function JobDetailScreen() {
     switch (rating) {
       case 'low': return colors.success;
       case 'medium': return colors.warning;
-      case 'high': return '#F97316';
+      case 'high': return colors.warningDark;
       case 'extreme': return colors.destructive;
       default: return colors.mutedForeground;
     }
@@ -6479,7 +6481,7 @@ export default function JobDetailScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center' }}
               >
                 <Feather name="chevron-left" size={17} color={colors.primary} />
-                <Text style={{ fontSize: 16, color: colors.primary, marginLeft: -1 }}>Back</Text>
+                <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
               </Pressable>
             ),
           }}
@@ -6495,7 +6497,7 @@ export default function JobDetailScreen() {
       <View style={styles.errorContainer}>
         <Feather name={sessionExpired ? 'log-in' : 'alert-circle'} size={48} color={loadError ? colors.destructive : colors.mutedForeground} />
         <Text style={styles.errorText}>{sessionExpired ? 'Session expired' : (loadError ? 'Failed to load job' : 'Job not found')}</Text>
-        <Text style={[styles.errorText, { fontSize: 14, marginTop: 4 }]}>
+        <Text style={[styles.errorText, { fontSize: typography.button.fontSize, marginTop: 4 }]}>
           {sessionExpired
             ? 'Your session has timed out. Please sign in again to continue.'
             : (loadError || 'The job may have been deleted or you don\'t have access.')}
@@ -6503,12 +6505,12 @@ export default function JobDetailScreen() {
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
           {sessionExpired ? (
             <TouchableOpacity activeOpacity={0.8} onPress={() => { logout(); }} style={styles.errorPrimaryBtn}>
-              <Feather name="log-in" size={16} color="#FFFFFF" />
+              <Feather name="log-in" size={16} color={colors.primaryForeground} />
               <Text style={styles.errorPrimaryBtnText}>Sign in</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity activeOpacity={0.8} onPress={loadJob} style={styles.errorPrimaryBtn}>
-              <Feather name="refresh-cw" size={16} color="#FFFFFF" />
+              <Feather name="refresh-cw" size={16} color={colors.primaryForeground} />
               <Text style={styles.errorPrimaryBtnText}>Retry</Text>
             </TouchableOpacity>
           )}
@@ -6536,12 +6538,12 @@ export default function JobDetailScreen() {
       <View style={styles.errorContainer}>
         <Feather name="briefcase" size={48} color={colors.primary} />
         <Text style={styles.errorText}>Switch workspace to open this job</Text>
-        <Text style={[styles.errorText, { fontSize: 14, marginTop: 4 }]}>
+        <Text style={[styles.errorText, { fontSize: typography.button.fontSize, marginTop: 4 }]}>
           This job belongs to {targetBusinessName}. You're currently in a different workspace, so you can't start a timer or make changes here. Switch to that workspace to work on it.
         </Text>
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
           <TouchableOpacity activeOpacity={0.8} onPress={() => setShowWorkspaceSwitcher(true)} style={styles.errorPrimaryBtn}>
-            <Feather name="repeat" size={16} color="#FFFFFF" />
+            <Feather name="repeat" size={16} color={colors.primaryForeground} />
             <Text style={styles.errorPrimaryBtnText}>Switch workspace</Text>
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.8} onPress={() => router.back()} style={styles.errorSecondaryBtn}>
@@ -6654,7 +6656,7 @@ export default function JobDetailScreen() {
         }}>
           <Feather name="alert-triangle" size={18} color={colors.destructive} />
           <View style={{ flex: 1 }}>
-            <Text style={{ ...typography.caption, fontWeight: '600', color: colors.destructive }}>
+            <Text style={{ ...typography.caption, fontWeight: fontWeights.semibold, color: colors.destructive }}>
               Schedule Conflict ({jobConflictWarning.overlapMinutes}min overlap)
             </Text>
             <Text style={{ ...typography.captionSmall, color: colors.mutedForeground, marginTop: 2 }}>
@@ -6702,11 +6704,11 @@ export default function JobDetailScreen() {
             <Feather name="clock" size={18} color={colors.warning} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.warning }}>Time to wrap up</Text>
-            <Text style={{ fontSize: 12, color: colors.foreground, marginTop: 2 }} numberOfLines={1}>
+            <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.warning }}>Time to wrap up</Text>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground, marginTop: 2 }} numberOfLines={1}>
               {wrapUpNextJob.title} at {new Date(wrapUpNextJob.scheduledAt).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
             </Text>
-            <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>
+            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 1 }}>
               ~{wrapUpDriveMinutes} min drive to next site
             </Text>
           </View>
@@ -6725,12 +6727,12 @@ export default function JobDetailScreen() {
             borderWidth: 1,
             borderColor: colors.cardBorder,
             borderLeftWidth: 3,
-            borderLeftColor: '#10B981',
+            borderLeftColor: colors.success,
             borderRadius: radius.lg,
             padding: spacing.md,
             marginBottom: spacing.sm,
           }}>
-            <Feather name="check-circle" size={18} color="#10B981" />
+            <Feather name="check-circle" size={18} color={colors.success} />
             <Text style={{ ...typography.caption, color: colors.foreground, flex: 1 }}>
               All {totalWorkerCount} workers have completed their part. You can finish the job.
             </Text>
@@ -6763,7 +6765,7 @@ export default function JobDetailScreen() {
                   data-testid="button-directions"
                 >
                   <Feather name="map" size={18} color={colors.info} />
-                  <Text style={{ color: colors.info, fontWeight: '600', fontSize: 14, marginLeft: spacing.xs }}>
+                  <Text style={{ color: colors.info, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize, marginLeft: spacing.xs }}>
                     Directions
                   </Text>
                 </TouchableOpacity>
@@ -6784,7 +6786,7 @@ export default function JobDetailScreen() {
                   data-testid="button-on-my-way"
                 >
                   <Feather name="navigation" size={18} color={colors.info} />
-                  <Text style={{ color: colors.info, fontWeight: '600', fontSize: 14 }}>
+                  <Text style={{ color: colors.info, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
                     On My Way
                   </Text>
                   {isSendingOnMyWay && (
@@ -6825,7 +6827,7 @@ export default function JobDetailScreen() {
                   ) : (
                     <>
                       <Feather name="refresh-cw" size={13} color={colors.mutedForeground} />
-                      <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Resend "On My Way" notification</Text>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Resend "On My Way" notification</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -6885,7 +6887,7 @@ export default function JobDetailScreen() {
       {(job.status === 'scheduled' || job.status === 'in_progress') && (availableForms.some(isSafetyForm) || swmsDocuments.length > 0 || hasNoSafetyDocs) && (
         <View style={[
           styles.card, 
-          (pendingSafetyForms.length > 0 || hasIncompleteSwms || hasNoSafetyDocs) && { borderColor: colors.warning, borderWidth: 1.5, backgroundColor: isDark ? '#231c10' : '#fdf4e6' }
+          (pendingSafetyForms.length > 0 || hasIncompleteSwms || hasNoSafetyDocs) && { borderColor: colors.warning, borderWidth: 1.5, backgroundColor: colors.warningLight }
         ]}>
           <View style={[styles.cardIconContainer, { backgroundColor: (pendingSafetyForms.length > 0 || hasIncompleteSwms || hasNoSafetyDocs) ? `${colors.warning}15` : `${colors.success}15` }]}>
             <Feather 
@@ -6899,11 +6901,11 @@ export default function JobDetailScreen() {
               <Text style={styles.cardLabel}>Safety & Compliance</Text>
               {(pendingSafetyForms.length > 0 || hasIncompleteSwms || hasNoSafetyDocs) && (
                 <View style={{ backgroundColor: colors.warning, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                  <Text style={{ color: 'white', fontSize: 10, fontWeight: '700' }}>REQUIRED</Text>
+                  <Text style={{ color: 'white', fontSize: typography.sizes.xs, fontWeight: fontWeights.bold }}>REQUIRED</Text>
                 </View>
               )}
             </View>
-            <Text style={[styles.cardValue, (pendingSafetyForms.length > 0 || hasIncompleteSwms || hasNoSafetyDocs) && { color: colors.warning, fontWeight: '700' }]}>
+            <Text style={[styles.cardValue, (pendingSafetyForms.length > 0 || hasIncompleteSwms || hasNoSafetyDocs) && { color: colors.warning, fontWeight: fontWeights.bold }]}>
               {pendingSafetyForms.length > 0 && hasIncompleteSwms
                 ? 'Safety forms + SWMS pending'
                 : pendingSafetyForms.length > 0
@@ -7019,7 +7021,7 @@ export default function JobDetailScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Time Entries</Text>
-              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
                 {timeEntries.filter(e => e.endTime && e.endTime !== 'null' && e.endTime !== '').length} entr{timeEntries.filter(e => e.endTime && e.endTime !== 'null' && e.endTime !== '').length === 1 ? 'y' : 'ies'} logged
               </Text>
             </View>
@@ -7053,24 +7055,24 @@ export default function JobDetailScreen() {
                 >
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: entry.isBreak ? colors.warning : colors.success }} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+                    <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                       {entry.isBreak ? 'Break' : (entry.userName || 'You')}
                     </Text>
-                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                    <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
                       {dateStr} {startStr} - {endStr}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: entry.isBreak ? colors.warning : colors.foreground }}>{timeStr}</Text>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: entry.isBreak ? colors.warning : colors.foreground }}>{timeStr}</Text>
                     {entry.hourlyRate && !entry.isBreak && (
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>${parseFloat(entry.hourlyRate).toFixed(0)}/hr</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>${parseFloat(entry.hourlyRate).toFixed(0)}/hr</Text>
                     )}
                   </View>
                 </View>
               );
             })}
           {timeEntries.filter(e => e.endTime && e.endTime !== 'null' && e.endTime !== '').length > 5 && (
-            <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.sm }}>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.sm }}>
               + {timeEntries.filter(e => e.endTime && e.endTime !== 'null' && e.endTime !== '').length - 5} more entries
             </Text>
           )}
@@ -7086,7 +7088,7 @@ export default function JobDetailScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Team on Job</Text>
-              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
                 {teamTimers.length} worker{teamTimers.length !== 1 ? 's' : ''} clocked in
               </Text>
             </View>
@@ -7115,7 +7117,7 @@ export default function JobDetailScreen() {
                   size={36}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+                  <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                     {timer.workerName}{timer.isCurrentUser ? ' (You)' : ''}
                   </Text>
                   {(isOwnerOrManager || isSoloOwner) ? (
@@ -7126,21 +7128,21 @@ export default function JobDetailScreen() {
                       }}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                     >
-                      <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '600' }}>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.semibold }}>
                         ${timer.hourlyRate}/hr
                       </Text>
                       <Feather name="edit-2" size={12} color={colors.primary} />
                     </TouchableOpacity>
                   ) : (
-                    <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                    <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
                       ${timer.hourlyRate}/hr
                     </Text>
                   )}
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={{ 
-                    fontSize: 15, 
-                    fontWeight: '700',
+                    fontSize: typography.sizes.md, 
+                    fontWeight: fontWeights.bold,
                     color: timer.isPaused || timer.isBreak ? colors.warning : colors.success,
                     fontVariant: ['tabular-nums'],
                   }}>
@@ -7165,8 +7167,8 @@ export default function JobDetailScreen() {
                       backgroundColor: timer.isPaused || timer.isBreak ? colors.warning : colors.success,
                     }} />
                     <Text style={{ 
-                      fontSize: 11, 
-                      fontWeight: '600',
+                      fontSize: typography.sizes.xs, 
+                      fontWeight: fontWeights.semibold,
                       color: timer.isPaused || timer.isBreak ? colors.warning : colors.success,
                     }}>
                       {timer.isPaused ? 'Paused' : timer.isBreak ? 'On Break' : 'Working'}
@@ -7195,7 +7197,7 @@ export default function JobDetailScreen() {
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.cardLabel}>Quick Action</Text>
-            <Text style={[styles.cardValue, { color: colors.primary, fontWeight: '600' }]}>Post Site Update</Text>
+            <Text style={[styles.cardValue, { color: colors.primary, fontWeight: fontWeights.semibold }]}>Post Site Update</Text>
           </View>
           <Feather name="chevron-right" size={iconSizes.lg} color={colors.primary} style={styles.cardActionIcon} />
         </PressableRow>
@@ -7366,10 +7368,10 @@ export default function JobDetailScreen() {
               activeOpacity={0.7}
             >
               <Feather name="zap" size={15} color={colors.primary} />
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.primary }}>
                 Send via JobRunner
               </Text>
-              <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
                 SMS & Email from +61 485 013 993
               </Text>
             </TouchableOpacity>
@@ -7395,7 +7397,7 @@ export default function JobDetailScreen() {
               </View>
               <View>
                 <Text style={styles.cardLabel}>Assigned Team</Text>
-                <Text style={{ ...typography.caption, color: allWorkersComplete ? '#10B981' : colors.mutedForeground }}>
+                <Text style={{ ...typography.caption, color: allWorkersComplete ? colors.success : colors.mutedForeground }}>
                   {jobAssignments.length > 0
                     ? (totalWorkerCount > 1
                         ? `${completedWorkerCount}/${totalWorkerCount} workers complete`
@@ -7423,7 +7425,7 @@ export default function JobDetailScreen() {
               activeOpacity={0.7}
             >
               <Feather name="plus" size={14} color={colors.primary} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }}>
                 {jobAssignments.length > 0 ? 'Edit' : 'Assign'}
               </Text>
             </TouchableOpacity>
@@ -7437,9 +7439,9 @@ export default function JobDetailScreen() {
             const statusColors: Record<string, string> = {
               assigned: colors.mutedForeground,
               accepted: colors.primary,
-              en_route: '#F59E0B',
-              arrived: '#10B981',
-              in_progress: '#10B981',
+              en_route: colors.warning,
+              arrived: colors.success,
+              in_progress: colors.success,
               completed: colors.mutedForeground,
             };
             const statusLabels: Record<string, string> = {
@@ -7472,12 +7474,12 @@ export default function JobDetailScreen() {
                   size={36}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ ...typography.body, color: colors.foreground, fontWeight: '600' }}>{displayName}</Text>
+                  <Text style={{ ...typography.body, color: colors.foreground, fontWeight: fontWeights.semibold }}>{displayName}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
                     {assignment.completedAt ? (
                       <>
-                        <Feather name="check-circle" size={12} color="#10B981" />
-                        <Text style={{ ...typography.caption, color: '#10B981' }}>
+                        <Feather name="check-circle" size={12} color={colors.success} />
+                        <Text style={{ ...typography.caption, color: colors.success }}>
                           Part done{assignment.completedAt ? ` · ${new Date(assignment.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} ${new Date(assignment.completedAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}` : ''}
                         </Text>
                       </>
@@ -7552,9 +7554,9 @@ export default function JobDetailScreen() {
             <View style={{ marginBottom: (job.notes || jobNotes.length > 0) ? spacing.md : 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
                 <Feather name="align-left" size={14} color={colors.mutedForeground} />
-                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>Description</Text>
+                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>Description</Text>
               </View>
-              <Text style={{ fontSize: 14, color: colors.foreground, lineHeight: 20 }}>{job.description}</Text>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 20 }}>{job.description}</Text>
             </View>
           )}
           {(jobNotes.length > 0 || job.notes) && (
@@ -7564,14 +7566,14 @@ export default function JobDetailScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
                 <Feather name="edit-3" size={14} color={colors.mutedForeground} />
-                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>Notes</Text>
+                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>Notes</Text>
                 <Feather name="plus" size={12} color={colors.primary} style={{ marginLeft: 'auto' }} />
               </View>
-              <Text style={{ fontSize: 14, color: colors.mutedForeground, lineHeight: 20 }} numberOfLines={3}>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, lineHeight: 20 }} numberOfLines={3}>
                 {jobNotes.length > 0 ? jobNotes[jobNotes.length - 1].content : job.notes}
               </Text>
               {jobNotes.length > 1 && (
-                <Text style={{ fontSize: 12, color: colors.primary, marginTop: 4 }}>+{jobNotes.length - 1} more note{jobNotes.length - 1 === 1 ? '' : 's'}</Text>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, marginTop: 4 }}>+{jobNotes.length - 1} more note{jobNotes.length - 1 === 1 ? '' : 's'}</Text>
               )}
             </TouchableOpacity>
           )}
@@ -7582,7 +7584,7 @@ export default function JobDetailScreen() {
               style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: job.description ? spacing.md : 0, borderTopWidth: job.description ? 1 : 0, borderTopColor: colors.border }}
             >
               <Feather name="plus" size={14} color={colors.primary} />
-              <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '500' }}>Add private notes</Text>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>Add private notes</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -7730,13 +7732,13 @@ export default function JobDetailScreen() {
               <Feather name="briefcase" size={iconSizes.md} color={colors.primary} />
             </View>
             <Text style={{
-              fontSize: 14,
-              fontWeight: '600',
+              fontSize: typography.button.fontSize,
+              fontWeight: fontWeights.semibold,
               color: colors.foreground,
               flex: 1,
             }}>Previous Jobs</Text>
             <Text style={{
-              fontSize: 12,
+              fontSize: typography.captionSmall.fontSize,
               color: colors.mutedForeground,
             }}>{linkedJobs.length} job{linkedJobs.length !== 1 ? 's' : ''}</Text>
           </View>
@@ -7765,13 +7767,13 @@ export default function JobDetailScreen() {
               >
                 <View style={{ flex: 1 }}>
                   <Text style={{
-                    fontSize: 14,
-                    fontWeight: '500',
+                    fontSize: typography.button.fontSize,
+                    fontWeight: fontWeights.medium,
                     color: colors.foreground,
                   }} numberOfLines={1}>{lj.title}</Text>
                   {ljDate && (
                     <Text style={{
-                      fontSize: 12,
+                      fontSize: typography.captionSmall.fontSize,
                       color: colors.mutedForeground,
                       marginTop: 2,
                     }}>{new Date(ljDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
@@ -7785,8 +7787,8 @@ export default function JobDetailScreen() {
                   marginRight: spacing.sm,
                 }}>
                   <Text style={{
-                    fontSize: 11,
-                    fontWeight: '600',
+                    fontSize: typography.sizes.xs,
+                    fontWeight: fontWeights.semibold,
                     color: ljStatusColor,
                     textTransform: 'capitalize',
                   }}>{lj.status.replace('_', ' ')}</Text>
@@ -7860,7 +7862,7 @@ export default function JobDetailScreen() {
                   <Text style={{ ...typography.caption, color: colors.mutedForeground, flex: 1 }} numberOfLines={1}>
                     {m.name} {Number(m.quantity) > 1 ? `× ${m.quantity}` : ''}
                   </Text>
-                  <Text style={{ ...typography.caption, color: colors.foreground, fontWeight: '600' }}>
+                  <Text style={{ ...typography.caption, color: colors.foreground, fontWeight: fontWeights.semibold }}>
                     {formatCurrency(Number(m.unitPrice || 0) > 0 ? Number(m.unitPrice) * Number(m.quantity || 1) : Number(m.totalCost || 0))}
                   </Text>
                 </View>
@@ -7992,9 +7994,9 @@ export default function JobDetailScreen() {
             }}>
               <Feather name="activity" size={iconSizes.md} color={colors.inProgress} />
             </View>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, flex: 1 }}>Recent Activity</Text>
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>Recent Activity</Text>
             <TouchableOpacity onPress={() => setActiveTab('manage')} activeOpacity={0.7}>
-              <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '500' }}>View All</Text>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>View All</Text>
             </TouchableOpacity>
           </View>
           {activityLog.slice(0, 3).map((item, index) => (
@@ -8014,10 +8016,10 @@ export default function JobDetailScreen() {
                 marginTop: 6,
               }} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: '500' }} numberOfLines={1}>
+                <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>
                   {item.title || item.description}
                 </Text>
-                <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>
+                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 2 }}>
                   {new Date(item.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
                 </Text>
               </View>
@@ -8049,9 +8051,9 @@ export default function JobDetailScreen() {
             }}>
               <Feather name="bar-chart-2" size={iconSizes.md} color={colors.success} />
             </View>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, flex: 1 }}>Financials</Text>
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>Financials</Text>
             <TouchableOpacity onPress={() => setActiveTab('manage')} activeOpacity={0.7}>
-              <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '500' }}>Details</Text>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>Details</Text>
             </TouchableOpacity>
           </View>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -8091,8 +8093,8 @@ export default function JobDetailScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: item.color }}>{item.value}</Text>
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</Text>
+                  <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: item.color }}>{item.value}</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</Text>
                 </TouchableOpacity>
               ));
             })()}
@@ -8111,7 +8113,7 @@ export default function JobDetailScreen() {
       {/* Client Tools Section Header */}
       {(isOwnerOrManager || isSoloOwner) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, gap: spacing.sm }}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Client Tools</Text>
+          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Client Tools</Text>
           <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
         </View>
       )}
@@ -8126,17 +8128,17 @@ export default function JobDetailScreen() {
             <Text style={styles.costingTitle}>Proof Pack</Text>
             {(job.status === 'done' || job.status === 'invoiced') && (
               <View style={{ backgroundColor: `${colors.success}20`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm }}>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: colors.success }}>Ready</Text>
+                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.success }}>Ready</Text>
               </View>
             )}
           </View>
-          <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md, lineHeight: 19 }}>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md, lineHeight: 19 }}>
             Generate a comprehensive PDF with job timeline, photos, signatures, and compliance records to share with your client.
           </Text>
 
           {/* Content Preview */}
           <View style={{ backgroundColor: colors.muted, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md, gap: spacing.xs }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>Pack Contents</Text>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 4 }}>Pack Contents</Text>
             {[
               { icon: 'clock' as const, label: 'Job Timeline', available: true },
               { icon: 'camera' as const, label: 'Site Photos', available: (job as any).photos?.length > 0 || (job as any).photoCount > 0 },
@@ -8147,7 +8149,7 @@ export default function JobDetailScreen() {
             ].map((item, idx) => (
               <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 3 }}>
                 <Feather name={item.icon} size={14} color={item.available ? colors.primary : colors.mutedForeground} />
-                <Text style={{ fontSize: 13, color: item.available ? colors.foreground : colors.mutedForeground, flex: 1 }}>{item.label}</Text>
+                <Text style={{ fontSize: typography.sizes.sm, color: item.available ? colors.foreground : colors.mutedForeground, flex: 1 }}>{item.label}</Text>
                 <Feather 
                   name={item.available ? "check-circle" : "minus-circle"} 
                   size={14} 
@@ -8181,7 +8183,7 @@ export default function JobDetailScreen() {
               ) : (
                 <>
                   <Feather name="eye" size={16} color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>Preview</Text>
+                  <Text style={{ color: colors.primary, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Preview</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -8204,7 +8206,7 @@ export default function JobDetailScreen() {
               activeOpacity={0.8}
             >
               <Feather name="sliders" size={16} color={colors.primary} />
-              <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>Customise</Text>
+              <Text style={{ color: colors.primary, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Customise</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -8220,15 +8222,15 @@ export default function JobDetailScreen() {
             <Text style={styles.costingTitle}>Client Portal</Text>
             {portalEnabled && (
               <View style={{ backgroundColor: `${colors.success}20`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm }}>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: colors.success }}>Active</Text>
+                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.success }}>Active</Text>
               </View>
             )}
           </View>
           
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, marginBottom: spacing.sm }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: '500' }}>Enable Portal</Text>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }}>Enable Portal</Text>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
                 Let your client view job progress online
               </Text>
             </View>
@@ -8280,11 +8282,11 @@ export default function JobDetailScreen() {
               >
                 <Feather name="external-link" size={14} color={colors.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }}>
                     View Portal
                   </Text>
                   <Text
-                    style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}
+                    style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 1 }}
                     numberOfLines={1}
                     ellipsizeMode="middle"
                   >
@@ -8328,7 +8330,7 @@ export default function JobDetailScreen() {
                   disabled={!client?.phone}
                 >
                   <Feather name="message-square" size={16} color={colors.success} />
-                  <Text style={{ color: colors.success, fontWeight: '600', fontSize: 13 }}>SMS Link</Text>
+                  <Text style={{ color: colors.success, fontWeight: fontWeights.semibold, fontSize: typography.sizes.sm }}>SMS Link</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -8348,7 +8350,7 @@ export default function JobDetailScreen() {
                   disabled={!client?.email}
                 >
                   <Feather name="mail" size={16} color={colors.invoiced} />
-                  <Text style={{ color: colors.invoiced, fontWeight: '600', fontSize: 13 }}>Email Link</Text>
+                  <Text style={{ color: colors.invoiced, fontWeight: fontWeights.semibold, fontSize: typography.sizes.sm }}>Email Link</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -8357,7 +8359,7 @@ export default function JobDetailScreen() {
           {portalEnabled && portalLinks.length === 0 && !isTogglingPortal && (
             <View style={{ alignItems: 'center', paddingVertical: spacing.md }}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: spacing.xs }}>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xs }}>
                 Setting up portal...
               </Text>
             </View>
@@ -8368,7 +8370,7 @@ export default function JobDetailScreen() {
       {/* Financials Section Header */}
       {(isOwnerOrManager || isSoloOwner) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm, gap: spacing.sm }}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Financials</Text>
+          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Financials</Text>
           <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
         </View>
       )}
@@ -8424,7 +8426,7 @@ export default function JobDetailScreen() {
               </View>
               <Text style={styles.costingTitle}>Profitability</Text>
               <View style={{ marginLeft: 'auto', backgroundColor: `${profitColor}15`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.md }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: profitColor, textTransform: 'capitalize' }}>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: profitColor, textTransform: 'capitalize' }}>
                   {pd.status}
                 </Text>
               </View>
@@ -8432,33 +8434,33 @@ export default function JobDetailScreen() {
 
             {pd.quoted?.amount ? (
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Quoted</Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>{formatCurrency(pd.quoted.amount)}</Text>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Quoted</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(pd.quoted.amount)}</Text>
               </View>
             ) : null}
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-              <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Revenue</Text>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>{formatCurrency(pd.revenue.invoiced)}</Text>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Revenue</Text>
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(pd.revenue.invoiced)}</Text>
             </View>
 
             <View style={{ paddingTop: spacing.sm }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: spacing.sm }}>Costs</Text>
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: spacing.sm }}>Costs</Text>
               <View style={{ gap: spacing.xs }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 14, color: colors.mutedForeground }}>
+                  <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>
                     Labour{pd.hours.total > 0 ? ` (${Number(pd.hours.total).toFixed(1)}hrs)` : ''}
                   </Text>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>{formatCurrency(pd.costs.labour)}</Text>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{formatCurrency(pd.costs.labour)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Materials</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>{formatCurrency(pd.costs.materials)}</Text>
+                  <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Materials</Text>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{formatCurrency(pd.costs.materials)}</Text>
                 </View>
                 {(pd.costs.expenses ?? 0) > 0 && (
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Expenses</Text>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>{formatCurrency(pd.costs.expenses ?? 0)}</Text>
+                    <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Expenses</Text>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{formatCurrency(pd.costs.expenses ?? 0)}</Text>
                   </View>
                 )}
               </View>
@@ -8473,12 +8475,12 @@ export default function JobDetailScreen() {
               borderTopWidth: 1,
               borderTopColor: colors.border,
             }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.foreground }}>Profit</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>Profit</Text>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: profitColor }}>
+                <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: profitColor }}>
                   {formatCurrency(pd.profit.amount)}
                 </Text>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: profitColor }}>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: profitColor }}>
                   {pd.profit.margin.toFixed(1)}% margin
                 </Text>
               </View>
@@ -8584,15 +8586,15 @@ export default function JobDetailScreen() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: '500' }}>
+                    <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }}>
                       {expense.description}
                     </Text>
-                    <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                       {expense.categoryName || 'Expense'} • {new Date(expense.expenseDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                       {formatCurrency(parseFloat(expense.amount) || 0)}
                     </Text>
                     <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
@@ -8602,7 +8604,7 @@ export default function JobDetailScreen() {
             </View>
             {jobExpenses.length > 3 && (
               <TouchableOpacity onPress={() => router.push(`/more/expenses?jobId=${job.id}`)}>
-                <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '500' }}>
+                <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>
                   +{jobExpenses.length - 3} more expenses
                 </Text>
               </TouchableOpacity>
@@ -8616,10 +8618,10 @@ export default function JobDetailScreen() {
               borderTopColor: colors.border,
               marginTop: spacing.sm,
             }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                 Total Expenses
               </Text>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.destructive }}>
+              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.destructive }}>
                 {formatCurrency(jobExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0))}
               </Text>
             </View>
@@ -8633,7 +8635,7 @@ export default function JobDetailScreen() {
             <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
               <Feather name="credit-card" size={24} color={colors.primary} />
             </View>
-            <Text style={{ ...typography.body, color: colors.foreground, textAlign: 'center', marginBottom: spacing.xs, fontWeight: '500' }}>
+            <Text style={{ ...typography.body, color: colors.foreground, textAlign: 'center', marginBottom: spacing.xs, fontWeight: fontWeights.medium }}>
               Add Expense
             </Text>
             <Text style={{ ...typography.caption, color: colors.mutedForeground, textAlign: 'center', paddingHorizontal: spacing.md }}>
@@ -8645,7 +8647,7 @@ export default function JobDetailScreen() {
 
       {/* Team & Operations Section Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm, gap: spacing.sm }}>
-        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Team & Operations</Text>
+        <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Team & Operations</Text>
         <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
       </View>
 
@@ -8661,8 +8663,8 @@ export default function JobDetailScreen() {
           
           <View style={{ gap: spacing.md }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Frequency</Text>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Frequency</Text>
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                 {job.recurrencePattern === 'weekly' && 'Weekly'}
                 {job.recurrencePattern === 'fortnightly' && 'Fortnightly'}
                 {job.recurrencePattern === 'monthly' && 'Monthly'}
@@ -8673,8 +8675,8 @@ export default function JobDetailScreen() {
             
             {job.nextRecurrenceDate && (
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Next Job</Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Next Job</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>
                   {new Date(job.nextRecurrenceDate).toLocaleDateString('en-AU', {
                     weekday: 'short',
                     day: 'numeric',
@@ -8687,8 +8689,8 @@ export default function JobDetailScreen() {
             
             {job.recurrenceEndDate && (
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Ends</Text>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Ends</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>
                   {new Date(job.recurrenceEndDate).toLocaleDateString('en-AU', {
                     day: 'numeric',
                     month: 'short',
@@ -8715,7 +8717,7 @@ export default function JobDetailScreen() {
               activeOpacity={0.8}
             >
               <Feather name="x-circle" size={18} color={colors.destructive} />
-              <Text style={{ color: colors.destructive, fontWeight: '600', fontSize: 14 }}>
+              <Text style={{ color: colors.destructive, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
                 Stop Recurring
               </Text>
             </TouchableOpacity>
@@ -8750,9 +8752,9 @@ export default function JobDetailScreen() {
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>{v.title}</Text>
+                          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{v.title}</Text>
                           {v.description && (
-                            <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>{v.description}</Text>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>{v.description}</Text>
                           )}
                         </View>
                         <View style={{
@@ -8763,8 +8765,8 @@ export default function JobDetailScreen() {
                           marginLeft: spacing.sm,
                         }}>
                           <Text style={{
-                            fontSize: 11,
-                            fontWeight: '700',
+                            fontSize: typography.sizes.xs,
+                            fontWeight: fontWeights.bold,
                             color: v.status === 'approved' ? colors.success : v.status === 'rejected' ? colors.destructive : colors.warning,
                             textTransform: 'capitalize',
                           }}>
@@ -8773,7 +8775,7 @@ export default function JobDetailScreen() {
                         </View>
                       </View>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                           {formatCurrency(parseFloat(String(v.amount ?? '0')) || 0)}
                         </Text>
                         {v.status === 'pending' && (
@@ -8787,7 +8789,7 @@ export default function JobDetailScreen() {
                               style={{ paddingVertical: 4, paddingHorizontal: spacing.md, backgroundColor: `${colors.success}15`, borderRadius: radius.md }}
                               activeOpacity={0.7}
                             >
-                              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.success }}>Approve</Text>
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Approve</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               onPress={() => {
@@ -8797,7 +8799,7 @@ export default function JobDetailScreen() {
                               style={{ paddingVertical: 4, paddingHorizontal: spacing.md, backgroundColor: `${colors.destructive}15`, borderRadius: radius.md }}
                               activeOpacity={0.7}
                             >
-                              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.destructive }}>Reject</Text>
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.destructive }}>Reject</Text>
                             </TouchableOpacity>
                           </View>
                         )}
@@ -8838,7 +8840,7 @@ export default function JobDetailScreen() {
                 activeOpacity={0.8}
               >
                 <Feather name="plus" size={16} color={colors.foreground} />
-                <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>
+                <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
                   Add Variation
                 </Text>
               </TouchableOpacity>
@@ -8857,7 +8859,7 @@ export default function JobDetailScreen() {
             <Text style={styles.costingTitle}>Subcontractors</Text>
             {subcontractorTokens.filter(t => t.status === 'pending' || t.status === 'active').length > 0 && (
               <View style={{ backgroundColor: `${colors.invoiced}15`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.md, marginLeft: 'auto' }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.invoiced }}>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.invoiced }}>
                   {subcontractorTokens.filter(t => t.status === 'pending' || t.status === 'active').length}
                 </Text>
               </View>
@@ -8911,12 +8913,12 @@ export default function JobDetailScreen() {
                             <Feather name={statusIcon} size={16} color={statusColor} />
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                               {token.contactName || 'Subcontractor'}
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
-                              <Text style={{ fontSize: 12, color: statusColor, fontWeight: '500' }}>{statusLabel}</Text>
-                              <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{token.contactPhone || token.contactEmail || ''}</Text>
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, color: statusColor, fontWeight: fontWeights.medium }}>{statusLabel}</Text>
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>{token.contactPhone || token.contactEmail || ''}</Text>
                             </View>
                           </View>
                           <TouchableOpacity
@@ -8933,13 +8935,13 @@ export default function JobDetailScreen() {
                             {token.noteCount && token.noteCount > 0 ? (
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                 <Feather name="edit-3" size={12} color={colors.mutedForeground} />
-                                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{token.noteCount} note{token.noteCount > 1 ? 's' : ''}</Text>
+                                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{token.noteCount} note{token.noteCount > 1 ? 's' : ''}</Text>
                               </View>
                             ) : null}
                             {token.photoCount && token.photoCount > 0 ? (
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                 <Feather name="camera" size={12} color={colors.mutedForeground} />
-                                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{token.photoCount} photo{token.photoCount > 1 ? 's' : ''}</Text>
+                                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{token.photoCount} photo{token.photoCount > 1 ? 's' : ''}</Text>
                               </View>
                             ) : null}
                           </View>
@@ -8949,9 +8951,9 @@ export default function JobDetailScreen() {
                           <View style={{ marginTop: spacing.sm, paddingLeft: 48, gap: spacing.xs }}>
                             {token.notes.slice(0, 3).map((note, idx) => (
                               <View key={idx} style={{ backgroundColor: colors.background, borderRadius: radius.md, padding: spacing.sm }}>
-                                <Text style={{ fontSize: 12, color: colors.foreground }} numberOfLines={2}>{note.content}</Text>
+                                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }} numberOfLines={2}>{note.content}</Text>
                                 {note.createdAt && (
-                                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 2 }}>
+                                  <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 2 }}>
                                     {new Date(note.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
                                   </Text>
                                 )}
@@ -8991,7 +8993,7 @@ export default function JobDetailScreen() {
                 activeOpacity={0.8}
               >
                 <Feather name="user-plus" size={16} color={colors.primaryForeground} />
-                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>
+                <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
                   Invite Subcontractor
                 </Text>
               </TouchableOpacity>
@@ -9002,7 +9004,7 @@ export default function JobDetailScreen() {
 
       {/* Activity & History Section Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm, gap: spacing.sm }}>
-        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Activity & History</Text>
+        <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Activity & History</Text>
         <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
       </View>
 
@@ -9015,7 +9017,7 @@ export default function JobDetailScreen() {
           <Text style={styles.costingTitle}>Activity Log</Text>
           {activityLog.length > 0 && (
             <View style={{ backgroundColor: colors.muted, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.mutedForeground }}>{activityLog.length}</Text>
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>{activityLog.length}</Text>
             </View>
           )}
         </View>
@@ -9066,15 +9068,15 @@ export default function JobDetailScreen() {
                     <Feather name={iconName as any} size={13} color={actColor} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: '500' }} numberOfLines={2}>
+                    <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={2}>
                       {item.title || item.description}
                     </Text>
                     {item.description && item.title && (
-                      <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>
                         {item.description}
                       </Text>
                     )}
-                    <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 3 }}>
+                    <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 3 }}>
                       {new Date(item.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                     </Text>
                   </View>
@@ -9082,7 +9084,7 @@ export default function JobDetailScreen() {
               );
             })}
             {activityLog.length > 10 && (
-              <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm }}>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm }}>
                 +{activityLog.length - 10} more activities
               </Text>
             )}
@@ -9118,7 +9120,7 @@ export default function JobDetailScreen() {
             activeOpacity={0.8}
           >
             <Feather name="rotate-ccw" size={18} color={colors.warning} />
-            <Text style={{ color: colors.warning, fontWeight: '600', fontSize: 14 }}>
+            <Text style={{ color: colors.warning, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
               Rollback Status
             </Text>
           </TouchableOpacity>
@@ -9248,7 +9250,7 @@ export default function JobDetailScreen() {
           ) : uploadedDocuments.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
               <Feather name="file-plus" size={32} color={colors.mutedForeground} />
-              <Text style={{ color: colors.mutedForeground, fontSize: 14, marginTop: spacing.sm }}>
+              <Text style={{ color: colors.mutedForeground, fontSize: typography.button.fontSize, marginTop: spacing.sm }}>
                 No documents uploaded yet
               </Text>
             </View>
@@ -9279,7 +9281,7 @@ export default function JobDetailScreen() {
                     <Feather name={getDocTypeIcon(doc.mimeType) as any} size={18} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }} numberOfLines={1}>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
                       {doc.title}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2 }}>
@@ -9289,17 +9291,17 @@ export default function JobDetailScreen() {
                         paddingVertical: 1,
                         borderRadius: radius.sm,
                       }}>
-                        <Text style={{ fontSize: 10, fontWeight: '700', color: colors.primary }}>
+                        <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.primary }}>
                           {getDocTypeBadge(doc.mimeType)}
                         </Text>
                       </View>
                       {doc.fileSize ? (
-                        <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                           {formatFileSize(doc.fileSize)}
                         </Text>
                       ) : null}
                       {doc.createdAt ? (
-                        <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                           {new Date(doc.createdAt).toLocaleDateString()}
                         </Text>
                       ) : null}
@@ -9342,7 +9344,7 @@ export default function JobDetailScreen() {
             ) : (
               <Feather name="upload" size={16} color={colors.foreground} />
             )}
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
               {isUploadingDocument ? 'Uploading...' : 'Upload Document'}
             </Text>
           </TouchableOpacity>
@@ -9425,7 +9427,7 @@ export default function JobDetailScreen() {
               <View key={note.id} style={{ paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                 <Text style={styles.notesText}>{note.content}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 4 }}>
-                  <Text style={{ fontSize: 11, color: colors.mutedForeground, flex: 1 }}>
+                  <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, flex: 1 }}>
                     {note.createdByName ? `${note.createdByName} · ` : ''}{new Date(note.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} {new Date(note.createdAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
                   </Text>
                   <TouchableOpacity
@@ -9454,7 +9456,7 @@ export default function JobDetailScreen() {
             {job.notes ? (
               <View>
                 {jobNotes.length > 0 && (
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>Earlier notes</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>Earlier notes</Text>
                 )}
                 <Text style={styles.notesText}>{job.notes}</Text>
               </View>
@@ -9499,7 +9501,7 @@ export default function JobDetailScreen() {
             ) : (
               <Feather name="zap" size={14} color={colors.primary} />
             )}
-            <Text style={{ fontSize: 13, fontWeight: '500', color: colors.primary }}>
+            <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.primary }}>
               {isSummarizingNotes ? 'Summarising...' : 'Summarise'}
             </Text>
           </TouchableOpacity>
@@ -9508,7 +9510,7 @@ export default function JobDetailScreen() {
           <View style={{ marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs }}>
               <Feather name="zap" size={14} color={colors.mutedForeground} />
-              <Text style={{ fontSize: 12, fontWeight: '500', color: colors.mutedForeground }}>AI Summary</Text>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: colors.mutedForeground }}>AI Summary</Text>
             </View>
             <Text style={styles.notesText}>{notesSummary}</Text>
           </View>
@@ -9785,7 +9787,7 @@ export default function JobDetailScreen() {
               style={{ flexDirection: 'row', alignItems: 'center' }}
             >
               <Feather name="chevron-left" size={17} color={colors.primary} />
-              <Text style={{ fontSize: 16, color: colors.primary, marginLeft: -1 }}>Back</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
             </Pressable>
           ),
           headerRight: () => {
@@ -9841,7 +9843,7 @@ export default function JobDetailScreen() {
               style={{ flexDirection: 'row', alignItems: 'center' }}
             >
               <Feather name="chevron-left" size={20} color={colors.primary} />
-              <Text style={{ fontSize: 16, color: colors.primary, marginLeft: -1 }}>Back</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
             </Pressable>
             {(() => {
               const canEditTitle = isOwnerOrManager || isSoloOwner;
@@ -9943,7 +9945,7 @@ export default function JobDetailScreen() {
                     justifyContent: 'center',
                     paddingHorizontal: 3,
                   }}>
-                    <Text style={{ fontSize: 9, fontWeight: '700', color: tab.id === 'documents' ? colors.white : colors.primaryForeground }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: tab.id === 'documents' ? colors.white : colors.primaryForeground }}>
                       {badgeCount > 99 ? '99+' : badgeCount}
                     </Text>
                   </View>
@@ -9989,23 +9991,23 @@ export default function JobDetailScreen() {
               width: 34,
               height: 34,
               borderRadius: 17,
-              backgroundColor: '#8B5CF61A',
+              backgroundColor: colorWithOpacity(colors.invoiced, 0.1),
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <Feather name="map-pin" size={16} color="#8B5CF6" />
+              <Feather name="map-pin" size={16} color={colors.invoiced} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13.5, fontWeight: '700', color: colors.foreground, marginBottom: 1 }}>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: 1 }}>
                 Location sharing on
               </Text>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 16 }}>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 16 }}>
                 Visible to {businessSettings?.businessName || 'the business'} while this job is active
               </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#22c55e' }} />
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#16a34a' }}>LIVE</Text>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.success }} />
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.success }}>LIVE</Text>
             </View>
           </View>
         )}
@@ -10033,7 +10035,7 @@ export default function JobDetailScreen() {
             }}>
               <Feather name="shield" size={16} color={colors.mutedForeground} />
             </View>
-            <Text style={{ fontSize: 13, color: colors.mutedForeground, fontWeight: '600', flex: 1 }}>
+            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, fontWeight: fontWeights.semibold, flex: 1 }}>
               Location sharing stopped
             </Text>
           </View>
@@ -10066,7 +10068,7 @@ export default function JobDetailScreen() {
         showCloseButton
       >
         <View>
-          <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.lg }}>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.lg }}>
             Record a voice note. It will be auto-transcribed and added to job notes.
           </Text>
           <VoiceRecorder
@@ -10157,7 +10159,7 @@ export default function JobDetailScreen() {
                 {materialForm.unitCost && materialForm.unitPrice && parseFloat(materialForm.unitPrice) > 0 && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md, backgroundColor: parseFloat(materialForm.unitPrice) > parseFloat(materialForm.unitCost) ? `${colors.success}10` : `${colors.destructive}10`, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md }}>
                     <Feather name={parseFloat(materialForm.unitPrice) > parseFloat(materialForm.unitCost) ? 'trending-up' : 'trending-down'} size={14} color={parseFloat(materialForm.unitPrice) > parseFloat(materialForm.unitCost) ? colors.success : colors.destructive} />
-                    <Text style={{ ...typography.caption, fontWeight: '600', color: parseFloat(materialForm.unitPrice) > parseFloat(materialForm.unitCost) ? colors.success : colors.destructive }}>
+                    <Text style={{ ...typography.caption, fontWeight: fontWeights.semibold, color: parseFloat(materialForm.unitPrice) > parseFloat(materialForm.unitCost) ? colors.success : colors.destructive }}>
                       Margin: {(((parseFloat(materialForm.unitPrice) - parseFloat(materialForm.unitCost)) / parseFloat(materialForm.unitPrice)) * 100).toFixed(1)}%
                     </Text>
                   </View>
@@ -10189,14 +10191,14 @@ export default function JobDetailScreen() {
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.md }}>
                       <View>
                         <Text style={{ ...typography.caption, color: colors.mutedForeground }}>Total Cost</Text>
-                        <Text style={{ fontSize: 20, fontWeight: '700', color: colors.foreground }}>
+                        <Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.bold, color: colors.foreground }}>
                           ${(parseFloat(materialForm.quantity || '0') * parseFloat(materialForm.unitCost || '0')).toFixed(2)}
                         </Text>
                       </View>
                       {materialForm.unitPrice && parseFloat(materialForm.unitPrice) > 0 && (
                         <View style={{ alignItems: 'flex-end' }}>
                           <Text style={{ ...typography.caption, color: colors.mutedForeground }}>Sell Total</Text>
-                          <Text style={{ fontSize: 20, fontWeight: '700', color: colors.primary }}>
+                          <Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.bold, color: colors.primary }}>
                             ${(parseFloat(materialForm.quantity || '0') * parseFloat(materialForm.unitPrice || '0')).toFixed(2)}
                           </Text>
                         </View>
@@ -10219,13 +10221,13 @@ export default function JobDetailScreen() {
               onPress={() => { setShowCostPromptModal(false); setCostPromptMaterial(null); setCostPromptValue(''); }}
               style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
             >
-              <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+              <Text style={{ color: colors.mutedForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCostPromptSkip}
               style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
             >
-              <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>Skip</Text>
+              <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Skip</Text>
             </TouchableOpacity>
             <Button
               onPress={handleCostPromptSubmit}
@@ -10238,10 +10240,10 @@ export default function JobDetailScreen() {
         )}>
         <View>
           <Text style={{ ...typography.body, color: colors.mutedForeground, marginBottom: spacing.md }}>
-            How much did <Text style={{ fontWeight: '600', color: colors.foreground }}>{costPromptMaterial?.name}</Text> cost you?
+            How much did <Text style={{ fontWeight: fontWeights.semibold, color: colors.foreground }}>{costPromptMaterial?.name}</Text> cost you?
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
-            <Text style={{ fontSize: 18, color: colors.mutedForeground }}>$</Text>
+            <Text style={{ fontSize: typography.sizes.lg, color: colors.mutedForeground }}>$</Text>
             <TextInput
               style={[styles.singleLineInput, { flex: 1 }]}
               value={costPromptValue}
@@ -10280,7 +10282,7 @@ export default function JobDetailScreen() {
               onPress={() => { setShowAssignModal(false); setShowMagicLinkInAssign(false); }}
               activeOpacity={0.7}
             >
-              <Text style={{ fontSize: 14, color: colors.foreground }}>Cancel</Text>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{
@@ -10298,7 +10300,7 @@ export default function JobDetailScreen() {
               {isAssigning ? (
                 <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryForeground }}>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
                   {selectedWorkerIds.size > 0 ? `Assign ${selectedWorkerIds.size} Worker${selectedWorkerIds.size !== 1 ? 's' : ''}` : 'Select Workers'}
                 </Text>
               )}
@@ -10310,14 +10312,14 @@ export default function JobDetailScreen() {
             {selectedWorkerIds.size > 0 && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
                 <Feather name="check-circle" size={14} color={colors.primary} />
-                <Text style={{ ...typography.caption, color: colors.primary, fontWeight: '600' }}>
+                <Text style={{ ...typography.caption, color: colors.primary, fontWeight: fontWeights.semibold }}>
                   {selectedWorkerIds.size} worker{selectedWorkerIds.size !== 1 ? 's' : ''} selected
                 </Text>
               </View>
             )}
             <View>
               {teamMembers.length > 0 && (
-                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs }}>
+                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs }}>
                   Team Members
                 </Text>
               )}
@@ -10328,7 +10330,7 @@ export default function JobDetailScreen() {
                 const availStatus = availability?.status || 'available';
 
                 let availLabel = 'Available';
-                let availColor = '#10B981';
+                let availColor = colors.success;
                 let availIcon: string = 'check-circle';
 
                 if (availStatus === 'on_job') {
@@ -10340,7 +10342,7 @@ export default function JobDetailScreen() {
                     elapsed = mins >= 60 ? ` (${Math.floor(mins / 60)}h ${mins % 60}m in)` : ` (${mins}m in)`;
                   }
                   availLabel = `On: ${jobName}${elapsed}`;
-                  availColor = '#F59E0B';
+                  availColor = colors.warning;
                   availIcon = 'clock';
                 } else if (availStatus === 'upcoming') {
                   const nextJob = availability?.nextScheduledJob;
@@ -10352,7 +10354,7 @@ export default function JobDetailScreen() {
                   } else {
                     availLabel = 'Has upcoming job';
                   }
-                  availColor = '#3B82F6';
+                  availColor = colors.info;
                   availIcon = 'calendar';
                 }
 
@@ -10399,12 +10401,12 @@ export default function JobDetailScreen() {
                       size={36}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ ...typography.body, color: colors.foreground, fontWeight: '500' }}>
+                      <Text style={{ ...typography.body, color: colors.foreground, fontWeight: fontWeights.medium }}>
                         {member.name || member.email || 'Team Member'}
                       </Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                         <Feather name={availIcon as any} size={11} color={availColor} />
-                        <Text style={{ fontSize: 11, color: availColor }} numberOfLines={1}>
+                        <Text style={{ fontSize: typography.sizes.xs, color: availColor }} numberOfLines={1}>
                           {availLabel}
                         </Text>
                       </View>
@@ -10441,7 +10443,7 @@ export default function JobDetailScreen() {
                     activeOpacity={0.7}
                   >
                     <Feather name="user-plus" size={16} color={colors.primaryForeground} />
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryForeground }}>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
                       Add Team Member
                     </Text>
                   </TouchableOpacity>
@@ -10449,7 +10451,7 @@ export default function JobDetailScreen() {
               )}
 
               <View style={{ borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing.md, paddingTop: spacing.md, paddingHorizontal: spacing.lg }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm }}>
+                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm }}>
                   Invite Someone New
                 </Text>
                 {!showMagicLinkInAssign ? (
@@ -10467,7 +10469,7 @@ export default function JobDetailScreen() {
                     activeOpacity={0.7}
                   >
                     <Feather name="send" size={16} color={colors.invoiced} />
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.invoiced }}>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.invoiced }}>
                       Send Magic Link
                     </Text>
                   </TouchableOpacity>
@@ -10475,7 +10477,7 @@ export default function JobDetailScreen() {
                   <View style={{ gap: spacing.md }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                       <Feather name="send" size={16} color={colors.invoiced} />
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                         Invite by Phone
                       </Text>
                     </View>
@@ -10523,7 +10525,7 @@ export default function JobDetailScreen() {
                         }}
                         activeOpacity={0.7}
                       >
-                        <Text style={{ fontSize: 14, color: colors.foreground }}>Cancel</Text>
+                        <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>Cancel</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={{
@@ -10541,7 +10543,7 @@ export default function JobDetailScreen() {
                         {isSendingMagicLink ? (
                           <ActivityIndicator size="small" color={colors.primaryForeground} />
                         ) : (
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryForeground }}>Send SMS</Text>
+                          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Send SMS</Text>
                         )}
                       </TouchableOpacity>
                     </View>
@@ -10622,16 +10624,16 @@ export default function JobDetailScreen() {
         )}
       >
         <View>
-          <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: spacing.md }}>
+          <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginBottom: spacing.md }}>
             Set the hourly rate for {editRateTimer?.workerName} on this job. This updates their current time entry.
           </Text>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
             Hourly Rate (AUD)
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingHorizontal: spacing.md, minHeight: 48 }}>
-            <Text style={{ fontSize: 16, color: colors.foreground, marginRight: 4 }}>$</Text>
+            <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.foreground, marginRight: 4 }}>$</Text>
             <TextInput
-              style={{ flex: 1, fontSize: 16, color: colors.foreground, letterSpacing: 0, textAlign: 'left' }}
+              style={{ flex: 1, fontSize: typography.subtitle.fontSize, color: colors.foreground, letterSpacing: 0, textAlign: 'left' }}
               value={rateInput}
               onChangeText={setRateInput}
               placeholder="0.00"
@@ -10639,7 +10641,7 @@ export default function JobDetailScreen() {
               keyboardType="decimal-pad"
               autoFocus
             />
-            <Text style={{ fontSize: 14, color: colors.mutedForeground }}>/hr</Text>
+            <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>/hr</Text>
           </View>
         </View>
       </AppBottomSheet>
@@ -10670,7 +10672,7 @@ export default function JobDetailScreen() {
             {isSendingSiteUpdate ? (
               <ActivityIndicator size="small" color={colors.primaryForeground} />
             ) : (
-              <Text style={{ color: colors.primaryForeground, fontSize: 16, fontWeight: '600' }}>Post Update</Text>
+              <Text style={{ color: colors.primaryForeground, fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold }}>Post Update</Text>
             )}
           </TouchableOpacity>
         )}>
@@ -10686,7 +10688,7 @@ export default function JobDetailScreen() {
                   autoFocus
                 />
                 <View style={{ marginTop: spacing.md }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                     Attach Photo (Optional)
                   </Text>
                   {siteUpdatePhotoUri ? (
@@ -10730,7 +10732,7 @@ export default function JobDetailScreen() {
                         onPress={handleSiteUpdateTakePhoto}
                       >
                         <Feather name="camera" size={iconSizes.md} color={colors.primaryForeground} />
-                        <Text style={{ color: colors.primaryForeground, fontSize: 14, fontWeight: '600' }}>Take Photo</Text>
+                        <Text style={{ color: colors.primaryForeground, fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold }}>Take Photo</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={{
@@ -10747,7 +10749,7 @@ export default function JobDetailScreen() {
                         onPress={handleSiteUpdatePickPhoto}
                       >
                         <Feather name="image" size={iconSizes.md} color={colors.foreground} />
-                        <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>Gallery</Text>
+                        <Text style={{ color: colors.foreground, fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold }}>Gallery</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -10782,7 +10784,7 @@ export default function JobDetailScreen() {
             activeOpacity={0.8}
           >
             <Feather name="zap" size={18} color={colors.primaryForeground} />
-            <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Analyse with AI</Text>
+            <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Analyse with AI</Text>
           </TouchableOpacity>
         ) : undefined}>
         <View>
@@ -10827,10 +10829,10 @@ export default function JobDetailScreen() {
                       )}
                       {photo.category && photo.category !== 'general' && (
                         <View style={[styles.photoCategoryBadge, 
-                          photo.category === 'before' && { backgroundColor: colors.info || '#3b82f6' },
-                          photo.category === 'after' && { backgroundColor: colors.success || '#22c55e' },
-                          photo.category === 'progress' && { backgroundColor: colors.warning || '#f59e0b' },
-                          photo.category === 'materials' && { backgroundColor: '#8b5cf6' }
+                          photo.category === 'before' && { backgroundColor: colors.info },
+                          photo.category === 'after' && { backgroundColor: colors.success },
+                          photo.category === 'progress' && { backgroundColor: colors.warning },
+                          photo.category === 'materials' && { backgroundColor: colors.invoiced }
                         ]}>
                           <Text style={styles.photoCategoryBadgeText}>
                             {photo.category.charAt(0).toUpperCase()}
@@ -10887,7 +10889,7 @@ export default function JobDetailScreen() {
                     backgroundColor: selectedPhoto.category === 'before' ? colors.info + '30' : 
                                     selectedPhoto.category === 'after' ? colors.success + '30' : 
                                     selectedPhoto.category === 'progress' ? colors.warning + '30' : 
-                                    selectedPhoto.category === 'materials' ? '#8b5cf630' :
+                                    selectedPhoto.category === 'materials' ? colors.invoiced + '30' :
                                     'rgba(255,255,255,0.15)',
                     paddingHorizontal: 12,
                     paddingVertical: 6,
@@ -10902,15 +10904,15 @@ export default function JobDetailScreen() {
                       color={selectedPhoto.category === 'before' ? colors.info : 
                              selectedPhoto.category === 'after' ? colors.success : 
                              selectedPhoto.category === 'progress' ? colors.warning : 
-                             selectedPhoto.category === 'materials' ? '#8b5cf6' : '#fff'} 
+                             selectedPhoto.category === 'materials' ? colors.invoiced : '#fff'} 
                     />
                     <Text style={{ 
                       color: selectedPhoto.category === 'before' ? colors.info : 
                              selectedPhoto.category === 'after' ? colors.success : 
                              selectedPhoto.category === 'progress' ? colors.warning : 
-                             selectedPhoto.category === 'materials' ? '#8b5cf6' : '#fff',
-                      fontWeight: '600',
-                      fontSize: 13,
+                             selectedPhoto.category === 'materials' ? colors.invoiced : '#fff',
+                      fontWeight: fontWeights.semibold,
+                      fontSize: typography.sizes.sm,
                     }}>
                       {selectedPhoto.category ? selectedPhoto.category.charAt(0).toUpperCase() + selectedPhoto.category.slice(1) : 'General'}
                     </Text>
@@ -11128,7 +11130,7 @@ export default function JobDetailScreen() {
                     ))}
                     {photos.length > 4 && (
                       <View style={[styles.photoThumbnail, { alignItems: 'center', justifyContent: 'center' }]}>
-                        <Text style={{ color: colors.mutedForeground, fontWeight: '600' }}>+{photos.length - 4}</Text>
+                        <Text style={{ color: colors.mutedForeground, fontWeight: fontWeights.semibold }}>+{photos.length - 4}</Text>
                       </View>
                     )}
                   </View>
@@ -11213,8 +11215,8 @@ export default function JobDetailScreen() {
                         const mins = Math.floor((w.totalMs % (1000 * 60 * 60)) / (1000 * 60));
                         return (
                           <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, paddingLeft: 36 }}>
-                            <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }} numberOfLines={1} ellipsizeMode="tail">{w.name}</Text>
-                            <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: '600' }} numberOfLines={1}>
+                            <Text style={{ flex: 1, fontSize: typography.sizes.sm, color: colors.mutedForeground }} numberOfLines={1} ellipsizeMode="tail">{w.name}</Text>
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, fontWeight: fontWeights.semibold }} numberOfLines={1}>
                               {hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`} @ ${w.rate}/hr
                             </Text>
                           </View>
@@ -11262,10 +11264,10 @@ export default function JobDetailScreen() {
                       return (
                         <View key={a.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: 36 }}>
                           <Feather name={done ? 'check-circle' : 'circle'} size={14} color={done ? colors.success : colors.mutedForeground} />
-                          <Text style={{ flex: 1, fontSize: 13, color: colors.foreground }} numberOfLines={1} ellipsizeMode="tail">
+                          <Text style={{ flex: 1, fontSize: typography.sizes.sm, color: colors.foreground }} numberOfLines={1} ellipsizeMode="tail">
                             {name}{a.isPrimary ? ' · Lead' : ''}
                           </Text>
-                          <Text style={{ fontSize: 12, color: done ? colors.success : colors.mutedForeground }} numberOfLines={1}>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: done ? colors.success : colors.mutedForeground }} numberOfLines={1}>
                             {done ? 'Part done' : 'Pending'}{timeLabel ? ` · ${timeLabel}` : ''}
                           </Text>
                         </View>
@@ -11376,7 +11378,7 @@ export default function JobDetailScreen() {
             style={{ backgroundColor: colors.muted, paddingVertical: spacing.md, borderRadius: 8, alignItems: 'center' }}
             onPress={() => setShowNextJobModal(false)}
           >
-            <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>Dismiss</Text>
+            <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Dismiss</Text>
           </TouchableOpacity>
         )}>
         <View>
@@ -11387,9 +11389,9 @@ export default function JobDetailScreen() {
                       <Feather name="briefcase" size={20} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>{nextJob.title}</Text>
+                      <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{nextJob.title}</Text>
                       {nextJob.scheduledAt && (
-                        <Text style={{ fontSize: 13, color: colors.mutedForeground, marginTop: 2 }}>
+                        <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: 2 }}>
                           {new Date(nextJob.scheduledAt).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
                         </Text>
                       )}
@@ -11399,7 +11401,7 @@ export default function JobDetailScreen() {
                   {nextJobDriveInfo && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primary + '10', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 8 }}>
                       <Feather name="navigation" size={16} color={colors.primary} />
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }}>
                         ~{nextJobDriveInfo.driveMinutes < 60
                           ? `${nextJobDriveInfo.driveMinutes} min`
                           : `${Math.floor(nextJobDriveInfo.driveMinutes / 60)}h ${nextJobDriveInfo.driveMinutes % 60}m`} drive
@@ -11413,7 +11415,7 @@ export default function JobDetailScreen() {
                   {nextJob.address && (
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                       <Feather name="map-pin" size={16} color={colors.mutedForeground} style={{ marginTop: 2 }} />
-                      <Text style={{ fontSize: 14, color: colors.foreground, flex: 1 }}>{nextJob.address}</Text>
+                      <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, flex: 1 }}>{nextJob.address}</Text>
                     </View>
                   )}
 
@@ -11422,7 +11424,7 @@ export default function JobDetailScreen() {
                       <Feather name="user" size={16} color={colors.mutedForeground} />
                       <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                         {nextJob.clientName && (
-                          <Text style={{ fontSize: 14, color: colors.foreground }}>{nextJob.clientName}</Text>
+                          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>{nextJob.clientName}</Text>
                         )}
                         {nextJobClientPhone && (
                           <TouchableOpacity
@@ -11430,7 +11432,7 @@ export default function JobDetailScreen() {
                             style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                           >
                             <Feather name="phone" size={13} color={colors.primary} />
-                            <Text style={{ fontSize: 13, color: colors.primary }}>{nextJobClientPhone}</Text>
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.primary }}>{nextJobClientPhone}</Text>
                           </TouchableOpacity>
                         )}
                       </View>
@@ -11448,7 +11450,7 @@ export default function JobDetailScreen() {
                       ) : (
                         <>
                           <Feather name="navigation" size={18} color={colors.white} />
-                          <Text style={{ color: colors.white, fontWeight: '700', fontSize: 15 }}>Head There Now</Text>
+                          <Text style={{ color: colors.white, fontWeight: fontWeights.bold, fontSize: typography.sizes.md }}>Head There Now</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -11462,7 +11464,7 @@ export default function JobDetailScreen() {
                     }}
                   >
                     <Feather name="eye" size={16} color={colors.foreground} />
-                    <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>View Job Details</Text>
+                    <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>View Job Details</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -11470,8 +11472,8 @@ export default function JobDetailScreen() {
                   <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: colors.success + '15', alignItems: 'center', justifyContent: 'center' }}>
                     <Feather name="check-circle" size={32} color={colors.success} />
                   </View>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: colors.foreground }}>All done for today!</Text>
-                  <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center' }}>
+                  <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground }}>All done for today!</Text>
+                  <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
                     No more scheduled jobs remaining. Great work!
                   </Text>
                 </View>
@@ -11497,7 +11499,7 @@ export default function JobDetailScreen() {
               }}
               onPress={() => setShowScheduleModal(false)}
             >
-              <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 15 }}>Cancel</Text>
+              <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.sizes.md }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{
@@ -11509,12 +11511,12 @@ export default function JobDetailScreen() {
               }}
               onPress={handleConfirmSchedule}
             >
-              <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 15 }}>Schedule Job</Text>
+              <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.sizes.md }}>Schedule Job</Text>
             </TouchableOpacity>
           </View>
         )}>
         <View>
-              <Text style={{ fontSize: 14, color: colors.foreground, marginBottom: spacing.md }}>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, marginBottom: spacing.md }}>
                 Select date and time for this job:
               </Text>
               
@@ -11536,7 +11538,7 @@ export default function JobDetailScreen() {
                 }}
               >
                 <Feather name="calendar" size={20} color={colors.primary} style={{ marginRight: spacing.md }} />
-                <Text style={{ color: colors.foreground, flex: 1, fontSize: 15 }}>
+                <Text style={{ color: colors.foreground, flex: 1, fontSize: typography.sizes.md }}>
                   {scheduleDate.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                 </Text>
                 <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
@@ -11560,7 +11562,7 @@ export default function JobDetailScreen() {
                 }}
               >
                 <Feather name="clock" size={20} color={colors.primary} style={{ marginRight: spacing.md }} />
-                <Text style={{ color: colors.foreground, flex: 1, fontSize: 15 }}>
+                <Text style={{ color: colors.foreground, flex: 1, fontSize: typography.sizes.md }}>
                   {scheduleDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
                 </Text>
                 <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
@@ -11569,7 +11571,7 @@ export default function JobDetailScreen() {
               {/* Custom Date Picker */}
               {showDatePicker && (
                 <View style={{ backgroundColor: colors.muted, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md }}>
-                  <Text style={{ color: colors.foreground, fontWeight: '600', marginBottom: spacing.sm, textAlign: 'center' }}>Select Date</Text>
+                  <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, marginBottom: spacing.sm, textAlign: 'center' }}>Select Date</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 180 }}>
                     <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                       {Array.from({ length: 30 }, (_, i) => {
@@ -11592,13 +11594,13 @@ export default function JobDetailScreen() {
                               alignItems: 'center',
                             }}
                           >
-                            <Text style={{ color: isSelected ? colors.primaryForeground : colors.mutedForeground, fontSize: 12 }}>
+                            <Text style={{ color: isSelected ? colors.primaryForeground : colors.mutedForeground, fontSize: typography.captionSmall.fontSize }}>
                               {date.toLocaleDateString('en-AU', { weekday: 'short' })}
                             </Text>
-                            <Text style={{ color: isSelected ? colors.primaryForeground : colors.foreground, fontSize: 18, fontWeight: '700' }}>
+                            <Text style={{ color: isSelected ? colors.primaryForeground : colors.foreground, fontSize: typography.sizes.lg, fontWeight: fontWeights.bold }}>
                               {date.getDate()}
                             </Text>
-                            <Text style={{ color: isSelected ? colors.primaryForeground : colors.mutedForeground, fontSize: 12 }}>
+                            <Text style={{ color: isSelected ? colors.primaryForeground : colors.mutedForeground, fontSize: typography.captionSmall.fontSize }}>
                               {date.toLocaleDateString('en-AU', { month: 'short' })}
                             </Text>
                           </TouchableOpacity>
@@ -11613,7 +11615,7 @@ export default function JobDetailScreen() {
                       setShowDatePicker(false);
                     }}
                   >
-                    <Text style={{ color: colors.primaryForeground, fontWeight: '600' }}>Done</Text>
+                    <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>Done</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -11644,7 +11646,7 @@ export default function JobDetailScreen() {
                         setShowTimePicker(false);
                       }}
                     >
-                      <Text style={{ color: colors.primaryForeground, fontWeight: '600' }}>Done</Text>
+                      <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>Done</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -11684,7 +11686,7 @@ export default function JobDetailScreen() {
           />
         )}>
         <View>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: spacing.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                   Contact Details
                 </Text>
                 <TextInput
@@ -11712,7 +11714,7 @@ export default function JobDetailScreen() {
                   onChangeText={(t) => setSubcontractorForm(prev => ({ ...prev, contactEmail: t }))}
                 />
 
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                   Send Via
                 </Text>
                 <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
@@ -11731,7 +11733,7 @@ export default function JobDetailScreen() {
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                       <Feather name="message-square" size={16} color={colors.foreground} />
-                      <Text style={{ fontSize: 14, color: colors.foreground }}>SMS</Text>
+                      <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>SMS</Text>
                     </View>
                     <Switch
                       value={subcontractorForm.sendViaSms}
@@ -11755,7 +11757,7 @@ export default function JobDetailScreen() {
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                       <Feather name="mail" size={16} color={colors.foreground} />
-                      <Text style={{ fontSize: 14, color: colors.foreground }}>Email</Text>
+                      <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>Email</Text>
                     </View>
                     <Switch
                       value={subcontractorForm.sendViaEmail}
@@ -11766,7 +11768,7 @@ export default function JobDetailScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                   Permissions
                 </Text>
                 <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
@@ -11793,7 +11795,7 @@ export default function JobDetailScreen() {
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                         <Feather name={perm.icon} size={16} color={colors.foreground} />
-                        <Text style={{ fontSize: 14, color: colors.foreground }}>{perm.label}</Text>
+                        <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>{perm.label}</Text>
                       </View>
                       <Switch
                         value={subcontractorForm.permissions.includes(perm.key)}
@@ -11805,7 +11807,7 @@ export default function JobDetailScreen() {
                   ))}
                 </View>
 
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                   Expires After
                 </Text>
                 <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl }}>
@@ -11829,8 +11831,8 @@ export default function JobDetailScreen() {
                       activeOpacity={0.7}
                     >
                       <Text style={{
-                        fontSize: 13,
-                        fontWeight: '600',
+                        fontSize: typography.sizes.sm,
+                        fontWeight: fontWeights.semibold,
                         color: subcontractorForm.expiryDays === option.value ? colors.primaryForeground : colors.foreground,
                       }}>
                         {option.label}
@@ -11860,7 +11862,7 @@ export default function JobDetailScreen() {
             onPress={() => setShowTemplatePickerModal(false)}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>Cancel</Text>
+            <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>Cancel</Text>
           </TouchableOpacity>
         )}
       >
@@ -11874,8 +11876,8 @@ export default function JobDetailScreen() {
                   <Feather name="file-plus" size={iconSizes.lg} color={colors.primary} />
                 </View>
                 <View style={styles.cardContent}>
-                  <Text style={[styles.cardValue, { fontWeight: '600' }]}>Blank SWMS</Text>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Start from scratch</Text>
+                  <Text style={[styles.cardValue, { fontWeight: fontWeights.semibold }]}>Blank SWMS</Text>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Start from scratch</Text>
                 </View>
                 <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
               </PressableRow>
@@ -11896,9 +11898,9 @@ export default function JobDetailScreen() {
                       <Feather name="clipboard" size={iconSizes.lg} color={colors.warning} />
                     </View>
                     <View style={styles.cardContent}>
-                      <Text style={[styles.cardValue, { fontWeight: '600' }]}>{template.title}</Text>
+                      <Text style={[styles.cardValue, { fontWeight: fontWeights.semibold }]}>{template.title}</Text>
                       {template.description && (
-                        <Text style={{ fontSize: 13, color: colors.mutedForeground }} numberOfLines={2}>
+                        <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }} numberOfLines={2}>
                           {template.description}
                         </Text>
                       )}
@@ -11980,7 +11982,7 @@ export default function JobDetailScreen() {
                           color={isSelected ? colors.primary : colors.mutedForeground}
                         />
                         <Text style={{
-                          fontSize: 13,
+                          fontSize: typography.sizes.sm,
                           fontWeight: isSelected ? '600' : '400',
                           color: isSelected ? colors.primary : colors.foreground,
                         }}>
@@ -12030,7 +12032,7 @@ export default function JobDetailScreen() {
                     activeOpacity={0.7}
                   >
                     <Feather name="plus" size={14} color={colors.primary} />
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>Add Hazard</Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Add Hazard</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -12042,7 +12044,7 @@ export default function JobDetailScreen() {
                     marginBottom: spacing.sm,
                   }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>Hazard {idx + 1}</Text>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Hazard {idx + 1}</Text>
                       <TouchableOpacity onPress={() => removeHazardRow(idx)}>
                         <Feather name="trash-2" size={16} color={colors.destructive} />
                       </TouchableOpacity>
@@ -12056,7 +12058,7 @@ export default function JobDetailScreen() {
                     />
                     <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 4 }}>Likelihood</Text>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: 4 }}>Likelihood</Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
                           {['rare', 'unlikely', 'possible', 'likely', 'almost_certain'].map(opt => (
                             <TouchableOpacity
@@ -12073,7 +12075,7 @@ export default function JobDetailScreen() {
                               activeOpacity={0.7}
                             >
                               <Text style={{
-                                fontSize: 10,
+                                fontSize: typography.sizes.xs,
                                 fontWeight: hazard.riskLikelihood === opt ? '600' : '400',
                                 color: hazard.riskLikelihood === opt ? colors.primaryForeground : colors.foreground,
                                 textTransform: 'capitalize',
@@ -12086,7 +12088,7 @@ export default function JobDetailScreen() {
                       </View>
                     </View>
                     <View style={{ marginBottom: spacing.sm }}>
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 4 }}>Consequence</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: 4 }}>Consequence</Text>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
                         {['insignificant', 'minor', 'moderate', 'major', 'catastrophic'].map(opt => (
                           <TouchableOpacity
@@ -12103,7 +12105,7 @@ export default function JobDetailScreen() {
                             activeOpacity={0.7}
                           >
                             <Text style={{
-                              fontSize: 10,
+                              fontSize: typography.sizes.xs,
                               fontWeight: hazard.riskConsequence === opt ? '600' : '400',
                               color: hazard.riskConsequence === opt ? colors.primaryForeground : colors.foreground,
                               textTransform: 'capitalize',
@@ -12133,7 +12135,7 @@ export default function JobDetailScreen() {
 
                 {swmsForm.hazards.length === 0 && (
                   <View style={{ alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.md }}>
-                    <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                    <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
                       No hazards added yet. Tap "Add Hazard" above.
                     </Text>
                   </View>
@@ -12156,7 +12158,7 @@ export default function JobDetailScreen() {
           </View>
         )}>
         <View>
-                <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: 'center', marginBottom: spacing.md }}>
+                <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, textAlign: 'center', marginBottom: spacing.md }}>
                   By signing, you confirm you have read and understood the Safe Work Method Statement.
                 </Text>
                 <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Worker Name *</Text>
@@ -12197,11 +12199,11 @@ export default function JobDetailScreen() {
                   }}
                   style={{ alignSelf: 'flex-end', marginBottom: spacing.md }}
                 >
-                  <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '500' }}>Clear Signature</Text>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>Clear Signature</Text>
                 </TouchableOpacity>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: `${colors.primary}10`, padding: spacing.md, borderRadius: radius.lg }}>
                   <Feather name="map-pin" size={16} color={colors.primary} />
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground, flex: 1 }}>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, flex: 1 }}>
                     GPS location will be recorded with your signature
                   </Text>
                 </View>
@@ -12222,7 +12224,7 @@ export default function JobDetailScreen() {
               onPress={() => setShowProofPackModal(false)}
               style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
             >
-              <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+              <Text style={{ color: colors.mutedForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{
@@ -12247,7 +12249,7 @@ export default function JobDetailScreen() {
               ) : (
                 <>
                   <Feather name="eye" size={15} color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>Preview</Text>
+                  <Text style={{ color: colors.primary, fontWeight: fontWeights.semibold, fontSize: typography.sizes.sm }}>Preview</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -12273,7 +12275,7 @@ export default function JobDetailScreen() {
               ) : (
                 <>
                   <Feather name="download" size={16} color={colors.primaryForeground} />
-                  <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>
+                  <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
                     Generate PDF
                   </Text>
                 </>
@@ -12302,7 +12304,7 @@ export default function JobDetailScreen() {
             ) : (
               <>
                 <Feather name="grid" size={15} color={colors.foreground} />
-                <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>
+                <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
                   Export for Excel (TSV)
                 </Text>
               </>
@@ -12311,7 +12313,7 @@ export default function JobDetailScreen() {
           </View>
         )}>
         <View>
-              <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md, lineHeight: 19 }}>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md, lineHeight: 19 }}>
                 Choose which sections to include in your Proof Pack PDF. Toggle off any sections you don't need.
               </Text>
               {([
@@ -12355,13 +12357,13 @@ export default function JobDetailScreen() {
                   </View>
                   <View style={{ flex: 1, marginRight: spacing.sm }}>
                     <Text style={{
-                      fontSize: 14,
-                      fontWeight: '600',
+                      fontSize: typography.button.fontSize,
+                      fontWeight: fontWeights.semibold,
                       color: proofPackSections[key] ? colors.foreground : colors.mutedForeground,
                     }}>
                       {label}
                     </Text>
-                    <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 1 }}>
                       {desc}
                     </Text>
                   </View>
@@ -12378,13 +12380,13 @@ export default function JobDetailScreen() {
                   onPress={() => setProofPackSections({ timeline: true, attendance: true, gpsProof: true, materials: true, photos: true, invoice: true, compliance: true, subcontractors: true, swms: true, forms: true })}
                   style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm }}
                 >
-                  <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '600' }}>Select All</Text>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.semibold }}>Select All</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setProofPackSections({ timeline: false, attendance: false, gpsProof: false, materials: false, photos: false, invoice: false, compliance: false, subcontractors: false, swms: false, forms: false })}
                   style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm }}
                 >
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground, fontWeight: '600' }}>Deselect All</Text>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, fontWeight: fontWeights.semibold }}>Deselect All</Text>
                 </TouchableOpacity>
               </View>
         </View>
@@ -12418,7 +12420,7 @@ export default function JobDetailScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>Edit Sections</Text>
+              <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Edit Sections</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{
@@ -12445,7 +12447,7 @@ export default function JobDetailScreen() {
               ) : (
                 <>
                   <Feather name="download" size={16} color={colors.primaryForeground} />
-                  <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>
+                  <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
                     Download & Share
                   </Text>
                 </>
@@ -12504,7 +12506,7 @@ export default function JobDetailScreen() {
             ) : (
               <>
                 <Feather name="download" size={16} color={colors.primaryForeground} />
-                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>
+                <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
                   Download & Share
                 </Text>
               </>
@@ -12541,7 +12543,7 @@ export default function JobDetailScreen() {
               onPress={() => setShowAddVariationModal(false)}
               style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
             >
-              <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+              <Text style={{ color: colors.mutedForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{
@@ -12561,13 +12563,13 @@ export default function JobDetailScreen() {
               {isSavingVariation ? (
                 <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
-                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Create Variation</Text>
+                <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Create Variation</Text>
               )}
             </TouchableOpacity>
           </View>
         )}>
         <View>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Title *</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Title *</Text>
                 <TextInput
                   style={styles.singleLineInput}
                   value={variationForm.title}
@@ -12575,7 +12577,7 @@ export default function JobDetailScreen() {
                   placeholder="e.g. Additional plumbing work"
                   placeholderTextColor={colors.mutedForeground}
                 />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Description</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Description</Text>
                 <TextInput
                   style={[styles.notesInput, { minHeight: 80 }]}
                   value={variationForm.description}
@@ -12584,7 +12586,7 @@ export default function JobDetailScreen() {
                   placeholderTextColor={colors.mutedForeground}
                   multiline
                 />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Reason</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Reason</Text>
                 <TextInput
                   style={styles.singleLineInput}
                   value={variationForm.reason}
@@ -12592,7 +12594,7 @@ export default function JobDetailScreen() {
                   placeholder="Why is this change needed?"
                   placeholderTextColor={colors.mutedForeground}
                 />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Amount (ex GST) *</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Amount (ex GST) *</Text>
                 <TextInput
                   style={styles.singleLineInput}
                   value={variationForm.amount}
@@ -12603,10 +12605,10 @@ export default function JobDetailScreen() {
                 />
                 {variationForm.amount ? (
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm, paddingHorizontal: spacing.xs }}>
-                    <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                    <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
                       GST (10%): ${((parseFloat(variationForm.amount) || 0) * 0.1).toFixed(2)}
                     </Text>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground }}>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
                       Total: ${((parseFloat(variationForm.amount) || 0) * 1.1).toFixed(2)}
                     </Text>
                   </View>
@@ -12627,7 +12629,7 @@ export default function JobDetailScreen() {
               onPress={() => setShowApproveVariationModal(null)}
               style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
             >
-              <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+              <Text style={{ color: colors.mutedForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{
@@ -12647,13 +12649,13 @@ export default function JobDetailScreen() {
               {isApprovingVariation ? (
                 <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
-                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Approve</Text>
+                <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Approve</Text>
               )}
             </TouchableOpacity>
           </View>
         )}>
         <View>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Approver Name *</Text>
+          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Approver Name *</Text>
           <TextInput
             style={styles.singleLineInput}
             value={approveVariationName}
@@ -12661,7 +12663,7 @@ export default function JobDetailScreen() {
             placeholder="Enter name of person approving"
             placeholderTextColor={colors.mutedForeground}
           />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Signature</Text>
+          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs, marginTop: spacing.md }}>Signature</Text>
           <View style={{ borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
             <SignaturePad
               onSave={(data) => setApproveVariationSignature(data)}
@@ -12683,7 +12685,7 @@ export default function JobDetailScreen() {
               onPress={() => setShowRejectVariationModal(null)}
               style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}
             >
-              <Text style={{ color: colors.mutedForeground, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+              <Text style={{ color: colors.mutedForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{
@@ -12703,13 +12705,13 @@ export default function JobDetailScreen() {
               {isRejectingVariation ? (
                 <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
-                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Reject</Text>
+                <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>Reject</Text>
               )}
             </TouchableOpacity>
           </View>
         )}>
         <View>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Reason for Rejection</Text>
+          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Reason for Rejection</Text>
           <TextInput
             style={[styles.notesInput, { minHeight: 100 }]}
             value={rejectVariationReason}

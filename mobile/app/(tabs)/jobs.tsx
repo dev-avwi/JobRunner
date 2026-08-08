@@ -31,7 +31,7 @@ import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
 import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
-import { spacing, radius, shadows, sizes, pageShell, typography, iconSizes, usePageShell } from '../../src/lib/design-tokens';
+import { fontWeights, spacing, radius, shadows, sizes, pageShell, typography, iconSizes, usePageShell } from '../../src/lib/design-tokens';
 import { useScrollToTop } from '../../src/contexts/ScrollContext';
 import { usePreserveScrollOnFold } from '../../src/hooks/usePreserveScrollOnFold';
 import { getJobUrgency, type JobUrgency } from '../../src/lib/jobUrgency';
@@ -285,7 +285,7 @@ function JobCard({
             }}
             style={styles.invoiceBtn}
           >
-            <Feather name="file-text" size={iconSizes.sm} color="#FFFFFF" />
+            <Feather name="file-text" size={iconSizes.sm} color={colors.primaryForeground} />
             <Text style={styles.invoiceBtnText}>Invoice</Text>
           </TouchableOpacity>
         )}
@@ -1457,7 +1457,7 @@ export default function JobsScreen() {
                     {selectedJobsList.map((job, idx) => (
                       <View key={job.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs, borderBottomWidth: idx < selectedJobsList.length - 1 ? 1 : 0, borderBottomColor: colors.cardBorder }}>
                         <View style={{ flex: 1, marginRight: spacing.sm }}>
-                          <Text style={{ ...typography.body, fontWeight: '500', color: colors.foreground }} numberOfLines={1}>{job.title || 'Untitled Job'}</Text>
+                          <Text style={{ ...typography.body, fontWeight: fontWeights.medium, color: colors.foreground }} numberOfLines={1}>{job.title || 'Untitled Job'}</Text>
                           {job.clientName && <Text style={{ ...typography.captionSmall, color: colors.mutedForeground }} numberOfLines={1}>{job.clientName}</Text>}
                         </View>
                         <StatusBadge status="done" size="sm" />
@@ -1514,7 +1514,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     gap: spacing.sm,
   },
   pageSubtitleInline: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginBottom: spacing.md,
   },
@@ -1541,8 +1541,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     backgroundColor: colors.primary,
   },
   countChipText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   headerLeft: {
@@ -1601,14 +1601,14 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     backgroundColor: colors.card,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
     marginBottom: spacing.xs,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     lineHeight: 20,
     color: colors.mutedForeground,
   },
@@ -1632,8 +1632,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   headerAddButtonText: {
     color: colors.white,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   newJobButton: {
     flexDirection: 'row',
@@ -1648,7 +1648,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   newJobButtonText: {
     color: colors.primaryForeground,
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   searchRow: {
@@ -1704,8 +1704,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     paddingHorizontal: 4,
   },
   filterBadgeText: {
-    fontSize: 9,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
     color: colors.white,
   },
   savedFilterChip: {
@@ -1718,7 +1718,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   savedFilterChipText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   advancedPanel: {
@@ -1741,7 +1741,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   advancedLabel: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.xs,
     marginTop: spacing.xs,
@@ -1878,7 +1878,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   modalCancelText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   modalSaveBtn: {
@@ -1889,7 +1889,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   modalSaveText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
 
@@ -1918,7 +1918,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   filterPillText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   filterPillTextActive: {
@@ -1937,7 +1937,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   filterCountText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   filterCountTextActive: {
@@ -2007,7 +2007,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     flex: 1,
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   listHeaderColStatus: {
     textAlign: 'center',
@@ -2068,7 +2068,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   jobListRowTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 2,
   },
@@ -2116,14 +2116,14 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     gap: 3,
   },
   recurringBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   nextRecurrenceText: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     marginBottom: spacing.xs,
   },
   jobTitle: {
@@ -2145,7 +2145,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     flex: 1,
   },
   invoiceBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: radius.md,
@@ -2158,8 +2158,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   invoiceBtnText: {
     ...typography.captionSmall,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: fontWeights.semibold,
+    color: colors.primaryForeground,
   },
 
   urgencyBadge: {
@@ -2176,8 +2176,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     borderRadius: 3,
   },
   urgencyBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
   },
   moreButton: {
     marginLeft: 'auto',
@@ -2210,12 +2210,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     justifyContent: 'center',
   },
   kpiValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   kpiLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
   },
 
@@ -2259,7 +2259,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   batchBarText: {
     ...typography.caption,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     flex: 1,
   },
   batchInvoiceBtn: {
@@ -2273,7 +2273,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   batchInvoiceBtnText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   batchCheckbox: {

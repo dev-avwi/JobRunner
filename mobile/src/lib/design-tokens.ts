@@ -242,6 +242,15 @@ export const shadows = {
 // Typography styles below intentionally do NOT pin a fontFamily — we let
 // React Native pick the correct Inter weight from fontWeight, matching the
 // May-2 baseline before the global text defaults patch.
+// === FONT WEIGHTS (tokenized weights — keep screens off raw '500'/'600' literals) ===
+export const fontWeights = {
+  regular: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+  extrabold: '800',
+} as const;
+
 export const fontFamilies = {
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
