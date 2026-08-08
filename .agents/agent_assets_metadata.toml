@@ -149,3 +149,10 @@ id = "onNAYywwLT-NQPU1FSlgB"
 uri = "file://exports/hero-demo-app-preview-886x1920-v2.mp4"
 type = "video"
 title = "Hero Demo — App Store Preview (886x1920, tall)"
+
+[[outputs]]
+id = "6XYj7yCmyhNGkF_CxrFb_"
+uri = "file://attached_assets/logo_164x164.png"
+type = "image"
+title = "Logo 164x164"
+description = "Square crop of the JobRunner logo on white, 164 x 164."
