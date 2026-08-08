@@ -1149,7 +1149,7 @@ async function processTrainingRecordExpiry(): Promise<void> {
           relatedId: record.id,
           relatedType: 'training_record',
           priority,
-          actionUrl: '/whs',
+          actionUrl: '/whs?tab=training',
           actionLabel: 'View Training Records',
         });
         alreadyNotified.add(`${record.id}:${priority}`);

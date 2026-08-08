@@ -19,7 +19,7 @@ import {
   ShieldCheck, ShieldAlert, ArrowRight, CircleAlert,
   BookOpen, BadgeCheck, HeartPulse, ChevronRight
 } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { SwmsBuilder } from "@/components/SwmsBuilder";
 import { BulkDocumentUpload } from "@/components/BulkDocumentUpload";
 import JobPicker from "@/components/JobPicker";
@@ -2301,9 +2301,20 @@ function SwmsDocumentsTab() {
   );
 }
 
+const VALID_WHS_SECTIONS = ["overview", "incidents", "swms", "training", "compliance"];
+
 export default function WhsHub() {
   const [, setLocation] = useLocation();
-  const [activeSection, setActiveSection] = useState<string>("overview");
+  // Support deep-links like /whs?tab=training (used by expiry notifications).
+  const search = useSearch();
+  const [activeSection, setActiveSection] = useState<string>(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    return tab && VALID_WHS_SECTIONS.includes(tab) ? tab : "overview";
+  });
+  useEffect(() => {
+    const tab = new URLSearchParams(search).get("tab");
+    if (tab && VALID_WHS_SECTIONS.includes(tab)) setActiveSection(tab);
+  }, [search]);
   const [overviewPreviewSwmsId, setOverviewPreviewSwmsId] = useState<string | null>(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
 

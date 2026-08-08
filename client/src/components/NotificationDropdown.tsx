@@ -135,8 +135,18 @@ export default function NotificationDropdown() {
           setLocation('/team?tab=subinvoices');
           break;
         default:
+          // Fall back to the notification's own actionUrl (e.g. training
+          // certificate expiry alerts deep-link to /whs?tab=training).
+          if (notification.actionUrl) {
+            setLocation(notification.actionUrl);
+          }
           break;
       }
+      return;
+    }
+
+    if (notification.actionUrl) {
+      setLocation(notification.actionUrl);
     }
   };
 
