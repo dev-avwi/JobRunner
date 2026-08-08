@@ -964,6 +964,23 @@ async function processComplianceExpiry(): Promise<void> {
       groupedByOwner[doc.businessOwnerId].push(doc);
     }
     
+    // Dedupe: fetch prior compliance-document expiry notifications for these
+    // docs; the notifications table has no unique constraint, so relying on a
+    // duplicate-key error (as before) never worked and repeated alerts daily.
+    const docIds = expiringDocs.map(d => d.id);
+    const priorDocNotifications = await db.select({
+      relatedId: notifications.relatedId,
+      priority: notifications.priority,
+    }).from(notifications)
+      .where(
+        and(
+          eq(notifications.type, 'compliance_expiry'),
+          eq(notifications.relatedType, 'compliance_document'),
+          inArray(notifications.relatedId, docIds)
+        )
+      );
+    const alreadyNotified = new Set(priorDocNotifications.map(n => `${n.relatedId}:${n.priority}`));
+    
     let notificationsCreated = 0;
     
     const typeLabels: Record<string, string> = {
@@ -1007,6 +1024,10 @@ async function processComplianceExpiry(): Promise<void> {
           priority = 'info';
         }
         
+        // Dedupe per document per urgency stage — escalations (30d → 7d →
+        // expired) still notify, but the same stage never repeats.
+        if (alreadyNotified.has(`${doc.id}:${priority}`)) continue;
+        
         try {
           await storage.createNotification({
             userId: businessOwnerId,
@@ -1019,11 +1040,9 @@ async function processComplianceExpiry(): Promise<void> {
             actionUrl: '/files',
             actionLabel: 'View Documents',
           });
+          alreadyNotified.add(`${doc.id}:${priority}`);
           notificationsCreated++;
         } catch (notifError: any) {
-          if (getErrorMessage(notifError)?.includes('duplicate') || notifError?.code === '23505') {
-            continue;
-          }
           console.error(`[Scheduler] Error creating compliance notification for doc ${doc.id}:`, notifError);
         }
       }
