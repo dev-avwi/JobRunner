@@ -438,7 +438,9 @@ const createDocumentsStyles = (colors: ThemeColors) => StyleSheet.create({
     textTransform: 'capitalize',
   },
   createButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: `${colors.primary}12`,
+    borderWidth: 1,
+    borderColor: `${colors.primary}25`,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
@@ -446,7 +448,7 @@ const createDocumentsStyles = (colors: ThemeColors) => StyleSheet.create({
   createButtonText: {
     fontSize: 12,
     fontWeight: '600', fontFamily: 'Inter_600SemiBold',
-    color: colors.primaryForeground,
+    color: colors.primary,
   },
 });
 
@@ -736,9 +738,9 @@ export function NextActionCard(props: NextActionCardProps) {
           <Text style={styles.subtitle}>{nextAction.subtitle}</Text>
         </View>
         {nextAction.action && (
-          <PressableRow style={[styles.actionButton, { backgroundColor: pColors.btnBg }]} onPress={nextAction.action} >
-            <Text style={styles.actionButtonText}>{nextAction.buttonText}</Text>
-            <Feather name="arrow-right" size={14} color={colors.primaryForeground} />
+          <PressableRow style={[styles.actionButton, { backgroundColor: pColors.iconBg, borderWidth: 1, borderColor: pColors.border }]} onPress={nextAction.action} >
+            <Text style={[styles.actionButtonText, { color: pColors.accent }]}>{nextAction.buttonText}</Text>
+            <Feather name="arrow-right" size={14} color={pColors.accent} />
           </PressableRow>
         )}
       </View>
@@ -1240,9 +1242,9 @@ export function ScheduleNotificationCard({
             : "Ready to start?"}
         </Text>
       </View>
-      <PressableRow style={[styles.actionButton, { backgroundColor: colors.primary }]} onPress={onStartJob} disabled={isLoading} >
-        <Text style={styles.actionButtonText}>Start Now</Text>
-        <Feather name="play" size={14} color={colors.primaryForeground} />
+      <PressableRow style={[styles.actionButton, { backgroundColor: `${colors.primary}12`, borderWidth: 1, borderColor: `${colors.primary}25` }]} onPress={onStartJob} disabled={isLoading} >
+        <Text style={[styles.actionButtonText, { color: colors.primary }]}>Start Now</Text>
+        <Feather name="play" size={14} color={colors.primary} />
       </PressableRow>
     </View>
   );

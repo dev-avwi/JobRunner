@@ -178,10 +178,10 @@ export function PhotosSection(props: PhotosSectionProps) {
                 activeOpacity={0.7}
               >
                 {isUploadingPhoto ? (
-                  <ActivityIndicator size="small" color={colors.primaryForeground} />
+                  <ActivityIndicator size="small" color={colors.foreground} />
                 ) : (
                   <>
-                    <Feather name="camera" size={18} color={colors.primaryForeground} style={{ marginRight: spacing.xs }} />
+                    <Feather name="camera" size={18} color={colors.foreground} style={{ marginRight: spacing.xs }} />
                     <Text style={styles.takePhotoInlineText}>Photo</Text>
                   </>
                 )}
@@ -193,7 +193,7 @@ export function PhotosSection(props: PhotosSectionProps) {
                 activeOpacity={0.7}
                 data-testid="button-record-video"
               >
-                <Feather name="video" size={18} color={colors.primaryForeground} style={styles.recordVideoButtonIcon} />
+                <Feather name="video" size={18} color={colors.foreground} style={styles.recordVideoButtonIcon} />
                 <Text style={styles.recordVideoText}>Video</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -226,10 +226,10 @@ export function PhotosSection(props: PhotosSectionProps) {
                 activeOpacity={0.7}
               >
                 {isUploadingPhoto ? (
-                  <ActivityIndicator size="small" color={colors.primaryForeground} />
+                  <ActivityIndicator size="small" color={colors.foreground} />
                 ) : (
                   <>
-                    <Feather name="camera" size={18} color={colors.primaryForeground} style={{ marginRight: spacing.xs }} />
+                    <Feather name="camera" size={18} color={colors.foreground} style={{ marginRight: spacing.xs }} />
                     <Text style={styles.takePhotoInlineText}>Photo</Text>
                   </>
                 )}
@@ -241,7 +241,7 @@ export function PhotosSection(props: PhotosSectionProps) {
                 activeOpacity={0.7}
                 data-testid="button-record-video"
               >
-                <Feather name="video" size={18} color={colors.primaryForeground} style={styles.recordVideoButtonIcon} />
+                <Feather name="video" size={18} color={colors.foreground} style={styles.recordVideoButtonIcon} />
                 <Text style={styles.recordVideoText}>Video</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -332,7 +332,7 @@ export function PhotosSection(props: PhotosSectionProps) {
               onPress={() => setShowVoiceRecorder(true)}
               activeOpacity={0.7}
             >
-              <Feather name="mic" size={18} color={colors.primaryForeground} />
+              <Feather name="mic" size={18} color={colors.foreground} />
               <Text style={styles.takePhotoInlineText}>Record Voice Note</Text>
             </TouchableOpacity>
           </View>
@@ -352,7 +352,7 @@ export function PhotosSection(props: PhotosSectionProps) {
               onPress={() => setShowVoiceRecorder(true)}
               activeOpacity={0.7}
             >
-              <Feather name="mic" size={18} color={colors.primaryForeground} />
+              <Feather name="mic" size={18} color={colors.foreground} />
               <Text style={styles.takePhotoInlineText}>Record Voice Note</Text>
             </TouchableOpacity>
           </View>

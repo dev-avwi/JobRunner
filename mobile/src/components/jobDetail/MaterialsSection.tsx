@@ -89,15 +89,17 @@ export function MaterialsSection(props: MaterialsSectionProps) {
             flexDirection: 'row',
             alignItems: 'center',
             gap: spacing.xs,
-            backgroundColor: colors.primary,
+            backgroundColor: `${colors.primary}12`,
+            borderWidth: 1,
+            borderColor: `${colors.primary}25`,
             paddingHorizontal: spacing.md,
             paddingVertical: spacing.sm,
             borderRadius: radius.lg,
           }}
           activeOpacity={0.7}
         >
-          <Feather name="plus" size={14} color={colors.primaryForeground} />
-          <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 13 }}>Add</Text>
+          <Feather name="plus" size={14} color={colors.primary} />
+          <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>Add</Text>
         </TouchableOpacity>
       </View>
 

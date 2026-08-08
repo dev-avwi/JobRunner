@@ -89,7 +89,9 @@ export function SwmsSection(props: SwmsSectionProps) {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: colors.primary,
+            backgroundColor: `${colors.primary}12`,
+            borderWidth: 1,
+            borderColor: `${colors.primary}25`,
             paddingHorizontal: spacing.md,
             paddingVertical: spacing.sm,
             borderRadius: radius.lg,
@@ -98,8 +100,8 @@ export function SwmsSection(props: SwmsSectionProps) {
           onPress={handleStartCreateSwms}
           activeOpacity={0.7}
         >
-          <Feather name="plus" size={16} color={colors.primaryForeground} />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryForeground }}>Create SWMS</Text>
+          <Feather name="plus" size={16} color={colors.primary} />
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>Create SWMS</Text>
         </TouchableOpacity>
       </View>
 
@@ -297,7 +299,9 @@ export function SwmsSection(props: SwmsSectionProps) {
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: colors.primary,
+                        backgroundColor: `${colors.primary}12`,
+                        borderWidth: 1,
+                        borderColor: `${colors.primary}25`,
                         paddingVertical: spacing.sm,
                         borderRadius: radius.lg,
                         gap: spacing.xs,
@@ -310,8 +314,8 @@ export function SwmsSection(props: SwmsSectionProps) {
                       }}
                       activeOpacity={0.7}
                     >
-                      <Feather name="edit-3" size={14} color={colors.primaryForeground} />
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primaryForeground }}>
+                      <Feather name="edit-3" size={14} color={colors.primary} />
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
                         Sign SWMS
                       </Text>
                     </TouchableOpacity>

@@ -975,7 +975,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.muted,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
     marginRight: spacing.sm,
@@ -987,7 +989,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   takePhotoInlineText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primaryForeground,
+    color: colors.foreground,
   },
   galleryInlineButton: {
     flex: 1,
@@ -1881,7 +1883,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.destructive,
+    backgroundColor: colors.muted,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
     marginRight: spacing.sm,
@@ -1893,7 +1897,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   recordVideoText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primaryForeground,
+    color: colors.foreground,
   },
   videoPlayerModal: {
     flex: 1,
@@ -6790,7 +6794,7 @@ export default function JobDetailScreen() {
               )}
               
               <PressableRow
-                style={[styles.mainActionButton, { backgroundColor: statusColor, flex: 1, flexBasis: 0, minWidth: 0 }]}
+                style={[styles.mainActionButton, { backgroundColor: colors.primary, flex: 1, flexBasis: 0, minWidth: 0 }]}
                 onPress={handleMainAction}
 
                 data-testid="button-main-action"
@@ -6829,7 +6833,7 @@ export default function JobDetailScreen() {
             </View>
           ) : (
             <PressableRow
-              style={[styles.mainActionButton, { backgroundColor: statusColor }]}
+              style={[styles.mainActionButton, { backgroundColor: colors.primary }]}
               onPress={handleMainAction}
 
               data-testid="button-main-action"
@@ -7870,18 +7874,18 @@ export default function JobDetailScreen() {
           )}
           <View style={styles.quickCollectButtons}>
             <TouchableOpacity
-              style={[styles.quickCollectButton, { backgroundColor: colors.primary }, isQuickCollecting && { opacity: 0.6 }]}
+              style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
               onPress={() => handleQuickCollect('cash')}
               activeOpacity={0.8}
               disabled={isQuickCollecting}
               data-testid="button-quick-collect-cash"
             >
               {isQuickCollecting ? (
-                <ActivityIndicator size="small" color={colors.primaryForeground} />
+                <ActivityIndicator size="small" color={colors.foreground} />
               ) : (
                 <>
-                  <Feather name="dollar-sign" size={iconSizes.md} color={colors.primaryForeground} />
-                  <Text style={[styles.quickCollectButtonText, { color: colors.primaryForeground }]}>Cash</Text>
+                  <Feather name="dollar-sign" size={iconSizes.md} color={colors.foreground} />
+                  <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Cash</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -8189,16 +8193,18 @@ export default function JobDetailScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: spacing.sm,
-                backgroundColor: colors.primary,
+                backgroundColor: `${colors.primary}12`,
                 paddingVertical: spacing.md,
                 borderRadius: radius.lg,
                 minHeight: 44,
+                borderWidth: 1,
+                borderColor: `${colors.primary}25`,
               }}
               onPress={() => setShowProofPackModal(true)}
               activeOpacity={0.8}
             >
-              <Feather name="sliders" size={16} color={colors.primaryForeground} />
-              <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>Customise</Text>
+              <Feather name="sliders" size={16} color={colors.primary} />
+              <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>Customise</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -8698,7 +8704,9 @@ export default function JobDetailScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: spacing.xs,
-                backgroundColor: colors.destructive,
+                backgroundColor: `${colors.destructive}12`,
+                borderWidth: 1,
+                borderColor: `${colors.destructive}30`,
                 paddingVertical: spacing.md,
                 borderRadius: radius.lg,
                 marginTop: spacing.sm,
@@ -8706,8 +8714,8 @@ export default function JobDetailScreen() {
               onPress={handleStopRecurring}
               activeOpacity={0.8}
             >
-              <Feather name="x-circle" size={18} color={colors.primaryForeground} />
-              <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>
+              <Feather name="x-circle" size={18} color={colors.destructive} />
+              <Text style={{ color: colors.destructive, fontWeight: '600', fontSize: 14 }}>
                 Stop Recurring
               </Text>
             </TouchableOpacity>
@@ -8817,7 +8825,9 @@ export default function JobDetailScreen() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: spacing.xs,
-                  backgroundColor: colors.warning,
+                  backgroundColor: colors.muted,
+                  borderWidth: 1,
+                  borderColor: colors.border,
                   paddingVertical: spacing.md,
                   borderRadius: radius.lg,
                 }}
@@ -8827,8 +8837,8 @@ export default function JobDetailScreen() {
                 }}
                 activeOpacity={0.8}
               >
-                <Feather name="plus" size={16} color={colors.primaryForeground} />
-                <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 14 }}>
+                <Feather name="plus" size={16} color={colors.foreground} />
+                <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 14 }}>
                   Add Variation
                 </Text>
               </TouchableOpacity>
@@ -9316,7 +9326,9 @@ export default function JobDetailScreen() {
               gap: spacing.sm,
               marginTop: spacing.md,
               paddingVertical: spacing.md,
-              backgroundColor: colors.primary,
+              backgroundColor: colors.muted,
+              borderWidth: 1,
+              borderColor: colors.border,
               borderRadius: radius.lg,
               minHeight: 44,
               opacity: isUploadingDocument ? 0.6 : 1,
@@ -9326,11 +9338,11 @@ export default function JobDetailScreen() {
             activeOpacity={0.7}
           >
             {isUploadingDocument ? (
-              <ActivityIndicator size="small" color={colors.primaryForeground} />
+              <ActivityIndicator size="small" color={colors.foreground} />
             ) : (
-              <Feather name="upload" size={16} color={colors.primaryForeground} />
+              <Feather name="upload" size={16} color={colors.foreground} />
             )}
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryForeground }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
               {isUploadingDocument ? 'Uploading...' : 'Upload Document'}
             </Text>
           </TouchableOpacity>

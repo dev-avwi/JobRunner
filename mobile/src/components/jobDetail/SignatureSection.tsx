@@ -352,7 +352,7 @@ export function SignatureSection(props: SignatureSectionProps) {
             activeOpacity={0.7}
             data-testid="button-add-another-signature"
           >
-            <Feather name="plus" size={18} color={colors.primaryForeground} />
+            <Feather name="plus" size={18} color={colors.foreground} />
             <Text style={styles.takePhotoInlineText}>Add Another Signature</Text>
           </TouchableOpacity>
         </View>
@@ -373,7 +373,7 @@ export function SignatureSection(props: SignatureSectionProps) {
             activeOpacity={0.7}
             data-testid="button-capture-signature"
           >
-            <Feather name="edit-3" size={18} color={colors.primaryForeground} />
+            <Feather name="edit-3" size={18} color={colors.foreground} />
             <Text style={styles.takePhotoInlineText}>Capture Signature</Text>
           </TouchableOpacity>
         </View>
