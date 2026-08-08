@@ -1738,16 +1738,16 @@ ${businessName}`;
                 <SkeletonBox width={120} height={20} />
                 <SkeletonBox width={60} height={24} style={{ borderRadius: 12 }} />
               </View>
-              <SkeletonBox width={180} height={40} style={{ marginTop: 12 }} />
-              <SkeletonBox width={100} height={16} style={{ marginTop: 8 }} />
-              <View style={{ flexDirection: 'row', gap: 16, marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
+              <SkeletonBox width={180} height={40} style={{ marginTop: spacing.md }} />
+              <SkeletonBox width={100} height={16} style={{ marginTop: spacing.sm }} />
+              <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border }}>
                 <View style={{ flex: 1 }}>
                   <SkeletonBox width={60} height={12} />
-                  <SkeletonBox width="100%" height={16} style={{ marginTop: 4 }} />
+                  <SkeletonBox width="100%" height={16} style={{ marginTop: spacing.xs }} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <SkeletonBox width={60} height={12} />
-                  <SkeletonBox width="100%" height={16} style={{ marginTop: 4 }} />
+                  <SkeletonBox width="100%" height={16} style={{ marginTop: spacing.xs }} />
                 </View>
               </View>
             </View>
@@ -1756,11 +1756,11 @@ ${businessName}`;
                 <SkeletonBox key={i} width={80} height={48} style={{ flex: 1, borderRadius: 10 }} />
               ))}
             </View>
-            <SkeletonBox width={100} height={14} style={{ marginBottom: 8, marginTop: 16 }} />
+            <SkeletonBox width={100} height={14} style={{ marginBottom: spacing.sm, marginTop: spacing.lg }} />
             <View style={styles.card}>
               <SkeletonBox width="100%" height={60} />
             </View>
-            <SkeletonBox width={80} height={14} style={{ marginBottom: 8 }} />
+            <SkeletonBox width={80} height={14} style={{ marginBottom: spacing.sm }} />
             <View style={styles.card}>
               <SkeletonBox width="100%" height={80} />
             </View>
@@ -1815,7 +1815,7 @@ ${businessName}`;
         options={{ 
           title: invoice.invoiceNumber || 'Invoice',
           headerRight: () => (
-            <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flexDirection: 'row', gap: spacing.md }}>
               <Button
                 size="icon"
                 variant="ghost"
@@ -2618,14 +2618,14 @@ ${businessName}`;
             <>
               <Text style={styles.sectionTitle}>Payment Milestones & Retention</Text>
               <View style={styles.card}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 }}>
                     <Feather name="calendar" size={20} color={colors.primary} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                         Milestones & Retention
                       </Text>
-                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: 2 }}>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: spacing.xxs }}>
                         {invoice.paymentMilestones && Array.isArray(invoice.paymentMilestones) && invoice.paymentMilestones.length > 0
                           ? `${invoice.paymentMilestones.length} milestones defined`
                           : 'Define progress payment stages'}
@@ -2670,7 +2670,7 @@ ${businessName}`;
 
                 {/* Display existing milestones */}
                 {invoice.paymentMilestones && Array.isArray(invoice.paymentMilestones) && invoice.paymentMilestones.length > 0 && (
-                  <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
+                  <View style={{ marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border }}>
                     {(invoice.paymentMilestones as any[]).map((milestone: any, idx: number) => {
                       const milestoneAmount = (invoice.total * (milestone.percent || 0)) / 100;
                       const amountPaidSoFar = invoice.amountPaid || 0;
@@ -2691,11 +2691,11 @@ ${businessName}`;
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           paddingVertical: 10,
-                          paddingHorizontal: 12,
+                          paddingHorizontal: spacing.md,
                           backgroundColor: milestoneStatus === 'paid' ? colors.successLight : milestoneStatus === 'invoiced' ? colors.infoLight : colors.background,
                           borderRadius: 8,
                           marginBottom: 6,
-                          gap: 8,
+                          gap: spacing.sm,
                         }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                             <View style={{
@@ -2716,11 +2716,11 @@ ${businessName}`;
                             </View>
                             <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{milestone.label}</Text>
                           </View>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                             <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>{milestone.percent}%</Text>
                             <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(milestoneAmount)}</Text>
                             <View style={{
-                              paddingHorizontal: 8,
+                              paddingHorizontal: spacing.sm,
                               paddingVertical: 3,
                               borderRadius: 10,
                               backgroundColor: sc.bg,
@@ -2735,7 +2735,7 @@ ${businessName}`;
                     })}
                     
                     {/* Milestone progress bar */}
-                    <View style={{ marginTop: 8, paddingHorizontal: 4 }}>
+                    <View style={{ marginTop: spacing.sm, paddingHorizontal: spacing.xs }}>
                       <View style={{ height: 6, backgroundColor: colors.muted, borderRadius: 3, overflow: 'hidden', flexDirection: 'row' }}>
                         {(invoice.paymentMilestones as any[]).map((milestone: any, idx: number) => {
                           const milestoneStatus = milestone.status || 'pending';
@@ -2745,7 +2745,7 @@ ${businessName}`;
                           );
                         })}
                       </View>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs }}>
                         <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
                           {(invoice.paymentMilestones as any[]).filter((m: any) => m.status === 'paid').length} of {(invoice.paymentMilestones as any[]).length} milestones paid
                         </Text>
@@ -2774,8 +2774,8 @@ ${businessName}`;
                     flexDirection: 'row', 
                     justifyContent: 'space-between', 
                     alignItems: 'center',
-                    paddingBottom: 12,
-                    marginBottom: 12,
+                    paddingBottom: spacing.md,
+                    marginBottom: spacing.md,
                     borderBottomWidth: 1,
                     borderBottomColor: colors.border,
                   }}>
@@ -2815,7 +2815,7 @@ ${businessName}`;
                         {idx < paymentRecords.length - 1 && <View style={styles.timelineLine} />}
                       </View>
                       <View style={[styles.timelineContent, { paddingBottom: idx < paymentRecords.length - 1 ? 16 : 4 }]}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm }}>
                           <View style={{ flex: 1 }}>
                             <Text style={[styles.timelineLabel, record.voided && { textDecorationLine: 'line-through', color: colors.mutedForeground }]}>
                               {formatCurrency(record.amount)}
@@ -2836,12 +2836,12 @@ ${businessName}`;
                           </View>
                         </View>
                         {record.reference && (
-                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xxs }}>
                             Ref: {record.reference}
                           </Text>
                         )}
                         {record.note && (
-                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xxs }}>
                             {record.note}
                           </Text>
                         )}
@@ -2849,9 +2849,9 @@ ${businessName}`;
                           <View style={{ 
                             flexDirection: 'row', 
                             alignItems: 'center', 
-                            gap: 4, 
-                            marginTop: 4,
-                            paddingHorizontal: 8,
+                            gap: spacing.xs, 
+                            marginTop: spacing.xs,
+                            paddingHorizontal: spacing.sm,
                             paddingVertical: 3,
                             backgroundColor: colors.destructiveLight,
                             borderRadius: 6,
@@ -3441,7 +3441,7 @@ ${businessName}`;
               </View>
 
               {milestonePreset !== 'custom' && PRESET_MAP[milestonePreset] && (
-                <View style={{ marginTop: 12, padding: 12, backgroundColor: colors.background, borderRadius: 10 }}>
+                <View style={{ marginTop: spacing.md, padding: spacing.md, backgroundColor: colors.background, borderRadius: 10 }}>
                   {PRESET_MAP[milestonePreset].map((m, i) => {
                     const amount = (invoice?.total || 0) * m.percent / 100;
                     return (
@@ -3449,12 +3449,12 @@ ${businessName}`;
                         flexDirection: 'row', 
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        paddingVertical: 8,
+                        paddingVertical: spacing.sm,
                         borderBottomWidth: i < PRESET_MAP[milestonePreset].length - 1 ? 1 : 0,
                         borderBottomColor: colors.border,
                       }}>
                         <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, flex: 1 }}>{m.label}</Text>
-                        <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginRight: 8 }}>{formatCurrency(amount)}</Text>
+                        <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginRight: spacing.sm }}>{formatCurrency(amount)}</Text>
                         <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>{m.percent}%</Text>
                       </View>
                     );
@@ -3464,34 +3464,34 @@ ${businessName}`;
 
               {milestonePreset === 'custom' && (
                 <>
-                  <Text style={[styles.paymentMethodSectionTitle, { marginTop: 16 }]}>Custom Milestones</Text>
+                  <Text style={[styles.paymentMethodSectionTitle, { marginTop: spacing.lg }]}>Custom Milestones</Text>
                   {customMilestones.map((milestone, idx) => {
                     const amount = (invoice?.total || 0) * (milestone.percent || 0) / 100;
                     return (
                       <View key={idx} style={{
                         backgroundColor: colors.background,
                         borderRadius: 10,
-                        padding: 12,
-                        marginBottom: 8,
+                        padding: spacing.md,
+                        marginBottom: spacing.sm,
                         borderWidth: 1,
                         borderColor: colors.border,
                       }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
                           <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>Stage {idx + 1}</Text>
                           <TouchableOpacity onPress={() => removeCustomMilestone(idx)}>
                             <Feather name="x" size={18} color={colors.destructive} />
                           </TouchableOpacity>
                         </View>
                         <TextInput
-                          style={[styles.paymentReferenceInput, { marginBottom: 8 }]}
+                          style={[styles.paymentReferenceInput, { marginBottom: spacing.sm }]}
                           placeholder="Milestone name (e.g. Deposit, Slab Complete)"
                           placeholderTextColor={colors.mutedForeground}
                           value={milestone.label}
                           onChangeText={(text) => updateCustomMilestone(idx, 'label', text)}
                         />
-                        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                        <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: 4 }}>Percentage</Text>
+                            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: spacing.xs }}>Percentage</Text>
                             <TextInput
                               style={styles.paymentReferenceInput}
                               placeholder="e.g. 25"
@@ -3502,14 +3502,14 @@ ${businessName}`;
                             />
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: 4 }}>Amount</Text>
+                            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: spacing.xs }}>Amount</Text>
                             <View style={[styles.paymentReferenceInput, { justifyContent: 'center' }]}>
                               <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>{formatCurrency(amount)}</Text>
                             </View>
                           </View>
                         </View>
                         <View>
-                          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: 4 }}>Status</Text>
+                          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: spacing.xs }}>Status</Text>
                           <View style={{ flexDirection: 'row', gap: 6 }}>
                             {(['pending', 'invoiced', 'paid'] as const).map((s) => {
                               const isActive = milestone.status === s;
@@ -3524,7 +3524,7 @@ ${businessName}`;
                                   onPress={() => updateCustomMilestone(idx, 'status', s)}
                                   style={{
                                     flex: 1,
-                                    paddingVertical: 8,
+                                    paddingVertical: spacing.sm,
                                     borderRadius: 8,
                                     alignItems: 'center',
                                     backgroundColor: isActive ? statusColors[s].bg : colors.background,
@@ -3556,12 +3556,12 @@ ${businessName}`;
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 6,
-                      paddingVertical: 12,
+                      paddingVertical: spacing.md,
                       borderRadius: 10,
                       borderWidth: 1,
                       borderColor: colors.primary,
                       borderStyle: 'dashed',
-                      marginTop: 4,
+                      marginTop: spacing.xs,
                     }}
                   >
                     <Feather name="plus" size={16} color={colors.primary} />
@@ -3570,7 +3570,7 @@ ${businessName}`;
 
                   {customMilestones.length > 0 && (
                     <View style={{
-                      marginTop: 12,
+                      marginTop: spacing.md,
                       padding: 10,
                       borderRadius: 8,
                       backgroundColor: customMilestoneTotalPercent === 100 ? colors.successLight : customMilestoneTotalPercent > 100 ? colors.destructiveLight : colors.warningLight,
@@ -3585,7 +3585,7 @@ ${businessName}`;
                         </Text>
                       </View>
                       {customMilestoneTotalPercent !== 100 && (
-                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 4 }}>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.xs }}>
                           {customMilestoneTotalPercent > 100 ? 'Total exceeds 100%' : `${100 - customMilestoneTotalPercent}% remaining`}
                         </Text>
                       )}
@@ -3594,7 +3594,7 @@ ${businessName}`;
                 </>
               )}
 
-              <Text style={[styles.paymentMethodSectionTitle, { marginTop: 16 }]}>Retention Percentage</Text>
+              <Text style={[styles.paymentMethodSectionTitle, { marginTop: spacing.lg }]}>Retention Percentage</Text>
               <TextInput
                 style={styles.paymentReferenceInput}
                 placeholder="e.g. 5"
@@ -3609,20 +3609,20 @@ ${businessName}`;
 
               {retentionPercentStr && parseFloat(retentionPercentStr) > 0 && (
                 <View style={{
-                  marginTop: 12,
-                  padding: 12,
+                  marginTop: spacing.md,
+                  padding: spacing.md,
                   backgroundColor: colors.warningLight,
                   borderRadius: 10,
                   borderWidth: 1,
                   borderColor: colors.warning,
                 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
                     <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>Invoice Total</Text>
                     <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>
                       {formatCurrency(invoice?.total || 0)}
                     </Text>
                   </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
                     <Text style={{ fontSize: typography.button.fontSize, color: colors.warning }}>
                       Retention ({retentionPercentStr}%)
                     </Text>
@@ -3633,8 +3633,8 @@ ${businessName}`;
                   <View style={{ 
                     flexDirection: 'row', 
                     justifyContent: 'space-between', 
-                    paddingTop: 8,
-                    marginTop: 4,
+                    paddingTop: spacing.sm,
+                    marginTop: spacing.xs,
                     borderTopWidth: 1,
                     borderTopColor: colors.warning,
                   }}>
@@ -3869,22 +3869,22 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.mutedForeground,
   },
   headerButton: {
-    padding: 8,
+    padding: spacing.sm,
   },
   headerCard: {
     backgroundColor: colors.card,
     borderRadius: 20,
-    padding: 24,
+    padding: spacing['2xl'],
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
   invoiceNumber: {
     fontSize: typography.subtitle.fontSize,
@@ -3920,11 +3920,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   dueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-    paddingTop: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 4,
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xs,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
@@ -3940,9 +3940,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   summaryDetailsRow: {
     flexDirection: 'row',
-    gap: 16,
-    marginTop: 16,
-    paddingTop: 16,
+    gap: spacing.lg,
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     width: '100%',
@@ -3951,7 +3951,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: spacing.sm,
   },
   summaryDetailLabel: {
     fontSize: typography.sizes.xs,
@@ -3963,7 +3963,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.semibold,
     color: colors.foreground,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   primaryActionsRow: {
     flexDirection: 'row',
@@ -3977,7 +3977,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: spacing.xs,
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: radius.md,
@@ -4002,7 +4002,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.xs,
     backgroundColor: colors.card,
     borderRadius: radius.lg,
@@ -4022,8 +4022,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   pdfOptionsCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -4031,21 +4031,21 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.sizes.sm,
     fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
   },
   pdfOptionsRow: {
     flexDirection: 'row' as const,
     flexWrap: 'wrap' as const,
-    gap: 16,
+    gap: spacing.lg,
   },
   pdfOption: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
     borderRadius: 8,
   },
   pdfOptionActive: {
@@ -4058,8 +4058,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   previewOptionsRow: {
     flexDirection: 'row' as const,
     flexWrap: 'wrap' as const,
-    gap: 8,
-    paddingHorizontal: 16,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -4088,11 +4088,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   overdueAlert: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
     padding: 14,
     backgroundColor: colors.destructiveLight,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.destructive + '30',
   },
@@ -4109,7 +4109,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 10,
-    marginLeft: 4,
+    marginLeft: spacing.xs,
   },
   timelineItem: {
     flexDirection: 'row',
@@ -4129,12 +4129,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
     width: 2,
     backgroundColor: colors.border,
-    marginVertical: 4,
+    marginVertical: spacing.xs,
   },
   timelineContent: {
     flex: 1,
-    paddingLeft: 12,
-    paddingBottom: 16,
+    paddingLeft: spacing.md,
+    paddingBottom: spacing.lg,
   },
   timelineLabel: {
     fontSize: typography.button.fontSize,
@@ -4150,15 +4150,15 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: 18,
-    marginBottom: 20,
+    marginBottom: spacing.xl,
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
   linkedDocRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
   },
   linkedDocRowBorder: {
     borderTopWidth: 1,
@@ -4177,7 +4177,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   linkedDocLabel: {
     fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   linkedDocTitle: {
     fontSize: typography.sizes.md,
@@ -4186,7 +4186,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   linkedDocStatus: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: 20,
   },
   linkedDocStatusText: {
@@ -4196,8 +4196,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
   infoContent: {
     flex: 1,
@@ -4210,14 +4210,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   infoLabel: {
     fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   infoText: {
     fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   lineItem: {
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
   },
   lineItemBorder: {
     borderTopWidth: 1,
@@ -4237,7 +4237,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   lineItemDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: spacing.sm,
     marginLeft: 26,
   },
   lineItemQty: {
@@ -4253,7 +4253,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   amountLabel: {
     fontSize: typography.sizes.md,
@@ -4266,7 +4266,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: 8,
+    marginVertical: spacing.sm,
   },
   totalLabel2: {
     fontSize: typography.subtitle.fontSize,
@@ -4292,7 +4292,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   paymentToggleText: {
     flex: 1,
@@ -4301,7 +4301,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.sizes.md,
     fontWeight: fontWeights.semibold,
     color: colors.foreground,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   paymentToggleDesc: {
     fontSize: typography.sizes.sm,
@@ -4311,30 +4311,30 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   paymentLinkInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   paymentLinkText: {
     fontSize: typography.sizes.sm,
     color: colors.success,
   },
   paymentLinkSection: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    gap: 12,
+    gap: spacing.md,
   },
   paymentLinkActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
   copyLinkButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.primaryLight,
     borderRadius: 8,
   },
@@ -4347,9 +4347,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.card,
     borderRadius: 8,
     borderWidth: 1,
@@ -4365,7 +4365,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
     backgroundColor: colors.success,
     borderRadius: 14,
   },
@@ -4379,12 +4379,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   paymentDivider: {
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: 16,
+    marginVertical: spacing.lg,
   },
   paidCard: {
     borderColor: colors.success,
@@ -4394,7 +4394,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   paidInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: spacing.lg,
   },
   paidInfoText: {
     flex: 1,
@@ -4408,7 +4408,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.medium,
     color: colors.foreground,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   paidMethod: {
     fontSize: typography.sizes.sm,
@@ -4418,16 +4418,16 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   paidReference: {
     fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
-    marginTop: 2,
+    marginTop: spacing.xxs,
     fontStyle: 'italic' as const,
   },
   sendReceiptButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 16,
-    paddingVertical: 12,
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.primary,
@@ -4441,8 +4441,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   signatureLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   signatureLabel: {
     fontSize: typography.button.fontSize,
@@ -4450,25 +4450,25 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.foreground,
   },
   actionsColumn: {
-    gap: 12,
+    gap: spacing.md,
   },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     backgroundColor: colors.primary,
     borderRadius: 50,
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
   },
   secondaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     backgroundColor: colors.card,
     borderRadius: 50,
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
     borderWidth: 1,
     borderColor: colors.primary,
   },
@@ -4491,8 +4491,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -4503,16 +4503,16 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   modalContent: {
     flex: 1,
-    padding: 16,
+    padding: spacing.lg,
   },
   sendInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 16,
+    gap: spacing.md,
+    padding: spacing.lg,
     backgroundColor: colors.primaryLight,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: spacing['2xl'],
   },
   sendInfoText: {
     flex: 1,
@@ -4530,7 +4530,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.medium,
     color: colors.foreground,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   messageInput: {
     borderWidth: 1,
@@ -4541,21 +4541,21 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.foreground,
     backgroundColor: colors.card,
     minHeight: 120,
-    marginBottom: 24,
+    marginBottom: spacing['2xl'],
   },
   previewCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 24,
+    marginBottom: spacing['2xl'],
   },
   previewTitle: {
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.semibold,
     color: colors.foreground,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   previewRow: {
     flexDirection: 'row',
@@ -4580,10 +4580,10 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     backgroundColor: colors.primary,
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
   },
   sendButtonText: {
     fontSize: typography.subtitle.fontSize,
@@ -4604,13 +4604,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   notesContent: {
     flex: 1,
-    padding: 16,
+    padding: spacing.lg,
   },
   emptyStateCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 32,
-    marginBottom: 24,
+    padding: spacing['3xl'],
+    marginBottom: spacing['2xl'],
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center' as const,
@@ -4623,7 +4623,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.muted,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   emptyStateText: {
     fontSize: typography.sizes.md,
@@ -4640,23 +4640,23 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   signatureImage: {
     width: '100%',
     height: 80,
-    marginBottom: 12,
+    marginBottom: spacing.md,
     backgroundColor: colors.background,
     borderRadius: 8,
-    padding: 8,
+    padding: spacing.sm,
   },
   signatureDetails: {
-    gap: 4,
+    gap: spacing.xs,
   },
   signatureInfo: {
     fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   footerSection: {
-    marginTop: 8,
-    marginBottom: 24,
-    paddingTop: 20,
-    paddingBottom: 8,
+    marginTop: spacing.sm,
+    marginBottom: spacing['2xl'],
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.sm,
     borderTopWidth: 2,
     alignItems: 'center',
   },
@@ -4679,13 +4679,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   templateModalContent: {
     flex: 1,
     backgroundColor: colors.card,
-    padding: 20,
+    padding: spacing.xl,
   },
   templateModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   templateModalTitle: {
     fontSize: typography.sizes.lg,
@@ -4695,11 +4695,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   templateOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.lg,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   templateOptionSelected: {
     borderColor: colors.primary,
@@ -4716,7 +4716,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   templateOptionDesc: {
     fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   myobModalBackdrop: {
     flex: 1,
@@ -4775,23 +4775,23 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.card,
   },
   previewCloseButton: {
-    padding: 8,
+    padding: spacing.sm,
     width: 40,
   },
   previewActionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   previewActionButton: {
-    padding: 8,
+    padding: spacing.sm,
     borderRadius: 8,
   },
   previewModalTitle: {
@@ -4803,8 +4803,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
+    padding: spacing.xl,
+    paddingBottom: spacing['4xl'],
   },
   shareSheetHandle: {
     width: 40,
@@ -4812,24 +4812,24 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.border,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   shareSheetTitle: {
     fontSize: typography.sizes.xl,
     fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   shareSheetSubtitle: {
     fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   shareOptions: {
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   shareOption: {
     flexDirection: 'row',
@@ -4855,7 +4855,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.foreground,
   },
   shareSheetCancel: {
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
     borderRadius: 12,
     backgroundColor: colors.background,
@@ -4875,7 +4875,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   recurringBadge: {
     flexDirection: 'row',
@@ -4899,16 +4899,16 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     letterSpacing: 0.5,
   },
   recurringDetails: {
-    gap: 12,
-    paddingBottom: 16,
+    gap: spacing.md,
+    paddingBottom: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   recurringDetailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   recurringDetailContent: {
     flex: 1,
@@ -4916,7 +4916,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   recurringDetailLabel: {
     fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   recurringDetailValue: {
     fontSize: typography.sizes.md,
@@ -4925,15 +4925,15 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   recurringActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   recurringEditButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
     backgroundColor: colors.primaryLight,
     borderRadius: 10,
   },
@@ -4947,8 +4947,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
     backgroundColor: colors.destructiveLight,
     borderRadius: 10,
   },
@@ -4961,23 +4961,23 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
+    padding: spacing.xl,
+    paddingBottom: spacing['4xl'],
     maxHeight: '85%',
   },
   paymentMethodScrollContent: {
     flexGrow: 0,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   paymentMethodSectionTitle: {
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.semibold,
     color: colors.foreground,
-    marginTop: 16,
-    marginBottom: 12,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
   },
   paymentMethodOptions: {
-    gap: 8,
+    gap: spacing.sm,
   },
   paymentMethodOption: {
     flexDirection: 'row',
@@ -4998,7 +4998,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
     backgroundColor: colors.primaryLight,
   },
   paymentMethodIconSelected: {
@@ -5032,12 +5032,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
     borderRadius: 12,
     padding: 14,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
   receiptToggleTextContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   receiptToggleLabel: {
     fontSize: typography.sizes.md,
@@ -5047,16 +5047,16 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   receiptToggleHint: {
     fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   paymentMethodActions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
+    gap: spacing.md,
+    marginTop: spacing['2xl'],
   },
   paymentMethodCancelButton: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
     borderRadius: 12,
     backgroundColor: colors.background,
@@ -5073,8 +5073,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
     borderRadius: 12,
     backgroundColor: colors.success,
   },
@@ -5096,22 +5096,22 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     elevation: 3,
   },
   documentHeader: {
-    padding: 16,
+    padding: spacing.lg,
     borderBottomWidth: 3,
   },
   businessInfo: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   documentLogo: {
     width: 120,
     height: 50,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   documentBusinessName: {
     fontSize: typography.sizes.lg,
     fontWeight: fontWeights.bold,
     color: colors.foreground,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   documentBusinessDetail: {
     fontSize: typography.captionSmall.fontSize,
@@ -5128,14 +5128,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   documentNumber: {
     fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   documentSection: {
-    padding: 16,
+    padding: spacing.lg,
   },
   documentRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: spacing.lg,
   },
   documentColumn: {
     flex: 1,
@@ -5145,32 +5145,32 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.mutedForeground,
     fontWeight: fontWeights.semibold,
     letterSpacing: 1,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   documentClientName: {
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.semibold,
     color: colors.foreground,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   documentInfoText: {
     fontSize: typography.captionSmall.fontSize,
     color: colors.foreground,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   documentInfoLabel: {
     fontWeight: fontWeights.semibold,
   },
   documentItemsSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   documentItemsHeader: {
     flexDirection: 'row',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   documentItemsHeaderText: {
     fontSize: typography.sizes.xs,
@@ -5193,13 +5193,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     fontStyle: 'italic',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     textAlign: 'center',
   },
   documentSummary: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 16,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    padding: spacing.lg,
     backgroundColor: colors.background,
     borderRadius: 12,
     borderWidth: 2,
@@ -5208,7 +5208,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   documentSummaryTitle: {
     fontSize: typography.button.fontSize,
@@ -5217,8 +5217,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     letterSpacing: 0.5,
   },
   documentStatusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
     borderRadius: 12,
   },
   documentStatusBadgeText: {
@@ -5247,8 +5247,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   documentTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 8,
-    marginTop: 4,
+    paddingTop: spacing.sm,
+    marginTop: spacing.xs,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
@@ -5263,8 +5263,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.foreground,
   },
   documentFooterSection: {
-    margin: 16,
-    padding: 16,
+    margin: spacing.lg,
+    padding: spacing.lg,
     borderRadius: 12,
     alignItems: 'center',
   },
@@ -5275,7 +5275,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   documentFooterSubtext: {
     fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
-    marginTop: 4,
+    marginTop: spacing.xs,
     textAlign: 'center',
   },
 });

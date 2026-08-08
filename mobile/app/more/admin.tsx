@@ -20,7 +20,7 @@ import { Badge } from '../../src/components/ui/Badge';
 import { Skeleton } from '../../src/components/Skeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
-import { typography, fontWeights } from '../../src/lib/design-tokens';
+import { typography, fontWeights, spacing } from '../../src/lib/design-tokens';
 
 interface AdminStats {
   kpis: {
@@ -303,7 +303,7 @@ export default function AdminDashboard() {
           <CardContent style={styles.kpiCardContent}>
             <View style={{ flex: 1 }}>
               <Skeleton width={60} height={12} />
-              <Skeleton width={50} height={28} style={{ marginTop: 8 }} />
+              <Skeleton width={50} height={28} style={{ marginTop: spacing.sm }} />
             </View>
             <Skeleton width={44} height={44} borderRadius={12} />
           </CardContent>
@@ -377,12 +377,12 @@ export default function AdminDashboard() {
 
       <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>Feature Usage</Text>
       <Card>
-        <CardContent style={{ paddingVertical: 8 }}>
+        <CardContent style={{ paddingVertical: spacing.sm }}>
           {loading ? (
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: spacing.md }}>
               {[1, 2, 3, 4].map((i) => (
                 <View key={i} style={styles.featureRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                     <Skeleton width={20} height={20} borderRadius={4} />
                     <Skeleton width={80} height={14} />
                   </View>
@@ -391,7 +391,7 @@ export default function AdminDashboard() {
               ))}
             </View>
           ) : (
-            <View style={{ gap: 4 }}>
+            <View style={{ gap: spacing.xs }}>
               {[
                 { icon: 'briefcase' as const, label: 'Total Jobs', value: stats?.featureUsage?.totalJobs || 0 },
                 { icon: 'check-circle' as const, label: 'Completed Jobs', value: stats?.featureUsage?.completedJobs || 0, color: colors.success },
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
                 { icon: 'users' as const, label: 'Total Clients', value: stats?.featureUsage?.totalClients || 0 },
               ].map((item, idx) => (
                 <View key={idx} style={[styles.featureRow, idx !== 5 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                     <Feather name={item.icon} size={18} color={item.color || colors.mutedForeground} />
                     <Text style={[styles.featureLabel, { color: colors.foreground }]}>{item.label}</Text>
                   </View>
@@ -441,9 +441,9 @@ export default function AdminDashboard() {
         </Card>
       </View>
 
-      <Text style={[styles.sectionTitle, { color: colors.mutedForeground, marginTop: 16 }]}>Demo Tools</Text>
+      <Text style={[styles.sectionTitle, { color: colors.mutedForeground, marginTop: spacing.lg }]}>Demo Tools</Text>
       <Card>
-        <CardContent style={{ paddingVertical: 12 }}>
+        <CardContent style={{ paddingVertical: spacing.md }}>
           <PressableRow style={[styles.demoToolButton, { backgroundColor: colors.primary }]} onPress={async () => { try { type DemoResp = { success?: boolean; updated?: { todaysJobs?: number; thisWeekJobs?: number; upcomingJobs?: number } }; const response = await api.post<DemoResp>('/api/admin/refresh-demo-screenshots'); if (response.data?.success) { Alert.alert( 'Demo Data Refreshed', `${response.data.updated?.todaysJobs || 0} jobs today\n${response.data.updated?.thisWeekJobs || 0} jobs this week\n${response.data.updated?.upcomingJobs || 0} upcoming jobs\n\nPull down to refresh to see updated data.` ); } else { Alert.alert('Error', 'Failed to refresh demo data'); } } catch (error: any) { Alert.alert('Error', error.response?.data?.error || 'Failed to refresh demo data'); } }} >
             <Feather name="camera" size={18} color={colors.primaryForeground} />
             <Text style={[styles.demoToolButtonText, { color: colors.primaryForeground }]}>
@@ -470,19 +470,19 @@ export default function AdminDashboard() {
       </View>
       
       {loading ? (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: spacing.md }}>
           {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardContent>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1, gap: 8 }}>
+                  <View style={{ flex: 1, gap: spacing.sm }}>
                     <Skeleton width="60%" height={18} />
                     <Skeleton width="80%" height={14} />
                     <Skeleton width="40%" height={12} />
                   </View>
                   <Skeleton width={50} height={22} borderRadius={4} />
                 </View>
-                <View style={{ flexDirection: 'row', gap: 16, marginTop: 16 }}>
+                <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.lg }}>
                   <Skeleton width={80} height={14} />
                   <Skeleton width={80} height={14} />
                 </View>
@@ -498,7 +498,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: spacing.md }}>
           {users.map((u) => (
             <Card key={u.id}>
               <CardContent>
@@ -571,12 +571,12 @@ export default function AdminDashboard() {
       <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>System Status</Text>
       
       {healthLoading ? (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: spacing.md }}>
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardContent style={styles.healthCard}>
                 <Skeleton width={44} height={44} borderRadius={12} />
-                <View style={{ flex: 1, marginLeft: 16, gap: 6 }}>
+                <View style={{ flex: 1, marginLeft: spacing.lg, gap: 6 }}>
                   <Skeleton width="50%" height={16} />
                   <Skeleton width="70%" height={12} />
                 </View>
@@ -587,8 +587,8 @@ export default function AdminDashboard() {
         </View>
       ) : health === null ? (
         <Card>
-          <CardContent style={{ padding: 16, gap: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <CardContent style={{ padding: spacing.lg, gap: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
               <View style={[styles.healthIconBg, { backgroundColor: '#ef444415' }]}>
                 <Feather name="alert-triangle" size={22} color="#ef4444" />
               </View>
@@ -599,14 +599,14 @@ export default function AdminDashboard() {
                 </Text>
               </View>
             </View>
-            <PressableRow onPress={fetchHealthData} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.muted, alignSelf: 'flex-start', }} >
+            <PressableRow onPress={fetchHealthData} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 8, backgroundColor: colors.muted, alignSelf: 'flex-start', }} >
               <Feather name="refresh-cw" size={14} color={colors.foreground} />
               <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.sizes.sm }}>Retry</Text>
             </PressableRow>
           </CardContent>
         </Card>
       ) : (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: spacing.md }}>
           {[
             { key: 'api', icon: 'server' as const, name: 'API Server', data: health?.api },
             { key: 'database', icon: 'database' as const, name: 'Database', data: health?.database },
@@ -718,9 +718,9 @@ export default function AdminDashboard() {
       <Card>
         <CardContent style={{ paddingVertical: 0 }}>
           {loading ? (
-            <View style={{ paddingVertical: 16, gap: 16 }}>
+            <View style={{ paddingVertical: spacing.lg, gap: spacing.lg }}>
               {[1, 2, 3].map((i) => (
-                <View key={i} style={{ flexDirection: 'row', gap: 12 }}>
+                <View key={i} style={{ flexDirection: 'row', gap: spacing.md }}>
                   <Skeleton width={44} height={44} borderRadius={12} />
                   <View style={{ flex: 1, gap: 6 }}>
                     <Skeleton width="40%" height={14} />
@@ -856,16 +856,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 16,
+    padding: spacing.lg,
   },
   header: {
-    marginBottom: 20,
-    paddingTop: 8,
+    marginBottom: spacing.xl,
+    paddingTop: spacing.sm,
   },
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   headerIcon: {
     width: 44,
@@ -881,20 +881,20 @@ const styles = StyleSheet.create({
   },
   pageSubtitle: {
     fontSize: typography.button.fontSize,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   tabScrollView: {
-    marginBottom: 20,
+    marginBottom: spacing.xl,
     marginHorizontal: -16,
   },
   tabScrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
   },
   tabBar: {
     flexDirection: 'row',
     borderRadius: 12,
-    padding: 4,
-    gap: 4,
+    padding: spacing.xs,
+    gap: spacing.xs,
   },
   tab: {
     flexDirection: 'row',
@@ -911,15 +911,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: typography.captionSmall.fontSize,
     fontWeight: fontWeights.semibold,
-    marginBottom: 12,
-    marginTop: 20,
+    marginBottom: spacing.md,
+    marginTop: spacing.xl,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.md,
   },
   kpiCard: {
     width: '48%',
@@ -929,8 +929,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
   },
   kpiLabel: {
     fontSize: typography.captionSmall.fontSize,
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
   kpiValue: {
     fontSize: typography.sizes['3xl'],
     fontWeight: fontWeights.bold,
-    marginTop: 4,
+    marginTop: spacing.xs,
     letterSpacing: -0.5,
   },
   kpiIconBg: {
@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
   },
   featureLabel: {
     fontSize: typography.button.fontSize,
@@ -966,11 +966,11 @@ const styles = StyleSheet.create({
   },
   subscriptionGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   subscriptionCard: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: spacing.xl,
   },
   subscriptionValue: {
     fontSize: typography.sizes['3xl'],
@@ -980,15 +980,15 @@ const styles = StyleSheet.create({
   subscriptionLabel: {
     fontSize: typography.sizes.sm,
     fontWeight: fontWeights.medium,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   demoToolButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     borderRadius: 8,
   },
   demoToolButtonText: {
@@ -998,12 +998,12 @@ const styles = StyleSheet.create({
   demoToolHint: {
     fontSize: typography.captionSmall.fontSize,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   usersSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   userName: {
     fontSize: typography.subtitle.fontSize,
@@ -1012,11 +1012,11 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: typography.sizes.sm,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   userBusiness: {
     fontSize: typography.captionSmall.fontSize,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   userHeader: {
     flexDirection: 'row',
@@ -1027,12 +1027,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: 14,
-    gap: 16,
+    gap: spacing.lg,
   },
   userMetaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   userMetaText: {
     fontSize: typography.captionSmall.fontSize,
@@ -1056,7 +1056,7 @@ const styles = StyleSheet.create({
   },
   healthDetail: {
     fontSize: typography.captionSmall.fontSize,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   healthBadge: {
     flexDirection: 'row',
@@ -1079,12 +1079,12 @@ const styles = StyleSheet.create({
   performanceGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.md,
   },
   performanceCard: {
     width: '48%',
     flexGrow: 1,
-    padding: 16,
+    padding: spacing.lg,
     borderRadius: 12,
     borderWidth: 1,
   },
@@ -1112,7 +1112,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 14,
-    gap: 12,
+    gap: spacing.md,
   },
   activityIconBg: {
     width: 44,
@@ -1128,17 +1128,17 @@ const styles = StyleSheet.create({
   },
   activityUser: {
     fontSize: typography.sizes.sm,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   activityDetails: {
     fontSize: typography.sizes.xs,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   activityTime: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingTop: 2,
+    gap: spacing.xs,
+    paddingTop: spacing.xxs,
   },
   activityTimeText: {
     fontSize: typography.sizes.xs,
@@ -1146,13 +1146,13 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
-    gap: 8,
+    paddingVertical: spacing['4xl'],
+    gap: spacing.sm,
   },
   emptyStateText: {
     fontSize: typography.sizes.md,
     fontWeight: fontWeights.semibold,
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   emptyStateSubtext: {
     fontSize: typography.sizes.sm,
@@ -1163,7 +1163,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
+    padding: spacing['4xl'],
   },
   accessDeniedIcon: {
     width: 80,
@@ -1171,12 +1171,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   accessDeniedTitle: {
     fontSize: typography.sizes['2xl'],
     fontWeight: fontWeights.bold,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   accessDeniedText: {
     fontSize: typography.sizes.md,
@@ -1186,7 +1186,7 @@ const styles = StyleSheet.create({
   accessDeniedButton: {
     marginTop: 28,
     paddingVertical: 14,
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing['3xl'],
     borderRadius: 12,
   },
   accessDeniedButtonText: {

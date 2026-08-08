@@ -30,7 +30,7 @@ import LiveDocumentPreview from '../../../src/components/LiveDocumentPreview';
 import { getBottomNavHeight } from '../../../src/components/BottomNav';
 import { DatePicker } from '../../../src/components/ui/DatePicker';
 import { showToast } from '../../../src/lib/toast';
-import { typography, fontWeights } from '../../../src/lib/design-tokens';
+import { typography, fontWeights, spacing } from '../../../src/lib/design-tokens';
 
 const formatLocalDate = (d: Date): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -46,14 +46,14 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.card,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
-      paddingHorizontal: 16,
-      paddingBottom: 8,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm,
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 12,
+      paddingVertical: spacing.md,
     },
     backButton: {
       width: 36,
@@ -71,11 +71,11 @@ function createStyles(colors: ThemeColors) {
       fontWeight: fontWeights.semibold,
       color: colors.foreground,
       flex: 1,
-      marginLeft: 12,
+      marginLeft: spacing.md,
     },
     totalBadge: {
       backgroundColor: colors.primaryLight,
-      paddingHorizontal: 12,
+      paddingHorizontal: spacing.md,
       paddingVertical: 6,
       borderRadius: 12,
     },
@@ -97,8 +97,8 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 16,
-      paddingHorizontal: 20,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.xl,
       borderRadius: 10,
       gap: 10,
     },
@@ -136,28 +136,28 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
     },
     content: {
-      paddingTop: 8,
-      paddingHorizontal: 16,
+      paddingTop: spacing.sm,
+      paddingHorizontal: spacing.lg,
     },
     card: {
       backgroundColor: colors.card,
       borderRadius: 16,
-      padding: 16,
-      marginBottom: 16,
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
       borderWidth: 1,
       borderColor: colors.border,
     },
     cardHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      marginBottom: 16,
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
     },
     cardHeaderRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 16,
+      marginBottom: spacing.lg,
     },
     cardHeaderText: {
       fontSize: typography.button.fontSize,
@@ -167,7 +167,7 @@ function createStyles(colors: ThemeColors) {
     itemCountBadge: {
       backgroundColor: colors.muted,
       paddingHorizontal: 10,
-      paddingVertical: 4,
+      paddingVertical: spacing.xs,
       borderRadius: 8,
     },
     itemCountText: {
@@ -180,7 +180,7 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'space-between',
       backgroundColor: colors.background,
       borderRadius: 12,
-      padding: 12,
+      padding: spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
     },
@@ -212,7 +212,7 @@ function createStyles(colors: ThemeColors) {
       color: colors.foreground,
     },
     inputGroup: {
-      marginBottom: 16,
+      marginBottom: spacing.lg,
     },
     inputLabel: {
       fontSize: typography.captionSmall.fontSize,
@@ -242,7 +242,7 @@ function createStyles(colors: ThemeColors) {
       zIndex: 1,
     },
     dateInput: {
-      paddingLeft: 40,
+      paddingLeft: spacing['4xl'],
     },
     inputRow: {
       flexDirection: 'row',
@@ -252,8 +252,8 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       backgroundColor: colors.muted,
       borderRadius: 10,
-      padding: 12,
-      marginBottom: 8,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
     },
     lineItemInfo: {
       flex: 1,
@@ -262,7 +262,7 @@ function createStyles(colors: ThemeColors) {
       fontSize: typography.button.fontSize,
       fontWeight: fontWeights.medium,
       color: colors.foreground,
-      marginBottom: 2,
+      marginBottom: spacing.xxs,
     },
     lineItemMeta: {
       fontSize: typography.captionSmall.fontSize,
@@ -272,11 +272,11 @@ function createStyles(colors: ThemeColors) {
       fontSize: typography.button.fontSize,
       fontWeight: fontWeights.semibold,
       color: colors.foreground,
-      marginRight: 8,
+      marginRight: spacing.sm,
     },
     lineItemActions: {
       flexDirection: 'row',
-      gap: 4,
+      gap: spacing.xs,
     },
     iconButton: {
       width: 32,
@@ -287,14 +287,14 @@ function createStyles(colors: ThemeColors) {
     },
     addButtonsRow: {
       flexDirection: 'row',
-      gap: 8,
+      gap: spacing.sm,
     },
     addItemButton: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
+      gap: spacing.sm,
       backgroundColor: colors.background,
       borderRadius: 12,
       paddingVertical: 14,
@@ -310,9 +310,9 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
-      marginTop: 8,
-      paddingVertical: 12,
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+      paddingVertical: spacing.md,
       borderRadius: 12,
       backgroundColor: colors.primaryLight,
     },
@@ -335,8 +335,8 @@ function createStyles(colors: ThemeColors) {
     totalsCard: {
       backgroundColor: colors.card,
       borderRadius: 16,
-      padding: 16,
-      marginBottom: 16,
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
       borderWidth: 1,
       borderColor: colors.border,
     },
@@ -358,8 +358,8 @@ function createStyles(colors: ThemeColors) {
     grandTotalRow: {
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      marginTop: 8,
-      paddingTop: 12,
+      marginTop: spacing.sm,
+      paddingTop: spacing.md,
     },
     grandTotalLabel: {
       fontSize: typography.sizes.md,
@@ -381,7 +381,7 @@ function createStyles(colors: ThemeColors) {
       height: 28,
       borderRadius: 14,
       backgroundColor: colors.muted,
-      padding: 2,
+      padding: spacing.xxs,
       justifyContent: 'center',
     },
     toggleSwitchOn: {
@@ -397,8 +397,8 @@ function createStyles(colors: ThemeColors) {
       alignSelf: 'flex-end',
     },
     depositOptions: {
-      marginTop: 16,
-      paddingTop: 16,
+      marginTop: spacing.lg,
+      paddingTop: spacing.lg,
       borderTopWidth: 1,
       borderTopColor: colors.border,
     },
@@ -409,11 +409,11 @@ function createStyles(colors: ThemeColors) {
     },
     depositPercentRow: {
       flexDirection: 'row',
-      gap: 8,
+      gap: spacing.sm,
     },
     depositPercentOption: {
       flex: 1,
-      paddingVertical: 12,
+      paddingVertical: spacing.md,
       backgroundColor: colors.muted,
       borderRadius: 10,
       alignItems: 'center',
@@ -435,16 +435,16 @@ function createStyles(colors: ThemeColors) {
       fontSize: typography.button.fontSize,
       fontWeight: fontWeights.semibold,
       color: colors.foreground,
-      marginTop: 12,
+      marginTop: spacing.md,
       textAlign: 'center',
     },
     submitButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
+      gap: spacing.sm,
       borderRadius: 12,
-      paddingVertical: 16,
+      paddingVertical: spacing.lg,
       borderWidth: 1,
       shadowColor: '#000000',
       shadowOffset: { width: 0, height: 2 },
@@ -468,7 +468,7 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: 16,
+      padding: spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -479,7 +479,7 @@ function createStyles(colors: ThemeColors) {
     },
     modalContent: {
       flex: 1,
-      padding: 16,
+      padding: spacing.lg,
     },
     emptyState: {
       alignItems: 'center',
@@ -488,14 +488,14 @@ function createStyles(colors: ThemeColors) {
     emptyStateText: {
       fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
-      marginTop: 12,
-      marginBottom: 16,
+      marginTop: spacing.md,
+      marginBottom: spacing.lg,
     },
     createClientButton: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      paddingHorizontal: 16,
+      paddingHorizontal: spacing.lg,
       paddingVertical: 10,
       borderRadius: 10,
       backgroundColor: colors.primaryLight,
@@ -508,7 +508,7 @@ function createStyles(colors: ThemeColors) {
     clientOption: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 16,
+      padding: spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -519,7 +519,7 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.primaryLight,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12,
+      marginRight: spacing.md,
     },
     clientOptionAvatarText: {
       fontSize: typography.subtitle.fontSize,
@@ -537,7 +537,7 @@ function createStyles(colors: ThemeColors) {
     clientOptionEmail: {
       fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
-      marginTop: 2,
+      marginTop: spacing.xxs,
     },
     lineTotalPreview: {
       flexDirection: 'row',
@@ -545,9 +545,9 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       backgroundColor: colors.muted,
       borderRadius: 12,
-      padding: 16,
-      marginTop: 8,
-      marginBottom: 16,
+      padding: spacing.lg,
+      marginTop: spacing.sm,
+      marginBottom: spacing.lg,
     },
     lineTotalLabel: {
       fontSize: typography.button.fontSize,
@@ -561,7 +561,7 @@ function createStyles(colors: ThemeColors) {
     saveItemButton: {
       backgroundColor: colors.primary,
       borderRadius: 12,
-      paddingVertical: 16,
+      paddingVertical: spacing.lg,
       alignItems: 'center',
     },
     saveItemButtonText: {
@@ -573,8 +573,8 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 16,
-      paddingHorizontal: 16,
+      marginBottom: spacing.lg,
+      paddingHorizontal: spacing.lg,
     },
     previewHeadingTitle: {
       fontSize: typography.captionSmall.fontSize,
@@ -584,8 +584,8 @@ function createStyles(colors: ThemeColors) {
       letterSpacing: 0.5,
     },
     previewHeadingBadge: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
       backgroundColor: colors.muted,
       borderRadius: 4,
       borderWidth: 1,
@@ -1218,7 +1218,7 @@ export default function NewQuoteScreen() {
             flexDirection: 'row',
             backgroundColor: colors.muted,
             borderRadius: 10,
-            padding: 4,
+            padding: spacing.xs,
             width: '100%',
           }}>
             <Pressable
@@ -1230,7 +1230,7 @@ export default function NewQuoteScreen() {
                 paddingVertical: 10,
                 paddingHorizontal: 14,
                 borderRadius: 8,
-                gap: 8,
+                gap: spacing.sm,
                 backgroundColor: activeTab === 'edit' ? colors.primary : 'transparent',
               }}
               onPress={() => setActiveTab('edit')}
@@ -1257,7 +1257,7 @@ export default function NewQuoteScreen() {
                 paddingVertical: 10,
                 paddingHorizontal: 14,
                 borderRadius: 8,
-                gap: 8,
+                gap: spacing.sm,
                 backgroundColor: activeTab === 'preview' ? colors.primary : 'transparent',
               }}
               onPress={() => setActiveTab('preview')}
@@ -1285,9 +1285,9 @@ export default function NewQuoteScreen() {
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingHorizontal: 16,
-              paddingTop: 12,
-              paddingBottom: 8,
+              paddingHorizontal: spacing.lg,
+              paddingTop: spacing.md,
+              paddingBottom: spacing.sm,
             }}>
               <Text style={{
                 fontSize: typography.captionSmall.fontSize,
@@ -1300,8 +1300,8 @@ export default function NewQuoteScreen() {
               </Text>
               <View style={{
                 backgroundColor: colors.muted,
-                paddingHorizontal: 8,
-                paddingVertical: 4,
+                paddingHorizontal: spacing.sm,
+                paddingVertical: spacing.xs,
                 borderRadius: 6,
                 borderWidth: 1,
                 borderColor: colors.border,
@@ -1345,7 +1345,7 @@ export default function NewQuoteScreen() {
             {isLoadingClients && clients.length === 0 ? (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 48 }}>
                 <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: 12 }}>Loading clients...</Text>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: spacing.md }}>Loading clients...</Text>
               </View>
             ) : (
             <ScrollView 
@@ -1562,7 +1562,7 @@ export default function NewQuoteScreen() {
               </View>
 
               {/* Submit Button - Uses business primary color */}
-              <PressableRow style={{ backgroundColor: colors.primary, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: isLoading ? 0.6 : 1, }} onPress={handleSave} disabled={isLoading} >
+              <PressableRow style={{ backgroundColor: colors.primary, paddingVertical: 14, paddingHorizontal: spacing.xl, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, opacity: isLoading ? 0.6 : 1, }} onPress={handleSave} disabled={isLoading} >
                 {isLoading ? (
                   <ActivityIndicator size="small" color={colors.primaryForeground} />
                 ) : (
@@ -1646,7 +1646,7 @@ export default function NewQuoteScreen() {
           ) : (
             <ScrollView style={styles.modalContent}>
               {/* Quick Add Client Button */}
-              <PressableRow style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryLight, padding: 14, borderRadius: 10, marginBottom: 16, gap: 10, }} onPress={() => setShowQuickAddClient(true)} >
+              <PressableRow style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryLight, padding: 14, borderRadius: 10, marginBottom: spacing.lg, gap: 10, }} onPress={() => setShowQuickAddClient(true)} >
                 <View style={{
                   width: 36,
                   height: 36,
@@ -1668,7 +1668,7 @@ export default function NewQuoteScreen() {
                 <View style={styles.emptyState}>
                   <Feather name="user" size={48} color={colors.mutedForeground} />
                   <Text style={styles.emptyStateText}>No clients found</Text>
-                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, textAlign: 'center', marginTop: 4 }}>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs }}>
                     Use Quick Add above to create your first client
                   </Text>
                 </View>
@@ -1735,7 +1735,7 @@ export default function NewQuoteScreen() {
                   keyboardType="decimal-pad"
                 />
               </View>
-              <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
+              <View style={[styles.inputGroup, { flex: 1, marginLeft: spacing.md }]}>
                 <Text style={styles.inputLabel}>Unit Price ($)</Text>
                 <TextInput
                   style={styles.input}
@@ -1779,7 +1779,7 @@ export default function NewQuoteScreen() {
             </PressableRow>
           </View>
           <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
-            <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginBottom: 16 }}>
+            <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginBottom: spacing.lg }}>
               Describe the job, add photos, or use voice input. AI will generate quote line items with realistic pricing.
             </Text>
             <View style={styles.inputGroup}>
@@ -1795,24 +1795,24 @@ export default function NewQuoteScreen() {
               />
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-              <PressableRow style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.muted, borderRadius: 10, paddingVertical: 12, borderWidth: 1, borderColor: colors.border, }} onPress={() => handlePickAIPhoto('camera')} >
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: spacing.lg }}>
+              <PressableRow style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.muted, borderRadius: 10, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border, }} onPress={() => handlePickAIPhoto('camera')} >
                 <Feather name="camera" size={18} color={colors.foreground} />
                 <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>Camera</Text>
               </PressableRow>
-              <PressableRow style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.muted, borderRadius: 10, paddingVertical: 12, borderWidth: 1, borderColor: colors.border, }} onPress={() => handlePickAIPhoto('gallery')} >
+              <PressableRow style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.muted, borderRadius: 10, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border, }} onPress={() => handlePickAIPhoto('gallery')} >
                 <Feather name="image" size={18} color={colors.foreground} />
                 <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>Gallery</Text>
               </PressableRow>
-              <PressableRow style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: showVoiceRecorder ? colors.primaryLight : colors.muted, borderRadius: 10, paddingVertical: 12, borderWidth: 1, borderColor: showVoiceRecorder ? colors.primary : colors.border, }} onPress={() => setShowVoiceRecorder(!showVoiceRecorder)} >
+              <PressableRow style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: showVoiceRecorder ? colors.primaryLight : colors.muted, borderRadius: 10, paddingVertical: spacing.md, borderWidth: 1, borderColor: showVoiceRecorder ? colors.primary : colors.border, }} onPress={() => setShowVoiceRecorder(!showVoiceRecorder)} >
                 <Feather name="mic" size={18} color={showVoiceRecorder ? colors.primary : colors.foreground} />
                 <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: showVoiceRecorder ? colors.primary : colors.foreground }}>Voice</Text>
               </PressableRow>
             </View>
 
             {aiPhotos.length > 0 && (
-              <View style={{ marginBottom: 16 }}>
-                <Text style={[styles.inputLabel, { marginBottom: 8 }]}>
+              <View style={{ marginBottom: spacing.lg }}>
+                <Text style={[styles.inputLabel, { marginBottom: spacing.sm }]}>
                   Photos ({aiPhotos.length})
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
@@ -1833,10 +1833,10 @@ export default function NewQuoteScreen() {
 
             {showVoiceRecorder && (
               <View style={{
-                marginBottom: 16,
+                marginBottom: spacing.lg,
                 backgroundColor: colors.muted,
                 borderRadius: 12,
-                padding: 12,
+                padding: spacing.md,
                 borderWidth: 1,
                 borderColor: colors.border,
               }}>
@@ -1849,14 +1849,14 @@ export default function NewQuoteScreen() {
 
             <PressableRow style={[styles.saveItemButton, (isGeneratingAI || isUploadingPhotos) && { opacity: 0.6 }]} onPress={handleGenerateAI} disabled={isGeneratingAI || isUploadingPhotos} >
               {isGeneratingAI || isUploadingPhotos ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                   <ActivityIndicator size="small" color={colors.primaryForeground} />
                   <Text style={styles.saveItemButtonText}>
                     {isUploadingPhotos ? 'Uploading Photos...' : 'Generating...'}
                   </Text>
                 </View>
               ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                   <Feather name="zap" size={18} color={colors.primaryForeground} />
                   <Text style={styles.saveItemButtonText}>Generate Quote Items</Text>
                 </View>
@@ -1880,20 +1880,20 @@ export default function NewQuoteScreen() {
               <Feather name="x" size={24} color={colors.foreground} />
             </PressableRow>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
             <View style={{
               flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: colors.muted,
               borderRadius: 10,
-              paddingHorizontal: 12,
-              gap: 8,
+              paddingHorizontal: spacing.md,
+              gap: spacing.sm,
             }}>
               <Feather name="search" size={16} color={colors.mutedForeground} />
               <TextInput
                 style={{
                   flex: 1,
-                  paddingVertical: 12,
+                  paddingVertical: spacing.md,
                   fontSize: typography.sizes.md,
                   color: colors.foreground,
                 }}
@@ -1958,9 +1958,9 @@ export default function NewQuoteScreen() {
                 <View key={category}>
                   {hasCategories && (
                     <View style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 4,
-                      marginTop: 8,
+                      paddingVertical: spacing.sm,
+                      paddingHorizontal: spacing.xs,
+                      marginTop: spacing.sm,
                       borderBottomWidth: 1,
                       borderBottomColor: colors.border,
                     }}>
@@ -2010,20 +2010,20 @@ export default function NewQuoteScreen() {
               <Feather name="x" size={24} color={colors.foreground} />
             </PressableRow>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
             <View style={{
               flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: colors.muted,
               borderRadius: 10,
-              paddingHorizontal: 12,
-              gap: 8,
+              paddingHorizontal: spacing.md,
+              gap: spacing.sm,
             }}>
               <Feather name="search" size={16} color={colors.mutedForeground} />
               <TextInput
                 style={{
                   flex: 1,
-                  paddingVertical: 12,
+                  paddingVertical: spacing.md,
                   fontSize: typography.sizes.md,
                   color: colors.foreground,
                 }}
@@ -2083,9 +2083,9 @@ export default function NewQuoteScreen() {
               return tradeKeys.map(trade => (
                 <View key={trade}>
                   <View style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 4,
-                    marginTop: 8,
+                    paddingVertical: spacing.sm,
+                    paddingHorizontal: spacing.xs,
+                    marginTop: spacing.sm,
                     borderBottomWidth: 1,
                     borderBottomColor: colors.border,
                   }}>

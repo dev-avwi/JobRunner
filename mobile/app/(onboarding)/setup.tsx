@@ -26,7 +26,7 @@ import { OnboardingMagicScreen } from '../../src/components/OnboardingMagicScree
 import { OnboardingTour, hasCompletedOnboarding } from '../../src/components/OnboardingTour';
 import { markOnboardingSetupFailed, clearOnboardingSetupFailure } from '../../src/lib/onboardingSetupStatus';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
-import { typography, fontWeights } from '../../src/lib/design-tokens';
+import { typography, fontWeights, spacing } from '../../src/lib/design-tokens';
 
 const ONBOARDING_DRAFT_KEY = 'onboarding:owner-draft:v1';
 
@@ -809,7 +809,7 @@ export default function OnboardingSetupScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8 }}
+          style={{ marginTop: spacing.lg, alignItems: 'center', paddingVertical: spacing.sm }}
           onPress={() => { setSelectedRole(null); setOwnerStep('role'); }}
           activeOpacity={0.7}
         >
@@ -1266,7 +1266,7 @@ export default function OnboardingSetupScreen() {
     const isSubPath = selectedRole === 'subcontractor';
 
     return (
-      <View style={[styles.stepContainer, styles.doneContainer, { paddingBottom: 24 + setupInsets.bottom }]}>
+      <View style={[styles.stepContainer, styles.doneContainer, { paddingBottom: spacing['2xl'] + setupInsets.bottom }]}>
         <View style={styles.doneContent}>
           <View style={styles.doneBadge}>
             <Ionicons name="checkmark" size={36} color={colors.primaryForeground} />
@@ -1453,9 +1453,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 8,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   backBtn: {
     width: 40,
@@ -1468,7 +1468,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     height: 5,
     borderRadius: 3,
-    marginHorizontal: 16,
+    marginHorizontal: spacing.lg,
     backgroundColor: colors.border,
     overflow: 'hidden',
   },
@@ -1487,14 +1487,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   stepContent: {
     paddingHorizontal: 28,
-    paddingTop: 12,
-    paddingBottom: 40,
+    paddingTop: spacing.md,
+    paddingBottom: spacing['4xl'],
   },
   centeredContent: {
     flexGrow: 1,
     paddingHorizontal: 28,
     paddingTop: 60,
-    paddingBottom: 40,
+    paddingBottom: spacing['4xl'],
   },
 
   welcomeHeader: {
@@ -1515,7 +1515,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
 
   roleCardsWrap: {
-    gap: 12,
+    gap: spacing.md,
   },
   roleCard: {
     flexDirection: 'row',
@@ -1562,11 +1562,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.muted,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
 
   stepHeader: {
-    marginBottom: 24,
+    marginBottom: spacing['2xl'],
   },
   stepTitle: {
     fontSize: typography.sizes['2xl'],
@@ -1583,13 +1583,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
 
   fieldGroup: {
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   fieldLabel: {
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.medium,
     color: colors.foreground,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   fieldOptional: {
     fontSize: typography.captionSmall.fontSize,
@@ -1598,7 +1598,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   fieldInput: {
     height: 48,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.cardBorder,
@@ -1616,15 +1616,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.semibold,
     color: colors.foreground,
-    marginBottom: 12,
-    marginTop: 4,
+    marginBottom: spacing.md,
+    marginTop: spacing.xs,
   },
 
   tradeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 24,
+    gap: spacing.sm,
+    marginBottom: spacing['2xl'],
   },
   tradePill: {
     flexDirection: 'row',
@@ -1649,19 +1649,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   teamGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
+    gap: spacing.md,
+    marginBottom: spacing['2xl'],
   },
   teamCard: {
     width: (SCREEN_WIDTH - 68) / 2,
-    paddingVertical: 20,
+    paddingVertical: spacing.xl,
     paddingHorizontal: 14,
     backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: colors.cardBorder,
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   teamCardSelected: {
     borderColor: colors.primary,
@@ -1682,16 +1682,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    padding: 16,
+    padding: spacing.lg,
     backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: colors.cardBorder,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   sampleToggleText: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   sampleToggleTitle: {
     fontSize: typography.subtitle.fontSize,
@@ -1705,17 +1705,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     lineHeight: 17,
   },
   ctaWrap: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   ctaButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing['2xl'],
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
   ctaText: {
     color: colors.primaryForeground,
@@ -1727,14 +1727,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     fontWeight: fontWeights.medium,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 6,
   },
   skipChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
     paddingVertical: 7,
     borderRadius: 999,
     backgroundColor: colors.primary + '15',
@@ -1749,11 +1749,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
   codeInputWrap: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   codeInput: {
     height: 60,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.xl,
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.cardBorder,
@@ -1775,10 +1775,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.success + '0C',
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     borderRadius: 12,
     gap: 10,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   validationText: {
     flex: 1,
@@ -1787,8 +1787,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
 
   privacyList: {
-    gap: 20,
-    marginBottom: 32,
+    gap: spacing.xl,
+    marginBottom: spacing['3xl'],
   },
   privacyRow: {
     flexDirection: 'row',
@@ -1800,7 +1800,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   privacyTextWrap: {
     flex: 1,
@@ -1809,7 +1809,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: typography.sizes.md,
     fontWeight: fontWeights.semibold,
     color: colors.foreground,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   privacyDesc: {
     fontSize: typography.sizes.sm,
@@ -1820,7 +1820,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   doneContainer: {
     justifyContent: 'space-between',
     paddingHorizontal: 28,
-    paddingBottom: 24,
+    paddingBottom: spacing['2xl'],
     paddingTop: 48,
   },
   doneContent: {
@@ -1850,7 +1850,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: typography.sizes.md,
     color: colors.mutedForeground,
     textAlign: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     lineHeight: 22,
   },
   doneChecks: {
@@ -1873,14 +1873,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.foreground,
   },
   doneButtonWrap: {
-    paddingTop: 16,
+    paddingTop: spacing.lg,
   },
 
   loadingWrap: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
+    gap: spacing.lg,
   },
   loadingLabel: {
     fontSize: typography.sizes.md,

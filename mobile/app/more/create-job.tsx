@@ -25,7 +25,7 @@ import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import api from '../../src/lib/api';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
 import { useUserRole } from '../../src/hooks/use-user-role';
-import { typography, fontWeights } from '../../src/lib/design-tokens';
+import { typography, fontWeights, spacing } from '../../src/lib/design-tokens';
 
 type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
 
@@ -39,8 +39,8 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
       backgroundColor: colors.card,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
@@ -65,16 +65,16 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
     },
     content: {
-      padding: 16,
+      padding: spacing.lg,
     },
     section: {
-      marginBottom: 20,
+      marginBottom: spacing.xl,
     },
     sectionTitle: {
       fontSize: typography.button.fontSize,
       fontWeight: fontWeights.semibold,
       color: colors.foreground,
-      marginBottom: 8,
+      marginBottom: spacing.sm,
     },
     input: {
       backgroundColor: colors.card,
@@ -108,7 +108,7 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       flex: 1,
-      gap: 12,
+      gap: spacing.md,
     },
     clientAvatar: {
       width: 36,
@@ -164,20 +164,20 @@ function createStyles(colors: ThemeColors) {
     },
     scheduleRow: {
       flexDirection: 'row',
-      gap: 12,
+      gap: spacing.md,
     },
     clearSchedule: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
-      marginTop: 8,
+      gap: spacing.xs,
+      marginTop: spacing.sm,
     },
     clearScheduleText: {
       fontSize: typography.sizes.sm,
       color: colors.destructive,
     },
     actionsContainer: {
-      padding: 16,
+      padding: spacing.lg,
       paddingBottom: Platform.OS === 'ios' ? 32 : 16,
       backgroundColor: colors.background,
       borderTopWidth: 1,
@@ -187,9 +187,9 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
+      gap: spacing.sm,
       backgroundColor: colors.primary,
-      paddingVertical: 16,
+      paddingVertical: spacing.lg,
       borderRadius: 12,
     },
     saveButtonText: {
@@ -210,7 +210,7 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: 16,
+      padding: spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -222,15 +222,15 @@ function createStyles(colors: ThemeColors) {
     modalSearch: {
       backgroundColor: colors.background,
       borderRadius: 10,
-      margin: 16,
-      padding: 12,
+      margin: spacing.lg,
+      padding: spacing.md,
       fontSize: typography.sizes.md,
       color: colors.foreground,
       borderWidth: 1,
       borderColor: colors.border,
     },
     modalList: {
-      paddingHorizontal: 16,
+      paddingHorizontal: spacing.lg,
     },
     clientItem: {
       flexDirection: 'row',
@@ -238,7 +238,7 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'space-between',
       padding: 14,
       borderRadius: 12,
-      marginBottom: 8,
+      marginBottom: spacing.sm,
       backgroundColor: colors.background,
     },
     clientItemSelected: {
@@ -257,15 +257,15 @@ function createStyles(colors: ThemeColors) {
     clientItemEmail: {
       fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
-      marginTop: 2,
+      marginTop: spacing.xxs,
     },
     statusItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: spacing.md,
       padding: 14,
       borderRadius: 12,
-      marginBottom: 8,
+      marginBottom: spacing.sm,
       backgroundColor: colors.background,
     },
     statusItemSelected: {
@@ -280,7 +280,7 @@ function createStyles(colors: ThemeColors) {
     },
     emptyList: {
       alignItems: 'center',
-      paddingVertical: 32,
+      paddingVertical: spacing['3xl'],
     },
     emptyListText: {
       fontSize: typography.button.fontSize,
@@ -289,15 +289,15 @@ function createStyles(colors: ThemeColors) {
     suggestionsCard: {
       backgroundColor: colors.successLight || colors.success + '15',
       borderRadius: 12,
-      padding: 12,
-      marginBottom: 20,
+      padding: spacing.md,
+      marginBottom: spacing.xl,
       borderWidth: 1,
       borderColor: colors.success + '30',
     },
     suggestionsHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: spacing.sm,
       marginBottom: 10,
     },
     suggestionsTitle: {
@@ -313,12 +313,12 @@ function createStyles(colors: ThemeColors) {
     suggestionsChipsContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 8,
+      gap: spacing.sm,
     },
     suggestionChip: {
       backgroundColor: colors.card,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
       borderRadius: 8,
       borderWidth: 1,
       borderColor: colors.border,
@@ -330,8 +330,8 @@ function createStyles(colors: ThemeColors) {
     suggestionsLoading: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingVertical: 8,
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
     },
     suggestionsLoadingText: {
       fontSize: typography.sizes.sm,
@@ -342,14 +342,14 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 12,
       borderWidth: 1,
       borderColor: colors.border,
-      marginTop: 4,
+      marginTop: spacing.xs,
       overflow: 'hidden',
     },
     addressSuggestionItem: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
       paddingHorizontal: 14,
-      paddingVertical: 12,
+      paddingVertical: spacing.md,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       gap: 10,
@@ -364,7 +364,7 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center' as const,
       paddingHorizontal: 14,
       paddingVertical: 10,
-      gap: 8,
+      gap: spacing.sm,
     },
   });
 }
@@ -425,8 +425,8 @@ function ClientSelector({
           />
 
           {onQuickAdd && (
-            <PressableRow style={[styles.clientItem, { backgroundColor: colors.primaryLight, borderColor: colors.primary, marginBottom: 8 }]} onPress={onQuickAdd} >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <PressableRow style={[styles.clientItem, { backgroundColor: colors.primaryLight, borderColor: colors.primary, marginBottom: spacing.sm }]} onPress={onQuickAdd} >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                 <Feather name="plus-circle" size={20} color={colors.primary} />
                 <Text style={[styles.clientItemName, { color: colors.primary }]}>Quick Add New Client</Text>
               </View>
@@ -957,21 +957,21 @@ export default function CreateJobScreen() {
             <Text style={styles.headerTitle}>Create Job</Text>
             <View style={styles.headerRight} />
           </View>
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing['3xl'] }}>
             {isRoleLoading ? (
               <ActivityIndicator size="large" color={colors.primary} />
             ) : (
               <>
-                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg }}>
                   <Feather name="lock" size={28} color={colors.mutedForeground} />
                 </View>
-                <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 8, textAlign: 'center' }}>
+                <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.sm, textAlign: 'center' }}>
                   Not available
                 </Text>
-                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center', marginBottom: 24 }}>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center', marginBottom: spacing['2xl'] }}>
                   You don't have permission to create jobs. Ask your business owner if you need access.
                 </Text>
-                <PressableRow style={{ paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10, backgroundColor: colors.primary }} onPress={() => router.back()}>
+                <PressableRow style={{ paddingHorizontal: spacing['2xl'], paddingVertical: spacing.md, borderRadius: 10, backgroundColor: colors.primary }} onPress={() => router.back()}>
                   <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Go Back</Text>
                 </PressableRow>
               </>
@@ -1219,21 +1219,21 @@ export default function CreateJobScreen() {
             </View>
 
             {/* Recurring Job Section */}
-            <View style={[styles.section, { backgroundColor: colors.card, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border }]}>
+            <View style={[styles.section, { backgroundColor: colors.card, padding: spacing.lg, borderRadius: 12, borderWidth: 1, borderColor: colors.border }]}>
               <PressableRow style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }} onPress={() => setIsRecurring(!isRecurring)} >
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 16 }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.lg }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md }}>
                     <Feather name="repeat" size={18} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 2 }}>Make this recurring</Text>
+                    <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xxs }}>Make this recurring</Text>
                     <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
                       Automatically create jobs on a schedule
                     </Text>
                   </View>
                 </View>
                 <View style={[
-                  { width: 50, height: 30, borderRadius: 15, justifyContent: 'center', paddingHorizontal: 2 },
+                  { width: 50, height: 30, borderRadius: 15, justifyContent: 'center', paddingHorizontal: spacing.xxs },
                   { backgroundColor: isRecurring ? colors.primary : colors.muted }
                 ]}>
                   <View style={[
@@ -1244,8 +1244,8 @@ export default function CreateJobScreen() {
               </PressableRow>
 
               {isRecurring && (
-                <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
-                  <View style={{ marginBottom: 16 }}>
+                <View style={{ marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border }}>
+                  <View style={{ marginBottom: spacing.lg }}>
                     <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 6 }}>Frequency</Text>
                     <PressableRow style={styles.selector} onPress={() => setShowRecurrenceOptions(true)} >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -1258,12 +1258,12 @@ export default function CreateJobScreen() {
                     </PressableRow>
                   </View>
 
-                  <View style={{ marginBottom: 16 }}>
+                  <View style={{ marginBottom: spacing.lg }}>
                     <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 6 }}>End Date (Optional)</Text>
                     <View style={{ position: 'relative' }}>
                       <Feather name="calendar" size={16} color={colors.mutedForeground} style={{ position: 'absolute', left: 14, top: 16, zIndex: 1 }} />
                       <TextInput
-                        style={[styles.input, { paddingLeft: 40 }]}
+                        style={[styles.input, { paddingLeft: spacing['4xl'] }]}
                         value={recurrenceEndDate}
                         onChangeText={setRecurrenceEndDate}
                         placeholder="YYYY-MM-DD (leave empty for no end)"
@@ -1272,7 +1272,7 @@ export default function CreateJobScreen() {
                     </View>
                   </View>
 
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primaryLight, padding: 12, borderRadius: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primaryLight, padding: spacing.md, borderRadius: 10 }}>
                     <Feather name="info" size={14} color={colors.primary} />
                     <Text style={{ flex: 1, fontSize: typography.sizes.sm, color: colors.primary }}>
                       Next job will be created on{' '}
@@ -1439,7 +1439,7 @@ export default function CreateJobScreen() {
               
               <ScrollView 
                 style={{ maxHeight: 400 }} 
-                contentContainerStyle={{ padding: 16, gap: 12 }}
+                contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
                 keyboardShouldPersistTaps="handled"
               >
                 <View>
@@ -1480,7 +1480,7 @@ export default function CreateJobScreen() {
                   />
                 </View>
                 
-                <PressableRow style={[styles.saveButton, { marginTop: 8, opacity: isAddingClient ? 0.6 : 1 }]} onPress={handleQuickAddClient} disabled={isAddingClient} testID="button-add-quick-client" >
+                <PressableRow style={[styles.saveButton, { marginTop: spacing.sm, opacity: isAddingClient ? 0.6 : 1 }]} onPress={handleQuickAddClient} disabled={isAddingClient} testID="button-add-quick-client" >
                   {isAddingClient ? (
                     <ActivityIndicator size="small" color={colors.white} />
                   ) : (

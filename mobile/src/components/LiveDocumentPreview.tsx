@@ -10,6 +10,7 @@ import {
   DOCUMENT_ACCENT_COLOR
 } from '../lib/document-templates';
 import { useTheme } from '../lib/theme';
+import { spacing } from '../lib/design-tokens';
 
 const jobRunnerLogo = require('../../assets/jobrunner-logo.png');
 
@@ -231,9 +232,9 @@ export default function LiveDocumentPreview({
       backgroundColor: colors.background,
     },
     scrollContent: {
-      paddingHorizontal: 12,
-      paddingTop: 8,
-      paddingBottom: 40,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing['4xl'],
     },
     documentCard: {
       backgroundColor: colors.white,
@@ -248,14 +249,14 @@ export default function LiveDocumentPreview({
       borderColor: '#e2e8f0',
     },
     documentContent: {
-      padding: 24,
+      padding: spacing['2xl'],
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: 24,
-      paddingBottom: 16,
+      marginBottom: spacing['2xl'],
+      paddingBottom: spacing.lg,
       borderBottomWidth: template.showHeaderDivider ? template.headerBorderWidth : 0,
       borderBottomColor: template.showHeaderDivider ? primaryColor : 'transparent',
     },
@@ -263,13 +264,13 @@ export default function LiveDocumentPreview({
       flex: 3,
       minWidth: 150,
       maxWidth: '65%',
-      marginRight: 12,
+      marginRight: spacing.md,
     },
     logo: {
       width: 60,
       height: 60,
       borderRadius: 8,
-      marginBottom: 12,
+      marginBottom: spacing.md,
     },
     logoPlaceholder: {
       width: 60,
@@ -278,16 +279,16 @@ export default function LiveDocumentPreview({
       backgroundColor: '#f1f5f9',
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 12,
+      marginBottom: spacing.md,
     },
     businessName: {
       fontSize: 20,
       fontWeight: headingStyle.fontWeight as any,
       color: headingStyle.color,
-      marginBottom: 8,
+      marginBottom: spacing.sm,
     },
     businessDetails: {
-      gap: 2,
+      gap: spacing.xxs,
     },
     businessDetail: {
       fontSize: 10,
@@ -308,18 +309,18 @@ export default function LiveDocumentPreview({
       color: isPaid ? colors.success : headingStyle.color,
       letterSpacing: 2,
       textTransform: 'uppercase',
-      marginBottom: 4,
+      marginBottom: spacing.xs,
     },
     documentNumber: {
       fontSize: 12,
       color: colors.textMuted,
-      marginTop: 4,
+      marginTop: spacing.xs,
     },
     statusBadge: {
-      paddingHorizontal: 12,
-      paddingVertical: 4,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
       borderRadius: 12,
-      marginTop: 8,
+      marginTop: spacing.sm,
     },
     statusText: {
       fontSize: 10,
@@ -330,8 +331,8 @@ export default function LiveDocumentPreview({
     infoSection: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: 24,
-      gap: 24,
+      marginBottom: spacing['2xl'],
+      gap: spacing['2xl'],
     },
     infoColumn: {
       flex: 1,
@@ -361,13 +362,13 @@ export default function LiveDocumentPreview({
     },
     detailRow: {
       flexDirection: 'row',
-      marginBottom: 2,
+      marginBottom: spacing.xxs,
     },
     detailLabel: {
       fontSize: 11,
       fontWeight: '600', fontFamily: 'Inter_600SemiBold',
       color: colors.text,
-      marginRight: 4,
+      marginRight: spacing.xs,
     },
     detailValue: {
       fontSize: 11,
@@ -376,14 +377,14 @@ export default function LiveDocumentPreview({
     descriptionSection: {
       backgroundColor: '#f8f9fa',
       borderRadius: 6,
-      padding: 16,
-      marginBottom: 24,
+      padding: spacing.lg,
+      marginBottom: spacing['2xl'],
     },
     descriptionTitle: {
       fontSize: 13,
       fontWeight: '600', fontFamily: 'Inter_600SemiBold',
       color: primaryColor,
-      marginBottom: 8,
+      marginBottom: spacing.sm,
     },
     descriptionText: {
       fontSize: 11,
@@ -391,12 +392,12 @@ export default function LiveDocumentPreview({
       lineHeight: 18,
     },
     table: {
-      marginBottom: 24,
+      marginBottom: spacing['2xl'],
     },
     tableHeader: {
       flexDirection: 'row',
       paddingVertical: 10,
-      paddingHorizontal: 12,
+      paddingHorizontal: spacing.md,
       backgroundColor: tableHeaderStyle.backgroundColor,
       borderBottomWidth: tableHeaderStyle.borderBottomWidth,
       borderBottomColor: tableHeaderStyle.borderBottomColor,
@@ -412,7 +413,7 @@ export default function LiveDocumentPreview({
     tableRow: {
       flexDirection: 'row',
       paddingVertical: 10,
-      paddingHorizontal: 12,
+      paddingHorizontal: spacing.md,
     },
     tableCell: {
       fontSize: 11,
@@ -423,7 +424,7 @@ export default function LiveDocumentPreview({
     priceCol: { width: 70, textAlign: 'right' },
     amountCol: { width: 70, textAlign: 'right' },
     emptyRow: {
-      paddingVertical: 24,
+      paddingVertical: spacing['2xl'],
       alignItems: 'center',
     },
     emptyText: {
@@ -433,7 +434,7 @@ export default function LiveDocumentPreview({
     },
     totalsContainer: {
       alignItems: 'flex-end',
-      marginBottom: 24,
+      marginBottom: spacing['2xl'],
     },
     totalsBox: {
       width: '60%',
@@ -441,7 +442,7 @@ export default function LiveDocumentPreview({
     totalRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingVertical: 8,
+      paddingVertical: spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -457,8 +458,8 @@ export default function LiveDocumentPreview({
     grandTotalRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingVertical: 12,
-      marginTop: 4,
+      paddingVertical: spacing.md,
+      marginTop: spacing.xs,
       borderTopWidth: 2,
       borderTopColor: isPaid ? colors.success : primaryColor,
     },
@@ -476,18 +477,18 @@ export default function LiveDocumentPreview({
       fontSize: 9,
       color: colors.textLight,
       textAlign: 'right',
-      marginTop: 4,
+      marginTop: spacing.xs,
     },
     depositSection: {
-      marginTop: 16,
-      paddingTop: 16,
+      marginTop: spacing.lg,
+      paddingTop: spacing.lg,
       borderTopWidth: 1,
       borderTopColor: colors.borderLight,
     },
     depositRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingVertical: 4,
+      paddingVertical: spacing.xs,
     },
     depositLabel: {
       fontSize: 11,
@@ -499,14 +500,14 @@ export default function LiveDocumentPreview({
       color: colors.text,
     },
     notesSection: {
-      marginBottom: 24,
-      padding: 16,
+      marginBottom: spacing['2xl'],
+      padding: spacing.lg,
     },
     notesSectionTitle: {
       fontSize: 12,
       fontWeight: '600', fontFamily: 'Inter_600SemiBold',
       color: '#333',
-      marginBottom: 8,
+      marginBottom: spacing.sm,
     },
     notesText: {
       fontSize: 10,
@@ -514,8 +515,8 @@ export default function LiveDocumentPreview({
       lineHeight: 16,
     },
     photosSection: {
-      marginBottom: 20,
-      padding: 12,
+      marginBottom: spacing.xl,
+      padding: spacing.md,
     },
     photosSectionTitle: {
       fontSize: 12,
@@ -545,13 +546,13 @@ export default function LiveDocumentPreview({
       textAlign: 'center',
     },
     termsSection: {
-      marginBottom: 24,
+      marginBottom: spacing['2xl'],
     },
     termsTitle: {
       fontSize: 11,
       fontWeight: '600', fontFamily: 'Inter_600SemiBold',
       color: '#333',
-      marginBottom: 8,
+      marginBottom: spacing.sm,
     },
     termsText: {
       fontSize: 9,
@@ -559,8 +560,8 @@ export default function LiveDocumentPreview({
       lineHeight: 14,
     },
     acceptanceSection: {
-      marginTop: 24,
-      padding: 20,
+      marginTop: spacing['2xl'],
+      padding: spacing.xl,
       borderWidth: 2,
       borderStyle: 'dashed',
       borderColor: '#ddd',
@@ -570,17 +571,17 @@ export default function LiveDocumentPreview({
       fontSize: 13,
       fontWeight: '600', fontFamily: 'Inter_600SemiBold',
       color: '#333',
-      marginBottom: 12,
+      marginBottom: spacing.md,
     },
     acceptanceText: {
       fontSize: 10,
       color: colors.textMuted,
-      marginBottom: 20,
+      marginBottom: spacing.xl,
       lineHeight: 16,
     },
     signatureRow: {
       flexDirection: 'row',
-      gap: 16,
+      gap: spacing.lg,
     },
     signatureBox: {
       flex: 1,
@@ -588,7 +589,7 @@ export default function LiveDocumentPreview({
     signatureLabel: {
       fontSize: 10,
       color: colors.textLight,
-      marginBottom: 20,
+      marginBottom: spacing.xl,
     },
     signatureLine: {
       borderBottomWidth: 1,
@@ -599,14 +600,14 @@ export default function LiveDocumentPreview({
       borderLeftWidth: 4,
       borderLeftColor: colors.success,
       borderRadius: 6,
-      padding: 16,
-      marginBottom: 24,
+      padding: spacing.lg,
+      marginBottom: spacing['2xl'],
     },
     confirmationTitle: {
       fontSize: 13,
       fontWeight: '600', fontFamily: 'Inter_600SemiBold',
       color: colors.successText,
-      marginBottom: 4,
+      marginBottom: spacing.xs,
     },
     confirmationText: {
       fontSize: 10,
@@ -617,8 +618,8 @@ export default function LiveDocumentPreview({
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: 6,
-      padding: 12,
-      marginVertical: 8,
+      padding: spacing.md,
+      marginVertical: spacing.sm,
       alignSelf: 'flex-start',
     },
     acceptedSignatureImage: {
@@ -626,8 +627,8 @@ export default function LiveDocumentPreview({
       width: 150,
     },
     footer: {
-      marginTop: 24,
-      paddingTop: 16,
+      marginTop: spacing['2xl'],
+      paddingTop: spacing.lg,
       borderTopWidth: 1,
       borderTopColor: colors.border,
       alignItems: 'center',
@@ -636,7 +637,7 @@ export default function LiveDocumentPreview({
       fontSize: 9,
       color: colors.textLighter,
       textAlign: 'center',
-      marginBottom: 4,
+      marginBottom: spacing.xs,
     },
     paidWatermarkContainer: {
       position: 'absolute',
@@ -665,8 +666,8 @@ export default function LiveDocumentPreview({
       borderWidth: 2,
       borderColor: colors.success,
       borderRadius: 6,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
       zIndex: 10,
     },
     paidBadgeText: {
@@ -676,9 +677,9 @@ export default function LiveDocumentPreview({
       letterSpacing: 2,
     },
     signatureDisplaySection: {
-      marginTop: 24,
-      marginBottom: 24,
-      padding: 20,
+      marginTop: spacing['2xl'],
+      marginBottom: spacing['2xl'],
+      padding: spacing.xl,
       backgroundColor: colors.primaryLight,
       borderRadius: 8,
       borderWidth: 1,
@@ -688,19 +689,19 @@ export default function LiveDocumentPreview({
       fontSize: 13,
       fontWeight: '600', fontFamily: 'Inter_600SemiBold',
       color: colors.primary,
-      marginBottom: 12,
+      marginBottom: spacing.md,
     },
     signatureImage: {
       width: '100%',
       height: 80,
       backgroundColor: colors.white,
       borderRadius: 4,
-      marginBottom: 8,
+      marginBottom: spacing.sm,
     },
     signatureMetaRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginTop: 8,
+      marginTop: spacing.sm,
     },
     signatureMetaText: {
       fontSize: 10,
@@ -712,9 +713,9 @@ export default function LiveDocumentPreview({
       color: colors.text,
     },
     jobSignaturesSection: {
-      marginTop: 24,
-      marginBottom: 24,
-      padding: 16,
+      marginTop: spacing['2xl'],
+      marginBottom: spacing['2xl'],
+      padding: spacing.lg,
       backgroundColor: colors.borderLight,
       borderRadius: 8,
       borderWidth: 1,
@@ -726,14 +727,14 @@ export default function LiveDocumentPreview({
       color: colors.text,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
-      marginBottom: 16,
+      marginBottom: spacing.lg,
       textAlign: 'center',
     },
     jobSignaturesContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'center',
-      gap: 20,
+      gap: spacing.xl,
     },
     jobSignatureItem: {
       alignItems: 'center',
@@ -744,8 +745,8 @@ export default function LiveDocumentPreview({
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: 6,
-      padding: 8,
-      marginBottom: 8,
+      padding: spacing.sm,
+      marginBottom: spacing.sm,
     },
     jobSignatureImage: {
       width: 100,
@@ -885,7 +886,7 @@ export default function LiveDocumentPreview({
 
           {/* Job Site Location */}
           {jobAddress && (
-            <View style={[styles.infoSection, { marginTop: 8 }]}>
+            <View style={[styles.infoSection, { marginTop: spacing.sm }]}>
               <View style={styles.infoColumn}>
                 <Text style={styles.sectionLabel}>Job Site Location</Text>
                 <Text style={styles.clientName}>{jobAddress}</Text>

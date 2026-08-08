@@ -30,7 +30,7 @@ import { getBottomNavHeight } from '../../../src/components/BottomNav';
 import { showToast } from '../../../src/lib/toast';
 import { Button } from '../../../src/components/ui/Button';
 import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
-import { typography, fontWeights } from '../../../src/lib/design-tokens';
+import { typography, fontWeights, spacing } from '../../../src/lib/design-tokens';
 
 interface LinkedInvoice {
   id: string;
@@ -1158,7 +1158,7 @@ ${businessName}`;
         options={{ 
           title: quote.quoteNumber || 'Quote',
           headerRight: () => (
-            <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flexDirection: 'row', gap: spacing.md }}>
               <Button
                 size="icon"
                 variant="ghost"
@@ -1255,7 +1255,7 @@ ${businessName}`;
           
           {/* Quick Actions Row 2 - Draft status: Mark as Sent */}
           {quote.status === 'draft' && (
-            <View style={[styles.quickActions, { marginTop: 8 }]}>
+            <View style={[styles.quickActions, { marginTop: spacing.sm }]}>
               <PressableRow 
                 style={[styles.quickAction, styles.quickActionPrimary, isSendingQuote && { opacity: 0.6 }]}
                 onPress={handleSend}
@@ -1291,7 +1291,7 @@ ${businessName}`;
           
           {/* Quick Actions Row 2 - Sent status: Resend */}
           {quote.status === 'sent' && (
-            <View style={[styles.quickActions, { marginTop: 8 }]}>
+            <View style={[styles.quickActions, { marginTop: spacing.sm }]}>
               <PressableRow 
                 style={[styles.quickAction, styles.quickActionPrimary, isSendingQuote && { opacity: 0.6 }]}
                 onPress={handleSend}
@@ -1325,7 +1325,7 @@ ${businessName}`;
           
           {/* Quick Actions Row 2 - Accepted status: Create Invoice/Job */}
           {quote.status === 'accepted' && !linkedInvoice && !linkedJob && (
-            <View style={[styles.quickActions, { marginTop: 8 }]}>
+            <View style={[styles.quickActions, { marginTop: spacing.sm }]}>
               <PressableRow 
                 style={[styles.quickAction, styles.quickActionPrimary]}
                 onPress={handleConvertToInvoice}
@@ -1361,7 +1361,7 @@ ${businessName}`;
           
           {/* If accepted but has one linked doc, show option to create the other */}
           {quote.status === 'accepted' && (linkedInvoice || linkedJob) && (!linkedInvoice || !linkedJob) && (
-            <View style={[styles.quickActions, { marginTop: 8 }]}>
+            <View style={[styles.quickActions, { marginTop: spacing.sm }]}>
               {!linkedInvoice && (
                 <PressableRow 
                   style={[styles.quickAction, styles.quickActionPrimary, { flex: 1 }]}
@@ -1403,7 +1403,7 @@ ${businessName}`;
               xeroQuoteId (new path) and xeroInvoiceId (legacy DRAFT-invoice
               path) as already-synced so legacy quotes don't get double-pushed. */}
           {xeroConnected && (quote.status === 'sent' || quote.status === 'accepted') && !quote.xeroQuoteId && !quote.xeroInvoiceId && (
-            <View style={[styles.quickActions, { marginTop: 8 }]}>
+            <View style={[styles.quickActions, { marginTop: spacing.sm }]}>
               <PressableRow
                 style={[styles.quickAction, { backgroundColor: colors.info, flex: 1 }, isPushingToXero && { opacity: 0.6 }]}
                 onPress={handlePushToXero}
@@ -1422,7 +1422,7 @@ ${businessName}`;
             </View>
           )}
           {xeroConnected && (!!quote.xeroQuoteId || !!quote.xeroInvoiceId) && (
-            <View style={[styles.card, { marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+            <View style={[styles.card, { marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }]}>
               <Feather name="check-circle" size={16} color={colors.success} />
               <Text style={[styles.infoText, { color: colors.mutedForeground }]}>Pushed to Xero</Text>
             </View>
@@ -1480,7 +1480,7 @@ ${businessName}`;
 
           {/* Version History */}
           <TouchableOpacity 
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm }}
             onPress={handleShowVersionHistory}
           >
             <Text style={styles.sectionTitle}>Edit History</Text>
@@ -1789,22 +1789,22 @@ ${businessName}`;
         scrollable={false}
         contentPadding={0}>
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border }}>
             <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground }}>Edit History</Text>
             <TouchableOpacity onPress={() => setShowVersionHistory(false)}>
               <Feather name="x" size={24} color={colors.foreground} />
             </TouchableOpacity>
           </View>
-          <ScrollView style={{ flex: 1, padding: 16 }}>
+          <ScrollView style={{ flex: 1, padding: spacing.lg }}>
             {isLoadingVersions ? (
-              <View style={{ alignItems: 'center', padding: 40 }}>
+              <View style={{ alignItems: 'center', padding: spacing['4xl'] }}>
                 <ActivityIndicator size="large" color={colors.primary} />
               </View>
             ) : versionHistory.length === 0 ? (
-              <View style={{ alignItems: 'center', padding: 40 }}>
+              <View style={{ alignItems: 'center', padding: spacing['4xl'] }}>
                 <Feather name="clock" size={40} color={colors.mutedForeground} />
-                <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.mutedForeground, marginTop: 12 }}>No edit history yet</Text>
-                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: 4, textAlign: 'center' }}>
+                <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.mutedForeground, marginTop: spacing.md }}>No edit history yet</Text>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center' }}>
                   Changes will be recorded here when you edit the quote
                 </Text>
               </View>
@@ -1812,9 +1812,9 @@ ${businessName}`;
               versionHistory.map((version: any, index: number) => {
                 const snapshot = version.snapshot || {};
                 return (
-                  <View key={version.id || index} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View key={version.id || index} style={{ backgroundColor: colors.card, borderRadius: 12, padding: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                         <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center' }}>
                           <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: colors.primary }}>v{version.versionNumber}</Text>
                         </View>
@@ -1827,12 +1827,12 @@ ${businessName}`;
                       </Text>
                     </View>
                     {version.changeNote && (
-                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: 8, fontStyle: 'italic' }}>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.sm, fontStyle: 'italic' }}>
                         {version.changeNote}
                       </Text>
                     )}
-                    <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
-                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: 4 }}>
+                    <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm }}>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.xs }}>
                         Total: {formatCurrency(snapshot.total)}
                       </Text>
                       {snapshot.lineItems && snapshot.lineItems.length > 0 && (
@@ -2142,7 +2142,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
+    padding: spacing.lg,
     paddingBottom: bottomNavHeight,
   },
   loadingContainer: {
@@ -2162,22 +2162,22 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.mutedForeground,
   },
   headerButton: {
-    padding: 8,
+    padding: spacing.sm,
   },
   headerCard: {
     backgroundColor: colors.card,
     borderRadius: 20,
-    padding: 24,
+    padding: spacing['2xl'],
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
   quoteNumber: {
     fontSize: typography.subtitle.fontSize,
@@ -2213,8 +2213,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   quickActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
   quickAction: {
     flexGrow: 1,
@@ -2248,21 +2248,21 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 10,
-    marginLeft: 4,
+    marginLeft: spacing.xs,
   },
   card: {
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: 18,
-    marginBottom: 20,
+    marginBottom: spacing.xl,
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
   linkedDocRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
   },
   linkedDocRowBorder: {
     borderTopWidth: 1,
@@ -2282,7 +2282,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   linkedDocLabel: {
     fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   linkedDocTitle: {
     fontSize: typography.sizes.md,
@@ -2291,7 +2291,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   linkedDocStatus: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: 20,
   },
   linkedDocStatusText: {
@@ -2301,8 +2301,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
   infoContent: {
     flex: 1,
@@ -2315,14 +2315,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   infoLabel: {
     fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   infoText: {
     fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   lineItem: {
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
   },
   lineItemBorder: {
     borderTopWidth: 1,
@@ -2342,7 +2342,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   lineItemDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: spacing.sm,
     marginLeft: 26,
   },
   lineItemQty: {
@@ -2358,7 +2358,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   amountLabel: {
     fontSize: typography.sizes.md,
@@ -2371,7 +2371,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: 8,
+    marginVertical: spacing.sm,
   },
   totalLabel2: {
     fontSize: typography.subtitle.fontSize,
@@ -2390,7 +2390,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.warningLight,
     padding: 14,
     borderRadius: 12,
-    marginTop: 12,
+    marginTop: spacing.md,
     borderWidth: 1,
     borderColor: colors.warning + '30',
   },
@@ -2416,7 +2416,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: 10,
     backgroundColor: colors.primary,
     borderRadius: 50,
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
   },
   successButton: {
     flexDirection: 'row',
@@ -2425,7 +2425,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: 10,
     backgroundColor: colors.success,
     borderRadius: 50,
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
   },
   primaryButtonText: {
     fontSize: typography.sizes.md,
@@ -2442,7 +2442,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderWidth: 1,
     borderColor: colors.cardBorder,
     borderRadius: 50,
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
   },
   secondaryButtonText: {
     fontSize: typography.sizes.md,
@@ -2450,7 +2450,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.primary,
   },
   actionButtonsContainer: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   // Modal styles
   modalContainer: {
@@ -2461,8 +2461,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -2473,16 +2473,16 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   modalContent: {
     flex: 1,
-    padding: 16,
+    padding: spacing.lg,
   },
   sendInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 16,
+    gap: spacing.md,
+    padding: spacing.lg,
     backgroundColor: colors.primaryLight,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: spacing['2xl'],
   },
   sendInfoText: {
     flex: 1,
@@ -2500,7 +2500,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.medium,
     color: colors.foreground,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   messageInput: {
     borderWidth: 1,
@@ -2511,21 +2511,21 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.foreground,
     backgroundColor: colors.card,
     minHeight: 120,
-    marginBottom: 24,
+    marginBottom: spacing['2xl'],
   },
   previewCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 24,
+    marginBottom: spacing['2xl'],
   },
   previewTitle: {
     fontSize: typography.button.fontSize,
     fontWeight: fontWeights.semibold,
     color: colors.foreground,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   previewRow: {
     flexDirection: 'row',
@@ -2550,10 +2550,10 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     backgroundColor: colors.primary,
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
   },
   sendButtonText: {
     fontSize: typography.subtitle.fontSize,
@@ -2574,13 +2574,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   notesContent: {
     flex: 1,
-    padding: 16,
+    padding: spacing.lg,
   },
   emptyStateCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 32,
-    marginBottom: 24,
+    padding: spacing['3xl'],
+    marginBottom: spacing['2xl'],
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center' as const,
@@ -2593,7 +2593,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.muted,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   emptyStateText: {
     fontSize: typography.sizes.md,
@@ -2610,8 +2610,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   acceptanceCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
+    padding: spacing.xl,
+    marginBottom: spacing['2xl'],
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -2619,19 +2619,19 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   signaturePlaceholder: {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     gap: 10,
-    paddingVertical: 32,
+    paddingVertical: spacing['3xl'],
     borderWidth: 1.5,
     borderColor: colors.border,
     borderStyle: 'dashed' as const,
     backgroundColor: colors.background,
     borderRadius: 10,
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   signaturePlaceholderIcon: {
     width: 40,
@@ -2656,7 +2656,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: 10,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   acceptedTitle: {
     fontSize: typography.subtitle.fontSize,
@@ -2664,10 +2664,10 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.success,
   },
   signatureImageContainer: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
     backgroundColor: colors.background,
     borderRadius: 10,
-    padding: 12,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -2686,13 +2686,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   acceptedInfo: {
     fontSize: typography.sizes.sm,
     color: colors.successDark,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   footerSection: {
-    marginTop: 8,
-    marginBottom: 24,
-    paddingTop: 20,
-    paddingBottom: 8,
+    marginTop: spacing.sm,
+    marginBottom: spacing['2xl'],
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.sm,
     borderTopWidth: 2,
     alignItems: 'center',
   },
@@ -2715,13 +2715,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   templateModalContent: {
     flex: 1,
     backgroundColor: colors.card,
-    padding: 20,
+    padding: spacing.xl,
   },
   templateModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   templateModalTitle: {
     fontSize: typography.sizes.lg,
@@ -2731,11 +2731,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   templateOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.lg,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   templateOptionSelected: {
     borderColor: colors.primary,
@@ -2752,7 +2752,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   templateOptionDesc: {
     fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   previewModalContainer: {
     flex: 1,
@@ -2762,23 +2762,23 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.card,
   },
   previewCloseButton: {
-    padding: 8,
+    padding: spacing.sm,
     width: 40,
   },
   previewActionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   previewActionButton: {
-    padding: 8,
+    padding: spacing.sm,
     borderRadius: 8,
   },
   previewModalTitle: {
@@ -2790,8 +2790,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
+    padding: spacing.xl,
+    paddingBottom: spacing['4xl'],
   },
   shareSheetHandle: {
     width: 40,
@@ -2799,24 +2799,24 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.border,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   shareSheetTitle: {
     fontSize: typography.sizes.xl,
     fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   shareSheetSubtitle: {
     fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   shareOptions: {
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   shareOption: {
     flexDirection: 'row',
@@ -2842,7 +2842,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.foreground,
   },
   shareSheetCancel: {
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
     borderRadius: 12,
     backgroundColor: colors.background,
@@ -2857,8 +2857,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   previewOptionsRow: {
     flexDirection: 'row' as const,
     flexWrap: 'wrap' as const,
-    gap: 8,
-    paddingHorizontal: 16,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -2888,7 +2888,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 10,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -2903,7 +2903,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   pdfOptionsRow: {
     flexDirection: 'row' as const,
     flexWrap: 'wrap' as const,
-    gap: 12,
+    gap: spacing.md,
   },
   pdfOption: {
     flexDirection: 'row' as const,
