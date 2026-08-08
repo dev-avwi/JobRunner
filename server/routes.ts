@@ -217,6 +217,8 @@ import {
   insertSubcontractorInvoiceSchema,
   insertSubcontractorInvoiceItemSchema,
   numberPortRequests,
+  complianceDocuments,
+  importRuns,
   insertNumberPortRequestSchema,
   PORT_REQUEST_STATUSES,
   quoteLineItems,
@@ -12558,6 +12560,139 @@ Be specific about materials, colors, and features that would be included.`
     } catch (error: any) {
       console.error('[SampleData] clear error:', error);
       res.status(500).json({ error: error.message || 'Failed to remove sample data' });
+    }
+  });
+
+  // ============================================
+  // Task #303: "Bring your business" wizard
+  // GET  /api/onboarding/bring-business/status  — derived progress per lane
+  // POST /api/onboarding/quick-setup            — paper-only guided fast setup
+  // ============================================
+  // Progress is DERIVED from real data (import runs, compliance docs, custom
+  // forms, accounting connections) rather than stored flags, so lanes done via
+  // their normal flows are reflected automatically when returning to the wizard.
+  app.get("/api/onboarding/bring-business/status", requireAuth, ownerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const [
+        [importRunsRow],
+        [clientsRow],
+        [docsRow],
+        [formsRow],
+        xeroConn,
+        qboConn,
+        settings,
+        user,
+      ] = await Promise.all([
+        db.select({ n: count() }).from(importRuns)
+          .where(and(eq(importRuns.userId, userId), eq(importRuns.status, 'completed'))),
+        db.select({ n: count() }).from(clients)
+          .where(and(eq(clients.userId, userId), or(isNull(clients.isSample), eq(clients.isSample, false)))),
+        db.select({ n: count() }).from(complianceDocuments)
+          .where(eq(complianceDocuments.businessOwnerId, userId)),
+        db.select({ n: count() }).from(customForms)
+          .where(eq(customForms.userId, userId)),
+        // Use provider health checks (status must be 'active'), not raw row
+        // existence — expired/disconnected connections must not count.
+        xeroService.getConnectionStatus(userId).catch(() => null),
+        quickbooksService.getConnectionStatus(userId).catch(() => null),
+        storage.getBusinessSettings(userId),
+        storage.getUser(userId),
+      ]);
+      const [sampleClientsRow] = await db.select({ n: count() }).from(clients)
+        .where(and(eq(clients.userId, userId), eq(clients.isSample, true)));
+      res.json({
+        data: {
+          completedImports: importRunsRow?.n ?? 0,
+          clientCount: clientsRow?.n ?? 0,
+          sampleClientCount: sampleClientsRow?.n ?? 0,
+        },
+        documents: { count: docsRow?.n ?? 0 },
+        forms: { count: formsRow?.n ?? 0 },
+        accounting: {
+          xeroConnected: !!xeroConn?.connected,
+          xeroLastSyncAt: xeroConn?.lastSyncAt ?? null,
+          quickbooksConnected: !!qboConn?.connected,
+          quickbooksLastSyncAt: qboConn?.lastSyncAt ?? null,
+        },
+        quickSetup: {
+          tradeType: user?.tradeType || null,
+          teamSize: (settings as any)?.teamSize || null,
+          defaultHourlyRate: (settings as any)?.defaultHourlyRate ?? null,
+          calloutFee: (settings as any)?.calloutFee ?? null,
+        },
+      });
+    } catch (error: any) {
+      console.error('[BringBusiness] status error:', error);
+      res.status(500).json({ error: 'Failed to load migration status' });
+    }
+  });
+
+  // Paper-only fast setup: a few guided answers seed trade document templates
+  // and sensible rate defaults so the app doesn't feel empty. Idempotent:
+  // seedBusinessTemplatesForUser skips already-seeded family keys.
+  app.post("/api/onboarding/quick-setup", requireAuth, ownerOnly(), async (req: any, res) => {
+    try {
+      const quickSetupSchema = z.object({
+        tradeType: z.string().min(1),
+        teamSize: z.enum(['solo', 'team']).optional(),
+        defaultHourlyRate: z.number().min(0).max(10000).optional(),
+        calloutFee: z.number().min(0).max(10000).optional(),
+        seedSampleData: z.boolean().optional(),
+      });
+      const parsed = quickSetupSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: 'Invalid quick setup payload' });
+      }
+      const { tradeType, teamSize, defaultHourlyRate, calloutFee, seedSampleData } = parsed.data;
+      const { getTradeDefinition } = await import('@shared/tradeCatalog');
+      const trade = getTradeDefinition(tradeType);
+      if (!trade) {
+        return res.status(400).json({ error: 'Unknown trade type' });
+      }
+      const userId = req.userId!;
+
+      await storage.updateUser(userId, { tradeType: trade.id });
+      const seededTemplates = await storage.seedBusinessTemplatesForUser(userId, trade.id);
+
+      // Note: tradeType lives on users (updated above), not business_settings.
+      const settingsUpdate: Record<string, any> = {};
+      // business_settings.teamSize vocab is 'solo'|'small'|'medium'|'large'
+      if (teamSize) settingsUpdate.teamSize = teamSize === 'team' ? 'small' : 'solo';
+      // Decimal columns take string values, not numbers.
+      settingsUpdate.defaultHourlyRate = String(defaultHourlyRate ?? trade.defaultRateCard.hourlyRate);
+      settingsUpdate.calloutFee = String(calloutFee ?? trade.defaultRateCard.calloutFee);
+
+      const existing = await storage.getBusinessSettings(userId);
+      if (existing) {
+        await storage.updateBusinessSettings(userId, settingsUpdate);
+      } else {
+        await storage.createBusinessSettings({ userId, businessName: '', ...settingsUpdate });
+      }
+
+      let sampleDataSeeded = false;
+      if (seedSampleData) {
+        try {
+          const { seedSampleDataForUser, userHasSampleData } = await import('./sampleData');
+          if (!(await userHasSampleData(userId))) {
+            const result = await seedSampleDataForUser(userId, trade.id);
+            sampleDataSeeded = !!result.success;
+          }
+        } catch (e) {
+          // Non-blocking — quick setup itself succeeded.
+          console.error('[QuickSetup] sample data seed failed:', e);
+        }
+      }
+
+      res.json({
+        success: true,
+        tradeType: trade.id,
+        templatesSeeded: seededTemplates.length,
+        sampleDataSeeded,
+      });
+    } catch (error: any) {
+      console.error('[QuickSetup] error:', error);
+      res.status(500).json({ error: error.message || 'Quick setup failed' });
     }
   });
 

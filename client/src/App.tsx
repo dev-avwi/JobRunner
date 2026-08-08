@@ -63,6 +63,7 @@ const InvoiceModal = lazyWithReload(() => import("@/components/InvoiceModal"));
 
 const More = lazyWithReload(() => import("@/pages/More"));
 const Integrations = lazyWithReload(() => import("@/pages/Integrations"));
+const BringYourBusiness = lazyWithReload(() => import("@/pages/BringYourBusiness"));
 const ActionCenter = lazyWithReload(() => import("@/pages/ActionCenter"));
 const Insights = lazyWithReload(() => import("@/pages/Insights"));
 const Autopilot = lazyWithReload(() => import("@/pages/Autopilot"));
@@ -771,6 +772,11 @@ function Router({
       
       <Route path="/integrations" component={() => (
         <Integrations />
+      )} />
+      
+      {/* Task #303: Bring-your-business migration wizard */}
+      <Route path="/bring-your-business" component={() => (
+        <BringYourBusiness />
       )} />
       
       <Route path="/subscription" component={() => (

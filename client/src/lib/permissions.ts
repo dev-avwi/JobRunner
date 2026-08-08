@@ -163,6 +163,9 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // Integrations - owner only
   { path: '/integrations', label: 'Integrations', allowedRoles: ['owner', 'solo_owner'], showInNav: true },
 
+  // Bring-your-business migration wizard (Task #303) - owner only, reached from onboarding/Settings
+  { path: '/bring-your-business', label: 'Bring Your Business', allowedRoles: ['owner', 'solo_owner'], showInNav: false },
+
   // Website Addon - owner only (upsell page handles its own locked/unlocked states)
   { path: '/website', label: 'Website', allowedRoles: ['owner', 'solo_owner'], showInNav: false },
   

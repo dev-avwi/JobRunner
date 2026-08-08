@@ -17,5 +17,9 @@ the WHOLE schema, not just your additions, so it proposes destructive drops.
 This is the same drift the deploy runbook flags against `drizzle-kit push
 --force` in the build command.
 
+Also applies to new COLUMNS on existing tables: add them via `ALTER TABLE ...
+ADD COLUMN IF NOT EXISTS ...`, and add EVERY column the Drizzle entity defines —
+a single missing column breaks all Drizzle SELECTs on that table with 500s.
+
 **How to apply:** new-table work = schema edit + manual CREATE TABLE. Verify
 with a quick `psql ... SELECT count(*)`.

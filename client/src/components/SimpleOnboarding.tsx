@@ -502,7 +502,7 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
     }
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async (destination?: string) => {
     setIsSubmitting(true);
     try {
       await apiRequest("POST", "/api/onboarding/complete", {});
@@ -526,6 +526,12 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/onboarding/sample-data"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/unified"] });
+      // Task #303: optionally land on the bring-your-business wizard instead
+      // of the dashboard. Set the path before onComplete() re-renders the app
+      // shell so the router picks it up immediately.
+      if (destination) {
+        window.history.pushState(null, "", destination);
+      }
       onComplete();
     } catch (error) {
       toast({
@@ -1008,7 +1014,7 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
                 )}
 
                 <Button
-                  onClick={handleComplete}
+                  onClick={() => handleComplete()}
                   disabled={isSubmitting}
                   data-testid="button-finish"
                   className="w-full border"
@@ -1023,6 +1029,21 @@ export default function SimpleOnboarding({ onComplete }: SimpleOnboardingProps) 
                     </>
                   )}
                 </Button>
+
+                {/* Task #303: owners can jump straight into the bring-your-business
+                    migration wizard instead of landing on an empty dashboard. */}
+                {selectedRole === "owner" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleComplete("/bring-your-business")}
+                    disabled={isSubmitting}
+                    data-testid="button-bring-business"
+                    className="w-full mt-3"
+                    size="xl"
+                  >
+                    Bring my existing business across
+                  </Button>
+                )}
               </div>
             )}
           </div>

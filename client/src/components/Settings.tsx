@@ -3839,6 +3839,29 @@ function SupportTab() {
 function DataExportTab() {
   return (
     <TabsContent value="data" className="space-y-6">
+      {/* Task #303: entry point to the bring-your-business migration wizard.
+          This tab is already gated to owners via canAccessBusinessSettings. */}
+      <Card data-testid="card-bring-your-business">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Briefcase className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
+            Bring Your Business Across
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            One guided place to move everything over — spreadsheets, licences &amp; insurance documents,
+            paper checklists, or a direct Xero / QuickBooks connection. Everything's optional, in any order.
+          </p>
+          <Link href="/bring-your-business">
+            <Button size="sm" data-testid="button-open-bring-your-business">
+              Open migration wizard
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Export Your Data</CardTitle>
