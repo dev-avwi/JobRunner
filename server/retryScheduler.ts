@@ -18,7 +18,7 @@ export function scheduleRetry(retryCount: number): Date {
   return new Date(Date.now() + delayMs);
 }
 
-async function processFailedSmsMessages() {
+export async function processFailedSmsMessages() {
   if (isProcessing) return;
   isProcessing = true;
   try {

@@ -256,7 +256,19 @@ interface SMSResult {
   notConfigured?: boolean;
 }
 
+// Test-only transport interceptor: lets server tests capture the exact
+// options (esp. fromNumber) that would be handed to Twilio without sending
+// a real SMS. Never active in production.
+let smsTestInterceptor: ((options: SendSMSOptions) => SMSResult | Promise<SMSResult>) | null = null;
+export function __setSmsTestInterceptor(fn: ((options: SendSMSOptions) => SMSResult | Promise<SMSResult>) | null) {
+  if (process.env.NODE_ENV === 'production') return;
+  smsTestInterceptor = fn;
+}
+
 export async function sendSMS(options: SendSMSOptions): Promise<SMSResult> {
+  if (smsTestInterceptor) {
+    return await smsTestInterceptor(options);
+  }
   const { to, message, mediaUrls, alphanumericSenderId } = options;
 
   // Format Australian phone number
