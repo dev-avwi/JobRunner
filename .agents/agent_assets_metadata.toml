@@ -219,3 +219,17 @@ uri = "file://attached_assets/generated_images/jr_logo_navy_blue.png"
 type = "image"
 title = "Clean redraw — blue on navy"
 description = "High-res crisp redraw in brand blue with orange accents on dark navy. 1024x1024."
+
+[[outputs]]
+id = "oJlmvX768ukg0IYi3m3Xk"
+uri = "file://attached_assets/jobrunner_logo_transparent.png"
+type = "image"
+title = "Logo — transparent cutout"
+description = "Cropped logo with the background removed, high-res transparent PNG."
+
+[[outputs]]
+id = "eITpqF6NAAj1qfsG52Ywd"
+uri = "file://attached_assets/jobrunner_pfp_clean.png"
+type = "image"
+title = "Profile picture — cleaned up"
+description = "Sharpened logo on a soft radial light-blue background, 1024x1024."
