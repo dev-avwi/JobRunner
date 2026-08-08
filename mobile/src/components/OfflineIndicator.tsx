@@ -204,7 +204,7 @@ export function SyncStatus() {
         <Ionicons 
           name={isSyncing ? 'sync' : 'refresh'} 
           size={18} 
-          color={(!isOnline || isSyncing) ? '#9ca3af' : colors.primary}
+          color={(!isOnline || isSyncing) ? colors.mutedForeground : colors.primary}
         />
         <Text style={[
           styles.syncButtonText,
@@ -234,7 +234,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.warningLight,
   },
   successContainer: {
-    backgroundColor: '#d1fae5',
+    backgroundColor: colors.successLight,
   },
   text: {
     fontSize: 13,
@@ -248,7 +248,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.warningDark,
   },
   successText: {
-    color: '#065f46',
+    color: colors.successDark,
     marginLeft: 6,
     fontSize: 13,
     fontWeight: '500',
@@ -334,7 +334,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primaryLight,
     marginTop: 4,
   },
   syncButtonDisabled: {
@@ -346,6 +346,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
   },
   syncButtonTextDisabled: {
-    color: '#9ca3af',
+    color: colors.mutedForeground,
   },
 });
