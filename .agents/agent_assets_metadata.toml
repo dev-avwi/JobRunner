@@ -205,3 +205,17 @@ uri = "file://attached_assets/profile_plain_navy_white.png"
 type = "image"
 title = "Plain navy — white version"
 description = "White + orange logo on solid dark navy, Jobber-style. 1024x1024."
+
+[[outputs]]
+id = "D-R9213zX6BLry51LAUuL"
+uri = "file://attached_assets/generated_images/jr_logo_navy_white.png"
+type = "image"
+title = "Clean redraw — white on navy"
+description = "High-res crisp redraw of the JobRunner mark, white J with orange hard hat and speed lines on dark navy. 1024x1024."
+
+[[outputs]]
+id = "Wsl2w-vsuuoYS_8nokPaZ"
+uri = "file://attached_assets/generated_images/jr_logo_navy_blue.png"
+type = "image"
+title = "Clean redraw — blue on navy"
+description = "High-res crisp redraw in brand blue with orange accents on dark navy. 1024x1024."
