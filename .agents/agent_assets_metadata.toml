@@ -156,3 +156,24 @@ uri = "file://attached_assets/logo_164x164.png"
 type = "image"
 title = "Logo 164x164"
 description = "Square crop of the JobRunner logo on white, 164 x 164."
+
+[[outputs]]
+id = "WR2dlfR3ffvPTawgd6xYZ"
+uri = "file://attached_assets/profile_option_A_softblue.png"
+type = "image"
+title = "Option A — Soft blue"
+description = "Logo on a soft sky-blue gradient, 1024x1024."
+
+[[outputs]]
+id = "2BdLha13fJcwsl26d2m8F"
+uri = "file://attached_assets/profile_option_B_navy.png"
+type = "image"
+title = "Option B — Navy circle"
+description = "Logo in a white circle on deep navy, 1024x1024."
+
+[[outputs]]
+id = "tu3Gq5H-DZcqZ3aJoWBbf"
+uri = "file://attached_assets/profile_option_C_cream.png"
+type = "image"
+title = "Option C — Warm cream"
+description = "Logo on a warm cream gradient, 1024x1024."
