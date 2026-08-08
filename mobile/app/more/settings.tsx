@@ -982,7 +982,7 @@ function GpsPrivacyCard() {
           value={gpsOptOut}
           onValueChange={handleOptOutChange}
           trackColor={{ false: colors.border, true: colors.destructive }}
-          thumbColor={'#FFFFFF'}
+          thumbColor={colors.white}
           ios_backgroundColor={colors.border}
         />
       </View>
@@ -1732,7 +1732,7 @@ export default function SettingsScreen() {
                     value={geofenceEnabled}
                     onValueChange={handleGeofenceEnabledChange}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-geofence-enabled"
                   />
@@ -1768,7 +1768,7 @@ export default function SettingsScreen() {
                         value={autoClockIn}
                         onValueChange={handleAutoClockInChange}
                         trackColor={{ false: colors.border, true: colors.success }}
-                        thumbColor={'#FFFFFF'}
+                        thumbColor={colors.white}
                         ios_backgroundColor={colors.border}
                         data-testid="switch-auto-clock-in"
                       />
@@ -1786,7 +1786,7 @@ export default function SettingsScreen() {
                         value={autoClockOut}
                         onValueChange={handleAutoClockOutChange}
                         trackColor={{ false: colors.border, true: colors.success }}
-                        thumbColor={'#FFFFFF'}
+                        thumbColor={colors.white}
                         ios_backgroundColor={colors.border}
                         data-testid="switch-auto-clock-out"
                       />
@@ -2021,7 +2021,7 @@ export default function SettingsScreen() {
                       }
                     }}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                   />
                 </View>
@@ -2100,7 +2100,7 @@ export default function SettingsScreen() {
                         }
                       }}
                       trackColor={{ false: colors.border, true: colors.success }}
-                      thumbColor={'#FFFFFF'}
+                      thumbColor={colors.white}
                       ios_backgroundColor={colors.border}
                     />
                   </View>
@@ -2521,7 +2521,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.push.newJobAssignments}
                     onValueChange={(value) => updatePushSetting('newJobAssignments', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-push-new-job"
                   />
@@ -2541,7 +2541,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.push.jobStatusChanges}
                     onValueChange={(value) => updatePushSetting('jobStatusChanges', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-push-job-status"
                   />
@@ -2549,8 +2549,8 @@ export default function SettingsScreen() {
 
                 <View style={styles.notificationToggleRow}>
                   <View style={styles.notificationToggleLeft}>
-                    <View style={[styles.notificationToggleIcon, { backgroundColor: '#22c55e20' }]}>
-                      <Feather name="dollar-sign" size={16} color="#22c55e" />
+                    <View style={[styles.notificationToggleIcon, { backgroundColor: colors.success + '20' }]}>
+                      <Feather name="dollar-sign" size={16} color={colors.success} />
                     </View>
                     <View style={styles.notificationToggleInfo}>
                       <Text style={styles.notificationToggleTitle}>Payment Received</Text>
@@ -2561,7 +2561,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.push.paymentReceived}
                     onValueChange={(value) => updatePushSetting('paymentReceived', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-push-payment"
                   />
@@ -2569,8 +2569,8 @@ export default function SettingsScreen() {
 
                 <View style={styles.notificationToggleRow}>
                   <View style={styles.notificationToggleLeft}>
-                    <View style={[styles.notificationToggleIcon, { backgroundColor: '#f59e0b20' }]}>
-                      <Feather name="check-circle" size={16} color="#f59e0b" />
+                    <View style={[styles.notificationToggleIcon, { backgroundColor: colors.warning + '20' }]}>
+                      <Feather name="check-circle" size={16} color={colors.warning} />
                     </View>
                     <View style={styles.notificationToggleInfo}>
                       <Text style={styles.notificationToggleTitle}>Quote Accepted</Text>
@@ -2581,7 +2581,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.push.quoteAccepted}
                     onValueChange={(value) => updatePushSetting('quoteAccepted', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-push-quote"
                   />
@@ -2589,8 +2589,8 @@ export default function SettingsScreen() {
 
                 <View style={[styles.notificationToggleRow, styles.notificationToggleRowLast]}>
                   <View style={styles.notificationToggleLeft}>
-                    <View style={[styles.notificationToggleIcon, { backgroundColor: '#8b5cf620' }]}>
-                      <Feather name="message-circle" size={16} color="#8b5cf6" />
+                    <View style={[styles.notificationToggleIcon, { backgroundColor: colors.invoiced + '20' }]}>
+                      <Feather name="message-circle" size={16} color={colors.invoiced} />
                     </View>
                     <View style={styles.notificationToggleInfo}>
                       <Text style={styles.notificationToggleTitle}>Team Messages</Text>
@@ -2601,7 +2601,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.push.teamMessages}
                     onValueChange={(value) => updatePushSetting('teamMessages', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-push-team"
                   />
@@ -2628,7 +2628,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.email.dailyDigest}
                     onValueChange={(value) => updateEmailSetting('dailyDigest', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-email-daily"
                   />
@@ -2648,7 +2648,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.email.weeklySummary}
                     onValueChange={(value) => updateEmailSetting('weeklySummary', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-email-weekly"
                   />
@@ -2656,8 +2656,8 @@ export default function SettingsScreen() {
 
                 <View style={styles.notificationToggleRow}>
                   <View style={styles.notificationToggleLeft}>
-                    <View style={[styles.notificationToggleIcon, { backgroundColor: '#22c55e20' }]}>
-                      <Feather name="file-text" size={16} color="#22c55e" />
+                    <View style={[styles.notificationToggleIcon, { backgroundColor: colors.success + '20' }]}>
+                      <Feather name="file-text" size={16} color={colors.success} />
                     </View>
                     <View style={styles.notificationToggleInfo}>
                       <Text style={styles.notificationToggleTitle}>Payment Receipts</Text>
@@ -2668,7 +2668,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.email.paymentReceipts}
                     onValueChange={(value) => updateEmailSetting('paymentReceipts', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-email-receipts"
                   />
@@ -2676,8 +2676,8 @@ export default function SettingsScreen() {
 
                 <View style={[styles.notificationToggleRow, styles.notificationToggleRowLast]}>
                   <View style={styles.notificationToggleLeft}>
-                    <View style={[styles.notificationToggleIcon, { backgroundColor: '#ef444420' }]}>
-                      <Feather name="alert-circle" size={16} color="#ef4444" />
+                    <View style={[styles.notificationToggleIcon, { backgroundColor: colors.destructive + '20' }]}>
+                      <Feather name="alert-circle" size={16} color={colors.destructive} />
                     </View>
                     <View style={styles.notificationToggleInfo}>
                       <Text style={styles.notificationToggleTitle}>Overdue Reminders</Text>
@@ -2688,7 +2688,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.email.overdueReminders}
                     onValueChange={(value) => updateEmailSetting('overdueReminders', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-email-overdue"
                   />
@@ -2703,8 +2703,8 @@ export default function SettingsScreen() {
 
                 <View style={styles.notificationToggleRow}>
                   <View style={styles.notificationToggleLeft}>
-                    <View style={[styles.notificationToggleIcon, { backgroundColor: '#ef444420' }]}>
-                      <Feather name="alert-triangle" size={16} color="#ef4444" />
+                    <View style={[styles.notificationToggleIcon, { backgroundColor: colors.destructive + '20' }]}>
+                      <Feather name="alert-triangle" size={16} color={colors.destructive} />
                     </View>
                     <View style={styles.notificationToggleInfo}>
                       <Text style={styles.notificationToggleTitle}>Urgent Job Alerts</Text>
@@ -2715,7 +2715,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.sms.urgentJobAlerts}
                     onValueChange={(value) => updateSmsSetting('urgentJobAlerts', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-sms-urgent"
                   />
@@ -2723,8 +2723,8 @@ export default function SettingsScreen() {
 
                 <View style={[styles.notificationToggleRow, styles.notificationToggleRowLast]}>
                   <View style={styles.notificationToggleLeft}>
-                    <View style={[styles.notificationToggleIcon, { backgroundColor: '#22c55e20' }]}>
-                      <Feather name="check-square" size={16} color="#22c55e" />
+                    <View style={[styles.notificationToggleIcon, { backgroundColor: colors.success + '20' }]}>
+                      <Feather name="check-square" size={16} color={colors.success} />
                     </View>
                     <View style={styles.notificationToggleInfo}>
                       <Text style={styles.notificationToggleTitle}>Payment Confirmations</Text>
@@ -2735,7 +2735,7 @@ export default function SettingsScreen() {
                     value={notificationSettings.sms.paymentConfirmations}
                     onValueChange={(value) => updateSmsSetting('paymentConfirmations', value)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                     data-testid="switch-sms-payment"
                   />
@@ -2749,9 +2749,9 @@ export default function SettingsScreen() {
                 </View>
 
                 {!aiTierAllowed && (
-                  <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#f59e0b10', borderRadius: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Feather name="lock" size={14} color="#b45309" />
-                    <Text style={{ flex: 1, fontSize: typography.captionSmall.fontSize, color: '#b45309' }}>
+                  <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: colors.warning + '10', borderRadius: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Feather name="lock" size={14} color={colors.warningDark} />
+                    <Text style={{ flex: 1, fontSize: typography.captionSmall.fontSize, color: colors.warningDark }}>
                       AI features require Pro, Trial, or Team. Upgrade to enable.
                     </Text>
                   </View>
@@ -2759,8 +2759,8 @@ export default function SettingsScreen() {
 
                 <View style={[styles.notificationToggleRow, !aiTierAllowed && { opacity: 0.5 }]}>
                   <View style={styles.notificationToggleLeft}>
-                    <View style={[styles.notificationToggleIcon, { backgroundColor: '#8b5cf620' }]}>
-                      <Feather name="zap" size={16} color="#8b5cf6" />
+                    <View style={[styles.notificationToggleIcon, { backgroundColor: colors.invoiced + '20' }]}>
+                      <Feather name="zap" size={16} color={colors.invoiced} />
                     </View>
                     <View style={styles.notificationToggleInfo}>
                       <Text style={styles.notificationToggleTitle}>AI Features</Text>
@@ -2772,7 +2772,7 @@ export default function SettingsScreen() {
                     onValueChange={(value) => updateAiSetting('aiEnabled', value)}
                     disabled={!aiTierAllowed}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                   />
                 </View>
@@ -2781,8 +2781,8 @@ export default function SettingsScreen() {
                   <>
                     <View style={styles.notificationToggleRow}>
                       <View style={styles.notificationToggleLeft}>
-                        <View style={[styles.notificationToggleIcon, { backgroundColor: '#8b5cf620' }]}>
-                          <Feather name="camera" size={16} color="#8b5cf6" />
+                        <View style={[styles.notificationToggleIcon, { backgroundColor: colors.invoiced + '20' }]}>
+                          <Feather name="camera" size={16} color={colors.invoiced} />
                         </View>
                         <View style={styles.notificationToggleInfo}>
                           <Text style={styles.notificationToggleTitle}>AI Photo Analysis</Text>
@@ -2793,15 +2793,15 @@ export default function SettingsScreen() {
                         value={aiSettings.aiPhotoAnalysis}
                         onValueChange={(value) => updateAiSetting('aiPhotoAnalysis', value)}
                         trackColor={{ false: colors.border, true: colors.success }}
-                        thumbColor={'#FFFFFF'}
+                        thumbColor={colors.white}
                         ios_backgroundColor={colors.border}
                       />
                     </View>
 
                     <View style={styles.notificationToggleRow}>
                       <View style={styles.notificationToggleLeft}>
-                        <View style={[styles.notificationToggleIcon, { backgroundColor: '#8b5cf620' }]}>
-                          <Feather name="tag" size={16} color="#8b5cf6" />
+                        <View style={[styles.notificationToggleIcon, { backgroundColor: colors.invoiced + '20' }]}>
+                          <Feather name="tag" size={16} color={colors.invoiced} />
                         </View>
                         <View style={styles.notificationToggleInfo}>
                           <Text style={styles.notificationToggleTitle}>Auto-Categorise Photos</Text>
@@ -2812,15 +2812,15 @@ export default function SettingsScreen() {
                         value={aiSettings.aiAutoCategorizephotos}
                         onValueChange={(value) => updateAiSetting('aiAutoCategorizephotos', value)}
                         trackColor={{ false: colors.border, true: colors.success }}
-                        thumbColor={'#FFFFFF'}
+                        thumbColor={colors.white}
                         ios_backgroundColor={colors.border}
                       />
                     </View>
 
                     <View style={[styles.notificationToggleRow, styles.notificationToggleRowLast]}>
                       <View style={styles.notificationToggleLeft}>
-                        <View style={[styles.notificationToggleIcon, { backgroundColor: '#8b5cf620' }]}>
-                          <Feather name="edit-3" size={16} color="#8b5cf6" />
+                        <View style={[styles.notificationToggleIcon, { backgroundColor: colors.invoiced + '20' }]}>
+                          <Feather name="edit-3" size={16} color={colors.invoiced} />
                         </View>
                         <View style={styles.notificationToggleInfo}>
                           <Text style={styles.notificationToggleTitle}>AI Suggestions</Text>
@@ -2831,7 +2831,7 @@ export default function SettingsScreen() {
                         value={aiSettings.aiSuggestions}
                         onValueChange={(value) => updateAiSetting('aiSuggestions', value)}
                         trackColor={{ false: colors.border, true: colors.success }}
-                        thumbColor={'#FFFFFF'}
+                        thumbColor={colors.white}
                         ios_backgroundColor={colors.border}
                       />
                     </View>
@@ -2961,7 +2961,7 @@ export default function SettingsScreen() {
                       <View key={item.label} style={styles.usageBarContainer}>
                         <View style={styles.usageBarLabel}>
                           <Text style={styles.usageBarLabelText}>{item.label}</Text>
-                          <Text style={[styles.usageBarValueText, isAtLimit && { color: '#ef4444', fontWeight: fontWeights.semibold }]}>
+                          <Text style={[styles.usageBarValueText, isAtLimit && { color: colors.destructive, fontWeight: fontWeights.semibold }]}>
                             {item.data.used} / {isUnlimited ? '\u221E' : item.data.limit}
                           </Text>
                         </View>
@@ -2971,7 +2971,7 @@ export default function SettingsScreen() {
                               styles.usageBarFill,
                               { 
                                 width: isUnlimited ? '0%' : `${percentage}%`,
-                                backgroundColor: isAtLimit ? '#ef4444' : isNearLimit ? '#f59e0b' : '#22c55e',
+                                backgroundColor: isAtLimit ? colors.destructive : isNearLimit ? colors.warning : colors.success,
                               },
                             ]} 
                           />

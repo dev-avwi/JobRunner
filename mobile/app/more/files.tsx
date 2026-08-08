@@ -58,27 +58,26 @@ const DOCUMENT_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
-  valid: { label: 'Valid', color: '#22c55e', bgColor: 'rgba(34,197,94,0.12)' },
-  expiring_soon: { label: 'Expiring Soon', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)' },
-  expired: { label: 'Expired', color: '#ef4444', bgColor: 'rgba(239,68,68,0.12)' },
-  pending: { label: 'Pending', color: '#6b7280', bgColor: 'rgba(107,114,128,0.12)' },
-};
+const getStatusConfig = (colors: any): Record<string, { label: string; color: string; bgColor: string }> => ({
+  valid: { label: 'Valid', color: colors.success, bgColor: colors.success + '1F' },
+  expiring_soon: { label: 'Expiring Soon', color: colors.warning, bgColor: colors.warning + '1F' },
+  expired: { label: 'Expired', color: colors.destructive, bgColor: colors.destructive + '1F' },
+  pending: { label: 'Pending', color: colors.mutedForeground, bgColor: colors.mutedForeground + '1F' },
+});
 
-const TYPE_CONFIG: Record<string, { icon: keyof typeof Feather.glyphMap; label: string; color: string }> = {
-  licence: { icon: 'shield', label: 'Licence', color: '#3b82f6' },
-  license: { icon: 'shield', label: 'Licence', color: '#3b82f6' },
-  insurance: { icon: 'file-text', label: 'Insurance', color: '#8b5cf6' },
-  certification: { icon: 'award', label: 'Certification', color: '#f59e0b' },
-  certificate: { icon: 'award', label: 'Certificate', color: '#f59e0b' },
-  white_card: { icon: 'credit-card', label: 'White Card', color: '#10b981' },
-  vehicle_rego: { icon: 'truck', label: 'Vehicle Rego', color: '#6366f1' },
-  permit: { icon: 'clipboard', label: 'Permit', color: '#ec4899' },
-  other: { icon: 'file', label: 'Other', color: '#6b7280' },
-};
-
-const getTypeConfig = (type: string) => {
-  return TYPE_CONFIG[type.toLowerCase()] || { icon: 'file' as keyof typeof Feather.glyphMap, label: type, color: '#6b7280' };
+const getTypeConfig = (type: string, colors: any) => {
+  const TYPE_CONFIG: Record<string, { icon: keyof typeof Feather.glyphMap; label: string; color: string }> = {
+    licence: { icon: 'shield', label: 'Licence', color: colors.primary },
+    license: { icon: 'shield', label: 'Licence', color: colors.primary },
+    insurance: { icon: 'file-text', label: 'Insurance', color: colors.invoiced },
+    certification: { icon: 'award', label: 'Certification', color: colors.warning },
+    certificate: { icon: 'award', label: 'Certificate', color: colors.warning },
+    white_card: { icon: 'credit-card', label: 'White Card', color: colors.done },
+    vehicle_rego: { icon: 'truck', label: 'Vehicle Rego', color: '#6366f1' },
+    permit: { icon: 'clipboard', label: 'Permit', color: '#ec4899' },
+    other: { icon: 'file', label: 'Other', color: colors.mutedForeground },
+  };
+  return TYPE_CONFIG[type.toLowerCase()] || { icon: 'file' as keyof typeof Feather.glyphMap, label: type, color: colors.mutedForeground };
 };
 
 const normalizeStatus = (status: string): string => {
@@ -105,12 +104,12 @@ const getDocName = (doc: ComplianceDocument): string => {
   return doc.documentName || doc.title || 'Untitled Document';
 };
 
-const CATEGORY_COLORS = {
-  photos: { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-  voiceNotes: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
-  compliance: { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-  sitePhotos: { color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
-};
+const getCategoryColors = (colors: any) => ({
+  photos: { color: colors.primary, bg: colors.primary + '1A' },
+  voiceNotes: { color: colors.invoiced, bg: colors.invoiced + '1A' },
+  compliance: { color: colors.warning, bg: colors.warning + '1A' },
+  sitePhotos: { color: colors.success, bg: colors.success + '1A' },
+});
 
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -469,11 +468,11 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.xl,
-    backgroundColor: 'rgba(239,68,68,0.12)',
+    backgroundColor: colors.destructive + '1F',
   },
   deleteButtonText: {
     ...typography.button,
-    color: '#ef4444',
+    color: colors.destructive,
   },
   emptyCard: {
     alignItems: 'center',
@@ -662,12 +661,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.xl,
-    backgroundColor: 'rgba(34,197,94,0.12)',
+    backgroundColor: colors.success + '1F',
   },
   uploadedText: {
     ...typography.caption,
     fontWeight: fontWeights.medium,
-    color: '#22c55e',
+    color: colors.success,
     flex: 1,
   },
   removeUploadButton: {
@@ -733,6 +732,8 @@ export default function FilesScreen() {
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
+  const STATUS_CONFIG = useMemo(() => getStatusConfig(colors), [colors]);
+  const CATEGORY_COLORS = useMemo(() => getCategoryColors(colors), [colors]);
 
   const [complianceDocs, setComplianceDocs] = useState<ComplianceDocument[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -1038,7 +1039,7 @@ export default function FilesScreen() {
   };
 
   const renderComplianceDocCard = (doc: ComplianceDocument & { computedStatus: string }) => {
-    const typeConfig = getTypeConfig(doc.type);
+    const typeConfig = getTypeConfig(doc.type, colors);
     const statusConfig = STATUS_CONFIG[doc.computedStatus] || STATUS_CONFIG.pending;
     const isExpanded = expandedId === doc.id;
 
@@ -1137,7 +1138,7 @@ export default function FilesScreen() {
                 <Text style={styles.editButtonText}>Edit</Text>
               </PressableRow>
               <PressableRow style={styles.deleteButton} onPress={() => handleDelete(doc)} >
-                <Feather name="trash-2" size={14} color="#ef4444" />
+                <Feather name="trash-2" size={14} color={colors.destructive} />
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </PressableRow>
             </View>
@@ -1455,15 +1456,15 @@ export default function FilesScreen() {
               <Text style={styles.formLabel}>Document File</Text>
               {attachmentUri ? (
                 <View style={styles.uploadedIndicator}>
-                  <Feather name={(attachmentMime || '').includes('pdf') ? 'file-text' : 'image'} size={16} color="#22c55e" />
+                  <Feather name={(attachmentMime || '').includes('pdf') ? 'file-text' : 'image'} size={16} color={colors.success} />
                   <Text style={styles.uploadedText} numberOfLines={1}>{attachmentName || 'File selected'}</Text>
                   <PressableRow style={styles.removeUploadButton} onPress={() => { setAttachmentUri(null); setAttachmentName(null); setAttachmentMime(null); }} >
-                    <Feather name="x" size={16} color="#ef4444" />
+                    <Feather name="x" size={16} color={colors.destructive} />
                   </PressableRow>
                 </View>
               ) : hasExistingAttachment ? (
                 <View style={styles.uploadedIndicator}>
-                  <Feather name="paperclip" size={16} color="#22c55e" />
+                  <Feather name="paperclip" size={16} color={colors.success} />
                   <Text style={styles.uploadedText}>Existing attachment</Text>
                   <PressableRow style={styles.removeUploadButton} onPress={handlePickImage} >
                     <Feather name="refresh-cw" size={14} color={colors.mutedForeground} />

@@ -222,7 +222,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.xl,
   },
   trialBanner: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.warningLight,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -238,17 +238,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   trialBannerTitle: {
     ...typography.subtitle,
-    color: '#92400E',
+    color: colors.warningDark,
     marginBottom: 4,
   },
   trialBannerSubtitle: {
     ...typography.caption,
-    color: '#A16207',
+    color: colors.warningDark,
   },
   betaBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#10B98120',
+    backgroundColor: colors.done + '20',
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
@@ -258,7 +258,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   betaBadgeText: {
     ...typography.caption,
-    color: '#10B981',
+    color: colors.done,
     fontWeight: fontWeights.bold,
   },
   loadingContainer: {
@@ -753,8 +753,8 @@ export default function SubscriptionPage() {
   };
 
   const getUsageColor = (percent: number) => {
-    if (percent >= 90) return '#EF4444';
-    if (percent >= 70) return '#F59E0B';
+    if (percent >= 90) return colors.destructive;
+    if (percent >= 70) return colors.warning;
     return colors.primary;
   };
 
@@ -778,14 +778,14 @@ export default function SubscriptionPage() {
       >
         {isBeta && (
           <View style={styles.betaBadge}>
-            <Feather name="star" size={14} color="#10B981" />
+            <Feather name="star" size={14} color={colors.done} />
             <Text style={styles.betaBadgeText}>Founding Member</Text>
           </View>
         )}
 
         {isOnTrial && subscriptionStatus?.trialEndsAt && (
           <View style={[styles.trialBanner, isDark && styles.trialBannerDark]}>
-            <Feather name="clock" size={20} color="#92400E" />
+            <Feather name="clock" size={20} color={colors.warningDark} />
             <View style={styles.trialBannerText}>
               <Text style={styles.trialBannerTitle}>Trial Active</Text>
               <Text style={styles.trialBannerSubtitle}>
@@ -925,10 +925,10 @@ export default function SubscriptionPage() {
             </Text>
 
             {currentTier === 'free' && (
-              <View style={[styles.comparePlanCard, { borderColor: '#2563EB', borderWidth: 2 }]}>
+              <View style={[styles.comparePlanCard, { borderColor: colors.primary, borderWidth: 2 }]}>
                 <View style={styles.comparePlanHeader}>
-                  <View style={[styles.comparePlanIcon, { backgroundColor: '#2563EB15' }]}>  
-                    <Feather name="award" size={20} color="#2563EB" />
+                  <View style={[styles.comparePlanIcon, { backgroundColor: colors.primary + '15' }]}>  
+                    <Feather name="award" size={20} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.comparePlanName}>Pro</Text>
@@ -939,12 +939,12 @@ export default function SubscriptionPage() {
                 <View style={styles.comparePlanFeatures}>
                   {['Unlimited jobs & invoices', 'AI-powered features', 'Custom templates', 'Email integration', 'Priority support'].map((f, i) => (
                     <View key={i} style={styles.comparePlanFeatureRow}>
-                      <Feather name="check" size={14} color="#2563EB" />
+                      <Feather name="check" size={14} color={colors.primary} />
                       <Text style={styles.comparePlanFeatureText}>{f}</Text>
                     </View>
                   ))}
                 </View>
-                <PressableRow style={[styles.upgradePlanButton, { backgroundColor: '#2563EB' }, purchasingTier !== null && { opacity: 0.6 }]} onPress={() => handleUpgrade('pro')} disabled={purchasingTier !== null} >
+                <PressableRow style={[styles.upgradePlanButton, { backgroundColor: colors.primary }, purchasingTier !== null && { opacity: 0.6 }]} onPress={() => handleUpgrade('pro')} disabled={purchasingTier !== null} >
                   {purchasingTier === 'pro' ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={styles.upgradePlanButtonText}>Upgrade to Pro</Text>}
                 </PressableRow>
               </View>

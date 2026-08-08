@@ -4,8 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useOfflineStore } from '../lib/offline-storage';
 import offlineStorage from '../lib/offline-storage';
 import { colors as staticColors } from '../lib/colors';
+import { useTheme, useThemedStyles, ThemeColors } from '../lib/theme';
 
 export function OfflineIndicator() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { isOnline, isSyncing, pendingSyncCount, lastSyncTime } = useOfflineStore();
   const [showSyncMessage, setShowSyncMessage] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -77,7 +80,7 @@ export function OfflineIndicator() {
   if (showSyncMessage && isOnline && pendingSyncCount === 0) {
     return (
       <View style={[styles.container, styles.successContainer]}>
-        <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+        <Ionicons name="checkmark-circle" size={16} color={colors.done} />
         <Text style={styles.successText}>All changes synced</Text>
       </View>
     );
@@ -98,7 +101,7 @@ export function OfflineIndicator() {
         <Ionicons 
           name={isOnline ? (isSyncing ? 'sync' : 'cloud-upload-outline') : 'cloud-offline-outline'} 
           size={16} 
-          color={isOnline ? '#f59e0b' : '#6b7280'}
+          color={isOnline ? colors.warning : colors.mutedForeground}
         />
         <Text style={[styles.text, isOnline ? styles.pendingText : styles.offlineText]} numberOfLines={2}>
           {!isOnline 
@@ -117,6 +120,7 @@ export function OfflineIndicator() {
 }
 
 export function OfflineBanner() {
+  const styles = useThemedStyles(createStyles);
   const { isOnline, pendingSyncCount } = useOfflineStore();
 
   if (isOnline) return null;
@@ -132,6 +136,8 @@ export function OfflineBanner() {
 }
 
 export function SyncStatus() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { isOnline, isSyncing, pendingSyncCount, lastSyncTime, syncError } = useOfflineStore();
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   
@@ -182,7 +188,7 @@ export function SyncStatus() {
       
       {syncError && (
         <View style={styles.errorRow}>
-          <Ionicons name="warning" size={14} color="#ef4444" />
+          <Ionicons name="warning" size={14} color={colors.destructive} />
           <Text style={styles.errorText}>{syncError}</Text>
         </View>
       )}
@@ -198,7 +204,7 @@ export function SyncStatus() {
         <Ionicons 
           name={isSyncing ? 'sync' : 'refresh'} 
           size={18} 
-          color={(!isOnline || isSyncing) ? '#9ca3af' : '#3b82f6'}
+          color={(!isOnline || isSyncing) ? '#9ca3af' : colors.primary}
         />
         <Text style={[
           styles.syncButtonText,
@@ -211,7 +217,7 @@ export function SyncStatus() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -222,10 +228,10 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   offlineContainer: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.muted,
   },
   pendingContainer: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: colors.warningLight,
   },
   successContainer: {
     backgroundColor: '#d1fae5',
@@ -236,10 +242,10 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   offlineText: {
-    color: '#6b7280',
+    color: colors.mutedForeground,
   },
   pendingText: {
-    color: '#92400e',
+    color: colors.warningDark,
   },
   successText: {
     color: '#065f46',
@@ -249,7 +255,7 @@ const styles = StyleSheet.create({
   },
   tapHint: {
     fontSize: 11,
-    color: '#b45309',
+    color: colors.warningDark,
     marginLeft: 4,
   },
   banner: {
@@ -268,7 +274,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   syncStatus: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -283,11 +289,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   syncLabel: {
-    color: '#6b7280',
+    color: colors.mutedForeground,
     fontSize: 14,
   },
   syncValue: {
-    color: '#111827',
+    color: colors.foreground,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -302,13 +308,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   onlineDot: {
-    backgroundColor: '#10b981',
+    backgroundColor: colors.done,
   },
   offlineDot: {
-    backgroundColor: '#6b7280',
+    backgroundColor: colors.mutedForeground,
   },
   pendingValue: {
-    color: '#f59e0b',
+    color: colors.warning,
   },
   errorRow: {
     flexDirection: 'row',
@@ -317,7 +323,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   errorText: {
-    color: '#ef4444',
+    color: colors.destructive,
     fontSize: 12,
     flex: 1,
   },
@@ -332,10 +338,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   syncButtonDisabled: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.muted,
   },
   syncButtonText: {
-    color: '#3b82f6',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '600',
   },

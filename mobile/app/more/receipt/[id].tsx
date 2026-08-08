@@ -799,7 +799,7 @@ ${businessName}`;
             </View>
           </View>
 
-          <View style={[styles.paymentSummary, { borderColor: '#22c55e' }]}>
+          <View style={[styles.paymentSummary, { borderColor: colors.success }]}>
             <View style={styles.paymentSummaryHeader}>
               <Text style={styles.summaryTitle}>Payment Received</Text>
               <View style={styles.paidBadgeSmall}>
@@ -1098,7 +1098,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   paidBadgeLarge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.success,
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
     borderRadius: 16,
@@ -1327,7 +1327,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   paidBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.success,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.pill,
@@ -1374,7 +1374,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginBottom: spacing.lg,
     padding: spacing.lg,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.successLight,
     borderRadius: radius.lg,
     borderWidth: 2,
   },
@@ -1386,13 +1386,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   summaryTitle: {
     ...typography.subtitle,
-    color: '#15803d',
+    color: colors.successDark,
     fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   paidBadgeSmall: {
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.success,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.pill,
@@ -1414,11 +1414,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   summaryLabel: {
     ...typography.body,
-    color: '#15803d',
+    color: colors.successDark,
   },
   summaryValue: {
     ...typography.bodySemibold,
-    color: '#15803d',
+    color: colors.successDark,
   },
   totalRow: {
     flexDirection: 'row',
@@ -1426,16 +1426,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingTop: spacing.md,
     marginTop: spacing.sm,
     borderTopWidth: 2,
-    borderTopColor: '#22c55e',
+    borderTopColor: colors.success,
   },
   totalLabel: {
     ...typography.cardTitle,
-    color: '#15803d',
+    color: colors.successDark,
     fontWeight: fontWeights.bold,
   },
   totalValue: {
     ...typography.cardTitle,
-    color: '#15803d',
+    color: colors.successDark,
     fontWeight: fontWeights.bold,
   },
   detailsGrid: {

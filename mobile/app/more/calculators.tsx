@@ -1052,8 +1052,8 @@ function BalusterCalculator({ colors, styles, onResult }: { colors: any; styles:
     <>
       <View style={styles.calcDetailCard}>
         <View style={styles.calcDetailHeader}>
-          <View style={[styles.calcIconContainer, { backgroundColor: '#d9770620' }]}>
-            <Feather name="maximize" size={iconSizes.xl} color="#d97706" />
+          <View style={[styles.calcIconContainer, { backgroundColor: colors.warningDark + '20' }]}>
+            <Feather name="maximize" size={iconSizes.xl} color={colors.warningDark} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.calcDetailTitle}>Baluster Spacing</Text>
@@ -1070,9 +1070,9 @@ ActualGap = (Span - Balusters × Width) / Gaps"
           styles={styles}
         />
 
-        <View style={[styles.infoBox, { backgroundColor: '#3b82f620' }]}>
-          <Feather name="info" size={iconSizes.md} color="#3b82f6" style={{ marginTop: 2 }} />
-          <Text style={[styles.infoText, { color: '#3b82f6' }]}>
+        <View style={[styles.infoBox, { backgroundColor: colors.primary + '20' }]}>
+          <Feather name="info" size={iconSizes.md} color={colors.primary} style={{ marginTop: 2 }} />
+          <Text style={[styles.infoText, { color: colors.primary }]}>
             Australian Building Code requires a maximum gap of 100mm between balusters to prevent children from passing through.
           </Text>
         </View>
@@ -1215,8 +1215,8 @@ function ConcreteCalculator({ colors, styles, onResult }: { colors: any; styles:
     <>
       <View style={styles.calcDetailCard}>
         <View style={styles.calcDetailHeader}>
-          <View style={[styles.calcIconContainer, { backgroundColor: '#d9770620' }]}>
-            <Feather name="square" size={iconSizes.xl} color="#d97706" />
+          <View style={[styles.calcIconContainer, { backgroundColor: colors.warningDark + '20' }]}>
+            <Feather name="square" size={iconSizes.xl} color={colors.warningDark} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.calcDetailTitle}>Concrete Volume</Text>
@@ -1231,9 +1231,9 @@ function ConcreteCalculator({ colors, styles, onResult }: { colors: any; styles:
           styles={styles}
         />
 
-        <View style={[styles.infoBox, { backgroundColor: '#d9770620' }]}>
-          <Feather name="info" size={iconSizes.md} color="#d97706" style={{ marginTop: 2 }} />
-          <Text style={[styles.infoText, { color: '#d97706' }]}>
+        <View style={[styles.infoBox, { backgroundColor: colors.warningDark + '20' }]}>
+          <Feather name="info" size={iconSizes.md} color={colors.warningDark} style={{ marginTop: 2 }} />
+          <Text style={[styles.infoText, { color: colors.warningDark }]}>
             1 x 20kg bag of premix concrete yields approximately 0.01m³ (10 litres) of mixed concrete.
           </Text>
         </View>
@@ -1733,8 +1733,8 @@ function RoofCalculator({ colors, styles, onResult }: { colors: any; styles: any
     <>
       <View style={styles.calcDetailCard}>
         <View style={styles.calcDetailHeader}>
-          <View style={[styles.calcIconContainer, { backgroundColor: '#d9770620' }]}>
-            <Feather name="home" size={iconSizes.xl} color="#d97706" />
+          <View style={[styles.calcIconContainer, { backgroundColor: colors.warningDark + '20' }]}>
+            <Feather name="home" size={iconSizes.xl} color={colors.warningDark} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.calcDetailTitle}>Roof Pitch</Text>
@@ -1750,9 +1750,9 @@ Raker = sqrt(Rise² + Run²)"
           styles={styles}
         />
 
-        <View style={[styles.infoBox, { backgroundColor: '#d9770620' }]}>
-          <Feather name="info" size={iconSizes.md} color="#d97706" style={{ marginTop: 2 }} />
-          <Text style={[styles.infoText, { color: '#d97706' }]}>
+        <View style={[styles.infoBox, { backgroundColor: colors.warningDark + '20' }]}>
+          <Feather name="info" size={iconSizes.md} color={colors.warningDark} style={{ marginTop: 2 }} />
+          <Text style={[styles.infoText, { color: colors.warningDark }]}>
             A 4:12 pitch means the roof rises 4 units for every 12 units of horizontal run. Common Australian roof pitches range from 15° to 25°.
           </Text>
         </View>

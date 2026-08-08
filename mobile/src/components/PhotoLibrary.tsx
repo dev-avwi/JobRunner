@@ -20,7 +20,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import { useTheme, ThemeColors } from '../lib/theme';
+import { useTheme, ThemeColors, colorWithOpacity } from '../lib/theme';
 import { AppBottomSheet } from './ui/AppBottomSheet';
 import { useConfirmDialog } from './ui/ConfirmDialog';
 import { api } from '../lib/api';
@@ -92,17 +92,17 @@ const UPLOAD_CATEGORIES = [
   { value: 'general', label: 'General' },
 ];
 
-const CATEGORY_COLORS: Record<string, { color: string; bg: string }> = {
-  before: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  progress: { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
-  after: { color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
-  materials: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
-  general: { color: '#6b7280', bg: 'rgba(107,114,128,0.12)' },
+const getCategoryColors = (colors: ThemeColors): Record<string, { color: string; bg: string }> => ({
+  before: { color: colors.warning, bg: colorWithOpacity(colors.warning, 0.12) },
+  progress: { color: colors.primary, bg: colorWithOpacity(colors.primary, 0.12) },
+  after: { color: colors.success, bg: colorWithOpacity(colors.success, 0.12) },
+  materials: { color: colors.invoiced, bg: colorWithOpacity(colors.invoiced, 0.12) },
+  general: { color: colors.mutedForeground, bg: colorWithOpacity(colors.mutedForeground, 0.12) },
   receipt: { color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
-};
-
-const getCategoryStyle = (cat: string | null) => {
-  return CATEGORY_COLORS[cat || 'general'] || CATEGORY_COLORS.general;
+});
+const getCategoryStyle = (cat: string | null, colors: ThemeColors) => {
+  const map = getCategoryColors(colors);
+  return map[cat || 'general'] || map.general;
 };
 
 const getCategoryLabel = (cat: string | null) => {
@@ -279,7 +279,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -363,10 +363,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.foreground,
   },
   bulkActionDanger: {
-    backgroundColor: 'rgba(239,68,68,0.12)',
+    backgroundColor: colorWithOpacity(colors.destructive, 0.12),
   },
   bulkActionDangerText: {
-    color: '#ef4444',
+    color: colors.destructive,
   },
   bulkCancel: {
     paddingHorizontal: spacing.sm,
@@ -1051,22 +1051,22 @@ export default function PhotoLibrary() {
     return (
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
-          <View style={[styles.statIconWrap, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
-            <Feather name="image" size={14} color="#3b82f6" />
+          <View style={[styles.statIconWrap, { backgroundColor: colorWithOpacity(colors.primary, 0.12) }]}>
+            <Feather name="image" size={14} color={colors.primary} />
           </View>
           <Text style={styles.statValue}>{stats.totalPhotos}</Text>
           <Text style={styles.statLabel}>Total</Text>
         </View>
         <View style={styles.statCard}>
-          <View style={[styles.statIconWrap, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
-            <Feather name="trending-up" size={14} color="#22c55e" />
+          <View style={[styles.statIconWrap, { backgroundColor: colorWithOpacity(colors.success, 0.12) }]}>
+            <Feather name="trending-up" size={14} color={colors.success} />
           </View>
           <Text style={styles.statValue}>{stats.thisWeek}</Text>
           <Text style={styles.statLabel}>This Week</Text>
         </View>
         <View style={styles.statCard}>
-          <View style={[styles.statIconWrap, { backgroundColor: 'rgba(139,92,246,0.12)' }]}>
-            <Feather name="briefcase" size={14} color="#8b5cf6" />
+          <View style={[styles.statIconWrap, { backgroundColor: colorWithOpacity(colors.invoiced, 0.12) }]}>
+            <Feather name="briefcase" size={14} color={colors.invoiced} />
           </View>
           <Text style={styles.statValue} numberOfLines={1}>
             {topJob ? topJob.count : 0}
@@ -1076,8 +1076,8 @@ export default function PhotoLibrary() {
           </Text>
         </View>
         <View style={styles.statCard}>
-          <View style={[styles.statIconWrap, { backgroundColor: 'rgba(245,158,11,0.12)' }]}>
-            <Feather name="hard-drive" size={14} color="#f59e0b" />
+          <View style={[styles.statIconWrap, { backgroundColor: colorWithOpacity(colors.warning, 0.12) }]}>
+            <Feather name="hard-drive" size={14} color={colors.warning} />
           </View>
           <Text style={styles.statValue} numberOfLines={1}>
             {stats.storageUsedFormatted || '0 KB'}
@@ -1109,7 +1109,7 @@ export default function PhotoLibrary() {
 
   const renderPhotoThumb = (photo: PhotoItem) => {
     const isSelected = selectedIds.has(photo.id);
-    const catStyle = getCategoryStyle(photo.category);
+    const catStyle = getCategoryStyle(photo.category, colors);
     return (
       <TouchableOpacity
         key={photo.id}
@@ -1195,7 +1195,7 @@ export default function PhotoLibrary() {
           <Text style={styles.bulkActionText}>Attach</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.bulkAction, styles.bulkActionDanger]} onPress={handleBulkDelete} activeOpacity={0.7}>
-          <Feather name="trash-2" size={14} color="#ef4444" />
+          <Feather name="trash-2" size={14} color={colors.destructive} />
           <Text style={[styles.bulkActionText, styles.bulkActionDangerText]}>Delete</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bulkCancel} onPress={cancelSelection} activeOpacity={0.7}>
@@ -1306,7 +1306,7 @@ export default function PhotoLibrary() {
   const renderLightbox = () => {
     if (!lightboxPhoto) return null;
     const idx = flatPhotos.findIndex(p => p.id === lightboxPhoto.id);
-    const catStyle = getCategoryStyle(lightboxPhoto.category);
+    const catStyle = getCategoryStyle(lightboxPhoto.category, colors);
     return (
       <Modal visible={true} animationType="fade" statusBarTranslucent onRequestClose={closeLightbox}>
         {/* The lightbox is always black; force light status-bar icons while it
@@ -1330,7 +1330,7 @@ export default function PhotoLibrary() {
                 style={styles.lightboxActionBtn}
                 onPress={() => handleDeletePhoto(lightboxPhoto)}
               >
-                <Feather name="trash-2" size={20} color="#ef4444" />
+                <Feather name="trash-2" size={20} color={colors.destructive} />
               </TouchableOpacity>
             </View>
           </View>
@@ -1494,7 +1494,7 @@ export default function PhotoLibrary() {
                 onPress={() => handleBulkSetCategory(c.value)}
                 activeOpacity={0.7}
               >
-                <View style={[{ width: 12, height: 12, borderRadius: 6 }, { backgroundColor: getCategoryStyle(c.value).color }]} />
+                <View style={[{ width: 12, height: 12, borderRadius: 6 }, { backgroundColor: getCategoryStyle(c.value, colors).color }]} />
                 <Text style={styles.jobPickerTitle}>{c.label}</Text>
               </TouchableOpacity>
             ))}

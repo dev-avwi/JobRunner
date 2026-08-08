@@ -105,17 +105,17 @@ const EMPTY_FORM: AutomationFormData = {
   actions: [{ type: '' }],
 };
 
-const AUTOMATION_TYPE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  quote_followup: { label: 'Quote follow-up', icon: 'file-text', color: '#3b82f6' },
-  job_reminder: { label: 'Job reminder', icon: 'calendar', color: '#22c55e' },
-  invoice_reminder: { label: 'Invoice reminder', icon: 'dollar-sign', color: '#ef4444' },
+const getAutomationTypeLabels = (colors: any): Record<string, { label: string; icon: string; color: string }> => ({
+  quote_followup: { label: 'Quote follow-up', icon: 'file-text', color: colors.primary },
+  job_reminder: { label: 'Job reminder', icon: 'calendar', color: colors.success },
+  invoice_reminder: { label: 'Invoice reminder', icon: 'dollar-sign', color: colors.destructive },
   auto_invoice: { label: 'Auto-invoice', icon: 'file-plus', color: '#14b8a6' },
   review_request: { label: 'Review request', icon: 'star', color: '#eab308' },
-  photo_requirement: { label: 'Photo prompt', icon: 'camera', color: '#f59e0b' },
-  gps_checkin: { label: 'GPS check-in', icon: 'map-pin', color: '#8b5cf6' },
-  sms_automation: { label: 'SMS automation', icon: 'message-square', color: '#6b7280' },
-  general: { label: 'Automation', icon: 'zap', color: '#6b7280' },
-};
+  photo_requirement: { label: 'Photo prompt', icon: 'camera', color: colors.warning },
+  gps_checkin: { label: 'GPS check-in', icon: 'map-pin', color: colors.invoiced },
+  sms_automation: { label: 'SMS automation', icon: 'message-square', color: colors.mutedForeground },
+  general: { label: 'Automation', icon: 'zap', color: colors.mutedForeground },
+});
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return '—';
@@ -134,20 +134,21 @@ function timeAgo(dateStr: string | null): string {
 
 type TabType = 'automations' | 'templates' | 'activity';
 
-const CATEGORY_COLORS: Record<string, { color: string; bgColor: string }> = {
-  'communication': { color: '#3b82f6', bgColor: 'rgba(59,130,246,0.1)' },
-  'scheduling': { color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.1)' },
-  'invoicing': { color: '#22c55e', bgColor: 'rgba(34,197,94,0.1)' },
-  'follow-up': { color: '#f59e0b', bgColor: 'rgba(245,158,11,0.1)' },
+const getCategoryColors = (colors: any): Record<string, { color: string; bgColor: string }> => ({
+  'communication': { color: colors.primary, bgColor: 'rgba(59,130,246,0.1)' },
+  'scheduling': { color: colors.invoiced, bgColor: 'rgba(139,92,246,0.1)' },
+  'invoicing': { color: colors.success, bgColor: 'rgba(34,197,94,0.1)' },
+  'follow-up': { color: colors.warning, bgColor: 'rgba(245,158,11,0.1)' },
   'status': { color: '#06b6d4', bgColor: 'rgba(6,182,212,0.1)' },
   'notification': { color: '#ec4899', bgColor: 'rgba(236,72,153,0.1)' },
-  'default': { color: '#6b7280', bgColor: 'rgba(107,114,128,0.1)' },
-};
+  'default': { color: colors.mutedForeground, bgColor: 'rgba(107,114,128,0.1)' },
+});
 
-function getCategoryStyle(category?: string) {
-  if (!category) return CATEGORY_COLORS['default'];
+function getCategoryStyle(category: string | undefined, colors: any) {
+  const categoryColors = getCategoryColors(colors);
+  if (!category) return categoryColors['default'];
   const key = category.toLowerCase();
-  return CATEGORY_COLORS[key] || CATEGORY_COLORS['default'];
+  return categoryColors[key] || categoryColors['default'];
 }
 
 function getTriggerSummary(trigger: AutomationTrigger): string {
@@ -1010,7 +1011,7 @@ export default function AutopilotScreen() {
                         value={formData.isActive}
                         onValueChange={(val) => setFormData(prev => ({ ...prev, isActive: val }))}
                         trackColor={{ false: colors.border, true: colors.primary + '80' }}
-                        thumbColor={'#FFFFFF'}
+                        thumbColor={colors.white}
                       />
                     </View>
                   </>
@@ -1113,7 +1114,7 @@ export default function AutopilotScreen() {
                           </Text>
                           {formData.actions.length > 1 && (
                             <PressableRow onPress={() => removeAction(idx)} >
-                              <Feather name="trash-2" size={iconSizes.md} color={colors.destructive || '#ef4444'} />
+                              <Feather name="trash-2" size={iconSizes.md} color={colors.destructive} />
                             </PressableRow>
                           )}
                         </View>
@@ -1201,7 +1202,7 @@ export default function AutopilotScreen() {
 
                     <View style={[styles.reviewSection, { borderColor: colors.border, backgroundColor: colors.background }]}>
                       <Text style={[styles.reviewLabel, { color: colors.mutedForeground }]}>STATUS</Text>
-                      <Text style={[styles.reviewValue, { color: formData.isActive ? '#22c55e' : colors.mutedForeground }]}>
+                      <Text style={[styles.reviewValue, { color: formData.isActive ? colors.success : colors.mutedForeground }]}>
                         {formData.isActive ? 'Active (enabled immediately)' : 'Inactive (disabled)'}
                       </Text>
                     </View>
@@ -1252,21 +1253,21 @@ export default function AutopilotScreen() {
     <View style={styles.statsRow}>
       <View style={styles.statCard}>
         <View style={[styles.statIconContainer, { backgroundColor: 'rgba(34,197,94,0.1)' }]}>
-          <Feather name="zap" size={16} color="#22c55e" />
+          <Feather name="zap" size={16} color={colors.success} />
         </View>
-        <Text style={[styles.statValue, { color: '#22c55e' }]}>{activeCount}</Text>
+        <Text style={[styles.statValue, { color: colors.success }]}>{activeCount}</Text>
         <Text style={styles.statLabel}>Active</Text>
       </View>
       <View style={styles.statCard}>
         <View style={[styles.statIconContainer, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-          <Feather name="copy" size={16} color="#3b82f6" />
+          <Feather name="copy" size={16} color={colors.primary} />
         </View>
         <Text style={[styles.statValue, { color: colors.foreground }]}>{availableCount}</Text>
         <Text style={styles.statLabel}>Available</Text>
       </View>
       <View style={styles.statCard}>
         <View style={[styles.statIconContainer, { backgroundColor: 'rgba(107,114,128,0.1)' }]}>
-          <Feather name="layers" size={16} color="#6b7280" />
+          <Feather name="layers" size={16} color={colors.mutedForeground} />
         </View>
         <Text style={[styles.statValue, { color: colors.foreground }]}>{totalCount}</Text>
         <Text style={styles.statLabel}>Total</Text>
@@ -1281,7 +1282,7 @@ export default function AutopilotScreen() {
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleRow}>
             <View style={[styles.automationIconContainer, { backgroundColor: isActive ? 'rgba(34,197,94,0.1)' : 'rgba(107,114,128,0.1)' }]}>
-              <Feather name="zap" size={iconSizes.xl} color={isActive ? '#22c55e' : '#6b7280'} />
+              <Feather name="zap" size={iconSizes.xl} color={isActive ? colors.success : colors.mutedForeground} />
             </View>
             <Text style={styles.cardTitle} numberOfLines={1}>{automation.name}</Text>
           </View>
@@ -1290,7 +1291,7 @@ export default function AutopilotScreen() {
             onValueChange={() => handleToggle(automation)}
             disabled={togglingIds.has(automation.id)}
             trackColor={{ false: colors.border, true: colors.primary + '80' }}
-            thumbColor={'#FFFFFF'}
+            thumbColor={colors.white}
           />
         </View>
 
@@ -1311,7 +1312,7 @@ export default function AutopilotScreen() {
 
         <View style={[styles.cardFooter, { justifyContent: 'space-between' }]}>
           <View style={[styles.statusBadge, { backgroundColor: isActive ? 'rgba(34,197,94,0.1)' : 'rgba(107,114,128,0.1)' }]}>
-            <Text style={[styles.statusBadgeText, { color: isActive ? '#22c55e' : '#6b7280' }]}>
+            <Text style={[styles.statusBadgeText, { color: isActive ? colors.success : colors.mutedForeground }]}>
               {isActive ? 'Active' : 'Inactive'}
             </Text>
           </View>
@@ -1320,7 +1321,7 @@ export default function AutopilotScreen() {
               <Feather name="edit-2" size={iconSizes.lg} color={colors.primary} />
             </PressableRow>
             <PressableRow onPress={() => handleDeleteAutomation(automation)} style={{ padding: spacing.xs }} >
-              <Feather name="trash-2" size={iconSizes.lg} color={colors.destructive || '#ef4444'} />
+              <Feather name="trash-2" size={iconSizes.lg} color={colors.destructive} />
             </PressableRow>
           </View>
         </View>
@@ -1330,7 +1331,7 @@ export default function AutopilotScreen() {
 
   const renderTemplateCard = (template: AutomationTemplate) => {
     const isEnabling = enablingIds.has(template.id);
-    const catStyle = getCategoryStyle(template.category);
+    const catStyle = getCategoryStyle(template.category, colors);
     return (
       <View key={template.id} style={styles.card}>
         <View style={styles.cardHeader}>
@@ -1457,7 +1458,7 @@ export default function AutopilotScreen() {
               <Text style={[styles.tabText, activeTab === 'templates' && styles.activeTabText]} numberOfLines={1}>
                 Templates
               </Text>
-              <View style={[styles.tabBadge, { backgroundColor: '#6b7280' }]}>
+              <View style={[styles.tabBadge, { backgroundColor: colors.mutedForeground }]}>
                 <Text style={styles.tabBadgeText}>{templates.length}</Text>
               </View>
             </PressableRow>
@@ -1472,7 +1473,7 @@ export default function AutopilotScreen() {
                 Activity
               </Text>
               {activityLogs.length > 0 && (
-                <View style={[styles.tabBadge, { backgroundColor: '#22c55e' }]}>
+                <View style={[styles.tabBadge, { backgroundColor: colors.success }]}>
                   <Text style={styles.tabBadgeText}>{activityLogs.length}</Text>
                 </View>
               )}
@@ -1531,8 +1532,8 @@ export default function AutopilotScreen() {
               <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>EMAIL ALERTS</Text>
               <View style={[styles.card, { borderColor: emailOnQuoteAccepted ? colors.success + '40' : colors.border }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                  <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: '#3b82f6' + '15', alignItems: 'center', justifyContent: 'center' }}>
-                    <Feather name="mail" size={18} color="#3b82f6" />
+                  <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name="mail" size={18} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.cardTitle, { marginBottom: 2 }]}>Quote Accepted</Text>
@@ -1551,8 +1552,8 @@ export default function AutopilotScreen() {
               </View>
               <View style={[styles.card, { marginTop: spacing.sm, borderColor: emailOnInvoicePaid ? colors.success + '40' : colors.border }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                  <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: '#22c55e' + '15', alignItems: 'center', justifyContent: 'center' }}>
-                    <Feather name="dollar-sign" size={18} color="#22c55e" />
+                  <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.success + '15', alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name="dollar-sign" size={18} color={colors.success} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.cardTitle, { marginBottom: 2 }]}>Invoice Paid</Text>
@@ -1594,7 +1595,7 @@ export default function AutopilotScreen() {
               {activityLogs.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <View style={[styles.emptyIconContainer, { backgroundColor: 'rgba(34,197,94,0.1)' }]}>
-                    <Feather name="clock" size={18} color="#22c55e" />
+                    <Feather name="clock" size={18} color={colors.success} />
                   </View>
                   <Text style={styles.emptyTitle}>No Activity Yet</Text>
                   <Text style={styles.emptyDescription}>
@@ -1603,7 +1604,8 @@ export default function AutopilotScreen() {
                 </View>
               ) : (
                 activityLogs.map((entry) => {
-                  const typeInfo = AUTOMATION_TYPE_LABELS[entry.automationType] || AUTOMATION_TYPE_LABELS.general;
+                  const automationTypeLabels = getAutomationTypeLabels(colors);
+                  const typeInfo = automationTypeLabels[entry.automationType] || automationTypeLabels.general;
                   const isFailed = entry.status === 'failed' || entry.status === 'error';
                   const isExpanded = expandedLogId === entry.id;
                   return (
@@ -1611,9 +1613,9 @@ export default function AutopilotScreen() {
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                         <View style={[styles.automationIconContainer, { backgroundColor: isFailed ? 'rgba(239,68,68,0.1)' : (typeInfo.color + '18') }]}>
                           {isFailed ? (
-                            <Feather name="x-circle" size={iconSizes.xl} color="#ef4444" />
+                            <Feather name="x-circle" size={iconSizes.xl} color={colors.destructive} />
                           ) : (
-                            <Feather name="check-circle" size={iconSizes.xl} color="#22c55e" />
+                            <Feather name="check-circle" size={iconSizes.xl} color={colors.success} />
                           )}
                         </View>
                         <View style={{ flex: 1 }}>
@@ -1623,7 +1625,7 @@ export default function AutopilotScreen() {
                             </View>
                             {isFailed && (
                               <View style={[styles.statusBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-                                <Text style={[styles.statusBadgeText, { color: '#ef4444' }]}>Failed</Text>
+                                <Text style={[styles.statusBadgeText, { color: colors.destructive }]}>Failed</Text>
                               </View>
                             )}
                           </View>
@@ -1665,8 +1667,8 @@ export default function AutopilotScreen() {
                           </View>
                           {isFailed && entry.errorMessage && (
                             <View style={styles.detailRow}>
-                              <Feather name="alert-triangle" size={iconSizes.sm} color="#ef4444" />
-                              <Text style={[styles.detailText, { color: '#ef4444' }]}>{entry.errorMessage}</Text>
+                              <Feather name="alert-triangle" size={iconSizes.sm} color={colors.destructive} />
+                              <Text style={[styles.detailText, { color: colors.destructive }]}>{entry.errorMessage}</Text>
                             </View>
                           )}
                         </View>

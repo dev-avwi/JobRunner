@@ -60,10 +60,10 @@ const TABS: { key: TabId; label: string; icon: string }[] = [
 const fmtAud = (n: number) =>
   `$${(isNaN(n) ? 0 : n).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
-const getMarginColor = (margin: number): string => {
-  if (margin > 30) return '#22c55e';
-  if (margin >= 15) return '#f59e0b';
-  return '#ef4444';
+const getMarginColor = (margin: number, colors: any): string => {
+  if (margin > 30) return colors.success;
+  if (margin >= 15) return colors.warning;
+  return colors.destructive;
 };
 
 const getMarginLabel = (margin: number): string => {
@@ -401,7 +401,7 @@ function HeroCard({
             <Feather
               name={trendUp ? 'trending-up' : 'trending-down'}
               size={12}
-              color={trendUp ? (colors.success || '#22c55e') : (colors.destructive || '#ef4444')}
+              color={trendUp ? (colors.success) : (colors.destructive)}
             />
           </View>
         )}
@@ -458,7 +458,7 @@ function StatCard({
             <Feather
               name={trendUp ? 'trending-up' : 'trending-down'}
               size={12}
-              color={trendUp ? (colors.success || '#22c55e') : (colors.destructive || '#ef4444')}
+              color={trendUp ? (colors.success) : (colors.destructive)}
             />
           </View>
         )}
@@ -526,7 +526,7 @@ export default function InsightsScreen() {
       <HeroCard
         icon="dollar-sign"
         iconBg={colors.successLight || 'rgba(34,197,94,0.15)'}
-        iconColor={colors.success || '#22c55e'}
+        iconColor={colors.success}
         value={fmtAud(profit?.revenueThisMonth ?? 0)}
         label="Revenue This Month"
         trendUp={(profit?.revenueThisMonth ?? 0) > 0 ? true : null}
@@ -537,9 +537,9 @@ export default function InsightsScreen() {
       <Text style={[styles.sectionTitle, { marginTop: spacing.sm }]}>Revenue Breakdown</Text>
       <SimpleBarChart
         data={[
-          { label: 'Today', value: profit?.revenueToday ?? 0, color: colors.success || '#22c55e' },
-          { label: 'This Week', value: profit?.revenueThisWeek ?? 0, color: colors.primary || '#3b82f6' },
-          { label: 'This Month', value: profit?.revenueThisMonth ?? 0, color: '#8b5cf6' },
+          { label: 'Today', value: profit?.revenueToday ?? 0, color: colors.success },
+          { label: 'This Week', value: profit?.revenueThisWeek ?? 0, color: colors.primary },
+          { label: 'This Month', value: profit?.revenueThisMonth ?? 0, color: colors.invoiced },
         ]}
         colors={colors}
       />
@@ -547,7 +547,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="dollar-sign"
           iconBg={colors.successLight || 'rgba(34,197,94,0.15)'}
-          iconColor={colors.success || '#22c55e'}
+          iconColor={colors.success}
           value={fmtAud(profit?.revenueToday ?? 0)}
           label="Revenue Today"
           styles={styles}
@@ -556,7 +556,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="trending-up"
           iconBg={colors.primaryLight || 'rgba(59,130,246,0.15)'}
-          iconColor={colors.primary || '#3b82f6'}
+          iconColor={colors.primary}
           value={fmtAud(profit?.revenueThisWeek ?? 0)}
           label="This Week"
           styles={styles}
@@ -569,15 +569,15 @@ export default function InsightsScreen() {
         value={profit?.grossProfit ?? 0}
         maxValue={profit?.revenueThisMonth ?? 1}
         label="Gross Margin"
-        color={getMarginColor(profit?.grossMargin ?? 0)}
+        color={getMarginColor(profit?.grossMargin ?? 0, colors)}
         colors={colors}
       />
       <SimpleBarChart
         data={[
-          { label: 'Revenue', value: profit?.revenueThisMonth ?? 0, color: colors.success || '#22c55e' },
-          { label: 'Labour', value: profit?.labourCostThisMonth ?? 0, color: colors.warning || '#f59e0b' },
-          { label: 'Materials', value: profit?.materialCostThisMonth ?? 0, color: '#8b5cf6' },
-          { label: 'Profit', value: profit?.grossProfit ?? 0, color: colors.primary || '#3b82f6' },
+          { label: 'Revenue', value: profit?.revenueThisMonth ?? 0, color: colors.success },
+          { label: 'Labour', value: profit?.labourCostThisMonth ?? 0, color: colors.warning },
+          { label: 'Materials', value: profit?.materialCostThisMonth ?? 0, color: colors.invoiced },
+          { label: 'Profit', value: profit?.grossProfit ?? 0, color: colors.primary },
         ]}
         colors={colors}
       />
@@ -591,18 +591,18 @@ export default function InsightsScreen() {
                 ? 'rgba(245,158,11,0.15)'
                 : 'rgba(239,68,68,0.15)'
           }
-          iconColor={getMarginColor(profit?.grossMargin ?? 0)}
+          iconColor={getMarginColor(profit?.grossMargin ?? 0, colors)}
           value={`${(profit?.grossMargin ?? 0).toFixed(1)}%`}
           label="Gross Margin"
           subValue={getMarginLabel(profit?.grossMargin ?? 0)}
-          valueColor={getMarginColor(profit?.grossMargin ?? 0)}
+          valueColor={getMarginColor(profit?.grossMargin ?? 0, colors)}
           styles={styles}
           colors={colors}
         />
         <StatCard
           icon="dollar-sign"
           iconBg={colors.successLight || 'rgba(34,197,94,0.15)'}
-          iconColor={colors.success || '#22c55e'}
+          iconColor={colors.success}
           value={fmtAud(profit?.grossProfit ?? 0)}
           label="Gross Profit"
           styles={styles}
@@ -613,7 +613,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="clock"
           iconBg={colors.warningLight || 'rgba(245,158,11,0.15)'}
-          iconColor={colors.warning || '#f59e0b'}
+          iconColor={colors.warning}
           value={fmtAud(profit?.labourCostThisMonth ?? 0)}
           label="Labour Cost"
           subValue="This month"
@@ -623,7 +623,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="package"
           iconBg="rgba(139,92,246,0.15)"
-          iconColor="#8b5cf6"
+          iconColor={colors.invoiced}
           value={fmtAud(profit?.materialCostThisMonth ?? 0)}
           label="Material Cost"
           subValue="This month"
@@ -639,7 +639,7 @@ export default function InsightsScreen() {
       <HeroCard
         icon="dollar-sign"
         iconBg={colors.successLight || 'rgba(34,197,94,0.15)'}
-        iconColor={colors.success || '#22c55e'}
+        iconColor={colors.success}
         value={fmtAud(cashflow?.thisMonthCollected ?? 0)}
         label="Collected This Month"
         trendUp={collectionUp ? true : false}
@@ -650,10 +650,10 @@ export default function InsightsScreen() {
       <Text style={[styles.sectionTitle, { marginTop: spacing.sm }]}>Collections</Text>
       <SimpleBarChart
         data={[
-          { label: 'Today', value: profit?.cashCollectedToday ?? 0, color: colors.success || '#22c55e' },
-          { label: 'Due', value: cashflow?.dueThisWeek ?? 0, color: colors.warning || '#f59e0b' },
-          { label: 'This Month', value: cashflow?.thisMonthCollected ?? 0, color: colors.primary || '#3b82f6' },
-          { label: 'Overdue', value: cashflow?.overdueTotal ?? 0, color: colors.destructive || '#ef4444' },
+          { label: 'Today', value: profit?.cashCollectedToday ?? 0, color: colors.success },
+          { label: 'Due', value: cashflow?.dueThisWeek ?? 0, color: colors.warning },
+          { label: 'This Month', value: cashflow?.thisMonthCollected ?? 0, color: colors.primary },
+          { label: 'Overdue', value: cashflow?.overdueTotal ?? 0, color: colors.destructive },
         ]}
         colors={colors}
       />
@@ -661,7 +661,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="dollar-sign"
           iconBg={colors.successLight || 'rgba(34,197,94,0.15)'}
-          iconColor={colors.success || '#22c55e'}
+          iconColor={colors.success}
           value={fmtAud(profit?.cashCollectedToday ?? 0)}
           label="Collected Today"
           styles={styles}
@@ -670,7 +670,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="clock"
           iconBg={colors.warningLight || 'rgba(245,158,11,0.15)'}
-          iconColor={colors.warning || '#f59e0b'}
+          iconColor={colors.warning}
           value={fmtAud(cashflow?.dueThisWeek ?? 0)}
           label="Due This Week"
           styles={styles}
@@ -681,11 +681,11 @@ export default function InsightsScreen() {
         <StatCard
           icon="alert-circle"
           iconBg={colors.destructiveLight || 'rgba(239,68,68,0.15)'}
-          iconColor={colors.destructive || '#ef4444'}
+          iconColor={colors.destructive}
           value={fmtAud(cashflow?.overdueTotal ?? 0)}
           label="Overdue Total"
           subValue={(cashflow?.overdueCount ?? 0) > 0 ? `${cashflow?.overdueCount} invoice${(cashflow?.overdueCount ?? 0) !== 1 ? 's' : ''} overdue` : 'No overdue'}
-          valueColor={(cashflow?.overdueTotal ?? 0) > 0 ? (colors.destructive || '#ef4444') : undefined}
+          valueColor={(cashflow?.overdueTotal ?? 0) > 0 ? (colors.destructive) : undefined}
           trendUp={(cashflow?.overdueTotal ?? 0) > 0 ? false : null}
           styles={styles}
           colors={colors}
@@ -705,9 +705,9 @@ export default function InsightsScreen() {
             <Feather
               name={collectionUp ? 'arrow-up-right' : 'arrow-down-right'}
               size={20}
-              color={collectionUp ? '#22c55e' : '#ef4444'}
+              color={collectionUp ? colors.success : colors.destructive}
             />
-            <Text style={[styles.comparisonDiffText, { color: collectionUp ? '#22c55e' : '#ef4444' }]}>
+            <Text style={[styles.comparisonDiffText, { color: collectionUp ? colors.success : colors.destructive }]}>
               {fmtAud(Math.abs(collectionDiff))}
             </Text>
           </View>
@@ -725,7 +725,7 @@ export default function InsightsScreen() {
       <HeroCard
         icon="briefcase"
         iconBg={colors.primaryLight || 'rgba(59,130,246,0.15)'}
-        iconColor={colors.primary || '#3b82f6'}
+        iconColor={colors.primary}
         value={String(kpis?.jobsToday ?? 0)}
         label="Jobs Today"
         styles={styles}
@@ -737,18 +737,18 @@ export default function InsightsScreen() {
         <StatCard
           icon="file-text"
           iconBg={colors.warningLight || 'rgba(245,158,11,0.15)'}
-          iconColor={colors.warning || '#f59e0b'}
+          iconColor={colors.warning}
           value={String(kpis?.jobsToInvoice ?? 0)}
           label="Jobs to Invoice"
           subValue={(kpis?.jobsToInvoice ?? 0) > 0 ? 'Completed, not invoiced' : 'All caught up'}
-          valueColor={(kpis?.jobsToInvoice ?? 0) > 0 ? (colors.warning || '#f59e0b') : undefined}
+          valueColor={(kpis?.jobsToInvoice ?? 0) > 0 ? (colors.warning) : undefined}
           styles={styles}
           colors={colors}
         />
         <StatCard
           icon="send"
           iconBg="rgba(139,92,246,0.15)"
-          iconColor="#8b5cf6"
+          iconColor={colors.invoiced}
           value={String(kpis?.quotesAwaiting ?? 0)}
           label="Quotes Awaiting"
           subValue="Sent, awaiting response"
@@ -762,7 +762,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="trending-up"
           iconBg={colors.successLight || 'rgba(34,197,94,0.15)'}
-          iconColor={colors.success || '#22c55e'}
+          iconColor={colors.success}
           value={fmtAud(kpis?.weeklyEarnings ?? 0)}
           label="Weekly Earnings"
           styles={styles}
@@ -771,7 +771,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="dollar-sign"
           iconBg={colors.successLight || 'rgba(34,197,94,0.15)'}
-          iconColor={colors.success || '#22c55e'}
+          iconColor={colors.success}
           value={fmtAud(kpis?.monthlyEarnings ?? 0)}
           label="Monthly Earnings"
           styles={styles}
@@ -786,7 +786,7 @@ export default function InsightsScreen() {
       <HeroCard
         icon="dollar-sign"
         iconBg={colors.successLight || 'rgba(34,197,94,0.15)'}
-        iconColor={colors.success || '#22c55e'}
+        iconColor={colors.success}
         value={fmtAud(profit?.revenueThisMonth ?? 0)}
         label="Revenue This Month"
         trendUp={(profit?.revenueThisMonth ?? 0) > 0 ? true : null}
@@ -799,18 +799,18 @@ export default function InsightsScreen() {
         <StatCard
           icon="file-minus"
           iconBg={colors.destructiveLight || 'rgba(239,68,68,0.15)'}
-          iconColor={colors.destructive || '#ef4444'}
+          iconColor={colors.destructive}
           value={String(kpis?.unpaidInvoicesCount ?? 0)}
           label="Unpaid Invoices"
           subValue={`${fmtAud(kpis?.unpaidInvoicesTotal ?? 0)} total`}
-          valueColor={(kpis?.unpaidInvoicesCount ?? 0) > 0 ? (colors.destructive || '#ef4444') : undefined}
+          valueColor={(kpis?.unpaidInvoicesCount ?? 0) > 0 ? (colors.destructive) : undefined}
           styles={styles}
           colors={colors}
         />
         <StatCard
           icon="alert-triangle"
           iconBg={colors.warningLight || 'rgba(245,158,11,0.15)'}
-          iconColor={colors.warning || '#f59e0b'}
+          iconColor={colors.warning}
           value={fmtAud(cashflow?.overdueTotal ?? 0)}
           label="Overdue Amount"
           subValue={`${cashflow?.overdueCount ?? 0} overdue invoices`}
@@ -824,7 +824,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="trending-up"
           iconBg={colors.primaryLight || 'rgba(59,130,246,0.15)'}
-          iconColor={colors.primary || '#3b82f6'}
+          iconColor={colors.primary}
           value={fmtAud(profit?.revenueThisWeek ?? 0)}
           label="Revenue This Week"
           styles={styles}
@@ -833,7 +833,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="send"
           iconBg="rgba(139,92,246,0.15)"
-          iconColor="#8b5cf6"
+          iconColor={colors.invoiced}
           value={String(kpis?.quotesAwaiting ?? 0)}
           label="Quotes Pending"
           styles={styles}
@@ -844,7 +844,7 @@ export default function InsightsScreen() {
         <StatCard
           icon="briefcase"
           iconBg={colors.primaryLight || 'rgba(59,130,246,0.15)'}
-          iconColor={colors.primary || '#3b82f6'}
+          iconColor={colors.primary}
           value={String(kpis?.jobsToday ?? 0)}
           label="Jobs Today"
           styles={styles}

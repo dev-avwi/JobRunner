@@ -1835,7 +1835,7 @@ export default function MapScreen() {
                 <View style={[
                   styles.teamMarkerOuter, 
                   { backgroundColor: memberColor },
-                  member.isSubcontractor && { borderColor: '#8B5CF6', borderWidth: 2 },
+                  member.isSubcontractor && { borderColor: colors.invoiced, borderWidth: 2 },
                 ]}>
                   <Text style={styles.teamMarkerText}>{initials}</Text>
                   <View style={[styles.activityDot, { backgroundColor: activityColor }]} />
@@ -1860,7 +1860,7 @@ export default function MapScreen() {
                     {member.user?.firstName} {member.user?.lastName}
                   </Text>
                   {member.isSubcontractor && (
-                    <View style={[styles.calloutBadge, { backgroundColor: '#8B5CF6' }]}>
+                    <View style={[styles.calloutBadge, { backgroundColor: colors.invoiced }]}>
                       <Text style={styles.calloutBadgeText}>Subcontractor</Text>
                     </View>
                   )}
@@ -1946,7 +1946,7 @@ export default function MapScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 4,
-                  backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                  backgroundColor: colors.success + '26',
                   paddingHorizontal: 6,
                   paddingVertical: 2,
                   borderRadius: 10,
@@ -1955,9 +1955,9 @@ export default function MapScreen() {
                     width: 6,
                     height: 6,
                     borderRadius: 3,
-                    backgroundColor: '#22C55E',
+                    backgroundColor: colors.success,
                   }} />
-                  <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: '#22C55E' }}>LIVE</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.success }}>LIVE</Text>
                 </View>
               )}
             </View>
@@ -2040,7 +2040,7 @@ export default function MapScreen() {
                   width: 8,
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: locShareStatus === 'paused' ? '#F59E0B' : colors.success,
+                  backgroundColor: locShareStatus === 'paused' ? colors.warning : colors.success,
                 }}
               />
             )}

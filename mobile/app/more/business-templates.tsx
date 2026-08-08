@@ -70,7 +70,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: spacing.md,
   },
   integrationCardWarning: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: colors.warningLight,
     borderWidth: 1,
     borderColor: '#fcd34d',
   },
@@ -88,7 +88,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.xs,
   },
   integrationTitleWarning: {
-    color: '#92400e',
+    color: colors.warningDark,
   },
   integrationTitleSuccess: {
     color: '#065f46',
@@ -105,12 +105,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     alignItems: 'center',
   },
   integrationItemTextWarning: {
-    color: '#b45309',
+    color: colors.warningDark,
   },
   integrationHelpText: {
     fontSize: typography.sizes.xs,
     marginTop: spacing.sm,
-    color: '#92400e',
+    color: colors.warningDark,
   },
   setupButton: {
     flexDirection: 'row',
@@ -119,17 +119,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(180, 83, 9, 0.1)',
+    backgroundColor: colors.warningDark + '1A',
   },
   setupButtonText: {
     fontSize: typography.captionSmall.fontSize,
     fontWeight: fontWeights.medium,
-    color: '#b45309',
+    color: colors.warningDark,
   },
   fallbackBadge: {
     fontSize: typography.sizes.xs,
-    color: '#b45309',
-    backgroundColor: 'rgba(180, 83, 9, 0.1)',
+    color: colors.warningDark,
+    backgroundColor: colors.warningDark + '1A',
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.full,
@@ -811,7 +811,7 @@ export default function BusinessTemplatesScreen() {
 
     return (
       <View style={[styles.integrationCard, styles.integrationCardWarning]}>
-        <Feather name="alert-triangle" size={20} color="#92400e" />
+        <Feather name="alert-triangle" size={20} color={colors.warningDark} />
         <View style={styles.integrationContent}>
           <Text style={[styles.integrationTitle, styles.integrationTitleWarning]}>
             Some integrations need setup
@@ -821,10 +821,10 @@ export default function BusinessTemplatesScreen() {
             <View>
               <View style={styles.integrationItem}>
                 <Text style={[styles.integrationItemText, styles.integrationItemTextWarning]}>
-                  <Feather name="mail" size={14} color="#b45309" /> Email: Not configured
+                  <Feather name="mail" size={14} color={colors.warningDark} /> Email: Not configured
                 </Text>
                 <PressableRow style={styles.setupButton} onPress={() => router.push('/more/integrations')} >
-                  <Feather name="settings" size={12} color="#b45309" />
+                  <Feather name="settings" size={12} color={colors.warningDark} />
                   <Text style={styles.setupButtonText}>Setup</Text>
                 </PressableRow>
               </View>
@@ -842,10 +842,10 @@ export default function BusinessTemplatesScreen() {
           {!integrationHealth.services?.twilio?.verified && (
             <View style={styles.integrationItem}>
               <Text style={[styles.integrationItemText, styles.integrationItemTextWarning]}>
-                <Feather name="message-square" size={14} color="#b45309" /> SMS: Not configured
+                <Feather name="message-square" size={14} color={colors.warningDark} /> SMS: Not configured
               </Text>
               <PressableRow style={styles.setupButton} onPress={() => router.push('/more/integrations')} >
-                <Feather name="settings" size={12} color="#b45309" />
+                <Feather name="settings" size={12} color={colors.warningDark} />
                 <Text style={styles.setupButtonText}>Setup</Text>
               </PressableRow>
             </View>

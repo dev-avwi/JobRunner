@@ -59,8 +59,8 @@ interface CallLog {
 }
 
 function getLatencyTone(ms: number, colors: ThemeColors): { bg: string; text: string; label: string } {
-  if (ms > 3000) return { bg: '#fee2e2', text: '#b91c1c', label: 'Slow' };
-  if (ms > 1500) return { bg: '#fef3c7', text: '#92400e', label: 'Above target' };
+  if (ms > 3000) return { bg: colors.destructiveLight, text: colors.destructiveDark, label: 'Slow' };
+  if (ms > 1500) return { bg: colors.warningLight, text: colors.warningDark, label: 'Above target' };
   return { bg: colors.cardBorder, text: colors.mutedForeground, label: 'On target' };
 }
 
@@ -999,7 +999,7 @@ export default function AIReceptionistScreen() {
                 <Text style={{ ...typography.cardTitle, color: colors.foreground, textAlign: 'center', marginBottom: spacing.xs }}>
                   Setup Issue
                 </Text>
-                <Text style={{ ...typography.caption, color: colors.destructive || '#ef4444', textAlign: 'center', lineHeight: 18, marginBottom: spacing.md }}>
+                <Text style={{ ...typography.caption, color: colors.destructive, textAlign: 'center', lineHeight: 18, marginBottom: spacing.md }}>
                   {provisioningError}
                 </Text>
                 <TouchableOpacity
@@ -1045,8 +1045,8 @@ export default function AIReceptionistScreen() {
             ) : (
               <>
                 {config?.approvalStatus === 'pending_approval' && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f59e0b15', borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md, gap: spacing.sm }}>
-                    <Feather name="clock" size={18} color="#f59e0b" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.warning + '15', borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md, gap: spacing.sm }}>
+                    <Feather name="clock" size={18} color={colors.warning} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>Pending Review</Text>
                       <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2, lineHeight: 16 }}>
@@ -1090,7 +1090,7 @@ export default function AIReceptionistScreen() {
                       }
                     }}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                   />
                 </View>
@@ -1115,8 +1115,8 @@ export default function AIReceptionistScreen() {
 
                   if (approvalStatus === 'pending_approval') {
                     statusLabel = 'Pending Approval';
-                    statusColor = '#f59e0b';
-                    statusBg = '#f59e0b20';
+                    statusColor = colors.warning;
+                    statusBg = colors.warning + '20';
                     statusIcon = 'clock';
                   } else if (enabled && isConfigured) {
                     statusLabel = 'Active';
@@ -1125,8 +1125,8 @@ export default function AIReceptionistScreen() {
                     statusIcon = 'check-circle';
                   } else if (!enabled && isConfigured) {
                     statusLabel = 'Paused';
-                    statusColor = '#f59e0b';
-                    statusBg = '#f59e0b20';
+                    statusColor = colors.warning;
+                    statusBg = colors.warning + '20';
                     statusIcon = 'pause-circle';
                   } else {
                     statusLabel = 'Not Set Up';
@@ -1179,7 +1179,7 @@ export default function AIReceptionistScreen() {
               ?? (hasServerValue
                 ? (serverLatency! < 1000 ? 'optimal' : serverLatency! < 1200 ? 'amber' : 'warn')
                 : 'amber');
-            const latencyColor = status === 'optimal' ? colors.success : status === 'amber' ? '#f59e0b' : '#ef4444';
+            const latencyColor = status === 'optimal' ? colors.success : status === 'amber' ? colors.warning : colors.destructive;
             const latencyLabel = status === 'optimal' ? 'Fast' : status === 'amber' ? 'Acceptable' : 'Slow';
             const displayLatency = hasServerValue ? serverLatency : null;
             const checkedAt = config?.lastLatencyCheckedAt;
@@ -1229,7 +1229,7 @@ export default function AIReceptionistScreen() {
                   const measured = analytics?.avgMeasuredLatencyMs ?? null;
                   const sampleSize = analytics?.latencySampleSize ?? 0;
                   if (measured === null || sampleSize === 0) return null;
-                  const measuredColor = measured < 1000 ? colors.success : measured < 1500 ? '#f59e0b' : '#ef4444';
+                  const measuredColor = measured < 1000 ? colors.success : measured < 1500 ? colors.warning : colors.destructive;
                   return (
                     <View style={{ marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.cardBorder }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs, gap: spacing.sm }}>
@@ -1242,9 +1242,9 @@ export default function AIReceptionistScreen() {
                         </View>
                       </View>
                       {analytics?.latencyMismatch && (
-                        <View style={{ backgroundColor: '#ef444418', borderRadius: radius.lg, padding: spacing.sm, marginTop: spacing.xs }}>
-                          <Text style={{ ...typography.caption, color: '#ef4444', fontWeight: fontWeights.bold, marginBottom: 2 }}>Estimate vs reality mismatch</Text>
-                          <Text style={{ ...typography.caption, color: '#ef4444', lineHeight: 16 }}>
+                        <View style={{ backgroundColor: colors.destructive + '18', borderRadius: radius.lg, padding: spacing.sm, marginTop: spacing.xs }}>
+                          <Text style={{ ...typography.caption, color: colors.destructive, fontWeight: fontWeights.bold, marginBottom: 2 }}>Estimate vs reality mismatch</Text>
+                          <Text style={{ ...typography.caption, color: colors.destructive, lineHeight: 16 }}>
                             Your estimate says "Fast" but real calls average {measured}ms. Tap Test response time again to recalibrate, or trim your greeting/knowledge bank.
                           </Text>
                         </View>
@@ -1533,7 +1533,7 @@ export default function AIReceptionistScreen() {
               value={voicemailDetectionEnabled}
               onValueChange={setVoicemailDetectionEnabled}
               trackColor={{ false: colors.border, true: colors.success }}
-              thumbColor={'#FFFFFF'}
+              thumbColor={colors.white}
               ios_backgroundColor={colors.border}
             />
           </View>
@@ -1635,7 +1635,7 @@ export default function AIReceptionistScreen() {
                     value={daySchedule.enabled}
                     onValueChange={() => toggleDayEnabled(day)}
                     trackColor={{ false: colors.border, true: colors.success }}
-                    thumbColor={'#FFFFFF'}
+                    thumbColor={colors.white}
                     ios_backgroundColor={colors.border}
                   />
                 </View>
@@ -1722,7 +1722,7 @@ export default function AIReceptionistScreen() {
                 <Text style={{ ...typography.caption, color: colors.mutedForeground }}>{h.date}</Text>
               </View>
               <TouchableOpacity onPress={() => removeHoliday(h.date)} activeOpacity={0.7}>
-                <Feather name="x" size={18} color={colors.destructive || '#ef4444'} />
+                <Feather name="x" size={18} color={colors.destructive} />
               </TouchableOpacity>
             </View>
           ))}
@@ -1824,7 +1824,7 @@ export default function AIReceptionistScreen() {
               value={autoReplyEnabled}
               onValueChange={setAutoReplyEnabled}
               trackColor={{ false: colors.border, true: colors.success }}
-              thumbColor={'#FFFFFF'}
+              thumbColor={colors.white}
               ios_backgroundColor={colors.border}
             />
           </View>
@@ -1956,7 +1956,7 @@ export default function AIReceptionistScreen() {
                   />
                 </View>
                 <TouchableOpacity onPress={() => removeFaq(i)} activeOpacity={0.7}>
-                  <Feather name="trash-2" size={18} color={colors.destructive || '#ef4444'} />
+                  <Feather name="trash-2" size={18} color={colors.destructive} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -2043,9 +2043,9 @@ export default function AIReceptionistScreen() {
                 const isActive = sentimentFilter === s;
                 const filterColors: Record<string, { bg: string; text: string }> = {
                   all: { bg: colors.primary, text: colors.primaryForeground },
-                  negative: { bg: '#ef4444', text: colors.white },
-                  neutral: { bg: '#6b7280', text: colors.white },
-                  positive: { bg: '#22c55e', text: colors.white },
+                  negative: { bg: colors.destructive, text: colors.white },
+                  neutral: { bg: colors.mutedForeground, text: colors.white },
+                  positive: { bg: colors.success, text: colors.white },
                 };
                 const fc = filterColors[s] || filterColors.all;
                 return (
@@ -2090,15 +2090,15 @@ export default function AIReceptionistScreen() {
               const isExpanded = expandedCallId === call.id;
               const isPlaying = playingCallId === call.id;
               const outcomeColors: Record<string, { bg: string; text: string; label: string }> = {
-                message_taken: { bg: '#dbeafe', text: '#1d4ed8', label: 'Message' },
-                transferred: { bg: '#dcfce7', text: '#15803d', label: 'Transferred' },
+                message_taken: { bg: colors.primaryLight, text: colors.primaryDark, label: 'Message' },
+                transferred: { bg: colors.successLight, text: colors.successDark, label: 'Transferred' },
                 booked: { bg: '#f3e8ff', text: '#7c3aed', label: 'Booked' },
-                missed: { bg: '#fee2e2', text: '#b91c1c', label: 'Missed' },
+                missed: { bg: colors.destructiveLight, text: colors.destructiveDark, label: 'Missed' },
               };
               const sentimentColors: Record<string, { bg: string; text: string; icon: FeatherIconName }> = {
-                positive: { bg: '#dcfce7', text: '#15803d', icon: 'smile' },
-                neutral: { bg: '#f3f4f6', text: '#6b7280', icon: 'minus-circle' },
-                negative: { bg: '#fee2e2', text: '#b91c1c', icon: 'frown' },
+                positive: { bg: colors.successLight, text: colors.successDark, icon: 'smile' },
+                neutral: { bg: colors.muted, text: colors.mutedForeground, icon: 'minus-circle' },
+                negative: { bg: colors.destructiveLight, text: colors.destructiveDark, icon: 'frown' },
               };
               const oc = outcomeColors[call.outcome || ''] || { bg: colors.cardBorder, text: colors.mutedForeground, label: call.outcome || 'Call' };
               const sc = sentimentColors[call.sentiment || ''] || sentimentColors.neutral;
@@ -2242,10 +2242,10 @@ export default function AIReceptionistScreen() {
                       <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 4 }}>{new Date(req.createdAt).toLocaleDateString()}</Text>
                     </View>
                     <View style={[styles.statusBadge, {
-                      backgroundColor: req.status === 'resolved' ? '#dcfce7' : req.status === 'in_progress' ? '#dbeafe' : req.status === 'rejected' ? '#fee2e2' : '#fef3c7',
+                      backgroundColor: req.status === 'resolved' ? colors.successLight : req.status === 'in_progress' ? colors.primaryLight : req.status === 'rejected' ? colors.destructiveLight : colors.warningLight,
                     }]}>
                       <Text style={[styles.statusText, {
-                        color: req.status === 'resolved' ? '#15803d' : req.status === 'in_progress' ? '#1d4ed8' : req.status === 'rejected' ? '#b91c1c' : '#92400e',
+                        color: req.status === 'resolved' ? colors.successDark : req.status === 'in_progress' ? colors.primaryDark : req.status === 'rejected' ? colors.destructiveDark : colors.warningDark,
                       }]}>
                         {req.status === 'in_progress' ? 'In Progress' : req.status.charAt(0).toUpperCase() + req.status.slice(1)}
                       </Text>
