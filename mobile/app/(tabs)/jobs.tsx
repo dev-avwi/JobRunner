@@ -1133,7 +1133,7 @@ export default function JobsScreen() {
           onPress={() => setActiveFilter('all')}
           activeOpacity={0.8}
         >
-          <View style={[styles.kpiIcon, { backgroundColor: `${colors.primary}15` }]}>
+          <View style={[styles.kpiIcon, { backgroundColor: colors.muted }]}>
             <Feather name="briefcase" size={iconSizes.lg} color={colors.primary} />
           </View>
           <View>
@@ -1147,7 +1147,7 @@ export default function JobsScreen() {
           onPress={() => setActiveFilter('scheduled')}
           activeOpacity={0.8}
         >
-          <View style={[styles.kpiIcon, { backgroundColor: `${colors.scheduled}15` }]}>
+          <View style={[styles.kpiIcon, { backgroundColor: colors.muted }]}>
             <Feather name="calendar" size={iconSizes.lg} color={colors.scheduled} />
           </View>
           <View>
@@ -1161,7 +1161,7 @@ export default function JobsScreen() {
           onPress={() => setActiveFilter('in_progress')}
           activeOpacity={0.8}
         >
-          <View style={[styles.kpiIcon, { backgroundColor: `${colors.inProgress}15` }]}>
+          <View style={[styles.kpiIcon, { backgroundColor: colors.muted }]}>
             <Feather name="play" size={iconSizes.lg} color={colors.inProgress} />
           </View>
           <View>
@@ -1175,7 +1175,7 @@ export default function JobsScreen() {
           onPress={() => setActiveFilter('done')}
           activeOpacity={0.8}
         >
-          <View style={[styles.kpiIcon, { backgroundColor: `${colors.done}15` }]}>
+          <View style={[styles.kpiIcon, { backgroundColor: colors.muted }]}>
             <Feather name="check-circle" size={iconSizes.lg} color={colors.done} />
           </View>
           <View>
@@ -1532,7 +1532,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     paddingHorizontal: spacing.sm,
     height: 24,
     borderRadius: 12,
-    backgroundColor: `${colors.primary}10`,
+    backgroundColor: colors.muted,
   },
   countDot: {
     width: 6,
@@ -1543,7 +1543,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   countChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.mutedForeground,
   },
   headerLeft: {
     flex: 1,

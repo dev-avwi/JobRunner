@@ -482,7 +482,7 @@ function ActivityFeed({
 
             disabled={!isClickable}
           >
-            <View style={[styles.activityIcon, { backgroundColor: `${getActivityColor(activity.type)}12` }]}>
+            <View style={[styles.activityIcon, { backgroundColor: colors.muted }]}>
               <Feather 
                 name={getActivityIcon(activity.type)} 
                 size={iconSizes.md} 
@@ -3595,7 +3595,7 @@ function OwnerDashboardScreen() {
                   title="My Jobs"
                   value={jobsToday}
                   icon="briefcase"
-                  iconBg={colors.primaryLight}
+                  iconBg={colors.muted}
                   iconColor={colors.primary}
                   onPress={() => router.push({ pathname: '/(tabs)/jobs', params: { filter: 'scheduled' } })}
                 />
@@ -3603,7 +3603,7 @@ function OwnerDashboardScreen() {
                   title="In Progress"
                   value={myAllJobs.filter(j => j.status === 'in_progress').length}
                   icon="clock"
-                  iconBg={colors.warningLight}
+                  iconBg={colors.muted}
                   iconColor={colors.warning}
                   onPress={() => router.push({ pathname: '/(tabs)/jobs', params: { filter: 'in_progress' } })}
                 />
@@ -3613,7 +3613,7 @@ function OwnerDashboardScreen() {
                   title="Completed"
                   value={myAllJobs.filter(j => j.status === 'done' || j.status === 'invoiced').length}
                   icon="check-circle"
-                  iconBg={colors.successLight}
+                  iconBg={colors.muted}
                   iconColor={colors.success}
                   onPress={() => router.push({ pathname: '/(tabs)/jobs', params: { filter: 'done' } })}
                 />
@@ -3634,7 +3634,7 @@ function OwnerDashboardScreen() {
                   title="Jobs Today"
                   value={jobsToday}
                   icon="briefcase"
-                  iconBg={colors.primaryLight}
+                  iconBg={colors.muted}
                   iconColor={colors.primary}
                   onPress={() => router.push({ pathname: '/(tabs)/jobs', params: { filter: 'scheduled' } })}
                 />
@@ -3643,7 +3643,7 @@ function OwnerDashboardScreen() {
                     title={aiCallsToday === 1 ? 'Call Today' : 'Calls Today'}
                     value={aiCallsToday}
                     icon="phone"
-                    iconBg={colors.successLight}
+                    iconBg={colors.muted}
                     iconColor={colors.success}
                     onPress={() => router.push(asHref('/more/ai-receptionist'))}
                   />
@@ -3652,7 +3652,7 @@ function OwnerDashboardScreen() {
                     title="Overdue"
                     value={overdueCount}
                     icon="alert-circle"
-                    iconBg={overdueCount > 0 ? colors.destructiveLight : colors.muted}
+                    iconBg={colors.muted}
                     iconColor={overdueCount > 0 ? colors.destructive : colors.mutedForeground}
                     onPress={() => router.push('/more/documents?tab=invoices&filter=overdue')}
                   />
@@ -3663,7 +3663,7 @@ function OwnerDashboardScreen() {
                   title="To Invoice"
                   value={toInvoiceCount}
                   icon="file-plus"
-                  iconBg={toInvoiceCount > 0 ? colors.warningLight : colors.muted}
+                  iconBg={colors.muted}
                   iconColor={toInvoiceCount > 0 ? colors.warning : colors.mutedForeground}
                   onPress={() => router.push({ pathname: '/(tabs)/jobs', params: { filter: 'done' } })}
                 />
@@ -3671,7 +3671,7 @@ function OwnerDashboardScreen() {
                   title="Assigned"
                   value={allJobs.filter((j: any) => j.status === 'scheduled' || j.status === 'in_progress').length}
                   icon="users"
-                  iconBg={colors.primaryLight}
+                  iconBg={colors.muted}
                   iconColor={colors.primary}
                   onPress={() => router.push({ pathname: '/(tabs)/jobs', params: { filter: 'scheduled' } })}
                 />
@@ -3983,7 +3983,7 @@ function OwnerDashboardScreen() {
         >
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionTitleIcon, { backgroundColor: `${colors.info}15` }]}>
+              <View style={styles.sectionTitleIcon}>
                 <Feather name="users" size={iconSizes.md} color={colors.info} />
               </View>
               <Text style={styles.sectionTitle}>Job Scheduler</Text>
@@ -4603,7 +4603,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: radius.lg,
-    backgroundColor: `${colors.primary}15`,
+    backgroundColor: colors.muted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4652,7 +4652,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.lg,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.muted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4909,7 +4909,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: `${colors.primary}10`,
+    backgroundColor: colors.muted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5068,16 +5068,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.lg,
-    backgroundColor: `${colors.warning}10`,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: `${colors.warning}25`,
+    borderColor: colors.cardBorder,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.warning,
     marginBottom: spacing.md,
   },
   nextJobSuggestionIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: `${colors.warning}20`,
+    backgroundColor: colors.muted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5268,12 +5270,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...shadows.sm,
   },
   timeTrackingWidgetActive: {
-    borderColor: colors.primary,
-    backgroundColor: `${colors.primary}05`,
+    backgroundColor: colors.card,
+    borderColor: colors.cardBorder,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
   },
   timeTrackingWidgetBreak: {
-    borderColor: '#f59e0b',
-    backgroundColor: '#f59e0b08',
+    backgroundColor: colors.card,
+    borderColor: colors.cardBorder,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
   },
   timeTrackingContent: {
     flexDirection: 'row',
@@ -5290,10 +5296,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   timerIconContainerActive: {
-    backgroundColor: `${colors.primary}15`,
+    backgroundColor: colors.muted,
   },
   timerIconContainerBreak: {
-    backgroundColor: '#f59e0b15',
+    backgroundColor: colors.muted,
   },
   timerTextContent: {
     flex: 1,
