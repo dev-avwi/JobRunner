@@ -728,6 +728,14 @@ if (process.env.DATABASE_URL) {
     }, 2000);
 
     stagger(() => {
+      import('./prodSmokeScheduler').then(({ startProdSmokeScheduler }) => {
+        startProdSmokeScheduler();
+      }).catch(error => {
+        console.error('Failed to start prod smoke scheduler:', error);
+      });
+    }, 4000);
+
+    stagger(() => {
       import('./retryScheduler').then(({ startRetryScheduler }) => {
         startRetryScheduler();
       }).catch(error => {

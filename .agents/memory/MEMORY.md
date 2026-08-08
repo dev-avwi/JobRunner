@@ -1,3 +1,4 @@
+- [Prod smoke suite](prod-smoke-suite.md) — login lives at /auth (AuthFlow); smoke account is server-self-provisioned (HMAC(SESSION_SECRET) password); NEON_DATABASE_URL is NOT prod; post-merge hook has ~60s budget.
 - [Paper previews stay light](receipt-paper-preview-colors.md) — colour-token sweeps must skip document/paper preview renders (receipt preview etc.), map-style JSON, brand hexes, decorative palettes; surrounding app chrome IS themable.
 - [Mechanical sweeps vs rebase conflicts](mechanical-sweep-rebase.md) — task rebase: ours=main, theirs=task; keep main's side then re-run the idempotent codemod script; fontWeights token + 12/14px mappings exist.
 - [LLM echoes prompt formatting](smart-import-ai-mapping.md) — gpt-5-mini returns enum values in the decorated format the prompt listed them (`name (Name)`); normalise when parsing + demand bare ids.

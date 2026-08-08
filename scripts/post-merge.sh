@@ -176,4 +176,26 @@ psql "$DATABASE_URL" -c "UPDATE business_settings SET google_sheets_connected = 
 echo "Verifying schema is in sync with shared/schema.ts..."
 node scripts/check-schema-drift.mjs
 
+# Prod smoke suite (Task #109), api-only mode: fast bounded probes of the
+# deployed site's auth/onboarding surfaces (health, real login + dashboard
+# APIs, register path, Google OAuth handshake, magic-link endpoints). The full
+# headless-browser walkthrough runs from the in-server daily scheduler
+# (server/prodSmokeScheduler.ts); api-only keeps this hook well inside its
+# 60s budget. Exit 1 = broken page/API on the live site (fatal, same as
+# schema drift); exit 2 = unable to run from this sandbox (warn only).
+echo "Running production smoke suite (api-only) against the deployed site..."
+if node scripts/prod-smoke.mjs --api-only; then
+  echo "Prod smoke suite passed."
+else
+  smoke_code=$?
+  if [ "$smoke_code" -eq 2 ]; then
+    echo "WARNING: prod smoke suite could not run (no network/browser here) — skipping."
+  elif [ "$smoke_code" -eq 3 ]; then
+    echo "WARNING: smoke account not yet provisioned on prod (bootstrap window before next publish) — login walkthrough pending, all other checks passed."
+  else
+    echo "ERROR: prod smoke suite FAILED — the deployed site has a broken auth/onboarding page."
+    exit 1
+  fi
+fi
+
 echo "Schema changes applied."
