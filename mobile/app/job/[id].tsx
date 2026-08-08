@@ -40,6 +40,7 @@ import { GlassButton } from '../../src/components/ui/GlassButton';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getDocumentPicker } from '../../src/lib/document-picker';
+import { getNestedHeaderOptions } from '../../src/lib/nested-header';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Location from 'expo-location';
@@ -6462,13 +6463,10 @@ export default function JobDetailScreen() {
       <View style={styles.loadingContainer}>
         <Stack.Screen
           options={{
-            headerShown: Platform.OS !== 'android',
-            // The global <Header /> already consumes the status-bar inset, so on
-            // Android this nested native header must NOT reserve it again (avoids
-            // a phantom gap that pushes the job content too far down).
-            // (headerStatusBarHeight is a valid native-stack option that
-            // expo-router's option type doesn't surface, hence the cast.)
-            ...(Platform.OS === 'android' ? ({ headerStatusBarHeight: 0 } as any) : {}),
+            // Centralized nested-header policy (iOS shows the nested native
+            // header; Android hides it because the global <Header /> already
+            // consumes the status-bar inset). See src/lib/nested-header.ts.
+            ...getNestedHeaderOptions(),
             title: '',
             headerBackVisible: false,
             headerShadowVisible: false,
@@ -9768,13 +9766,10 @@ export default function JobDetailScreen() {
       <View style={styles.container}>
         <Stack.Screen 
         options={{
-          headerShown: Platform.OS !== 'android',
-          // The global <Header /> already consumes the status-bar inset, so on
-          // Android this nested native header must NOT reserve it again (avoids
-          // a phantom gap that pushes the job content too far down).
-          // (headerStatusBarHeight is a valid native-stack option that
-          // expo-router's option type doesn't surface, hence the cast.)
-          ...(Platform.OS === 'android' ? ({ headerStatusBarHeight: 0 } as any) : {}),
+          // Centralized nested-header policy (iOS shows the nested native
+          // header; Android hides it because the global <Header /> already
+          // consumes the status-bar inset). See src/lib/nested-header.ts.
+          ...getNestedHeaderOptions(),
           title: '',
           headerBackVisible: false,
           headerShadowVisible: false,

@@ -113,6 +113,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    // zIndex (iOS) + elevation (Android) for stacking only; transparent
+    // overlay, no shadow intended.
     zIndex: 99998,
     elevation: 99998,
   },

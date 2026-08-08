@@ -21,7 +21,7 @@ import { TradeTypeSelector } from '../../src/components/TradeTypeSelector';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
-import { typography, fontWeights } from '../../src/lib/design-tokens';
+import { typography, fontWeights, HEADER_HEIGHT } from '../../src/lib/design-tokens';
 
 const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
@@ -214,6 +214,9 @@ export default function ProfileEditScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // Screen renders below the global custom <Header />; offset by the
+        // header + status bar so iOS keyboard padding is not short.
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + HEADER_HEIGHT : 0}
       >
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>

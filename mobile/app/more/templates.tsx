@@ -2578,6 +2578,11 @@ export default function TemplatesScreen() {
           <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            // iOS pageSheet modals sit ~status-bar height below the window
+            // top; KAV measures relative to the sheet, so compensate or the
+            // keyboard padding is short by that gap. Android modals are
+            // full-screen, no offset needed.
+            keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
           >
           <View style={styles.modalContainer}>
             <View style={[styles.modalHeader, Platform.OS === 'android' && { paddingTop: insets.top + spacing.md }]}>

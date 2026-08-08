@@ -1135,6 +1135,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     top: 0,
     pointerEvents: 'box-none',
+    // zIndex (iOS) + elevation (Android) here are for stacking order only —
+    // the wrapper is transparent, so no shadow renders. Intentionally no
+    // iOS shadow props.
     zIndex: 9999,
     elevation: 9999,
   },
@@ -1143,6 +1146,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 100,
+    // zIndex (iOS) + elevation (Android) for stacking only; transparent
+    // container, no shadow intended.
     zIndex: 50,
     elevation: 50,
     alignItems: 'center',

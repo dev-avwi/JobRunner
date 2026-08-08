@@ -31,7 +31,7 @@ import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
 import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
-import { fontWeights, spacing, radius, shadows, sizes, pageShell, typography, iconSizes, usePageShell } from '../../src/lib/design-tokens';
+import { fontWeights, spacing, radius, shadows, sizes, pageShell, typography, iconSizes, usePageShell, HEADER_HEIGHT } from '../../src/lib/design-tokens';
 import { useScrollToTop } from '../../src/contexts/ScrollContext';
 import { usePreserveScrollOnFold } from '../../src/hooks/usePreserveScrollOnFold';
 import { getJobUrgency, type JobUrgency } from '../../src/lib/jobUrgency';
@@ -1349,6 +1349,10 @@ export default function JobsScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      // This screen sits below the global custom <Header />; KAV measures its
+      // frame relative to its parent, so it must be told how far the screen
+      // top is from the window top or iOS padding is short by that amount.
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + HEADER_HEIGHT : 0}
     >
       <FlatList
         ref={scrollRef}

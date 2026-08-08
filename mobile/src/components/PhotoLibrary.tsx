@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -1308,6 +1309,11 @@ export default function PhotoLibrary() {
     const catStyle = getCategoryStyle(lightboxPhoto.category);
     return (
       <Modal visible={true} animationType="fade" statusBarTranslucent onRequestClose={closeLightbox}>
+        {/* The lightbox is always black; force light status-bar icons while it
+            is open (the central StatusBar in _layout follows the app theme, so
+            in light mode the icons would be dark-on-black and unreadable on
+            Android's translucent status bar). */}
+        <StatusBar style="light" />
         <View style={styles.lightboxOverlay}>
           <View style={styles.lightboxHeader}>
             <TouchableOpacity style={styles.lightboxClose} onPress={closeLightbox}>

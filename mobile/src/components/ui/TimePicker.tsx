@@ -73,19 +73,6 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '600',
       color: colors.foreground,
     },
-    confirmButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 10,
-      paddingVertical: 14,
-      alignItems: 'center',
-      marginHorizontal: 16,
-      marginTop: 8,
-    },
-    confirmButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.primaryForeground || colors.white,
-    },
   });
 }
 
@@ -124,40 +111,64 @@ export function TimePicker({ value, onChange, label, disabled }: TimePickerProps
         <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
       </PressableRow>
 
-      <Modal
-      onRequestClose={() => setShowPicker(false)} visible={showPicker} transparent animationType="slide">
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={() => setShowPicker(false)}
-        >
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <PressableRow onPress={() => setShowPicker(false)}>
-                <Text style={{ fontSize: 16, color: colors.mutedForeground }}>Cancel</Text>
-              </PressableRow>
-              <Text style={styles.pickerTitle}>Select Time</Text>
-              <PressableRow onPress={handleConfirm}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>Done</Text>
-              </PressableRow>
-            </View>
+      {/* Android: use the platform-native clock dialog (its own modal window).
+          A custom modal with display="spinner" looks foreign on Android and
+          themeVariant is iOS-only. The dialog commits/dismisses in one step,
+          so we apply the change directly in onChange. MUST clear showPicker in
+          onChange or the dialog re-opens forever (native dialog gotcha). */}
+      {Platform.OS === 'android' && showPicker && (
+        <DateTimePicker
+          value={tempDate}
+          mode="time"
+          display="default"
+          minuteInterval={5}
+          onChange={(event, selectedDate) => {
+            setShowPicker(false);
+            if (event.type !== 'dismissed' && selectedDate) {
+              onChange(selectedDate);
+            }
+          }}
+        />
+      )}
 
-            <DateTimePicker
-              value={tempDate}
-              mode="time"
-              display="spinner"
-              minuteInterval={5}
-              onChange={(event, selectedDate) => {
-                if (selectedDate) {
-                  setTempDate(selectedDate);
-                }
-              }}
-              themeVariant={isDark ? 'dark' : 'light'}
-              style={{ height: 200 }}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {/* iOS: inline spinner in a bottom-sheet style modal with explicit
+          Cancel/Done, matching native iOS picker conventions. */}
+      {Platform.OS === 'ios' && (
+        <Modal
+          onRequestClose={() => setShowPicker(false)} visible={showPicker} transparent animationType="slide">
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowPicker(false)}
+          >
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <PressableRow onPress={() => setShowPicker(false)}>
+                  <Text style={{ fontSize: 16, color: colors.mutedForeground }}>Cancel</Text>
+                </PressableRow>
+                <Text style={styles.pickerTitle}>Select Time</Text>
+                <PressableRow onPress={handleConfirm}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>Done</Text>
+                </PressableRow>
+              </View>
+
+              <DateTimePicker
+                value={tempDate}
+                mode="time"
+                display="spinner"
+                minuteInterval={5}
+                onChange={(event, selectedDate) => {
+                  if (selectedDate) {
+                    setTempDate(selectedDate);
+                  }
+                }}
+                themeVariant={isDark ? 'dark' : 'light'}
+                style={{ height: 200 }}
+              />
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </View>
   );
 }

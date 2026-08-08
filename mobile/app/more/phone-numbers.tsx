@@ -15,6 +15,7 @@ import {
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { asHref } from '../../src/lib/nav';
 import { Feather } from '@expo/vector-icons';
@@ -71,6 +72,7 @@ const MAX_NUMBERS = 5;
 export default function PhoneNumbersPage() {
   const { colors } = useTheme();
   const bottomInset = useBottomInset(40);
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { user, businessSettings, fetchBusinessSettings } = useAuthStore();
   const userTier = user?.subscriptionTier || 'free';
@@ -1108,6 +1110,9 @@ export default function PhoneNumbersPage() {
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          // iOS pageSheet modals sit ~status-bar height below the window top;
+          // compensate so keyboard padding isn't short by that gap.
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         >
         <View style={{ flex: 1, backgroundColor: colors.background, padding: spacing.lg, paddingTop: spacing.xl }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xl }}>

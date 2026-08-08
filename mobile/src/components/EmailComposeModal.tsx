@@ -16,6 +16,7 @@ import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../lib/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing, radius, shadows, typography } from '../lib/design-tokens';
 import { api } from '../lib/api';
 
@@ -64,6 +65,7 @@ export function EmailComposeModal({
   onOpenWithEmailApp,
 }: EmailComposeModalProps) {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [activeTab, setActiveTab] = useState<TabKey>('compose');
@@ -334,6 +336,9 @@ export function EmailComposeModal({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
+        // iOS pageSheet modals sit ~status-bar height below the window top;
+        // compensate so keyboard padding isn't short by that gap.
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
         {/* Header */}
         <View style={styles.header}>

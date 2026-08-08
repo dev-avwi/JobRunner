@@ -271,7 +271,15 @@ export function DragDropDispatchBoard({
         { scale: cardScale.value },
       ],
       zIndex: isDragging.value ? 1000 : 1,
-      elevation: isDragging.value ? 10 : 2,
+      // Shadow parity: Android lifts the card via elevation, iOS via the
+      // paired shadow props (the base style's shadows.md only applies iOS
+      // shadow props through Platform.select, so both branches are needed).
+      ...(Platform.OS === 'android'
+        ? { elevation: isDragging.value ? 10 : 2 }
+        : {
+            shadowOpacity: isDragging.value ? 0.3 : 0.08,
+            shadowRadius: isDragging.value ? 12 : 4,
+          }),
     }));
 
     const statusColor = getStatusColor(job.status);
