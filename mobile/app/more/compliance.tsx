@@ -8,7 +8,7 @@ import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { api, API_URL } from '../../src/lib/api';
 import { format } from 'date-fns';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
@@ -182,8 +182,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.sm,
   },
   statValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
     color: colors.foreground,
     textAlign: 'center',
@@ -285,7 +285,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   statusBadgeText: {
     ...typography.badge,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
   },
   expiryRow: {
@@ -317,7 +317,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   detailValue: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   actionButtonsRow: {
@@ -463,7 +463,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   modalTitle: {
     ...typography.cardTitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   modalCloseButton: {
@@ -477,7 +477,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   formLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: spacing.xs,
   },
@@ -513,12 +513,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   typeOptionText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   typeOptionTextSelected: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   uploadButton: {
     flexDirection: 'row',
@@ -534,7 +534,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   uploadButtonText: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   uploadedIndicator: {
@@ -548,7 +548,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   uploadedText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.success,
     flex: 1,
   },
@@ -574,7 +574,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   cancelButtonText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   saveButton: {
@@ -591,7 +591,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   saveButtonText: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.primaryForeground,
   },
 });
@@ -1009,7 +1009,7 @@ export default function ComplianceScreen() {
             {doc.notes && (
               <View style={[styles.detailRow, { flexDirection: 'column', alignItems: 'flex-start', gap: spacing.xs }]}>
                 <Text style={styles.detailLabel}>Notes</Text>
-                <Text style={[styles.detailValue, { fontWeight: '400' }]}>{doc.notes}</Text>
+                <Text style={[styles.detailValue, { fontWeight: fontWeights.regular }]}>{doc.notes}</Text>
               </View>
             )}
             <View style={styles.actionButtonsRow}>

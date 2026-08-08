@@ -19,7 +19,7 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, typography, shadows, sizes } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, shadows, sizes, fontWeights } from '../../src/lib/design-tokens';
 
 import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
@@ -102,12 +102,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginLeft: 2,
   },
   headerName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   headerPhone: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 1,
   },
@@ -142,12 +142,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.md,
   },
   emptyTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   emptySubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 4,
   },
@@ -156,8 +156,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   dateSeparatorPill: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     backgroundColor: colors.muted,
     paddingHorizontal: spacing.sm + 2,
@@ -192,9 +192,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   bubbleText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     lineHeight: 21,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   bubbleTextOutbound: {
     color: '#FFFFFF',
@@ -203,7 +203,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.foreground,
   },
   bubbleTime: {
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
     marginTop: 3,
   },
   bubbleTimeOutbound: {
@@ -221,7 +221,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 3,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
   },
   statusDelivered: {
@@ -251,8 +251,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 5,
   },
   quickChipText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   composerInner: {
@@ -279,7 +279,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   textInput: {
     paddingHorizontal: spacing.md,
     paddingVertical: Platform.OS === 'ios' ? 9 : 7,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     maxHeight: 100,
     minHeight: 36,
@@ -582,7 +582,7 @@ export default function SmsConversationScreen() {
               // primary blue, which blended into the bubble). Inbound bubbles are
               // neutral, so primary blue reads fine there.
               color: isOutbound ? '#FFFFFF' : colors.primary,
-              fontWeight: '700',
+              fontWeight: fontWeights.bold,
             }}
             onPress={() => Linking.openURL(part)}
           >
@@ -685,8 +685,8 @@ export default function SmsConversationScreen() {
                     <Text
                       style={{
                         alignSelf: 'flex-end',
-                        fontSize: 11,
-                        fontWeight: '600',
+                        fontSize: typography.sizes.xs,
+                        fontWeight: fontWeights.semibold,
                         color: senderColor || colors.mutedForeground,
                         marginRight: spacing.sm,
                         marginBottom: 2,
@@ -797,8 +797,8 @@ export default function SmsConversationScreen() {
                 >
                   <Text
                     style={{
-                      fontSize: 10,
-                      fontWeight: '600',
+                      fontSize: typography.sizes.xs,
+                      fontWeight: fontWeights.semibold,
                       color:
                         smsInfo.segments >= 3
                           ? '#ef4444'

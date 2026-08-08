@@ -15,7 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
-import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import api from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -103,7 +103,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   highlightText: {
     ...typography.body,
     color: colors.mutedForeground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     lineHeight: 22,
     textAlign: 'center',
   },
@@ -146,7 +146,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   deleteButtonText: {
     ...typography.subtitle,
     color: colors.white,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   deleteButtonTextDisabled: {
     color: colors.mutedForeground,
@@ -164,7 +164,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   cancelButtonText: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   legalNote: {
     ...typography.caption,

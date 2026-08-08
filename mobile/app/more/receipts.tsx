@@ -14,7 +14,7 @@ import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable';
 import { api } from '../../src/lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -88,9 +88,9 @@ function KPICard({
     <TouchableOpacity activeOpacity={0.7} style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder, minWidth: '45%', }} onPress={onPress} >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
         <Feather name={icon as any} size={16} color={colors.success} />
-        <Text style={{ fontSize: 12, color: colors.mutedForeground, fontWeight: '500' }}>{title}</Text>
+        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>{title}</Text>
       </View>
-      <Text style={{ fontSize: isAmount ? 20 : 24, fontWeight: '700', color: colors.success }}>
+      <Text style={{ fontSize: isAmount ? 20 : 24, fontWeight: fontWeights.bold, color: colors.success }}>
         {isAmount ? formatCurrency(value) : value}
       </Text>
     </TouchableOpacity>
@@ -507,7 +507,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   filterPillText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   filterPillTextActive: {
@@ -525,8 +525,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   filterCountText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   filterCountTextActive: {
@@ -584,7 +584,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.lg,
   },
   emptyStateTip: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     fontStyle: 'italic',
@@ -618,8 +618,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.sm,
   },
   receiptNumber: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
   },
@@ -630,8 +630,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   receiptTotal: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
   },
   methodBadge: {
     flexDirection: 'row',
@@ -642,8 +642,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 4,
   },
   methodText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
   },
   receiptDetails: {
     gap: spacing.xs,
@@ -655,7 +655,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.sm,
   },
   receiptDetailText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     flex: 1,
   },

@@ -19,7 +19,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { useAuthStore } from '../../src/lib/store';
 import api from '../../src/lib/api';
 
@@ -225,7 +225,7 @@ export default function CustomWebsitePage() {
           {addonData && (
             <View style={styles.listSection}>
               <Text style={styles.sectionLabel}>Website Features</Text>
-              <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md, marginTop: -spacing.sm }}>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md, marginTop: -spacing.sm }}>
                 Enable interactive features to generate more leads
               </Text>
 
@@ -236,8 +236,8 @@ export default function CustomWebsitePage() {
                       <Feather name="phone-call" size={16} color="#2563EB" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>Click-to-Call</Text>
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Floating call button on your site</Text>
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Click-to-Call</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>Floating call button on your site</Text>
                     </View>
                   </View>
                   <Switch
@@ -257,8 +257,8 @@ export default function CustomWebsitePage() {
                       <Feather name="message-circle" size={16} color="#7c3aed" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>AI Chat Widget</Text>
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>AI-powered live chat with your knowledge</Text>
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>AI Chat Widget</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>AI-powered live chat with your knowledge</Text>
                     </View>
                   </View>
                   <Switch
@@ -278,8 +278,8 @@ export default function CustomWebsitePage() {
                       <Feather name="calendar" size={16} color="#16a34a" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>Booking Form</Text>
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Collect leads with name, phone, job type</Text>
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Booking Form</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>Collect leads with name, phone, job type</Text>
                     </View>
                   </View>
                   <Switch
@@ -377,7 +377,7 @@ export default function CustomWebsitePage() {
                 {selectedTier !== null && (
                   <View style={styles.selectedTierPill}>
                     <Feather name={PRICING_TIERS[selectedTier].icon} size={14} color={colors.primary} />
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
+                    <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }}>
                       {PRICING_TIERS[selectedTier].name} — {PRICING_TIERS[selectedTier].price}
                     </Text>
                   </View>
@@ -453,58 +453,58 @@ const createStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create
   container: { flex: 1, backgroundColor: colors.background },
   heroSection: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   heroIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center' },
-  pageTitle: { fontSize: 28, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 },
-  pageSubtitle: { fontSize: 14, color: colors.mutedForeground, marginTop: 4, lineHeight: 20 },
+  pageTitle: { fontSize: typography.sizes['3xl'], fontWeight: fontWeights.extrabold, color: colors.foreground, letterSpacing: -0.5 },
+  pageSubtitle: { fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: 4, lineHeight: 20 },
   highlightsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md },
   highlightCard: { width: '48%' as any, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
   highlightIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center' },
-  highlightTitle: { fontSize: 13, fontWeight: '600', color: colors.foreground },
-  highlightDesc: { fontSize: 11, color: colors.mutedForeground, marginTop: 1, lineHeight: 14 },
+  highlightTitle: { fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground },
+  highlightDesc: { fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 1, lineHeight: 14 },
   listSection: { paddingHorizontal: spacing.lg },
-  sectionLabel: { fontSize: 17, fontWeight: '700', color: colors.foreground, marginBottom: spacing.md },
+  sectionLabel: { fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.md },
   processRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   processStep: { flex: 1, alignItems: 'center', gap: 4 },
   processNumberWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  processNumber: { fontSize: 15, fontWeight: '700', color: colors.primary },
-  processTitle: { fontSize: 13, fontWeight: '600', color: colors.foreground },
-  processDesc: { fontSize: 11, color: colors.mutedForeground, textAlign: 'center', lineHeight: 15 },
+  processNumber: { fontSize: typography.sizes.md, fontWeight: fontWeights.bold, color: colors.primary },
+  processTitle: { fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground },
+  processDesc: { fontSize: typography.sizes.xs, color: colors.mutedForeground, textAlign: 'center', lineHeight: 15 },
   tierCard: { backgroundColor: colors.card, borderRadius: radius['2xl'], padding: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.cardBorder, ...shadows.sm },
   tierCardPopular: { borderColor: colors.primary, borderWidth: 1.5 },
   popularBadge: { position: 'absolute', top: -10, alignSelf: 'center', left: '30%', backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 3, borderRadius: radius.full, zIndex: 1 },
-  popularBadgeText: { fontSize: 10, fontWeight: '700', color: colors.primaryForeground, letterSpacing: 0.5 },
+  popularBadgeText: { fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.primaryForeground, letterSpacing: 0.5 },
   tierHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   tierIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
-  tierName: { fontSize: 16, fontWeight: '700', color: colors.foreground },
-  tierDesc: { fontSize: 12, color: colors.mutedForeground, marginTop: 1 },
-  tierPrice: { fontSize: 22, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 },
-  tierPriceNote: { fontSize: 11, color: colors.mutedForeground },
+  tierName: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground },
+  tierDesc: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 1 },
+  tierPrice: { fontSize: typography.sizes['2xl'], fontWeight: fontWeights.extrabold, color: colors.foreground, letterSpacing: -0.5 },
+  tierPriceNote: { fontSize: typography.sizes.xs, color: colors.mutedForeground },
   tierFeatures: { marginBottom: spacing.md, gap: 6 },
   tierFeatureRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tierFeatureCheck: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#22c55e', alignItems: 'center', justifyContent: 'center' },
-  tierFeatureText: { fontSize: 14, color: colors.foreground },
+  tierFeatureText: { fontSize: typography.button.fontSize, color: colors.foreground },
   tierCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: radius.lg, backgroundColor: `${colors.primary}10` },
   tierCtaPopular: { backgroundColor: colors.primary },
-  tierCtaText: { fontSize: 15, fontWeight: '600', color: colors.primary },
+  tierCtaText: { fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.primary },
   modalContainer: { flex: 1, backgroundColor: colors.background },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalTitle: { ...typography.subtitle, color: colors.foreground },
   modalBody: { padding: spacing.lg },
   selectedTierPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${colors.primary}10`, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.full, alignSelf: 'flex-start', marginBottom: spacing.md },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 6, marginTop: spacing.md },
-  input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, fontSize: 15, color: colors.foreground, marginBottom: 2 },
+  fieldLabel: { fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6, marginTop: spacing.md },
+  input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, fontSize: typography.sizes.md, color: colors.foreground, marginBottom: 2 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.full, backgroundColor: colors.muted, borderWidth: 1, borderColor: colors.border },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 12, fontWeight: '500', color: colors.foreground },
+  chipText: { fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: colors.foreground },
   chipTextActive: { color: colors.primaryForeground },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md, marginBottom: spacing.xs },
-  switchLabel: { fontSize: 14, color: colors.foreground, flex: 1, marginRight: spacing.sm },
+  switchLabel: { fontSize: typography.button.fontSize, color: colors.foreground, flex: 1, marginRight: spacing.sm },
   submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: 14, marginTop: spacing.lg },
-  submitBtnText: { fontSize: 16, fontWeight: '600', color: colors.primaryForeground },
+  submitBtnText: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground },
   successCard: { backgroundColor: colors.card, borderRadius: radius['2xl'], padding: spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: `${colors.success}30`, ...shadows.sm, marginTop: spacing.md },
   successIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#22c55e12', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
-  successTitle: { fontSize: 20, fontWeight: '700', color: colors.foreground, marginBottom: spacing.xs },
-  successDesc: { fontSize: 14, color: colors.mutedForeground, textAlign: 'center', lineHeight: 20, marginBottom: spacing.md },
+  successTitle: { fontSize: typography.sizes.xl, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xs },
+  successDesc: { fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center', lineHeight: 20, marginBottom: spacing.md },
   successButton: { backgroundColor: `${colors.primary}10`, paddingHorizontal: spacing.lg, paddingVertical: 10, borderRadius: radius.lg },
-  successButtonText: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  successButtonText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primary },
 });

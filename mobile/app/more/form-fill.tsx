@@ -17,7 +17,7 @@ import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
-import { spacing, radius, shadows, typography, iconSizes, sizes, usePageShell } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, sizes, usePageShell, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -81,7 +81,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   fieldLabel: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
@@ -228,7 +228,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   signedText: {
     ...typography.caption,
     color: colors.success,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   errorText: {
     ...typography.captionSmall,
@@ -248,7 +248,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   submitBtnText: {
     ...typography.button,
     color: colors.primaryForeground,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
   },
   submitBtnDisabled: {
     opacity: 0.6,
@@ -289,7 +289,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   pickerOptionTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   pickerCancel: {
     alignItems: 'center',
@@ -299,7 +299,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   pickerCancelText: {
     ...typography.body,
     color: colors.mutedForeground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   loadingContainer: {
     flex: 1,

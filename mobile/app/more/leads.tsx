@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { api } from '../../src/lib/api';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
-import { spacing, radius, typography, iconSizes, sizes } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, iconSizes, sizes, fontWeights } from '../../src/lib/design-tokens';
 
 type LeadSource = 'phone' | 'email' | 'website' | 'referral' | 'other';
 type LeadStatus = 'new' | 'contacted' | 'quoted' | 'won' | 'lost';
@@ -462,7 +462,7 @@ export default function LeadsScreen() {
                       {hasValue && (
                         <View style={[styles.metaChip, { backgroundColor: `${colors.success}10` }]}>
                           <Feather name="dollar-sign" size={11} color={colors.success} />
-                          <Text style={[styles.metaChipText, { color: colors.success, fontWeight: '600' }]}>{formatCurrency(lead.estimatedValue)}</Text>
+                          <Text style={[styles.metaChipText, { color: colors.success, fontWeight: fontWeights.semibold }]}>{formatCurrency(lead.estimatedValue)}</Text>
                         </View>
                       )}
                       {lead.followUpDate && (
@@ -610,49 +610,49 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md },
   loadingText: { ...typography.body, color: colors.mutedForeground },
   heroSection: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md },
-  pageTitle: { fontSize: 28, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 },
-  pageSubtitle: { fontSize: 14, color: colors.mutedForeground, marginTop: spacing.xs, lineHeight: 20 },
+  pageTitle: { fontSize: typography.sizes['3xl'], fontWeight: fontWeights.extrabold, color: colors.foreground, letterSpacing: -0.5 },
+  pageSubtitle: { fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: spacing.xs, lineHeight: 20 },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   statCard: { flex: 1, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder },
   statIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
-  statValue: { fontSize: 16, fontWeight: '700', color: colors.foreground },
-  statLabel: { fontSize: 11, color: colors.mutedForeground, marginTop: 1 },
+  statValue: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground },
+  statLabel: { fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 1 },
   searchSection: { flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.sm, marginBottom: spacing.sm },
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: radius.lg, paddingHorizontal: spacing.sm, gap: spacing.xs, height: 44, borderWidth: 1, borderColor: colors.cardBorder },
-  searchInput: { flex: 1, fontSize: 15, color: colors.foreground },
+  searchInput: { flex: 1, fontSize: typography.sizes.md, color: colors.foreground },
   addButton: { width: 44, height: 44, borderRadius: radius.lg, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   filterScroll: { paddingHorizontal: spacing.lg, gap: spacing.xs, paddingBottom: spacing.sm },
   filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
   filterChipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
-  filterChipText: { fontSize: 13, color: colors.mutedForeground, fontWeight: '500' },
-  filterChipTextActive: { color: colors.primary, fontWeight: '600' },
+  filterChipText: { fontSize: typography.sizes.sm, color: colors.mutedForeground, fontWeight: fontWeights.medium },
+  filterChipTextActive: { color: colors.primary, fontWeight: fontWeights.semibold },
   listSection: { paddingHorizontal: spacing.lg },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl * 2, paddingHorizontal: spacing.lg, gap: spacing.sm },
   emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: colors.foreground },
-  emptySubtitle: { fontSize: 14, color: colors.mutedForeground, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground },
+  emptySubtitle: { fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center', lineHeight: 20 },
   emptyButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: 10, borderRadius: radius.lg, marginTop: spacing.sm },
-  emptyButtonText: { fontSize: 14, fontWeight: '600', color: colors.primaryForeground },
+  emptyButtonText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground },
   card: { backgroundColor: colors.card, borderRadius: radius.xl, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden' },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, paddingBottom: spacing.sm },
   cardAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' },
-  cardAvatarText: { fontSize: 16, fontWeight: '700', color: colors.primary },
-  cardName: { fontSize: 15, fontWeight: '600', color: colors.foreground, flex: 1 },
-  cardTime: { fontSize: 11, color: colors.mutedForeground },
-  cardDescription: { fontSize: 13, color: colors.mutedForeground, marginTop: 1 },
+  cardAvatarText: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.primary },
+  cardName: { fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 },
+  cardTime: { fontSize: typography.sizes.xs, color: colors.mutedForeground },
+  cardDescription: { fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: 1 },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.full },
-  statusBadgeText: { fontSize: 11, fontWeight: '600' },
+  statusBadgeText: { fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold },
   cardBottom: { paddingHorizontal: spacing.md, paddingBottom: spacing.md, paddingTop: spacing.xs },
   cardMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: spacing.sm },
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.muted, paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
-  metaChipText: { fontSize: 11, color: colors.mutedForeground },
+  metaChipText: { fontSize: typography.sizes.xs, color: colors.mutedForeground },
   cardActionRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.xs },
   cardActionBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.md },
-  cardActionText: { fontSize: 12, fontWeight: '600' },
+  cardActionText: { fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalCancel: { ...typography.body, color: colors.mutedForeground },
   modalTitle: { ...typography.subtitle, color: colors.foreground },
-  modalSave: { ...typography.body, color: colors.primary, fontWeight: '600' },
+  modalSave: { ...typography.body, color: colors.primary, fontWeight: fontWeights.semibold },
   formScroll: { flex: 1 },
   formContent: { padding: spacing.md, gap: spacing.md },
   formGroup: { gap: spacing.xs },

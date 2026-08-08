@@ -24,7 +24,7 @@ import { router, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, typography, shadows, usePageShell, iconSizes, sizes } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, shadows, usePageShell, iconSizes, sizes, fontWeights } from '../../src/lib/design-tokens';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { api } from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
@@ -854,13 +854,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     paddingTop: spacing.sm,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     lineHeight: 20,
   },
@@ -898,7 +898,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   tabText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   // Ops Health stat bar
@@ -924,13 +924,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     alignItems: 'center',
   },
   statBarValue: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
   },
   statBarLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
     color: colors.mutedForeground,
@@ -961,8 +961,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderRadius: 3,
   },
   secondaryPillText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
   },
 
   emptyBox: {
@@ -999,13 +999,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderColor: colors.cardBorder,
   },
   dayPillDow: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.5,
   },
   dayPillNum: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     marginTop: 2,
   },
   todayDot: {
@@ -1025,13 +1025,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.sm,
   },
   scheduleHeaderTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   scheduleHeaderCount: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   // Inner left accent strips (avoid borderLeftWidth on rounded cards)
@@ -1069,8 +1069,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     ...shadows.sm,
   },
   jobCardTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 4,
   },
@@ -1102,8 +1102,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     backgroundColor: colors.muted,
   },
   assignedMiniName: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   assignDashedBtn: {
@@ -1117,8 +1117,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderStyle: 'dashed',
   },
   assignDashedBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
   },
   assignSolidBtn: {
     paddingHorizontal: spacing.md,
@@ -1127,8 +1127,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     backgroundColor: colors.muted,
   },
   assignSolidBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
   },
 
   // Kanban
@@ -1165,7 +1165,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     ...typography.label,
     flex: 1,
     color: colors.foreground,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   kanbanCountBadge: {
     paddingHorizontal: spacing.sm,
@@ -1175,8 +1175,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     alignItems: 'center',
   },
   kanbanCountText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
   },
   kanbanEmpty: {
     paddingVertical: spacing.xl,
@@ -1198,12 +1198,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.xs,
   },
   kanbanMiniTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   kanbanMiniTime: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1214,8 +1214,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginTop: spacing.xs,
   },
   kanbanMiniWorkerName: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
 
@@ -1239,8 +1239,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderBottomColor: colors.cardBorder,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     flex: 1,
   },
@@ -1257,8 +1257,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.md,
   },
   statusPillSheetText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
   },
   sheetMetaRow: {
     flexDirection: 'row',
@@ -1267,7 +1267,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginTop: spacing.sm,
   },
   sheetMetaText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.foreground,
     flex: 1,
   },
@@ -1296,13 +1296,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     minWidth: 80,
   },
   nearbyName: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: spacing.xs,
   },
   nearbyKm: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1316,8 +1316,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginTop: spacing.lg,
   },
   sheetPrimaryBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.bold,
   },
   sheetSecondaryBtn: {
     flexDirection: 'row',
@@ -1330,8 +1330,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginTop: spacing.sm,
   },
   sheetSecondaryBtnText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
   },
 
   // Assign modal pieces
@@ -1344,12 +1344,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.md,
   },
   assignJobInfoTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   assignJobInfoMeta: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1372,12 +1372,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     justifyContent: 'center',
   },
   assignMemberName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   assignMemberRole: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },

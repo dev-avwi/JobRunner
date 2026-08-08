@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
-import { spacing, radius, shadows, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, iconSizes, typography, fontWeights } from '../../src/lib/design-tokens';
 import { useUserRole } from '../../src/hooks/use-user-role';
 
 type HubItem = {
@@ -139,12 +139,12 @@ const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     heroSection: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
-    pageTitle: { fontSize: 28, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 },
-    pageSubtitle: { fontSize: 14, color: colors.mutedForeground, marginTop: spacing.xs, lineHeight: 20 },
+    pageTitle: { fontSize: typography.sizes['3xl'], fontWeight: fontWeights.extrabold, color: colors.foreground, letterSpacing: -0.5 },
+    pageSubtitle: { fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: spacing.xs, lineHeight: 20 },
     section: { paddingHorizontal: spacing.lg, marginTop: spacing.lg },
     sectionHeading: {
-      fontSize: 13,
-      fontWeight: '700',
+      fontSize: typography.sizes.sm,
+      fontWeight: fontWeights.bold,
       color: colors.mutedForeground,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -178,6 +178,6 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
     },
     cardText: { flex: 1, minWidth: 0 },
-    cardTitle: { fontSize: 16, fontWeight: '700', color: colors.foreground },
-    cardSubtitle: { fontSize: 13, color: colors.mutedForeground, marginTop: 2, lineHeight: 18 },
+    cardTitle: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground },
+    cardSubtitle: { fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: 2, lineHeight: 18 },
   });

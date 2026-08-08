@@ -23,6 +23,7 @@ import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { promptForAttachment, uploadChatAttachment, resolveAttachmentUrl } from '../../src/lib/chat-attachments';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 interface User {
   id: string;
@@ -75,12 +76,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -99,7 +100,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     height: 42,
     marginLeft: 10,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   listContainer: {
@@ -124,7 +125,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   avatarText: {
     color: colors.primaryForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   conversationContent: {
     flex: 1,
@@ -136,13 +137,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   conversationName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
   },
   conversationTime: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginLeft: 8,
   },
@@ -152,12 +153,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'space-between',
   },
   conversationLastMessage: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     flex: 1,
   },
   memberEmail: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
   unreadBadge: {
@@ -172,8 +173,8 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   unreadBadgeText: {
     color: colors.primaryForeground,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
   },
   sectionDivider: {
     backgroundColor: colors.muted,
@@ -181,8 +182,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 10,
   },
   sectionDividerText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   emptyState: {
@@ -202,13 +203,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     opacity: 0.5,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 4,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
   },
@@ -229,12 +230,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   chatHeaderName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   chatHeaderEmail: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   messagesContainer: {
@@ -269,7 +270,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   messageText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     lineHeight: 20,
   },
@@ -277,7 +278,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: colors.primaryForeground,
   },
   messageTime: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 4,
     alignSelf: 'flex-end',
@@ -293,7 +294,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     gap: 3,
   },
   readReceiptText: {
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
     color: 'rgba(255,255,255,0.6)',
   },
   inputContainer: {
@@ -312,7 +313,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     maxHeight: 100,
     borderWidth: 1,
@@ -783,8 +784,8 @@ function ChatView({
                         numberOfLines={1}
                         style={{
                           flex: 1,
-                          fontSize: 13,
-                          fontWeight: '600',
+                          fontSize: typography.sizes.sm,
+                          fontWeight: fontWeights.semibold,
                           color: isOwn ? colors.primaryForeground : colors.foreground,
                         }}
                       >
@@ -820,7 +821,7 @@ function ChatView({
                   )}
                   {(message as any).sendStatus === 'failed' && (
                     <PressableRow onPress={async () => { const { offlineStorage } = await import('@/lib/offline-storage'); const ok = await offlineStorage.retryFailedChatMessage((message as any).localId || message.id); if (ok) fetchMessages(); }} style={{ marginTop: 4 }} >
-                      <Text style={{ color: colors.destructive, fontSize: 11, fontWeight: '600' }}>
+                      <Text style={{ color: colors.destructive, fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold }}>
                         Failed to send · tap to retry
                       </Text>
                     </PressableRow>

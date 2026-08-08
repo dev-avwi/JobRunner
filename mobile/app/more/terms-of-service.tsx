@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -36,7 +36,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   subSectionTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: spacing.md,
     marginBottom: spacing.sm,
@@ -78,7 +78,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   highlightText: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     lineHeight: 22,
   },
   warningBox: {

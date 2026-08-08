@@ -22,7 +22,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { SheetButton } from '../../src/components/ui/SheetButton';
-import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import { api, API_URL } from '../../src/lib/api';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -532,8 +532,8 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
                   <Feather name="file-text" size={17} color={getStatusColor(inv.status)} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: colors.foreground }} numberOfLines={1}>{inv.invoiceNumber}</Text>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground }} numberOfLines={1}>
+                  <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.bold, color: colors.foreground }} numberOfLines={1}>{inv.invoiceNumber}</Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }} numberOfLines={1}>
                     {inv.subcontractorName || 'Subcontractor'}
                   </Text>
                 </View>
@@ -544,7 +544,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
                 borderRadius: radius.pill,
                 backgroundColor: getStatusColor(inv.status) + '20',
               }}>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: getStatusColor(inv.status), textTransform: 'capitalize' }}>
+                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: getStatusColor(inv.status), textTransform: 'capitalize' }}>
                   {inv.status}
                 </Text>
               </View>
@@ -559,10 +559,10 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
               borderTopColor: colors.border,
               marginBottom: spacing.sm,
             }}>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                 {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
               </Text>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>
+              <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.extrabold, color: colors.foreground }}>
                 {formatCurrency(inv.totalAmount)}
               </Text>
             </View>
@@ -586,7 +586,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
               activeOpacity={0.7}
             >
               <Feather name="eye" size={14} color={colors.foreground} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                 {busy ? '...' : 'View PDF'}
               </Text>
             </TouchableOpacity>
@@ -604,7 +604,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
               disabled={busy}
               activeOpacity={0.7}
             >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>Pay Details</Text>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Pay Details</Text>
             </TouchableOpacity>
             {inv.status === 'submitted' && (
               <TouchableOpacity
@@ -620,7 +620,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
                 disabled={busy}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.info }}>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.info }}>
                   {busy ? 'Updating...' : 'Approve'}
                 </Text>
               </TouchableOpacity>
@@ -639,7 +639,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
                 disabled={busy}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.success }}>Pay</Text>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.success }}>Pay</Text>
               </TouchableOpacity>
             )}
             {inv.status === 'paid' && (
@@ -657,7 +657,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
                 disabled={busy}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                   {busy ? '...' : 'Remittance'}
                 </Text>
               </TouchableOpacity>
@@ -677,7 +677,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
                 disabled={busy || synced}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: synced ? colors.mutedForeground : colors.primary }}>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: synced ? colors.mutedForeground : colors.primary }}>
                   {synced ? `Synced to ${providerLabel(connectedProvider)}` : busy ? '...' : `Push to ${providerLabel(connectedProvider)}`}
                 </Text>
               </TouchableOpacity>
@@ -697,16 +697,16 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
         contentPadding={spacing['2xl']}
       >
         <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, marginBottom: spacing.xs }}>
+          <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xs }}>
             Record Payment
           </Text>
           {payInvoice && (
-            <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md }}>
+            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md }}>
               {payInvoice.invoiceNumber} · {formatCurrency(payInvoice.totalAmount)} to {payInvoice.subcontractorName || 'Subcontractor'}
             </Text>
           )}
 
-          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Method</Text>
+          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Method</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md }}>
             {PAY_METHODS.map((m) => (
               <TouchableOpacity
@@ -722,14 +722,14 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
                   backgroundColor: payMethod === m.value ? colors.primary + '15' : 'transparent',
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: payMethod === m.value ? colors.primary : colors.mutedForeground }}>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: payMethod === m.value ? colors.primary : colors.mutedForeground }}>
                   {m.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Payment Date</Text>
+          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Payment Date</Text>
           <TextInput
             style={{
               borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
@@ -743,7 +743,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
             autoCapitalize="none"
           />
 
-          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Reference</Text>
+          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Reference</Text>
           <TextInput
             style={{
               borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
@@ -756,7 +756,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
             placeholderTextColor={colors.mutedForeground}
           />
 
-          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Notes</Text>
+          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Notes</Text>
           <TextInput
             style={{
               borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
@@ -789,7 +789,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
         scrollable
         contentPadding={spacing['2xl']}
       >
-        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, marginBottom: spacing.md }}>
+        <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.md }}>
           Payment Details
         </Text>
         {detailsLoading ? (
@@ -803,7 +803,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
             <DetailRow label="ABN" value={detailsData.abn} colors={colors} />
           </View>
         ) : (
-          <Text style={{ fontSize: 14, color: colors.mutedForeground }}>
+          <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>
             This subcontractor hasn't added payment details yet.
           </Text>
         )}
@@ -827,8 +827,8 @@ function providerLabel(provider: string | null | undefined): string {
 function DetailRow({ label, value, colors }: { label: string; value?: string | null; colors: ThemeColors }) {
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Text style={{ fontSize: 13, color: colors.mutedForeground }}>{label}</Text>
-      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>{value || '—'}</Text>
+      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>{label}</Text>
+      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{value || '—'}</Text>
     </View>
   );
 }
@@ -942,7 +942,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   roleInfoLabel: {
     ...typography.caption,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     marginBottom: spacing.xs,
   },
   roleInfoDescription: {
@@ -983,7 +983,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   avatarText: {
     ...typography.subtitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   memberInfo: {
     flex: 1,
@@ -1003,7 +1003,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   statusBadgeText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   memberDetails: {
     marginBottom: spacing.md,
@@ -1025,7 +1025,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   roleBadgeText: {
     ...typography.captionSmall,
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   roleDescription: {
     ...typography.caption,
@@ -1054,7 +1054,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   actionButtonText: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   viewButton: {
     backgroundColor: colors.primary + '10',
@@ -1090,7 +1090,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   emptyStateButtonText: {
     ...typography.body,
     color: colors.primaryForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   modalOverlay: {
     flex: 1,
@@ -1222,7 +1222,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   cancelButtonText: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   saveButton: {
     flex: 1,
@@ -1237,7 +1237,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   saveButtonText: {
     ...typography.body,
     color: colors.primaryForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   deleteButton: {
     flex: 1,
@@ -1263,7 +1263,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   permissionsButtonText: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   customBadge: {
     flexDirection: 'row',
@@ -1277,7 +1277,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   customBadgeText: {
     ...typography.captionSmall,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   permissionsModalBody: {
     padding: spacing.lg,
@@ -1322,7 +1322,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   permissionCategoryTitle: {
     ...typography.label,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   selectAllButton: {
     paddingHorizontal: spacing.sm,
@@ -1331,7 +1331,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   selectAllText: {
     ...typography.captionSmall,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   permissionItem: {
     flexDirection: 'row',
@@ -1454,7 +1454,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   presetName: {
     ...typography.caption,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   presetDesc: {
     ...typography.captionSmall,
@@ -1497,7 +1497,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   sensitiveWarningText: {
     ...typography.captionSmall,
     color: colors.destructive,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   detailSection: {
     marginBottom: spacing.lg,
@@ -1542,7 +1542,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   detailValue: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   statusRow: {
     flexDirection: 'row',
@@ -1558,7 +1558,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   statusText: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   jobItem: {
     flexDirection: 'row',
@@ -1576,12 +1576,12 @@ const createStyles = (colors: any) => StyleSheet.create({
   jobTitle: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   jobAddress: {
     ...typography.caption,
     color: colors.mutedForeground,
-    fontWeight: '400',
+    fontWeight: fontWeights.regular,
   },
   jobStatus: {
     paddingHorizontal: spacing.sm,
@@ -1590,7 +1590,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   jobStatusText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   timeStats: {
     flexDirection: 'row',
@@ -1609,7 +1609,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   timeStatValue: {
     ...typography.subtitle,
     color: colors.foreground,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   timeStatLabel: {
     ...typography.captionSmall,
@@ -1642,7 +1642,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   memberDetailAvatarText: {
     ...typography.pageTitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   memberDetailName: {
     ...typography.subtitle,
@@ -1661,7 +1661,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   memberDetailRoleText: {
     ...typography.caption,
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   upgradeContainer: {
     paddingBottom: spacing['3xl'],
@@ -1720,7 +1720,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   priceAmount: {
     fontSize: 36,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   pricePeriod: {
@@ -1774,8 +1774,8 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   ctaButtonText: {
     color: colors.primaryForeground,
-    fontWeight: '700',
-    fontSize: 16,
+    fontWeight: fontWeights.bold,
+    fontSize: typography.subtitle.fontSize,
   },
   ctaSubtext: {
     ...typography.caption,
@@ -1811,7 +1811,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   benefitTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 2,
   },
@@ -1832,7 +1832,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   earlyAccessBannerText: {
     ...typography.body,
     color: colors.success,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     flex: 1,
   },
 });
@@ -2724,7 +2724,7 @@ export default function TeamManagementScreen() {
             <Text style={[styles.earlyAccessBannerText, { color: '#b45309' }]}>
               Your plan no longer includes team features
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }}>
+            <Text style={{ color: colors.mutedForeground, fontSize: typography.captionSmall.fontSize, marginTop: 2 }}>
               You still have {teamMembers.length} team member{teamMembers.length === 1 ? '' : 's'} on file. Re-subscribe below to manage them again.
             </Text>
           </View>
@@ -2849,9 +2849,9 @@ export default function TeamManagementScreen() {
                   <View key={ic.id} style={{ backgroundColor: colors.card, borderRadius: 12, padding: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.cardBorder }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <Text style={{ fontSize: 20, fontWeight: '700', fontFamily: 'monospace', color: colors.foreground, letterSpacing: 2 }}>{ic.code}</Text>
+                        <Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.bold, fontFamily: 'monospace', color: colors.foreground, letterSpacing: 2 }}>{ic.code}</Text>
                         <View style={{ backgroundColor: ic.roleType === 'manager' ? colors.success + '20' : ic.roleType === 'subcontractor' ? '#22c55e20' : colors.info + '20', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: 6 }}>
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: ic.roleType === 'manager' ? colors.success : ic.roleType === 'subcontractor' ? '#22c55e' : colors.info, textTransform: 'capitalize' }}>{ic.roleType}</Text>
+                          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: ic.roleType === 'manager' ? colors.success : ic.roleType === 'subcontractor' ? '#22c55e' : colors.info, textTransform: 'capitalize' }}>{ic.roleType}</Text>
                         </View>
                       </View>
                       <TouchableOpacity onPress={() => handleRevokeInviteCode(ic.id, ic.code)} style={{ padding: 6 }}>
@@ -2859,13 +2859,13 @@ export default function TeamManagementScreen() {
                       </TouchableOpacity>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 8 }}>
-                      <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                         {ic.usedCount}/{ic.maxUses} uses
                       </Text>
-                      <Text style={{ fontSize: 12, color: isExpired ? colors.destructive : colors.mutedForeground }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: isExpired ? colors.destructive : colors.mutedForeground }}>
                         {isExpired ? 'Expired' : ic.expiresAt ? `Expires ${new Date(ic.expiresAt).toLocaleDateString()}` : 'No expiry'}
                       </Text>
-                      {isExhausted && <Text style={{ fontSize: 12, color: colors.warning, fontWeight: '500' }}>Limit reached</Text>}
+                      {isExhausted && <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.warning, fontWeight: fontWeights.medium }}>Limit reached</Text>}
                     </View>
                   </View>
                 );
@@ -2897,10 +2897,10 @@ export default function TeamManagementScreen() {
               <Feather name="users" size={20} color="#22c55e" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+              <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                 Manage Subcontractors
               </Text>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
                 See your subs and upgrade them to full accounts
               </Text>
             </View>
@@ -2964,7 +2964,7 @@ export default function TeamManagementScreen() {
                   }}
                   onPress={() => setInviteTab('email')}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: inviteTab === 'email' ? '600' : '400', color: inviteTab === 'email' ? colors.foreground : colors.mutedForeground }}>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: inviteTab === 'email' ? fontWeights.semibold : fontWeights.regular, color: inviteTab === 'email' ? colors.foreground : colors.mutedForeground }}>
                     Email Invite
                   </Text>
                 </TouchableOpacity>
@@ -2978,7 +2978,7 @@ export default function TeamManagementScreen() {
                   }}
                   onPress={() => setInviteTab('code')}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: inviteTab === 'code' ? '600' : '400', color: inviteTab === 'code' ? colors.foreground : colors.mutedForeground }}>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: inviteTab === 'code' ? fontWeights.semibold : fontWeights.regular, color: inviteTab === 'code' ? colors.foreground : colors.mutedForeground }}>
                     Invite Code
                   </Text>
                 </TouchableOpacity>
@@ -2987,7 +2987,7 @@ export default function TeamManagementScreen() {
               {inviteTab === 'email' ? (
                 <>
                   <ScrollView style={[styles.modalBody, { flex: 1 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                    <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md }}>
+                    <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md }}>
                       Send a direct email invite to a specific person.
                     </Text>
                     <View style={styles.inputRow}>
@@ -3038,7 +3038,7 @@ export default function TeamManagementScreen() {
                       placeholderTextColor={colors.mutedForeground}
                     />
                     {invitePhone.trim() ? (
-                      <Text style={{ fontSize: 12, color: colors.primary, marginTop: spacing.xs, marginBottom: 8 }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, marginTop: spacing.xs, marginBottom: 8 }}>
                         Invite will also be sent via SMS with a smart link
                       </Text>
                     ) : null}
@@ -3053,7 +3053,7 @@ export default function TeamManagementScreen() {
                       keyboardType="decimal-pad"
                       placeholderTextColor={colors.mutedForeground}
                     />
-                    <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: -4, marginBottom: 8 }}>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: -4, marginBottom: 8 }}>
                       Used for time tracking and invoice labour calculations
                     </Text>
 
@@ -3090,7 +3090,7 @@ export default function TeamManagementScreen() {
                 </>
               ) : (
                 <ScrollView style={[styles.modalBody, { flex: 1 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md }}>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md }}>
                     Generate a code that anyone can use to join your team. Share it however you like.
                   </Text>
                   <Text style={[styles.inputLabel, { marginBottom: 12 }]}>What role should they join as?</Text>
@@ -3116,15 +3116,15 @@ export default function TeamManagementScreen() {
                         color={inviteCodeRoleType === role ? colors.primary : colors.mutedForeground}
                       />
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground, textTransform: 'capitalize' }}>{role}</Text>
-                        <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                        <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground, textTransform: 'capitalize' }}>{role}</Text>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                           {role === 'worker' ? 'Field worker assigned to jobs' : role === 'manager' ? 'Can manage jobs and team' : 'Independent contractor'}
                         </Text>
                       </View>
                       {inviteCodeRoleType === role && <Feather name="check-circle" size={20} color={colors.primary} />}
                     </TouchableOpacity>
                   ))}
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: spacing.xs, marginBottom: 16 }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xs, marginBottom: 16 }}>
                     Code expires in 30 days and can be used up to 10 times.
                   </Text>
                   <TouchableOpacity
@@ -3148,7 +3148,7 @@ export default function TeamManagementScreen() {
                     ) : (
                       <>
                         <Feather name="zap" size={18} color={colors.primaryForeground} />
-                        <Text style={{ color: colors.primaryForeground, fontSize: 15, fontWeight: '600' }}>Generate Code</Text>
+                        <Text style={{ color: colors.primaryForeground, fontSize: typography.sizes.md, fontWeight: fontWeights.semibold }}>Generate Code</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -3327,7 +3327,7 @@ export default function TeamManagementScreen() {
                         ).map((perm, idx) => (
                           <View key={idx} style={styles.rolePermissionItem}>
                             <Feather name="check" size={12} color={colors.success} />
-                            <Text style={[styles.permissionLabel, { fontSize: 13 }]}>
+                            <Text style={[styles.permissionLabel, { fontSize: typography.sizes.sm }]}>
                               {typeof perm === 'string' ? perm.replace(/_/g, ' ') : perm}
                             </Text>
                           </View>

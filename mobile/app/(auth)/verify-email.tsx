@@ -12,6 +12,7 @@ import api from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useAuthStore } from '../../src/lib/store';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 export default function VerifyEmailScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -151,15 +152,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginTop: 16,
     marginBottom: 12,
     textAlign: 'center',
   },
   description: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     lineHeight: 24,
@@ -174,8 +175,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   retryText: {
     color: colors.primaryForeground,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   backButton: {
     flexDirection: 'row',
@@ -184,7 +185,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 24,
   },
   backText: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
     marginLeft: 8,
   },

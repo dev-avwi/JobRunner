@@ -12,7 +12,7 @@ import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, typography, pageShell, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, pageShell, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { api } from '../../src/lib/api';
 import { format } from 'date-fns';
 
@@ -361,7 +361,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   statusText: {
     ...typography.caption,
-    fontWeight: '600' as const,
+    fontWeight: fontWeights.semibold,
   },
   description: {
     ...typography.body,
@@ -374,7 +374,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   contextName: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flexShrink: 1,
   },

@@ -23,7 +23,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { getAvatarColor as getAvatarColorUtil } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
-import { spacing, radius, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 
@@ -164,14 +164,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     letterSpacing: -0.2,
   },
   headerSubtitle: {
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.regular,
     color: colors.mutedForeground,
     marginTop: 1,
   },
@@ -195,8 +195,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.full,
   },
   messageBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   internalBanner: {
@@ -217,8 +217,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   internalBannerText: {
     flex: 1,
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.isDark ? colors.info : colors.mutedForeground,
   },
   textClientBannerBtn: {
@@ -231,8 +231,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.isDark ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.1)',
   },
   textClientBannerBtnText: {
-    fontSize: 10,
-    fontWeight: '600' as const,
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   contactClientBtn: {
@@ -245,8 +245,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 4,
   },
   contactClientText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   messagesContainer: {
@@ -280,8 +280,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   dateSeparatorText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -302,15 +302,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.lg,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     textAlign: 'center',
     letterSpacing: -0.3,
   },
   emptySubtext: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.regular,
     color: colors.mutedForeground,
     marginTop: 8,
     textAlign: 'center',
@@ -327,8 +327,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.full,
   },
   emptyHintText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   systemMessage: {
@@ -343,8 +343,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.full,
   },
   systemMessageText: {
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.regular,
     color: colors.mutedForeground,
     fontStyle: 'italic',
   },
@@ -375,8 +375,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
     color: colors.white,
   },
   avatarSpacer: {
@@ -387,8 +387,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     maxWidth: '78%',
   },
   messageSender: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: 3,
     marginLeft: 4,
@@ -409,8 +409,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   messageText: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     lineHeight: 21,
   },
   messageTextOwn: {
@@ -427,8 +427,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 3,
   },
   messageTime: {
-    fontSize: 11,
-    fontWeight: '400',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.regular,
   },
   messageTimeOwn: {
     color: 'rgba(255,255,255,0.6)',
@@ -458,8 +458,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   attachmentDocText: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
   },
   smsBubbleOwn: {
     backgroundColor: '#34b759',
@@ -491,8 +491,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.full,
   },
   smsTypeBadgeText: {
-    fontSize: 9,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     letterSpacing: 0.3,
   },
   composerContainer: {
@@ -527,8 +527,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   composerInput: {
     paddingHorizontal: spacing.lg,
     paddingVertical: Platform.OS === 'ios' ? 11 : 9,
-    fontSize: 15,
-    fontWeight: '400',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.regular,
     color: colors.foreground,
     maxHeight: 100,
     minHeight: 40,
@@ -594,7 +594,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   attachmentOptionText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     textAlign: 'center',
   },
@@ -624,13 +624,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 2,
   },
   documentTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   documentMeta: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   documentStatusBadge: {
@@ -641,8 +641,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 2,
   },
   documentStatusText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
@@ -670,14 +670,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.md,
   },
   documentEmptyText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     textAlign: 'center',
   },
   documentEmptySubtext: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.regular,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginTop: 6,
@@ -1178,7 +1178,7 @@ export default function JobChatScreen() {
           {client?.phone && (
             <PressableRow style={[styles.contactClientBtn, { marginTop: 12 }]} onPress={handleContactClient} >
               <Feather name="smartphone" size={14} color={colors.primaryForeground} />
-              <Text style={[styles.contactClientText, { fontSize: 13 }]}>Text Client Instead</Text>
+              <Text style={[styles.contactClientText, { fontSize: typography.sizes.sm }]}>Text Client Instead</Text>
             </PressableRow>
           )}
           <View style={styles.emptyHint}>
@@ -1312,7 +1312,7 @@ export default function JobChatScreen() {
               </View>
               {msg.sendStatus === 'failed' && (
                 <PressableRow onPress={async () => { const { offlineStorage } = await import('@/lib/offline-storage'); const ok = await offlineStorage.retryFailedChatMessage(msg.localId || msg.id); if (ok) loadMessages(); }} style={{ marginTop: 4 }} >
-                  <Text style={{ color: colors.destructive, fontSize: 11, fontWeight: '600' }}>
+                  <Text style={{ color: colors.destructive, fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold }}>
                     Failed to send · tap to retry
                   </Text>
                 </PressableRow>

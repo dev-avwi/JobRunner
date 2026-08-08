@@ -22,7 +22,7 @@ import { Button } from '../../src/components/ui/Button';
 import { GoogleLogo } from '../../src/components/ui/GoogleLogo';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import api, { API_URL } from '../../src/lib/api';
-import { spacing } from '../../src/lib/design-tokens';
+import { spacing, typography, fontWeights } from '../../src/lib/design-tokens';
 
 // Conditionally import Apple Authentication - only available in dev/production builds, not Expo Go
 let AppleAuthentication: any = null;
@@ -549,13 +549,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     height: 44,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
     marginTop: spacing.xs,
     textAlign: 'center',
@@ -567,8 +567,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: 8,
   },
@@ -580,7 +580,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.cardBorder,
     borderRadius: 12,
     color: colors.foreground,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
   },
   passwordContainer: {
     flexDirection: 'row' as const,
@@ -594,7 +594,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     height: 52,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
   },
   eyeButton: {
@@ -615,8 +615,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   errorText: {
     flex: 1,
     color: colors.destructive,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
   },
   resendButton: {
     marginTop: 10,
@@ -630,8 +630,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   resendButtonText: {
     color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
   },
   successContainer: {
     padding: 12,
@@ -646,8 +646,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   successText: {
     flex: 1,
     color: colors.success,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
   },
   forgotPassword: {
     alignItems: 'center',
@@ -656,7 +656,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   forgotPasswordText: {
     color: colors.primary,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
   },
   divider: {
     flexDirection: 'row',
@@ -672,7 +672,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   dividerText: {
     marginHorizontal: 16,
     color: colors.mutedForeground,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
   },
   googleButton: {
     flexDirection: 'row',
@@ -697,14 +697,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: '#ddd',
   },
   googleIconText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: '#4285F4',
   },
   googleButtonText: {
     color: colors.foreground,
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.medium,
   },
   appleButtonContainer: {
     marginTop: 12,
@@ -732,12 +732,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   signUpText: {
     color: colors.mutedForeground,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
   },
   signUpLink: {
     color: colors.primary,
-    fontWeight: '600',
-    fontSize: 15,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.sizes.md,
   },
   primaryButton: {
     backgroundColor: colors.primary,
@@ -750,11 +750,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   primaryButtonText: {
     color: colors.primaryForeground,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   termsNotice: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginTop: 16,
@@ -763,6 +763,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   termsLink: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 });

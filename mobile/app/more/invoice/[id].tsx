@@ -25,7 +25,7 @@ import * as Sharing from 'expo-sharing';
 import { useInvoicesStore, useClientsStore, useAuthStore, useQuotesStore } from '../../../src/lib/store';
 import { useTheme, ThemeColors } from '../../../src/lib/theme';
 import { AppBottomSheet } from '../../../src/components/ui/AppBottomSheet';
-import { spacing, radius } from '../../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../../src/lib/design-tokens';
 import LiveDocumentPreview from '../../../src/components/LiveDocumentPreview';
 import { EmailComposeModal } from '../../../src/components/EmailComposeModal';
 import { MobileSendModal } from '../../../src/components/MobileSendModal';
@@ -2622,10 +2622,10 @@ ${businessName}`;
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                     <Feather name="calendar" size={20} color={colors.primary} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+                      <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                         Milestones & Retention
                       </Text>
-                      <Text style={{ fontSize: 13, color: colors.mutedForeground, marginTop: 2 }}>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: 2 }}>
                         {invoice.paymentMilestones && Array.isArray(invoice.paymentMilestones) && invoice.paymentMilestones.length > 0
                           ? `${invoice.paymentMilestones.length} milestones defined`
                           : 'Define progress payment stages'}
@@ -2662,7 +2662,7 @@ ${businessName}`;
                     }}
                   >
                     <Feather name="edit-2" size={14} color={colors.primary} />
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: colors.primary }}>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.primary }}>
                       {invoice.paymentMilestones && (invoice.paymentMilestones as any[]).length > 0 ? 'Edit' : 'Set Up'}
                     </Text>
                   </TouchableOpacity>
@@ -2711,21 +2711,21 @@ ${businessName}`;
                               ) : milestoneStatus === 'invoiced' ? (
                                 <Feather name="file-text" size={12} color={colors.white} />
                               ) : (
-                                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.mutedForeground }}>{idx + 1}</Text>
+                                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>{idx + 1}</Text>
                               )}
                             </View>
-                            <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>{milestone.label}</Text>
+                            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{milestone.label}</Text>
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <Text style={{ fontSize: 13, color: colors.mutedForeground }}>{milestone.percent}%</Text>
-                            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>{formatCurrency(milestoneAmount)}</Text>
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>{milestone.percent}%</Text>
+                            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(milestoneAmount)}</Text>
                             <View style={{
                               paddingHorizontal: 8,
                               paddingVertical: 3,
                               borderRadius: 10,
                               backgroundColor: sc.bg,
                             }}>
-                              <Text style={{ fontSize: 11, fontWeight: '600', color: sc.fg }}>
+                              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: sc.fg }}>
                                 {sc.label}
                               </Text>
                             </View>
@@ -2746,10 +2746,10 @@ ${businessName}`;
                         })}
                       </View>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
                           {(invoice.paymentMilestones as any[]).filter((m: any) => m.status === 'paid').length} of {(invoice.paymentMilestones as any[]).length} milestones paid
                         </Text>
-                        <Text style={{ fontSize: 11, fontWeight: '500', color: colors.foreground }}>
+                        <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.medium, color: colors.foreground }}>
                           {formatCurrency(
                             (invoice.paymentMilestones as any[])
                               .filter((m: any) => m.status === 'paid')
@@ -2779,10 +2779,10 @@ ${businessName}`;
                     borderBottomWidth: 1,
                     borderBottomColor: colors.border,
                   }}>
-                    <Text style={{ fontSize: 14, color: colors.mutedForeground }}>
+                    <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>
                       {paymentRecords.length} payment{paymentRecords.length !== 1 ? 's' : ''} recorded
                     </Text>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.success }}>
+                    <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.success }}>
                       {formatCurrency(paymentSummary.totalPaid || 0)}
                     </Text>
                   </View>
@@ -2830,18 +2830,18 @@ ${businessName}`;
                               size={12} 
                               color={colors.mutedForeground} 
                             />
-                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                               {methodLabels[record.paymentMethod] || record.paymentMethod}
                             </Text>
                           </View>
                         </View>
                         {record.reference && (
-                          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
                             Ref: {record.reference}
                           </Text>
                         )}
                         {record.note && (
-                          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
                             {record.note}
                           </Text>
                         )}
@@ -2858,7 +2858,7 @@ ${businessName}`;
                             alignSelf: 'flex-start',
                           }}>
                             <Feather name="x-circle" size={10} color={colors.destructive} />
-                            <Text style={{ fontSize: 11, fontWeight: '600', color: colors.destructive }}>Voided</Text>
+                            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.destructive }}>Voided</Text>
                           </View>
                         )}
                       </View>
@@ -3453,9 +3453,9 @@ ${businessName}`;
                         borderBottomWidth: i < PRESET_MAP[milestonePreset].length - 1 ? 1 : 0,
                         borderBottomColor: colors.border,
                       }}>
-                        <Text style={{ fontSize: 14, color: colors.foreground, flex: 1 }}>{m.label}</Text>
-                        <Text style={{ fontSize: 13, color: colors.mutedForeground, marginRight: 8 }}>{formatCurrency(amount)}</Text>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>{m.percent}%</Text>
+                        <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, flex: 1 }}>{m.label}</Text>
+                        <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginRight: 8 }}>{formatCurrency(amount)}</Text>
+                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>{m.percent}%</Text>
                       </View>
                     );
                   })}
@@ -3477,7 +3477,7 @@ ${businessName}`;
                         borderColor: colors.border,
                       }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground }}>Stage {idx + 1}</Text>
+                          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>Stage {idx + 1}</Text>
                           <TouchableOpacity onPress={() => removeCustomMilestone(idx)}>
                             <Feather name="x" size={18} color={colors.destructive} />
                           </TouchableOpacity>
@@ -3491,7 +3491,7 @@ ${businessName}`;
                         />
                         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 4 }}>Percentage</Text>
+                            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: 4 }}>Percentage</Text>
                             <TextInput
                               style={styles.paymentReferenceInput}
                               placeholder="e.g. 25"
@@ -3502,14 +3502,14 @@ ${businessName}`;
                             />
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 4 }}>Amount</Text>
+                            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: 4 }}>Amount</Text>
                             <View style={[styles.paymentReferenceInput, { justifyContent: 'center' }]}>
-                              <Text style={{ fontSize: 14, color: colors.foreground }}>{formatCurrency(amount)}</Text>
+                              <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>{formatCurrency(amount)}</Text>
                             </View>
                           </View>
                         </View>
                         <View>
-                          <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 4 }}>Status</Text>
+                          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: 4 }}>Status</Text>
                           <View style={{ flexDirection: 'row', gap: 6 }}>
                             {(['pending', 'invoiced', 'paid'] as const).map((s) => {
                               const isActive = milestone.status === s;
@@ -3533,8 +3533,8 @@ ${businessName}`;
                                   }}
                                 >
                                   <Text style={{
-                                    fontSize: 12,
-                                    fontWeight: isActive ? '600' : '400',
+                                    fontSize: typography.captionSmall.fontSize,
+                                    fontWeight: isActive ? fontWeights.semibold : fontWeights.regular,
                                     color: isActive ? statusColors[s].fg : colors.mutedForeground,
                                     textTransform: 'capitalize',
                                   }}>
@@ -3565,7 +3565,7 @@ ${businessName}`;
                     }}
                   >
                     <Feather name="plus" size={16} color={colors.primary} />
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: colors.primary }}>Add Milestone</Text>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.primary }}>Add Milestone</Text>
                   </TouchableOpacity>
 
                   {customMilestones.length > 0 && (
@@ -3576,16 +3576,16 @@ ${businessName}`;
                       backgroundColor: customMilestoneTotalPercent === 100 ? colors.successLight : customMilestoneTotalPercent > 100 ? colors.destructiveLight : colors.warningLight,
                     }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ fontSize: 13, color: colors.foreground }}>Total Allocation</Text>
+                        <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground }}>Total Allocation</Text>
                         <Text style={{ 
-                          fontSize: 14, fontWeight: '600', 
+                          fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, 
                           color: customMilestoneTotalPercent === 100 ? colors.success : customMilestoneTotalPercent > 100 ? colors.destructive : colors.warning,
                         }}>
                           {customMilestoneTotalPercent}%
                         </Text>
                       </View>
                       {customMilestoneTotalPercent !== 100 && (
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4 }}>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 4 }}>
                           {customMilestoneTotalPercent > 100 ? 'Total exceeds 100%' : `${100 - customMilestoneTotalPercent}% remaining`}
                         </Text>
                       )}
@@ -3603,7 +3603,7 @@ ${businessName}`;
                 onChangeText={setRetentionPercentStr}
                 keyboardType="decimal-pad"
               />
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 6 }}>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 6 }}>
                 Common in construction: hold back 5-10% until defect period ends
               </Text>
 
@@ -3617,16 +3617,16 @@ ${businessName}`;
                   borderColor: colors.warning,
                 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                    <Text style={{ fontSize: 14, color: colors.foreground }}>Invoice Total</Text>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
+                    <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>Invoice Total</Text>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>
                       {formatCurrency(invoice?.total || 0)}
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                    <Text style={{ fontSize: 14, color: colors.warning }}>
+                    <Text style={{ fontSize: typography.button.fontSize, color: colors.warning }}>
                       Retention ({retentionPercentStr}%)
                     </Text>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: colors.warning }}>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.warning }}>
                       -{formatCurrency((invoice?.total || 0) * parseFloat(retentionPercentStr) / 100)}
                     </Text>
                   </View>
@@ -3638,8 +3638,8 @@ ${businessName}`;
                     borderTopWidth: 1,
                     borderTopColor: colors.warning,
                   }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>Payable Now</Text>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Payable Now</Text>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                       {formatCurrency((invoice?.total || 0) * (1 - parseFloat(retentionPercentStr) / 100))}
                     </Text>
                   </View>
@@ -3865,7 +3865,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.background,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
   },
   headerButton: {
@@ -3887,8 +3887,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 20,
   },
   invoiceNumber: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     letterSpacing: 0.5,
   },
@@ -3898,24 +3898,24 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 20,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
   },
   totalAmount: {
     fontSize: 40,
-    fontWeight: '800',
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -1,
   },
   totalLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 6,
     textTransform: 'uppercase' as const,
     letterSpacing: 1,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   dueContainer: {
     flexDirection: 'row',
@@ -3929,13 +3929,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderTopColor: colors.border,
   },
   dueLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   dueAmount: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     color: colors.warning,
   },
   summaryDetailsRow: {
@@ -3954,14 +3954,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: 8,
   },
   summaryDetailLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   summaryDetailValue: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: 2,
   },
@@ -3983,8 +3983,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.md,
   },
   primaryActionText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.white,
     letterSpacing: 0.1,
   },
@@ -4014,8 +4014,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   quickActionText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     textAlign: 'center',
   },
@@ -4028,8 +4028,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
   },
   pdfOptionsTitle: {
-    fontSize: 13,
-    fontWeight: '600' as const,
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: 8,
     textTransform: 'uppercase' as const,
@@ -4052,7 +4052,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: `${colors.primary}10`,
   },
   pdfOptionText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
   previewOptionsRow: {
@@ -4081,9 +4081,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: `${colors.primary}10`,
   },
   previewOptionChipText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
-    fontWeight: '500' as const,
+    fontWeight: fontWeights.medium,
   },
   overdueAlert: {
     flexDirection: 'row',
@@ -4097,14 +4097,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.destructive + '30',
   },
   overdueText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.destructive,
     flex: 1,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -4137,12 +4137,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingBottom: 16,
   },
   timelineLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   timelineDate: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 3,
   },
@@ -4175,13 +4175,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   linkedDocLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginBottom: 2,
   },
   linkedDocTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   linkedDocStatus: {
@@ -4190,8 +4190,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 20,
   },
   linkedDocStatusText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
   },
   infoRow: {
     flexDirection: 'row',
@@ -4203,17 +4203,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   clientName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginBottom: 2,
   },
   infoText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   lineItem: {
@@ -4230,7 +4230,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   lineItemDescription: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 20,
   },
@@ -4241,12 +4241,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginLeft: 26,
   },
   lineItemQty: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   lineItemTotal: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   amountRow: {
@@ -4256,11 +4256,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: 8,
   },
   amountLabel: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
   },
   amountValue: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   divider: {
@@ -4269,17 +4269,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginVertical: 8,
   },
   totalLabel2: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   totalValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   notesText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 22,
   },
@@ -4298,13 +4298,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   paymentToggleTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 2,
   },
   paymentToggleDesc: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     lineHeight: 18,
   },
@@ -4314,7 +4314,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: 8,
   },
   paymentLinkText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.success,
   },
   paymentLinkSection: {
@@ -4339,8 +4339,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 8,
   },
   copyLinkButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   generateLinkButton: {
@@ -4356,8 +4356,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   generateLinkButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   onSitePaymentButton: {
@@ -4370,13 +4370,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 14,
   },
   onSitePaymentButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.bold,
     color: colors.white,
     letterSpacing: 0.2,
   },
   onSitePaymentHint: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginTop: 8,
@@ -4400,23 +4400,23 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   paidAmount: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     color: colors.success,
   },
   paidDate: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginTop: 4,
   },
   paidMethod: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 3,
   },
   paidReference: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
     fontStyle: 'italic' as const,
@@ -4434,8 +4434,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
   },
   sendReceiptButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   signatureLabelRow: {
@@ -4445,8 +4445,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 12,
   },
   signatureLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   actionsColumn: {
@@ -4473,13 +4473,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   // Modal styles
@@ -4497,8 +4497,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderBottomColor: colors.border,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   modalContent: {
@@ -4518,17 +4518,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   sendInfoLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   sendInfoValue: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: 8,
   },
@@ -4537,7 +4537,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
     borderRadius: 12,
     padding: 14,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     backgroundColor: colors.card,
     minHeight: 120,
@@ -4552,8 +4552,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 24,
   },
   previewTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 12,
   },
@@ -4563,17 +4563,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: 6,
   },
   previewLabel: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
   previewValue: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   previewTotal: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   sendButton: {
@@ -4586,8 +4586,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: 16,
   },
   sendButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   buttonDisabled: {
@@ -4626,12 +4626,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 4,
   },
   emptyStateText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   emptyStateSubtext: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     textAlign: 'center' as const,
     lineHeight: 18,
@@ -4649,7 +4649,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: 4,
   },
   signatureInfo: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   footerSection: {
@@ -4661,13 +4661,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     alignItems: 'center',
   },
   thankYouText: {
-    fontSize: 15,
-    fontWeight: '500' as const,
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
     marginBottom: 6,
   },
   abnFooter: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     letterSpacing: 0.2,
   },
@@ -4688,8 +4688,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 16,
   },
   templateModalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   templateOption: {
@@ -4709,12 +4709,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   templateOptionName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   templateOptionDesc: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -4750,12 +4750,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   myobModalTitle: {
     flex: 1,
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   myobModalMessage: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     lineHeight: 20,
   },
@@ -4795,8 +4795,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 8,
   },
   previewModalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   shareSheetContent: {
@@ -4815,14 +4815,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 16,
   },
   shareSheetTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
     marginBottom: 4,
   },
   shareSheetSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: 20,
@@ -4850,8 +4850,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   shareOptionText: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   shareSheetCancel: {
@@ -4863,8 +4863,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
   },
   shareSheetCancelText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   recurringCard: {
@@ -4887,13 +4887,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 6,
   },
   recurringBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.info,
   },
   recurringActiveText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.success,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -4914,13 +4914,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   recurringDetailLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginBottom: 2,
   },
   recurringDetailValue: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   recurringActions: {
@@ -4938,8 +4938,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 10,
   },
   recurringEditButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   recurringStopButton: {
@@ -4953,8 +4953,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 10,
   },
   recurringStopButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.destructive,
   },
   paymentMethodModalContent: {
@@ -4970,8 +4970,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 16,
   },
   paymentMethodSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: 16,
     marginBottom: 12,
@@ -5006,20 +5006,20 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   paymentMethodLabel: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   paymentMethodLabelSelected: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   paymentReferenceInput: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
     padding: 14,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     backgroundColor: colors.background,
   },
@@ -5040,12 +5040,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginRight: 12,
   },
   receiptToggleLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   receiptToggleHint: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -5064,8 +5064,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
   },
   paymentMethodCancelText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   paymentMethodConfirmButton: {
@@ -5079,8 +5079,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.success,
   },
   paymentMethodConfirmText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.white,
   },
   documentPreviewCard: {
@@ -5108,25 +5108,25 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 8,
   },
   documentBusinessName: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 4,
   },
   documentBusinessDetail: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   documentTitleContainer: {
     alignItems: 'flex-end',
   },
   documentTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.extrabold,
     letterSpacing: 2,
   },
   documentNumber: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 4,
   },
@@ -5141,25 +5141,25 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   documentSectionLabel: {
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     letterSpacing: 1,
     marginBottom: 8,
   },
   documentClientName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 4,
   },
   documentInfoText: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.foreground,
     marginBottom: 2,
   },
   documentInfoLabel: {
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   documentItemsSection: {
     paddingHorizontal: 16,
@@ -5173,8 +5173,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 4,
   },
   documentItemsHeaderText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -5186,11 +5186,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderBottomColor: colors.border,
   },
   documentItemText: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.foreground,
   },
   documentMoreItems: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     fontStyle: 'italic',
     paddingVertical: 8,
@@ -5211,8 +5211,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 12,
   },
   documentSummaryTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -5222,8 +5222,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 12,
   },
   documentStatusBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
   },
   documentSummaryRow: {
@@ -5236,12 +5236,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderBottomColor: colors.border,
   },
   documentSummaryLabel: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   documentSummaryValue: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   documentTotalRow: {
@@ -5253,13 +5253,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderTopColor: colors.border,
   },
   documentTotalLabel: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   documentTotalValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   documentFooterSection: {
@@ -5269,11 +5269,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     alignItems: 'center',
   },
   documentFooterText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   documentFooterSubtext: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 4,
     textAlign: 'center',

@@ -11,7 +11,7 @@ import { Audio } from 'expo-av';
 import { useTheme, type ThemeColors } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
-import { spacing, radius, shadows, typography, pageShell } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useUserRole } from '../../src/hooks/use-user-role';
@@ -167,18 +167,18 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg, gap: spacing.md },
   pageTitle: { ...typography.largeTitle, color: colors.foreground, flex: 1 },
   card: { backgroundColor: colors.card, borderRadius: radius['2xl'], padding: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.cardBorder, ...shadows.sm },
-  cardTitle: { ...typography.body, fontWeight: '700', color: colors.foreground, marginBottom: spacing.xs },
+  cardTitle: { ...typography.body, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xs },
   cardSubtitle: { ...typography.caption, color: colors.mutedForeground, marginBottom: spacing.md },
   enableRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm },
-  enableLabel: { ...typography.body, fontWeight: '700', color: colors.foreground },
-  enableSublabel: { ...typography.caption, fontWeight: '400', color: colors.mutedForeground, marginTop: 2 },
+  enableLabel: { ...typography.body, fontWeight: fontWeights.bold, color: colors.foreground },
+  enableSublabel: { ...typography.caption, fontWeight: fontWeights.regular, color: colors.mutedForeground, marginTop: 2 },
   sectionTitle: { ...typography.label, color: colors.mutedForeground, marginTop: spacing.lg, marginBottom: spacing.md, textTransform: 'uppercase', letterSpacing: 1 },
   modeOption: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderRadius: radius.xl, marginBottom: spacing.sm, borderWidth: 1, gap: spacing.md },
   modeIconContainer: { width: 40, height: 40, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
-  modeLabel: { ...typography.body, fontWeight: '600', color: colors.foreground },
+  modeLabel: { ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground },
   modeDescription: { ...typography.caption, color: colors.mutedForeground, marginTop: 2 },
   voiceOption: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderRadius: radius.xl, marginBottom: spacing.sm, borderWidth: 1, gap: spacing.md },
-  voiceName: { ...typography.body, fontWeight: '600', color: colors.foreground },
+  voiceName: { ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground },
   voiceAccent: { ...typography.caption, color: colors.mutedForeground },
   textArea: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.lg, padding: spacing.md, color: colors.foreground, ...typography.body, minHeight: 80, textAlignVertical: 'top' },
   input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.lg, padding: spacing.md, color: colors.foreground, ...typography.body },
@@ -188,17 +188,17 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   phoneLabel: { ...typography.caption, color: colors.mutedForeground, width: 60 },
   daysRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.md },
   dayButton: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.sm, borderRadius: radius.lg, borderWidth: 1 },
-  dayText: { ...typography.caption, fontWeight: '600' },
+  dayText: { ...typography.caption, fontWeight: fontWeights.semibold },
   statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.lg, gap: spacing.xs, alignSelf: 'flex-start' },
-  statusText: { ...typography.caption, fontWeight: '600' },
-  phoneNumber: { ...typography.body, fontWeight: '700', color: colors.primary, fontSize: 18 },
+  statusText: { ...typography.caption, fontWeight: fontWeights.semibold },
+  phoneNumber: { ...typography.body, fontWeight: fontWeights.bold, color: colors.primary, fontSize: typography.sizes.lg },
   saveButton: { backgroundColor: colors.primary, borderRadius: radius.xl, padding: spacing.lg, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
-  saveButtonText: { ...typography.body, fontWeight: '700', color: colors.primaryForeground },
+  saveButtonText: { ...typography.body, fontWeight: fontWeights.bold, color: colors.primaryForeground },
   transferRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, gap: spacing.sm },
-  transferName: { ...typography.body, fontWeight: '600', color: colors.foreground, flex: 1 },
+  transferName: { ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 },
   transferPhone: { ...typography.caption, color: colors.mutedForeground },
   addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', gap: spacing.sm },
-  addButtonText: { ...typography.body, fontWeight: '600' },
+  addButtonText: { ...typography.body, fontWeight: fontWeights.semibold },
 });
 
 const SHARED_PLATFORM_NUMBER = '0485 013 993';
@@ -825,7 +825,7 @@ export default function AIReceptionistScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl }}>
           <Feather name="lock" size={40} color={colors.mutedForeground} />
-          <Text style={{ ...typography.body, fontWeight: '700', fontSize: 18, color: colors.foreground, marginTop: spacing.lg, textAlign: 'center' }}>
+          <Text style={{ ...typography.body, fontWeight: fontWeights.bold, fontSize: typography.sizes.lg, color: colors.foreground, marginTop: spacing.lg, textAlign: 'center' }}>
             Managed by the business owner
           </Text>
           <Text style={{ ...typography.body, color: colors.mutedForeground, marginTop: spacing.sm, textAlign: 'center' }}>
@@ -873,10 +873,10 @@ export default function AIReceptionistScreen() {
                       borderColor: isSelected ? colors.primary : colors.border,
                     }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: isSelected ? '700' : '500', color: isSelected ? colors.primary : colors.foreground }}>
+                    <Text style={{ fontSize: typography.sizes.sm, fontWeight: isSelected ? fontWeights.bold : fontWeights.medium, color: isSelected ? colors.primary : colors.foreground }}>
                       {cfg.label || (cfg.dedicatedPhoneNumber ? formatPhoneDisplay(cfg.dedicatedPhoneNumber) : 'Number')}
                     </Text>
-                    <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>
+                    <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 2 }}>
                       {cfg.label && cfg.dedicatedPhoneNumber ? formatPhoneDisplay(cfg.dedicatedPhoneNumber) : (cfg.enabled ? 'Active' : 'Inactive')}
                     </Text>
                   </TouchableOpacity>
@@ -900,19 +900,19 @@ export default function AIReceptionistScreen() {
             <View style={{ gap: spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                 <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryForeground }}>1</Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: colors.primaryForeground }}>1</Text>
                 </View>
                 <Text style={{ ...typography.body, color: colors.foreground }}>Choose a mode (after hours, always on, etc.)</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                 <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryForeground }}>2</Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: colors.primaryForeground }}>2</Text>
                 </View>
                 <Text style={{ ...typography.body, color: colors.foreground }}>Pick a voice and customise your greeting</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                 <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryForeground }}>3</Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: colors.primaryForeground }}>3</Text>
                 </View>
                 <Text style={{ ...typography.body, color: colors.foreground }}>Enable and save — you're live</Text>
               </View>
@@ -941,7 +941,7 @@ export default function AIReceptionistScreen() {
                 activeOpacity={0.7}
               >
                 <Feather name="zap" size={16} color={colors.primaryForeground} />
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primaryForeground }}>Upgrade Plan</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.primaryForeground }}>Upgrade Plan</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -966,7 +966,7 @@ export default function AIReceptionistScreen() {
                 activeOpacity={0.7}
               >
                 <Feather name="phone" size={16} color={colors.primaryForeground} />
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primaryForeground }}>Get a Dedicated Number</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.primaryForeground }}>Get a Dedicated Number</Text>
               </TouchableOpacity>
               <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.sm }}>
                 Includes SMS and AI calls
@@ -984,7 +984,7 @@ export default function AIReceptionistScreen() {
                   Setting Up AI Receptionist
                 </Text>
                 <ActivityIndicator size="small" color={colors.primary} style={{ marginBottom: spacing.sm }} />
-                <Text style={{ ...typography.caption, color: colors.primary, textAlign: 'center', fontWeight: '500', marginBottom: spacing.xs }}>
+                <Text style={{ ...typography.caption, color: colors.primary, textAlign: 'center', fontWeight: fontWeights.medium, marginBottom: spacing.xs }}>
                   {provisioningStatus || 'Please wait...'}
                 </Text>
                 <Text style={{ ...typography.caption, color: colors.mutedForeground, textAlign: 'center', lineHeight: 18 }}>
@@ -1008,7 +1008,7 @@ export default function AIReceptionistScreen() {
                   activeOpacity={0.7}
                 >
                   <Feather name="refresh-cw" size={16} color={colors.primaryForeground} />
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryForeground }}>Try Again</Text>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Try Again</Text>
                 </TouchableOpacity>
               </View>
             ) : !config?.vapiAssistantId ? (
@@ -1022,7 +1022,7 @@ export default function AIReceptionistScreen() {
                 <View style={{ padding: spacing.md, backgroundColor: `${colors.success}10`, borderRadius: radius.lg, marginBottom: spacing.md, width: '100%' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                     <Feather name="check-circle" size={16} color={colors.success} />
-                    <Text style={{ ...typography.body, color: colors.foreground, fontWeight: '600' }}>
+                    <Text style={{ ...typography.body, color: colors.foreground, fontWeight: fontWeights.semibold }}>
                       Number: {formatPhoneDisplay(businessSettings?.dedicatedPhoneNumber || config?.dedicatedPhoneNumber || '')}
                     </Text>
                   </View>
@@ -1036,7 +1036,7 @@ export default function AIReceptionistScreen() {
                   activeOpacity={0.7}
                 >
                   <Feather name="zap" size={16} color={colors.primaryForeground} />
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primaryForeground }}>Activate AI Receptionist</Text>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.primaryForeground }}>Activate AI Receptionist</Text>
                 </TouchableOpacity>
                 <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.sm }}>
                   Business add-on
@@ -1048,7 +1048,7 @@ export default function AIReceptionistScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f59e0b15', borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md, gap: spacing.sm }}>
                     <Feather name="clock" size={18} color="#f59e0b" />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>Pending Review</Text>
+                      <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>Pending Review</Text>
                       <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2, lineHeight: 16 }}>
                         Your AI Receptionist is being reviewed by our team. You'll be notified once it's approved and ready to go.
                       </Text>
@@ -1192,10 +1192,10 @@ export default function AIReceptionistScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }}>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs }}>
-                      <Text style={{ fontSize: 28, fontWeight: '800', color: hasServerValue ? latencyColor : colors.mutedForeground }}>
+                      <Text style={{ fontSize: typography.sizes['3xl'], fontWeight: fontWeights.extrabold, color: hasServerValue ? latencyColor : colors.mutedForeground }}>
                         {displayLatency !== null ? `~${displayLatency}` : '—'}
                       </Text>
-                      <Text style={{ ...typography.caption, color: hasServerValue ? latencyColor : colors.mutedForeground, fontWeight: '600' }}>ms</Text>
+                      <Text style={{ ...typography.caption, color: hasServerValue ? latencyColor : colors.mutedForeground, fontWeight: fontWeights.semibold }}>ms</Text>
                     </View>
                     <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }}>
                       {hasServerValue
@@ -1205,7 +1205,7 @@ export default function AIReceptionistScreen() {
                   </View>
                   {hasServerValue && (
                     <View style={{ backgroundColor: latencyColor + '18', borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
-                      <Text style={{ ...typography.caption, fontWeight: '700', color: latencyColor }}>{latencyLabel}</Text>
+                      <Text style={{ ...typography.caption, fontWeight: fontWeights.bold, color: latencyColor }}>{latencyLabel}</Text>
                     </View>
                   )}
                 </View>
@@ -1233,17 +1233,17 @@ export default function AIReceptionistScreen() {
                   return (
                     <View style={{ marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.cardBorder }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs, gap: spacing.sm }}>
-                        <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: '600' }}>
+                        <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.semibold }}>
                           Real average (last {sampleSize} {sampleSize === 1 ? 'call' : 'calls'})
                         </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                          <Text style={{ ...typography.body, fontWeight: '800', color: measuredColor }}>{measured}</Text>
-                          <Text style={{ ...typography.caption, color: measuredColor, fontWeight: '600' }}>ms</Text>
+                          <Text style={{ ...typography.body, fontWeight: fontWeights.extrabold, color: measuredColor }}>{measured}</Text>
+                          <Text style={{ ...typography.caption, color: measuredColor, fontWeight: fontWeights.semibold }}>ms</Text>
                         </View>
                       </View>
                       {analytics?.latencyMismatch && (
                         <View style={{ backgroundColor: '#ef444418', borderRadius: radius.lg, padding: spacing.sm, marginTop: spacing.xs }}>
-                          <Text style={{ ...typography.caption, color: '#ef4444', fontWeight: '700', marginBottom: 2 }}>Estimate vs reality mismatch</Text>
+                          <Text style={{ ...typography.caption, color: '#ef4444', fontWeight: fontWeights.bold, marginBottom: 2 }}>Estimate vs reality mismatch</Text>
                           <Text style={{ ...typography.caption, color: '#ef4444', lineHeight: 16 }}>
                             Your estimate says "Fast" but real calls average {measured}ms. Tap Test response time again to recalibrate, or trim your greeting/knowledge bank.
                           </Text>
@@ -1263,12 +1263,12 @@ export default function AIReceptionistScreen() {
                   ) : (
                     <Feather name="activity" size={16} color={colors.foreground} />
                   )}
-                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>
+                  <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                     {isMeasuringLatency ? 'Measuring…' : hasServerValue ? 'Test response time again' : 'Test response time'}
                   </Text>
                 </TouchableOpacity>
                 <View style={{ marginTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.cardBorder, paddingTop: spacing.md }}>
-                  <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: '600', marginBottom: spacing.xs }}>Target: under 1000ms total turn time</Text>
+                  <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.semibold, marginBottom: spacing.xs }}>Target: under 1000ms total turn time</Text>
                   <Text style={{ ...typography.caption, color: colors.mutedForeground, lineHeight: 16 }}>
                     Total turn time is how long callers wait between finishing their sentence and the AI starting to reply. It includes the 0.8s anti-interruption pause, speech recognition, AI thinking, and voice generation. Under 1000ms feels natural; up to 1200ms is acceptable.
                   </Text>
@@ -1337,8 +1337,8 @@ export default function AIReceptionistScreen() {
               </TouchableOpacity>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs }}>
-              <Text style={{ ...typography.caption, color: colors.mutedForeground, fontSize: 10 }}>Consistent</Text>
-              <Text style={{ ...typography.caption, color: colors.mutedForeground, fontSize: 10 }}>Creative</Text>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, fontSize: typography.sizes.xs }}>Consistent</Text>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, fontSize: typography.sizes.xs }}>Creative</Text>
             </View>
           </View>
 
@@ -1364,8 +1364,8 @@ export default function AIReceptionistScreen() {
               </TouchableOpacity>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs }}>
-              <Text style={{ ...typography.caption, color: colors.mutedForeground, fontSize: 10 }}>Shorter (faster)</Text>
-              <Text style={{ ...typography.caption, color: colors.mutedForeground, fontSize: 10 }}>Longer (detailed)</Text>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, fontSize: typography.sizes.xs }}>Shorter (faster)</Text>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, fontSize: typography.sizes.xs }}>Longer (detailed)</Text>
             </View>
           </View>
 
@@ -1526,7 +1526,7 @@ export default function AIReceptionistScreen() {
 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>Voicemail Detection</Text>
+              <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>Voicemail Detection</Text>
               <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }}>Detect and handle voicemail systems</Text>
             </View>
             <Switch
@@ -1630,7 +1630,7 @@ export default function AIReceptionistScreen() {
             return (
               <View key={day} style={{ marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.cardBorder, paddingBottom: spacing.md }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs }}>
-                  <Text style={{ ...typography.body, fontWeight: '600', color: daySchedule.enabled ? colors.foreground : colors.mutedForeground }}>{label}</Text>
+                  <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: daySchedule.enabled ? colors.foreground : colors.mutedForeground }}>{label}</Text>
                   <Switch
                     value={daySchedule.enabled}
                     onValueChange={() => toggleDayEnabled(day)}
@@ -1932,7 +1932,7 @@ export default function AIReceptionistScreen() {
               activeOpacity={0.7}
             >
               <Feather name="plus" size={14} color={colors.primary} />
-              <Text style={[styles.addButtonText, { color: colors.primary, fontSize: 13 }]}>Add FAQ</Text>
+              <Text style={[styles.addButtonText, { color: colors.primary, fontSize: typography.sizes.sm }]}>Add FAQ</Text>
             </TouchableOpacity>
           </View>
           {(knowledgeBank.faqs || []).map((faq, i) => (
@@ -1996,7 +1996,7 @@ export default function AIReceptionistScreen() {
             </View>
             {analytics?.outcomeBreakdown && typeof analytics.outcomeBreakdown === 'object' && Object.keys(analytics.outcomeBreakdown).length > 0 && (
               <View style={{ gap: spacing.xs }}>
-                <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: '600', marginBottom: spacing.xs }}>Outcomes</Text>
+                <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.semibold, marginBottom: spacing.xs }}>Outcomes</Text>
                 {Object.entries(analytics.outcomeBreakdown || {}).map(([outcome, count]) => {
                   const outcomeLabels: Record<string, string> = {
                     message_taken: 'Message Taken',
@@ -2062,7 +2062,7 @@ export default function AIReceptionistScreen() {
                       borderColor: isActive ? fc.bg : colors.cardBorder,
                     }}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: isActive ? fc.text : colors.mutedForeground, textTransform: 'capitalize' }}>{s}</Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: isActive ? fc.text : colors.mutedForeground, textTransform: 'capitalize' }}>{s}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -2082,7 +2082,7 @@ export default function AIReceptionistScreen() {
                 }}
               >
                 <Feather name="alert-triangle" size={12} color={sentimentSort ? colors.primaryForeground : colors.mutedForeground} />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: sentimentSort ? colors.primaryForeground : colors.mutedForeground }}>Urgent First</Text>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: sentimentSort ? colors.primaryForeground : colors.mutedForeground }}>Urgent First</Text>
               </TouchableOpacity>
             </View>
 
@@ -2115,7 +2115,7 @@ export default function AIReceptionistScreen() {
                   <View style={{ padding: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm }}>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                        <Text style={{ ...typography.body, color: colors.foreground, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+                        <Text style={{ ...typography.body, color: colors.foreground, fontWeight: fontWeights.semibold, flex: 1 }} numberOfLines={1}>
                           {call.callerName || (call.callerPhone ? formatPhoneDisplay(call.callerPhone) : 'Unknown Caller')}
                         </Text>
                       </View>
@@ -2128,7 +2128,7 @@ export default function AIReceptionistScreen() {
                       {call.sentiment && (
                         <View style={{ backgroundColor: sc.bg, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                           <Feather name={sc.icon} size={10} color={sc.text} />
-                          <Text style={{ fontSize: 10, fontWeight: '600', color: sc.text, textTransform: 'capitalize' }}>{call.sentiment}</Text>
+                          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: sc.text, textTransform: 'capitalize' }}>{call.sentiment}</Text>
                         </View>
                       )}
                       {typeof call.latencyMs === 'number' && call.latencyMs > 0 && (() => {
@@ -2136,12 +2136,12 @@ export default function AIReceptionistScreen() {
                         return (
                           <View style={{ backgroundColor: lt.bg, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                             <Feather name="zap" size={10} color={lt.text} />
-                            <Text style={{ fontSize: 10, fontWeight: '600', color: lt.text }}>{call.latencyMs}ms</Text>
+                            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: lt.text }}>{call.latencyMs}ms</Text>
                           </View>
                         );
                       })()}
                       <View style={{ backgroundColor: oc.bg, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
-                        <Text style={{ fontSize: 11, fontWeight: '600', color: oc.text }}>{oc.label}</Text>
+                        <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: oc.text }}>{oc.label}</Text>
                       </View>
                       {call.recordingUrl && (
                         <TouchableOpacity
@@ -2162,8 +2162,8 @@ export default function AIReceptionistScreen() {
                         <View style={{ width: audioDuration > 0 ? `${(audioProgress / audioDuration) * 100}%` : '0%', height: '100%', backgroundColor: colors.primary, borderRadius: 2 }} />
                       </View>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
-                        <Text style={{ fontSize: 10, color: colors.mutedForeground }}>{Math.floor(audioProgress / 1000)}s</Text>
-                        <Text style={{ fontSize: 10, color: colors.mutedForeground }}>{audioDuration > 0 ? `${Math.floor(audioDuration / 1000)}s` : ''}</Text>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{Math.floor(audioProgress / 1000)}s</Text>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{audioDuration > 0 ? `${Math.floor(audioDuration / 1000)}s` : ''}</Text>
                       </View>
                     </View>
                   )}
@@ -2176,21 +2176,21 @@ export default function AIReceptionistScreen() {
                             <Feather name="zap" size={14} color={colors.mutedForeground} />
                             <Text style={{ ...typography.caption, color: colors.mutedForeground }}>Response time:</Text>
                             <View style={{ backgroundColor: lt.bg, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
-                              <Text style={{ fontSize: 11, fontWeight: '600', color: lt.text }}>{call.latencyMs}ms · {lt.label}</Text>
+                              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: lt.text }}>{call.latencyMs}ms · {lt.label}</Text>
                             </View>
                           </View>
                         );
                       })()}
                       {call.summary && (
                         <View>
-                          <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: '600', marginBottom: 4 }}>Summary</Text>
-                          <Text style={{ ...typography.body, color: colors.foreground, backgroundColor: colors.card, padding: spacing.sm, borderRadius: radius.md, fontSize: 13 }}>{call.summary}</Text>
+                          <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.semibold, marginBottom: 4 }}>Summary</Text>
+                          <Text style={{ ...typography.body, color: colors.foreground, backgroundColor: colors.card, padding: spacing.sm, borderRadius: radius.md, fontSize: typography.sizes.sm }}>{call.summary}</Text>
                         </View>
                       )}
                       {call.transcript && (
                         <View>
-                          <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: '600', marginBottom: 4 }}>Transcript</Text>
-                          <Text style={{ ...typography.body, color: colors.foreground, backgroundColor: colors.card, padding: spacing.sm, borderRadius: radius.md, fontSize: 13 }} numberOfLines={8}>{call.transcript}</Text>
+                          <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.semibold, marginBottom: 4 }}>Transcript</Text>
+                          <Text style={{ ...typography.body, color: colors.foreground, backgroundColor: colors.card, padding: spacing.sm, borderRadius: radius.md, fontSize: typography.sizes.sm }} numberOfLines={8}>{call.transcript}</Text>
                         </View>
                       )}
                       {call.recordingUrl && !isPlaying && (
@@ -2201,7 +2201,7 @@ export default function AIReceptionistScreen() {
                           <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
                             <Feather name="play" size={14} color={colors.primaryForeground} />
                           </View>
-                          <Text style={{ ...typography.body, color: colors.primary, fontSize: 13 }}>Play Recording</Text>
+                          <Text style={{ ...typography.body, color: colors.primary, fontSize: typography.sizes.sm }}>Play Recording</Text>
                         </TouchableOpacity>
                       )}
                       {call.callerPhone && (
@@ -2210,7 +2210,7 @@ export default function AIReceptionistScreen() {
                           style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs }}
                         >
                           <Feather name="phone" size={14} color={colors.primary} />
-                          <Text style={{ ...typography.body, color: colors.primary, fontSize: 13 }}>{formatPhoneDisplay(call.callerPhone)}</Text>
+                          <Text style={{ ...typography.body, color: colors.primary, fontSize: typography.sizes.sm }}>{formatPhoneDisplay(call.callerPhone)}</Text>
                         </TouchableOpacity>
                       )}
                     </View>

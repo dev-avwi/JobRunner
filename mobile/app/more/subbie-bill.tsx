@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import { formatCurrency } from '../../src/lib/format';
 import { showToast } from '../../src/lib/toast';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
@@ -843,8 +843,8 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.sm },
-    emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.foreground, marginTop: spacing.sm },
-    empty: { fontSize: 13, color: colors.mutedForeground, textAlign: 'center', lineHeight: 19 },
+    emptyTitle: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginTop: spacing.sm },
+    empty: { fontSize: typography.sizes.sm, color: colors.mutedForeground, textAlign: 'center', lineHeight: 19 },
 
     header: {
       flexDirection: 'row',
@@ -874,7 +874,7 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.foreground },
+    headerTitle: { fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground },
     headerRight: { width: 36 },
     totalBadge: {
       backgroundColor: colors.primaryLight,
@@ -884,7 +884,7 @@ function createStyles(colors: ThemeColors) {
       minWidth: 80,
       alignItems: 'center',
     },
-    totalBadgeText: { fontSize: 15, fontWeight: '700', color: colors.primary },
+    totalBadgeText: { fontSize: typography.sizes.md, fontWeight: fontWeights.bold, color: colors.primary },
 
     tabBar: {
       flexDirection: 'row',
@@ -904,7 +904,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 8,
     },
     tabItemActive: { backgroundColor: colors.primary },
-    tabText: { fontSize: 15, fontWeight: '600', color: colors.foreground },
+    tabText: { fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground },
     tabTextActive: { color: colors.primaryForeground },
 
     previewContainer: { flex: 1, backgroundColor: colors.background },
@@ -917,8 +917,8 @@ function createStyles(colors: ThemeColors) {
       paddingBottom: spacing.sm,
     },
     previewBarLabel: {
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.mutedForeground,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -931,7 +931,7 @@ function createStyles(colors: ThemeColors) {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    previewBarBadgeText: { fontSize: 11, fontWeight: '500', color: colors.mutedForeground },
+    previewBarBadgeText: { fontSize: typography.sizes.xs, fontWeight: fontWeights.medium, color: colors.mutedForeground },
 
     card: {
       backgroundColor: colors.card,
@@ -943,7 +943,7 @@ function createStyles(colors: ThemeColors) {
     },
     cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    cardHeaderText: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+    cardHeaderText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground },
 
     recipientRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     recipientAvatar: {
@@ -954,12 +954,12 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    recipientAvatarText: { fontSize: 16, fontWeight: '700', color: colors.primary },
-    recipientName: { fontSize: 15, fontWeight: '600', color: colors.foreground },
-    recipientSub: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+    recipientAvatarText: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.primary },
+    recipientName: { fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground },
+    recipientSub: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 },
 
     inputGroup: { gap: 6 },
-    inputLabel: { fontSize: 13, fontWeight: '600', color: colors.mutedForeground },
+    inputLabel: { fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground },
     input: {
       backgroundColor: colors.background,
       borderWidth: 1,
@@ -967,7 +967,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
       letterSpacing: 0,
       textAlign: 'left',
@@ -980,7 +980,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 3,
       borderRadius: radius.sm,
     },
-    itemCountText: { fontSize: 12, fontWeight: '600', color: colors.mutedForeground },
+    itemCountText: { fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground },
 
     suggestBox: {
       backgroundColor: colors.background,
@@ -990,7 +990,7 @@ function createStyles(colors: ThemeColors) {
       padding: spacing.sm,
       gap: spacing.xs,
     },
-    suggestLabel: { fontSize: 12, fontWeight: '600', color: colors.mutedForeground, marginBottom: 2 },
+    suggestLabel: { fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 2 },
     suggestRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1000,8 +1000,8 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.card,
       borderRadius: radius.sm,
     },
-    suggestJobTitle: { fontSize: 14, fontWeight: '500', color: colors.foreground },
-    suggestJobMeta: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+    suggestJobTitle: { fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground },
+    suggestJobMeta: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 },
 
     lineItemRow: {
       flexDirection: 'row',
@@ -1012,9 +1012,9 @@ function createStyles(colors: ThemeColors) {
       borderTopColor: colors.border,
     },
     lineItemInfo: { flex: 1 },
-    lineItemDescription: { fontSize: 14, fontWeight: '500', color: colors.foreground },
-    lineItemMeta: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
-    lineItemTotal: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+    lineItemDescription: { fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground },
+    lineItemMeta: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 },
+    lineItemTotal: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground },
     lineItemActions: { flexDirection: 'row', gap: 4 },
     iconButton: {
       width: 32,
@@ -1038,7 +1038,7 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.border,
       backgroundColor: colors.muted,
     },
-    addItemText: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+    addItemText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground },
     catalogButton: {
       flex: 1,
       flexDirection: 'row',
@@ -1061,14 +1061,14 @@ function createStyles(colors: ThemeColors) {
       gap: spacing.xs,
     },
     totalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    totalLabel: { fontSize: 14, color: colors.mutedForeground },
-    totalValue: { fontSize: 14, fontWeight: '500', color: colors.foreground },
+    totalLabel: { fontSize: typography.button.fontSize, color: colors.mutedForeground },
+    totalValue: { fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground },
     grandTotalRow: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing.xs, paddingTop: spacing.sm },
-    grandTotalLabel: { fontSize: 15, fontWeight: '700', color: colors.foreground },
-    grandTotalValue: { fontSize: 17, fontWeight: '700', color: colors.primary },
+    grandTotalLabel: { fontSize: typography.sizes.md, fontWeight: fontWeights.bold, color: colors.foreground },
+    grandTotalValue: { fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.primary },
 
     toggleHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    toggleHint: { fontSize: 13, color: colors.mutedForeground, lineHeight: 18, marginTop: spacing.sm, letterSpacing: 0 },
+    toggleHint: { fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 18, marginTop: spacing.sm, letterSpacing: 0 },
     toggleSwitch: {
       width: 48,
       height: 28,
@@ -1102,10 +1102,10 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 14,
       borderRadius: radius.md,
     },
-    submitText: { fontSize: 16, fontWeight: '600', color: colors.primaryForeground },
+    submitText: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground },
 
     // Chooser
-    chooserHeading: { fontSize: 15, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs },
+    chooserHeading: { fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs },
     chooserCard: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1124,8 +1124,8 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    chooserTitle: { fontSize: 16, fontWeight: '600', color: colors.foreground },
-    chooserSub: { fontSize: 13, color: colors.mutedForeground, marginTop: 2 },
+    chooserTitle: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground },
+    chooserSub: { fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: 2 },
 
     // Modals
     modalContainer: { flex: 1 },
@@ -1138,7 +1138,7 @@ function createStyles(colors: ThemeColors) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    modalTitle: { fontSize: 17, fontWeight: '600', color: colors.foreground },
+    modalTitle: { fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground },
     modalContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
     editorRow: { flexDirection: 'row', gap: spacing.md },
     editorTotalRow: {

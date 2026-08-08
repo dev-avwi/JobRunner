@@ -2,6 +2,7 @@ import { Link, Stack } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../src/lib/theme';
+import { typography, fontWeights } from '../src/lib/design-tokens';
 
 export default function NotFoundScreen() {
   const { colors } = useTheme();
@@ -45,13 +46,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.semibold,
     marginTop: 24,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -61,7 +62,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
 });

@@ -15,7 +15,7 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, sizes, iconSizes, usePageShell } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, sizes, iconSizes, usePageShell, fontWeights } from '../../src/lib/design-tokens';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { api } from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
@@ -973,13 +973,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     paddingTop: spacing.sm,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     lineHeight: 20,
   },
@@ -1017,7 +1017,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   tabText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   // Stat bar (single compact card with dividers)
@@ -1043,8 +1043,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     alignItems: 'center',
   },
   statBarValue: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
   },
   statBarLabel: {
@@ -1077,12 +1077,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     justifyContent: 'center',
   },
   alertBannerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   alertBannerSub: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1135,12 +1135,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     minWidth: 0,
   },
   memberName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   memberSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1150,8 +1150,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderRadius: radius.pill,
   },
   statusPillText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
   },
 
   // Activity
@@ -1175,17 +1175,17 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     justifyContent: 'center',
   },
   activityTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   activitySub: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 1,
   },
   activityTime: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 4,
   },
@@ -1214,13 +1214,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderColor: colors.cardBorder,
   },
   dayPillDow: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.5,
   },
   dayPillNum: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     marginTop: 2,
   },
   todayDot: {
@@ -1248,8 +1248,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   scheduleMemberName: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   scheduleMemberCount: {
@@ -1278,16 +1278,16 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderBottomLeftRadius: radius.md,
   },
   jobBlockTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.bold,
   },
   jobBlockMeta: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 2,
   },
   jobBlockAddr: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 1,
   },
@@ -1303,8 +1303,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderColor: colors.cardBorder,
   },
   assignDashedText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
   },
 
   queueCard: {
@@ -1319,12 +1319,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.sm,
   },
   queueTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   queueMeta: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1337,8 +1337,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderColor: colors.primary,
   },
   assignDashedBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
   },
   smallBtn: {
     width: 32,
@@ -1368,8 +1368,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderColor: colors.cardBorder,
   },
   periodPillText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
   },
 
   perfCard: {
@@ -1388,18 +1388,18 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.sm,
   },
   perfName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   perfRole: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 1,
   },
   perfRate: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.bold,
   },
   barTrack: {
     height: 6,
@@ -1429,12 +1429,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderBottomColor: colors.cardBorder,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   modalSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1455,7 +1455,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderColor: colors.cardBorder,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   reasonChips: {
@@ -1472,8 +1472,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     borderColor: colors.cardBorder,
   },
   reasonChipText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     textTransform: 'capitalize',
   },
   submitButton: {
@@ -1483,8 +1483,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     alignItems: 'center',
   },
   submitButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.bold,
   },
   assignJobRow: {
     flexDirection: 'row',
@@ -1498,12 +1498,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.sm,
   },
   assignJobTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   assignJobMeta: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },

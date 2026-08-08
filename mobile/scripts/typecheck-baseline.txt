@@ -1,0 +1,5 @@
+app/more/clients.tsx(401,80): error TS2345: Argument of type '"/more/import-contacts"' is not assignable to parameter of type '"/" | RelativePathString | ExternalPathString | `/?${string}` | `/#${string}` | "/_sitemap" | `/_sitemap?${string}` | `/_sitemap#${string}` | "/(auth)/accept-invite" | ... 436 more ... | { ...; }'.
+app/more/import-contacts.tsx(100,18): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/more/import-contacts.tsx(34,31): error TS2307: Cannot find module 'expo-contacts' or its corresponding type declarations.
+app/more/import-contacts.tsx(94,15): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/more/import-contacts.tsx(94,18): error TS7006: Parameter 'i' implicitly has an 'any' type.

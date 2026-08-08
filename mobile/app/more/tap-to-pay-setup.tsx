@@ -21,7 +21,7 @@ import { Card, CardContent } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -96,12 +96,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingTop: spacing.sm,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -143,8 +143,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     elevation: 0,
   },
   splashKicker: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.bold,
     letterSpacing: 1.2,
     color: colors.primary,
     textTransform: 'uppercase',
@@ -152,14 +152,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   splashTitle: {
     fontSize: Platform.OS === 'ios' ? 26 : 30,
-    fontWeight: '800',
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     textAlign: 'center',
     letterSpacing: -0.5,
     marginBottom: spacing.sm,
   },
   splashSubtitle: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
     textAlign: 'center',
     lineHeight: 22,
@@ -195,9 +195,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   splashFeatureText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   splashFooter: {
     paddingHorizontal: spacing.xl,
@@ -208,7 +208,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderTopColor: colors.border,
   },
   splashFooterNote: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginTop: spacing.sm,
@@ -231,8 +231,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingRight: spacing.sm,
   },
   backText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginLeft: spacing.xs,
   },
@@ -246,14 +246,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.lg,
   },
   termsTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   termsSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
   },
@@ -269,13 +269,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     padding: spacing.lg,
   },
   termsText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 22,
   },
   termsSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
@@ -303,7 +303,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   termsCheckboxLabel: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 20,
   },
@@ -350,14 +350,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.md,
   },
   tutorialTitle: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   tutorialDescription: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.xl,
@@ -373,8 +373,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
   },
   tutorialTipsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.md,
     textTransform: 'uppercase',
@@ -396,7 +396,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   tutorialTipText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   tutorialNavigation: {
@@ -422,14 +422,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.xl,
   },
   configuringTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
   configuringSubtitle: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.xl,
@@ -468,7 +468,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   configuringStepText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   configuringStepTextComplete: {
@@ -491,14 +491,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.xl,
   },
   successTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
   successSubtitle: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.xl,
@@ -525,14 +525,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.xl,
   },
   nonAdminTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
   nonAdminSubtitle: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.xl,

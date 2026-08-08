@@ -17,6 +17,7 @@ import api from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 interface InviteDetails {
   valid: boolean;
@@ -335,7 +336,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
   },
@@ -344,14 +345,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 32,
   },
   errorTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginTop: 16,
     marginBottom: 8,
   },
   errorText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: 24,
@@ -364,8 +365,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   backButtonText: {
     color: colors.primaryForeground,
-    fontWeight: '600',
-    fontSize: 15,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.sizes.md,
   },
   inviteHeader: {
     alignItems: 'center',
@@ -381,19 +382,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
   },
   inviterName: {
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   businessCard: {
@@ -419,8 +420,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   businessName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 6,
   },
@@ -431,12 +432,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 6,
   },
   roleText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.success,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   emailLine: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   errorBanner: {
@@ -450,7 +451,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   errorBannerText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.destructive,
   },
   form: {
@@ -464,8 +465,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: 6,
   },
@@ -476,7 +477,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
   },
   submitButton: {
@@ -494,20 +495,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   submitButtonText: {
     color: colors.primaryForeground,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   altLink: {
     alignItems: 'center',
     paddingVertical: 12,
   },
   altLinkText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   privacyNote: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginTop: 4,

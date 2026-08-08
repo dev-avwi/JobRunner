@@ -19,7 +19,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useAuthStore } from '../../src/lib/store';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import { api } from '../../src/lib/api';
-import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import {
   fetchSubscriptions,
   purchaseSubscription,
@@ -133,7 +133,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   planStatus: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     marginTop: 2,
   },
   planFeatures: {
@@ -174,7 +174,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   infoValue: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   divider: {
     height: 1,
@@ -213,7 +213,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   manageButtonText: {
     ...typography.body,
     color: colors.primaryForeground,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   manageDescription: {
     ...typography.caption,
@@ -259,7 +259,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   betaBadgeText: {
     ...typography.caption,
     color: '#10B981',
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   loadingContainer: {
     flex: 1,
@@ -299,7 +299,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   addOnPrice: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     marginTop: 2,
   },
   addOnDescription: {
@@ -351,7 +351,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   comparePlanName: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   comparePlanDesc: {
@@ -372,13 +372,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.foreground,
   },
   comparePlanPrice: {
-    fontSize: 22,
-    fontWeight: '700' as const,
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   comparePlanPriceUnit: {
-    fontSize: 13,
-    fontWeight: '400' as const,
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.regular,
     color: colors.mutedForeground,
   },
   upgradePlanButton: {
@@ -390,8 +390,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   upgradePlanButtonText: {
     color: colors.white,
-    fontWeight: '600' as const,
-    fontSize: 15,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.sizes.md,
   },
   restoreButton: {
     alignItems: 'center' as const,
@@ -402,7 +402,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   restoreButtonText: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '500' as const,
+    fontWeight: fontWeights.medium,
   },
   subscriptionLegalSection: {
     marginTop: spacing.lg,
@@ -424,7 +424,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   legalLink: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '500' as const,
+    fontWeight: fontWeights.medium,
   },
   legalSeparator: {
     ...typography.caption,
@@ -443,7 +443,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   webNoteTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 4,
   },

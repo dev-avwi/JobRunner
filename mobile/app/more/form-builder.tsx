@@ -21,7 +21,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
-import { spacing, radius, shadows, typography, iconSizes, sizes, componentStyles, usePageShell } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, sizes, componentStyles, usePageShell, fontWeights } from '../../src/lib/design-tokens';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -161,7 +161,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   headerButtonText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   tabBar: {
@@ -188,7 +188,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   tabText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   activeTabText: {
@@ -344,7 +344,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   modalSaveText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   modalSegment: {
@@ -371,7 +371,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   modalSegmentText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   modalSegmentTextActive: {
@@ -383,7 +383,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   fieldLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: spacing.sm,
     marginTop: spacing.md,
@@ -430,7 +430,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   sectionTitle: {
     ...typography.subtitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
@@ -455,7 +455,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   fieldItemLabel: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   fieldItemType: {
@@ -485,7 +485,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   addFieldBtnText: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   exportButton: {
     flexDirection: 'row',
@@ -502,7 +502,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   exportButtonText: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   pickerOverlay: {
     flex: 1,
@@ -541,7 +541,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   pickerOptionTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   pickerOptionDescription: {
     ...typography.captionSmall,
@@ -555,7 +555,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   pickerCancelText: {
     ...typography.body,
     color: colors.mutedForeground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   templateCard: {
     backgroundColor: colors.card,
@@ -593,7 +593,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   templateUseBtnText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   fieldEditSection: {
@@ -627,7 +627,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   conditionalTitle: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
@@ -641,7 +641,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   previewFieldLabel: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: spacing.xs,
   },
@@ -1206,7 +1206,7 @@ export default function FormBuilderScreen() {
                   activeOpacity={0.7}
                 >
                   <Feather name="plus" size={iconSizes.sm} color={colors.primary} />
-                  <Text style={[styles.addFieldBtnText, { fontSize: 13 }]}>Add Option</Text>
+                  <Text style={[styles.addFieldBtnText, { fontSize: typography.sizes.sm }]}>Add Option</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1725,7 +1725,7 @@ export default function FormBuilderScreen() {
               'headerId' in item ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, marginTop: item.headerId === 'header-forms' ? spacing.md : 0 }}>
                   <Feather name={item.headerId === 'header-jobcards' ? 'clipboard' : 'file-text'} size={iconSizes.md} color={item.headerId === 'header-jobcards' ? colors.primary : colors.mutedForeground} />
-                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>{item.title}</Text>
+                  <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>{item.title}</Text>
                 </View>
               ) : (
                 renderFormCard({ item })
@@ -1752,7 +1752,7 @@ export default function FormBuilderScreen() {
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
             <Feather name="clipboard" size={iconSizes.md} color={colors.primary} />
-            <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>Job Card Templates</Text>
+            <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>Job Card Templates</Text>
           </View>
           <Text style={{ ...typography.captionSmall, color: colors.mutedForeground, marginBottom: spacing.md }}>
             These show on the job so workers can fill them in on site.
@@ -1760,7 +1760,7 @@ export default function FormBuilderScreen() {
           {SAFETY_TEMPLATES.filter((t: any) => t.jobCard).map((template, index) => renderTemplateCard(template, index))}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.sm }}>
             <Feather name="file-text" size={iconSizes.md} color={colors.mutedForeground} />
-            <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>Form Templates</Text>
+            <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>Form Templates</Text>
           </View>
           <Text style={{ ...typography.captionSmall, color: colors.mutedForeground, marginBottom: spacing.md }}>
             {jobCardIntent

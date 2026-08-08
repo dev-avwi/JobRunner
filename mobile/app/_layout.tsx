@@ -68,6 +68,7 @@ import {
 } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { applyGlobalInterFont } from '../src/lib/global-font';
+import { typography, fontWeights } from '../src/lib/design-tokens';
 
 applyGlobalInterFont();
 
@@ -655,16 +656,16 @@ function OwnerSubscriptionLapsedScreen({ businessName, onSignOut }: { businessNa
         </View>
         <View style={{ alignItems: 'center', marginBottom: 24 }}>
           <View style={{ marginBottom: 12 }}>
-            <Animated.Text style={{ fontSize: 20, fontWeight: '600', color: colors.foreground, textAlign: 'center' }}>
+            <Animated.Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>
               Subscription Inactive
             </Animated.Text>
           </View>
-          <Animated.Text style={{ fontSize: 15, color: colors.mutedForeground, textAlign: 'center', lineHeight: 22 }}>
+          <Animated.Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground, textAlign: 'center', lineHeight: 22 }}>
             {businessName
               ? `${businessName}'s JobRunner subscription is no longer active.`
               : "Your employer's JobRunner subscription is no longer active."}
           </Animated.Text>
-          <Animated.Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center', marginTop: 12, lineHeight: 20 }}>
+          <Animated.Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center', marginTop: 12, lineHeight: 20 }}>
             Please contact the business owner to restore access.
           </Animated.Text>
         </View>
@@ -679,7 +680,7 @@ function OwnerSubscriptionLapsedScreen({ businessName, onSignOut }: { businessNa
             backgroundColor: colors.background,
           }}
         >
-          <Animated.Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '500' }}>
+          <Animated.Text style={{ color: colors.foreground, fontSize: typography.button.fontSize, fontWeight: fontWeights.medium }}>
             Sign Out
           </Animated.Text>
         </View>
@@ -970,9 +971,9 @@ function LoadingScreen({ colors }: { colors: any }) {
       {/* Loading text with subtle fade */}
       <Animated.Text
         style={{
-          fontSize: 14,
+          fontSize: typography.button.fontSize,
           color: colors.mutedForeground,
-          fontWeight: '500',
+          fontWeight: fontWeights.medium,
           opacity: 0.8,
         }}
       >

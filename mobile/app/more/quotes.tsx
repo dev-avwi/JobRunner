@@ -18,7 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import { useQuotesStore, useClientsStore, useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { api, API_URL } from '../../src/lib/api';
-import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
 import { EmailComposeModal } from '../../src/components/EmailComposeModal';
@@ -56,9 +56,9 @@ function KPICard({
     <TouchableOpacity activeOpacity={0.7} style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder, minWidth: '45%', }} onPress={onPress} >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
         <Feather name={icon as any} size={16} color={colors.primary} />
-        <Text style={{ fontSize: 12, color: colors.mutedForeground, fontWeight: '500' }}>{title}</Text>
+        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>{title}</Text>
       </View>
-      <Text style={{ fontSize: 24, fontWeight: '700', color: colors.foreground }}>{value}</Text>
+      <Text style={{ fontSize: typography.sizes.xxl, fontWeight: fontWeights.bold, color: colors.foreground }}>{value}</Text>
     </TouchableOpacity>
   );
 }
@@ -611,7 +611,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   newButtonText: {
     color: colors.primaryForeground,
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   searchBar: {
@@ -657,7 +657,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   filterPillText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   filterPillTextActive: {
@@ -675,8 +675,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   filterCountText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   filterCountTextActive: {
@@ -745,11 +745,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   emptyStateButtonText: {
     color: colors.primaryForeground,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.button.fontSize,
   },
   emptyStateTip: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     fontStyle: 'italic',
@@ -816,8 +816,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   
   // Quote/Invoice number - 15px semibold
   cardNumber: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   
@@ -828,7 +828,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 4, // gap-1
   },
   cardClientText: {
-    fontSize: 14, // text-sm
+    fontSize: typography.button.fontSize, // text-sm
     color: colors.mutedForeground,
     flex: 1,
   },
@@ -842,8 +842,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   
   // Amount - 18px bold, primary/trade color
   cardAmount: {
-    fontSize: 18, // text-lg
-    fontWeight: '700',
+    fontSize: typography.sizes.lg, // text-lg
+    fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   
@@ -874,8 +874,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   
@@ -888,8 +888,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   
   // Job title
   cardJobTitle: {
-    fontSize: 14, // text-sm
-    fontWeight: '500', // font-medium
+    fontSize: typography.button.fontSize, // text-sm
+    fontWeight: fontWeights.medium, // font-medium
     color: colors.foreground,
   },
   
@@ -906,7 +906,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 4, // gap-1
   },
   cardDateText: {
-    fontSize: 12, // text-xs
+    fontSize: typography.captionSmall.fontSize, // text-xs
     color: colors.mutedForeground,
   },
 });

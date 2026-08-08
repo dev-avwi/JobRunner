@@ -37,7 +37,7 @@ import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { showToast } from '../../src/lib/toast';
 
 // Keep money inputs clean: digits only, a single decimal point, max 2 decimals.
@@ -69,13 +69,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingTop: spacing.sm,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 4,
     lineHeight: 20,
@@ -129,7 +129,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   quickLinkText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   amountSection: {
@@ -151,15 +151,15 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.isDark ? colors.borderLight : colors.border,
   },
   currencySymbol: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['4xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   amountInput: {
     flex: 1,
     marginLeft: spacing.sm,
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['4xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   descriptionInput: {
@@ -169,7 +169,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingHorizontal: spacing.lg,
     height: 48,
     color: colors.foreground,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     borderWidth: 1,
     borderColor: colors.isDark ? colors.borderLight : colors.border,
   },
@@ -284,8 +284,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: 4,
   },
   collectButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   infoCard: {
@@ -315,12 +315,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   warningTitle: {
     color: colors.warning,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     marginBottom: 4,
   },
   warningText: {
     color: colors.mutedForeground,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
   },
   modalContainer: {
     flex: 1,
@@ -335,8 +335,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderBottomColor: colors.isDark ? colors.borderLight : colors.border,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   modalContent: {
@@ -347,8 +347,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   modalStepTitle: {
     color: colors.foreground,
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     marginTop: spacing.md,
   },
   modalStepSubtitle: {
@@ -367,8 +367,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   amountDisplay: {
     color: colors.foreground,
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
   },
   acceptedMethodsCard: {
@@ -381,7 +381,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   acceptedMethodsText: {
     color: colors.mutedForeground,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     textAlign: 'center',
   },
   successIcon: {
@@ -395,20 +395,20 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   successTitle: {
     color: colors.success,
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.3,
   },
   successAmount: {
     color: colors.foreground,
-    fontSize: 30,
-    fontWeight: '700',
+    fontSize: typography.sizes['4xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
     marginTop: spacing.xs,
   },
   successAmountLabel: {
     color: colors.mutedForeground,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     marginTop: spacing.xxs,
   },
   errorIcon: {
@@ -422,8 +422,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   errorTitle: {
     color: colors.destructive,
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
   },
   modalFooter: {
     padding: spacing.md,
@@ -482,12 +482,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   demoModeTitle: {
     color: colors.warning,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.button.fontSize,
   },
   demoModeDescription: {
     color: colors.mutedForeground,
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     marginTop: 2,
   },
   receiptInput: {
@@ -497,7 +497,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: spacing.sm,
     marginTop: spacing.sm,
     color: colors.foreground,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
   },
   receiptOptionsLabel: {
     ...typography.label,
@@ -526,7 +526,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     color: colors.foreground,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     letterSpacing: 0,
     textAlign: 'left',
   },
@@ -561,8 +561,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
   },
   qrAmountDisplay: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
@@ -578,7 +578,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   qrUrlText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   qrActionButtons: {
@@ -593,8 +593,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: spacing.sm,
   },
   paymentLinkLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: spacing.xs,
   },
@@ -665,7 +665,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   compactQuickLinkText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   invoicePickerScrollView: {
@@ -723,12 +723,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   invoicePickerItemAmount: {
     ...typography.bodySemibold,
-    fontSize: 18,
+    fontSize: typography.sizes.lg,
     color: colors.foreground,
   },
   invoicePickerItemAmountLabel: {
     ...typography.captionSmall,
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
   },
   customAmountButton: {
@@ -746,7 +746,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   customAmountButtonText: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   invoicePickerEmpty: {
@@ -974,10 +974,10 @@ function TapPreparingOverlay({ colors, isDark }: { colors: ThemeColors; isDark: 
             <Feather name="smartphone" size={30} color={colors.primaryForeground} />
           </View>
         </View>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, letterSpacing: -0.3, marginBottom: spacing.xs }}>
+        <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, letterSpacing: -0.3, marginBottom: spacing.xs }}>
           Preparing Tap to Pay
         </Text>
-        <Text style={{ fontSize: 13, fontWeight: '500', color: colors.mutedForeground, textAlign: 'center', lineHeight: 19, marginBottom: spacing.md }}>
+        <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.mutedForeground, textAlign: 'center', lineHeight: 19, marginBottom: spacing.md }}>
           Have the customer's card ready.{'\n'}The first tap can take a few seconds.
         </Text>
         <View
@@ -991,7 +991,7 @@ function TapPreparingOverlay({ colors, isDark }: { colors: ThemeColors; isDark: 
             borderRadius: 999,
           }}>
           <Feather name="lock" size={11} color={colors.mutedForeground} />
-          <Text style={{ fontSize: 11, fontWeight: '600', color: colors.mutedForeground, letterSpacing: 0.2 }}>
+          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground, letterSpacing: 0.2 }}>
             Secured by Stripe
           </Text>
         </View>
@@ -2726,7 +2726,7 @@ export default function CollectScreen() {
                   )}
                 </Button>
               </View>
-              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: spacing.xs }}>
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.xs }}>
                 SMS requires Twilio configuration in settings
               </Text>
             </View>
@@ -2864,11 +2864,11 @@ export default function CollectScreen() {
 
               {hasSent && (
                 <View style={{ marginTop: spacing.md, padding: spacing.md, backgroundColor: colors.muted, borderRadius: 8 }}>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: spacing.xs }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: spacing.xs }}>
                     Previously sent:
                   </Text>
                   {notifications.map((n: any, i: number) => (
-                    <Text key={i} style={{ fontSize: 12, color: colors.foreground }}>
+                    <Text key={i} style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }}>
                       {n.type === 'email' ? 'Email' : 'SMS'}: {n.email || n.phone}{n.sentAt ? ` (${format(parseISO(n.sentAt), 'MMM d, h:mm a')})` : ''}
                     </Text>
                   ))}
@@ -2992,8 +2992,8 @@ export default function CollectScreen() {
                           color={recordPaymentMethod === method.id ? colors.primary : colors.mutedForeground} 
                         />
                         <Text style={{ 
-                          fontSize: 12, 
-                          fontWeight: '500',
+                          fontSize: typography.captionSmall.fontSize, 
+                          fontWeight: fontWeights.medium,
                           color: recordPaymentMethod === method.id ? colors.primary : colors.foreground,
                         }}>
                           {method.label}
@@ -3038,7 +3038,7 @@ export default function CollectScreen() {
                       activeOpacity={0.7}
                     >
                       <Text style={{ 
-                        fontSize: 13, 
+                        fontSize: typography.sizes.sm, 
                         color: !recordClientId ? colors.primary : colors.foreground,
                       }}>
                         No Client
@@ -3063,7 +3063,7 @@ export default function CollectScreen() {
                         activeOpacity={0.7}
                       >
                         <Text style={{ 
-                          fontSize: 13, 
+                          fontSize: typography.sizes.sm, 
                           color: recordClientId === client.id ? colors.primary : colors.foreground,
                         }}>
                           {client.name}
@@ -3095,7 +3095,7 @@ export default function CollectScreen() {
                         activeOpacity={0.7}
                       >
                         <Text style={{ 
-                          fontSize: 13, 
+                          fontSize: typography.sizes.sm, 
                           color: !recordInvoiceId ? colors.primary : colors.foreground,
                         }}>
                           No Invoice
@@ -3124,14 +3124,14 @@ export default function CollectScreen() {
                             activeOpacity={0.7}
                           >
                             <Text style={{ 
-                              fontSize: 13, 
-                              fontWeight: '500',
+                              fontSize: typography.sizes.sm, 
+                              fontWeight: fontWeights.medium,
                               color: recordInvoiceId === invoice.id ? colors.primary : colors.foreground,
                             }}>
                               {invoice.invoiceNumber}
                             </Text>
                             <Text style={{ 
-                              fontSize: 11, 
+                              fontSize: typography.sizes.xs, 
                               color: colors.mutedForeground,
                             }}>
                               ${amountDue.toFixed(2)} due
@@ -3152,7 +3152,7 @@ export default function CollectScreen() {
                   gap: spacing.sm,
                 }}>
                   <Feather name="check-circle" size={20} color={colors.success} />
-                  <Text style={{ color: colors.success, fontSize: 13, flex: 1 }}>
+                  <Text style={{ color: colors.success, fontSize: typography.sizes.sm, flex: 1 }}>
                     No processing fees - great for cash & EFTPOS payments
                   </Text>
                 </View>
@@ -3173,7 +3173,7 @@ export default function CollectScreen() {
                 ) : (
                   <>
                     <Feather name="file-text" size={18} color={colors.primaryForeground} />
-                    <Text style={{ marginLeft: spacing.xs, color: colors.primaryForeground, fontWeight: '600' }}>
+                    <Text style={{ marginLeft: spacing.xs, color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>
                       Create Receipt
                     </Text>
                   </>
@@ -3250,7 +3250,7 @@ export default function CollectScreen() {
             }}>
               <Feather name="search" size={18} color={colors.mutedForeground} />
               <TextInput
-                style={{ flex: 1, marginLeft: spacing.sm, fontSize: 15, color: colors.foreground }}
+                style={{ flex: 1, marginLeft: spacing.sm, fontSize: typography.sizes.md, color: colors.foreground }}
                 placeholder="Search jobs or invoices..."
                 placeholderTextColor={colors.mutedForeground}
                 value={pickerSearch}
@@ -3277,7 +3277,7 @@ export default function CollectScreen() {
                 }}
               >
                 <Text style={{ 
-                  fontSize: 14, fontWeight: '600',
+                  fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold,
                   color: pickerTab === 'jobs' ? colors.primaryForeground : colors.mutedForeground 
                 }}>
                   Jobs ({filteredJobs.length})
@@ -3295,7 +3295,7 @@ export default function CollectScreen() {
                 }}
               >
                 <Text style={{ 
-                  fontSize: 14, fontWeight: '600',
+                  fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold,
                   color: pickerTab === 'invoices' ? colors.primaryForeground : colors.mutedForeground 
                 }}>
                   Invoices ({filteredInvoices.length})
@@ -3354,31 +3354,31 @@ export default function CollectScreen() {
                           <View style={styles.invoicePickerItemHeader}>
                             <Text style={styles.invoicePickerItemTitle} numberOfLines={1}>{job.title}</Text>
                             <View style={{ backgroundColor: sc.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm }}>
-                              <Text style={{ fontSize: 11, fontWeight: '600', color: sc.text }}>{statusLabels[job.status] || job.status}</Text>
+                              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: sc.text }}>{statusLabels[job.status] || job.status}</Text>
                             </View>
                           </View>
                           <Text style={styles.invoicePickerItemClient} numberOfLines={1}>{job.clientName}</Text>
                           {job.address && (
-                            <Text style={[styles.invoicePickerItemClient, { fontSize: 12, marginTop: 1 }]} numberOfLines={1}>{job.address}</Text>
+                            <Text style={[styles.invoicePickerItemClient, { fontSize: typography.captionSmall.fontSize, marginTop: 1 }]} numberOfLines={1}>{job.address}</Text>
                           )}
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                           {isPaid ? (
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.successLight, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.full }}>
                               <Feather name="check-circle" size={12} color={colors.success} />
-                              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.success }}>Paid</Text>
+                              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.success }}>Paid</Text>
                             </View>
                           ) : job.outstandingAmount > 0 ? (
                             <>
                               <Text style={[styles.invoicePickerItemAmount, job.hasOverdue && { color: colors.destructive }]}>
                                 {formatCurrency(job.outstandingAmount)}
                               </Text>
-                              <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
                                 {job.invoiceCount} inv{job.invoiceCount !== 1 ? 's' : ''}
                               </Text>
                             </>
                           ) : (
-                            <Text style={{ fontSize: 13, color: colors.mutedForeground, fontStyle: 'italic' }}>
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, fontStyle: 'italic' }}>
                               Quick collect
                             </Text>
                           )}
@@ -3522,14 +3522,14 @@ export default function CollectScreen() {
                 borderColor: customAmountValue ? colors.primary : (colors.isDark ? colors.borderLight : colors.border),
                 marginBottom: spacing.xs,
               }}>
-                <Text style={{ fontSize: 28, fontWeight: '700', color: colors.mutedForeground }}>$</Text>
+                <Text style={{ fontSize: typography.sizes['3xl'], fontWeight: fontWeights.bold, color: colors.mutedForeground }}>$</Text>
                 <TextInput
                   style={{
                     flex: 1,
                     marginLeft: spacing.xs,
-                    fontSize: 28,
+                    fontSize: typography.sizes['3xl'],
                     lineHeight: 36,
-                    fontWeight: '700',
+                    fontWeight: fontWeights.bold,
                     color: colors.foreground,
                     paddingVertical: spacing.sm,
                     textAlignVertical: 'center',
@@ -3542,7 +3542,7 @@ export default function CollectScreen() {
                   autoFocus
                 />
               </View>
-              <Text style={{ color: colors.mutedForeground, fontSize: 12, marginBottom: spacing.lg }}>
+              <Text style={{ color: colors.mutedForeground, fontSize: typography.captionSmall.fontSize, marginBottom: spacing.lg }}>
                 Minimum amount: $0.50
               </Text>
               
@@ -3994,11 +3994,11 @@ export default function CollectScreen() {
                     justifyContent: 'center',
                     marginRight: spacing.sm
                   }}>
-                    <Text style={{ color: colors.primaryForeground, fontSize: 12, fontWeight: 'bold' }}>
+                    <Text style={{ color: colors.primaryForeground, fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold }}>
                       {index + 1}
                     </Text>
                   </View>
-                  <Text style={{ flex: 1, color: colors.foreground, fontSize: 14 }}>
+                  <Text style={{ flex: 1, color: colors.foreground, fontSize: typography.button.fontSize }}>
                     {step}
                   </Text>
                 </View>
@@ -4013,11 +4013,11 @@ export default function CollectScreen() {
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
                 <Feather name="info" size={16} color={colors.info} />
-                <Text style={{ marginLeft: spacing.xs, color: colors.info, fontWeight: '600' }}>
+                <Text style={{ marginLeft: spacing.xs, color: colors.info, fontWeight: fontWeights.semibold }}>
                   Why your own Twilio account?
                 </Text>
               </View>
-              <Text style={{ color: colors.foreground, fontSize: 13 }}>
+              <Text style={{ color: colors.foreground, fontSize: typography.sizes.sm }}>
                 Each business sets up their own Twilio account to keep your SMS costs separate and give you full control over your messaging. Twilio offers pay-as-you-go pricing with no monthly fees.
               </Text>
             </View>
@@ -4069,7 +4069,7 @@ export default function CollectScreen() {
             {autoReceiptWasSent && (
               <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.success + '15', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.lg }}>
                 <Feather name="check" size={16} color={colors.success} />
-                <Text style={{ color: colors.success, fontSize: 14, fontWeight: '600' }}>
+                <Text style={{ color: colors.success, fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold }}>
                   Receipt sent automatically
                 </Text>
               </View>

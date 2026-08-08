@@ -11983,7 +11983,7 @@ export default function JobDetailScreen() {
                         />
                         <Text style={{
                           fontSize: typography.sizes.sm,
-                          fontWeight: isSelected ? '600' : '400',
+                          fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular,
                           color: isSelected ? colors.primary : colors.foreground,
                         }}>
                           {ppe.label}
@@ -12076,7 +12076,7 @@ export default function JobDetailScreen() {
                             >
                               <Text style={{
                                 fontSize: typography.sizes.xs,
-                                fontWeight: hazard.riskLikelihood === opt ? '600' : '400',
+                                fontWeight: hazard.riskLikelihood === opt ? fontWeights.semibold : fontWeights.regular,
                                 color: hazard.riskLikelihood === opt ? colors.primaryForeground : colors.foreground,
                                 textTransform: 'capitalize',
                               }}>
@@ -12106,7 +12106,7 @@ export default function JobDetailScreen() {
                           >
                             <Text style={{
                               fontSize: typography.sizes.xs,
-                              fontWeight: hazard.riskConsequence === opt ? '600' : '400',
+                              fontWeight: hazard.riskConsequence === opt ? fontWeights.semibold : fontWeights.regular,
                               color: hazard.riskConsequence === opt ? colors.primaryForeground : colors.foreground,
                               textTransform: 'capitalize',
                             }}>

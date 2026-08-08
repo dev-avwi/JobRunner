@@ -17,7 +17,7 @@ import { router, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, iconSizes, typographySizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, typographySizes, fontWeights } from '../../src/lib/design-tokens';
 import { api } from '../../src/lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -94,14 +94,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
     marginBottom: spacing.xs,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     lineHeight: 20,
     color: colors.mutedForeground,
   },
@@ -122,16 +122,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...shadows.sm,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.3,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 3,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   filterRow: {
     flexDirection: 'row',
@@ -152,13 +152,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.primary,
   },
   filterChipText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   filterChipTextActive: {
     color: colors.primaryForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   filterBadge: {
     backgroundColor: `${colors.mutedForeground}30`,
@@ -172,8 +172,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   filterBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
     color: colors.mutedForeground,
   },
   filterBadgeTextActive: {
@@ -238,12 +238,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   itemRecipient: {
     fontSize: typographySizes.md,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   itemSubject: {
     fontSize: typographySizes.sm,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginTop: spacing.xs,
   },
@@ -276,7 +276,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   statusText: {
     fontSize: typographySizes.xs,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   typeBadge: {
     paddingHorizontal: spacing.sm,
@@ -331,7 +331,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   emptyText: {
     fontSize: typographySizes.lg,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: spacing.xs,
   },
@@ -370,7 +370,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   modalTitle: {
     flex: 1,
     fontSize: typographySizes.lg,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   modalBody: {
@@ -384,7 +384,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   detailLabel: {
     fontSize: typographySizes.xs,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.xs,
     textTransform: 'uppercase',
@@ -634,7 +634,7 @@ export default function CommunicationsScreen() {
                 {item.source && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: item.source === 'mobile' ? `${colors.info}15` : `${colors.success}15`, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
                     <Feather name={item.source === 'mobile' ? 'smartphone' : 'monitor'} size={10} color={item.source === 'mobile' ? colors.info : colors.success} />
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: item.source === 'mobile' ? colors.info : colors.success }}>{item.source === 'mobile' ? 'Mobile' : 'Web'}</Text>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: item.source === 'mobile' ? colors.info : colors.success }}>{item.source === 'mobile' ? 'Mobile' : 'Web'}</Text>
                   </View>
                 )}
               </View>

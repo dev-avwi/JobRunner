@@ -26,6 +26,7 @@ import { OnboardingMagicScreen } from '../../src/components/OnboardingMagicScree
 import { OnboardingTour, hasCompletedOnboarding } from '../../src/components/OnboardingTour';
 import { markOnboardingSetupFailed, clearOnboardingSetupFailure } from '../../src/lib/onboardingSetupStatus';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 const ONBOARDING_DRAFT_KEY = 'onboarding:owner-draft:v1';
 
@@ -812,8 +813,8 @@ export default function OnboardingSetupScreen() {
           onPress={() => { setSelectedRole(null); setOwnerStep('role'); }}
           activeOpacity={0.7}
         >
-          <Text style={{ fontSize: 14, color: colors.mutedForeground }}>
-            Joining a crew? <Text style={{ color: colors.primary, fontWeight: '600' }}>Use invite code</Text>
+          <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>
+            Joining a crew? <Text style={{ color: colors.primary, fontWeight: fontWeights.semibold }}>Use invite code</Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -844,7 +845,7 @@ export default function OnboardingSetupScreen() {
                 size={18} 
                 color={selected ? colors.primary : colors.mutedForeground} 
               />
-              <Text style={[styles.tradePillLabel, selected && { color: colors.primary, fontWeight: '600' }]}>{trade.label}</Text>
+              <Text style={[styles.tradePillLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>{trade.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -960,7 +961,7 @@ export default function OnboardingSetupScreen() {
         <View style={styles.validationBox}>
           <Ionicons name="checkmark-circle" size={20} color={colors.success} />
           <Text style={[styles.validationText, { color: colors.success }]}>
-            Joining <Text style={{ fontWeight: '700' }}>{inviteValidation.businessName}</Text> as <Text style={{ fontWeight: '700', textTransform: 'capitalize' }}>{inviteValidation.roleType}</Text>
+            Joining <Text style={{ fontWeight: fontWeights.bold }}>{inviteValidation.businessName}</Text> as <Text style={{ fontWeight: fontWeights.bold, textTransform: 'capitalize' }}>{inviteValidation.roleType}</Text>
           </Text>
         </View>
       )}
@@ -1112,7 +1113,7 @@ export default function OnboardingSetupScreen() {
               activeOpacity={0.7}
             >
               <Ionicons name={trade.icon} size={18} color={selected ? colors.primary : colors.mutedForeground} />
-              <Text style={[styles.tradePillLabel, selected && { color: colors.primary, fontWeight: '600' }]}>{trade.label}</Text>
+              <Text style={[styles.tradePillLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>{trade.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -1181,7 +1182,7 @@ export default function OnboardingSetupScreen() {
         <View style={styles.validationBox}>
           <Ionicons name="checkmark-circle" size={20} color={colors.success} />
           <Text style={[styles.validationText, { color: colors.success }]}>
-            Connecting to <Text style={{ fontWeight: '700' }}>{subInviteValidation.businessName}</Text>
+            Connecting to <Text style={{ fontWeight: fontWeights.bold }}>{subInviteValidation.businessName}</Text>
           </Text>
         </View>
       )}
@@ -1500,14 +1501,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 28,
   },
   welcomeGreeting: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
     marginBottom: 6,
   },
   welcomeTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     lineHeight: 32,
     letterSpacing: -0.5,
@@ -1543,14 +1544,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   roleTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 3,
     letterSpacing: -0.2,
   },
   roleDesc: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     lineHeight: 18,
   },
@@ -1568,15 +1569,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 24,
   },
   stepTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     lineHeight: 28,
     letterSpacing: -0.3,
     marginBottom: 6,
   },
   stepSubtitle: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
     lineHeight: 22,
   },
@@ -1585,14 +1586,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 20,
   },
   fieldLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: 8,
   },
   fieldOptional: {
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.regular,
     color: colors.mutedForeground,
   },
   fieldInput: {
@@ -1603,17 +1604,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.cardBorder,
     borderRadius: 12,
     color: colors.foreground,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
   },
   fieldError: {
     color: colors.destructive,
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     marginTop: 6,
   },
 
   sectionHeading: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 12,
     marginTop: 4,
@@ -1641,7 +1642,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.primary + '0A',
   },
   tradePillLabel: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
   },
 
@@ -1667,13 +1668,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.primary + '08',
   },
   teamLabel: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     letterSpacing: -0.2,
   },
   teamDesc: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
 
@@ -1693,13 +1694,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 4,
   },
   sampleToggleTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     letterSpacing: -0.2,
   },
   sampleToggleDesc: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     lineHeight: 17,
   },
@@ -1718,14 +1719,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   ctaText: {
     color: colors.primaryForeground,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
   },
 
   skipTopText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
@@ -1741,9 +1742,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.primary + '40',
   },
   skipChipText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   codeInputWrap: {
@@ -1758,8 +1759,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.cardBorder,
     borderRadius: 14,
     color: colors.foreground,
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: 10,
     textAlign: 'center',
   },
@@ -1781,7 +1782,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   validationText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     lineHeight: 20,
   },
 
@@ -1805,13 +1806,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   privacyTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 4,
   },
   privacyDesc: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     lineHeight: 19,
   },
@@ -1837,8 +1838,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 28,
   },
   doneTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
     lineHeight: 32,
@@ -1846,7 +1847,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 10,
   },
   doneSubtitle: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
     textAlign: 'center',
     paddingHorizontal: 16,
@@ -1868,7 +1869,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 10,
   },
   doneCheckText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
   },
   doneButtonWrap: {
@@ -1882,7 +1883,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 16,
   },
   loadingLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
   },
 });

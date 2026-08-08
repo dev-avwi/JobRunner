@@ -27,6 +27,7 @@ import offlineStorage, { useOfflineStore } from '../../../src/lib/offline-storag
 import LiveDocumentPreview from '../../../src/components/LiveDocumentPreview';
 import { getBottomNavHeight } from '../../../src/components/BottomNav';
 import { DatePicker } from '../../../src/components/ui/DatePicker';
+import { typography, fontWeights } from '../../../src/lib/design-tokens';
 
 const formatLocalDate = (d: Date): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -63,8 +64,8 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.border,
     },
     headerTitle: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       flex: 1,
       marginLeft: 12,
@@ -76,8 +77,8 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 12,
     },
     totalBadgeText: {
-      fontSize: 13,
-      fontWeight: '600',
+      fontSize: typography.sizes.sm,
+      fontWeight: fontWeights.semibold,
       color: colors.primary,
     },
     tabContainer: {
@@ -114,8 +115,8 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.primaryDark,
     },
     tabText: {
-      fontSize: 17,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     tabTextActive: {
@@ -142,8 +143,8 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.primary,
     },
     tabSwitchText: {
-      fontSize: 15,
-      fontWeight: '600',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.semibold,
     },
     previewContainer: {
       flex: 1,
@@ -180,8 +181,8 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 16,
     },
     cardHeaderText: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     itemCountBadge: {
@@ -191,7 +192,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 8,
     },
     itemCountText: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
     },
     selectButton: {
@@ -205,7 +206,7 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.border,
     },
     selectPlaceholder: {
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.mutedForeground,
     },
     selectedClient: {
@@ -222,20 +223,20 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
     },
     clientAvatarText: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primary,
     },
     selectedClientText: {
-      fontSize: 15,
-      fontWeight: '500',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     inputGroup: {
       marginBottom: 16,
     },
     inputLabel: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
       marginBottom: 6,
     },
@@ -243,7 +244,7 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.background,
       borderRadius: 12,
       padding: 14,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
       borderWidth: 1,
       borderColor: colors.border,
@@ -279,18 +280,18 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
     },
     lineItemDescription: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
       marginBottom: 2,
     },
     lineItemMeta: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
     },
     lineItemTotal: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       marginRight: 8,
     },
@@ -322,8 +323,8 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.border,
     },
     addItemText: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     catalogButton: {
@@ -352,12 +353,12 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 6,
     },
     totalLabel: {
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
     },
     totalValue: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     grandTotalRow: {
@@ -367,13 +368,13 @@ function createStyles(colors: ThemeColors) {
       paddingTop: 12,
     },
     grandTotalLabel: {
-      fontSize: 15,
-      fontWeight: '600',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     grandTotalValue: {
-      fontSize: 16,
-      fontWeight: '700',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.bold,
       color: colors.foreground,
     },
     submitButton: {
@@ -394,8 +395,8 @@ function createStyles(colors: ThemeColors) {
       opacity: 0.6,
     },
     submitButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primaryForeground,
     },
     modalContainer: {
@@ -411,8 +412,8 @@ function createStyles(colors: ThemeColors) {
       borderBottomColor: colors.border,
     },
     modalTitle: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     modalContent: {
@@ -424,7 +425,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 48,
     },
     emptyStateText: {
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
       marginTop: 12,
       marginBottom: 16,
@@ -439,8 +440,8 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.primaryLight,
     },
     createClientButtonText: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.primary,
     },
     clientOption: {
@@ -460,20 +461,20 @@ function createStyles(colors: ThemeColors) {
       marginRight: 12,
     },
     clientOptionAvatarText: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primary,
     },
     clientOptionInfo: {
       flex: 1,
     },
     clientOptionName: {
-      fontSize: 15,
-      fontWeight: '500',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     clientOptionEmail: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
       marginTop: 2,
     },
@@ -488,12 +489,12 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 16,
     },
     lineTotalLabel: {
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
     },
     lineTotalValue: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     saveItemButton: {
@@ -503,8 +504,8 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
     },
     saveItemButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primaryForeground,
     },
     previewHeadingRow: {
@@ -515,8 +516,8 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 16,
     },
     previewHeadingTitle: {
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.mutedForeground,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -530,7 +531,7 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.border,
     },
     previewHeadingBadgeText: {
-      fontSize: 10,
+      fontSize: typography.sizes.xs,
       color: colors.mutedForeground,
     },
     toggleRow: {
@@ -544,13 +545,13 @@ function createStyles(colors: ThemeColors) {
       marginRight: 16,
     },
     toggleTitle: {
-      fontSize: 15,
-      fontWeight: '600',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       marginBottom: 2,
     },
     toggleDescription: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
       lineHeight: 18,
     },
@@ -578,7 +579,7 @@ function createStyles(colors: ThemeColors) {
       borderTopColor: colors.border,
     },
     inputHint: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
       marginTop: 6,
       marginLeft: 2,
@@ -594,7 +595,7 @@ function createStyles(colors: ThemeColors) {
     },
     recurringPreviewText: {
       flex: 1,
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.info || colors.primary,
       lineHeight: 18,
     },
@@ -619,8 +620,8 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 12,
     },
     frequencyModalTitle: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       textAlign: 'center',
       marginBottom: 16,
@@ -644,7 +645,7 @@ function createStyles(colors: ThemeColors) {
       gap: 12,
     },
     frequencyOptionText: {
-      fontSize: 16,
+      fontSize: typography.subtitle.fontSize,
       color: colors.foreground,
     },
     frequencyModalCancel: {
@@ -653,8 +654,8 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
     },
     frequencyModalCancelText: {
-      fontSize: 16,
-      fontWeight: '500',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.mutedForeground,
     },
   });
@@ -1333,7 +1334,7 @@ export default function NewInvoiceScreen() {
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
               <Feather name="layers" size={16} color={colors.primary} />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                 Reviewing invoice {batchIndex + 1} of {batchQueue.length}
               </Text>
             </View>
@@ -1342,7 +1343,7 @@ export default function NewInvoiceScreen() {
               hitSlop={8}
               style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.mutedForeground }}>
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
                 Skip
               </Text>
             </Pressable>
@@ -1361,8 +1362,8 @@ export default function NewInvoiceScreen() {
               paddingBottom: 8,
             }}>
               <Text style={{
-                fontSize: 12,
-                fontWeight: '500',
+                fontSize: typography.captionSmall.fontSize,
+                fontWeight: fontWeights.medium,
                 color: colors.mutedForeground,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
@@ -1378,8 +1379,8 @@ export default function NewInvoiceScreen() {
                 borderColor: colors.border,
               }}>
                 <Text style={{
-                  fontSize: 11,
-                  fontWeight: '500',
+                  fontSize: typography.sizes.xs,
+                  fontWeight: fontWeights.medium,
                   color: colors.mutedForeground,
                 }}>
                   Updates as you type
@@ -1414,7 +1415,7 @@ export default function NewInvoiceScreen() {
             {(isLoadingClients && clients.length === 0) || isLoadingJob ? (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 48 }}>
                 <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={{ fontSize: 14, color: colors.mutedForeground, marginTop: 12 }}>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: 12 }}>
                   {isLoadingJob ? 'Loading job data...' : 'Loading clients...'}
                 </Text>
               </View>
@@ -1534,7 +1535,7 @@ export default function NewInvoiceScreen() {
                         <Text style={styles.inputLabel}>End Date (optional)</Text>
                         {recurrenceEndDate ? (
                           <PressableRow onPress={() => setRecurrenceEndDate('')} >
-                            <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '500' }}>Clear</Text>
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>Clear</Text>
                           </PressableRow>
                         ) : null}
                       </View>
@@ -1547,7 +1548,7 @@ export default function NewInvoiceScreen() {
                       ) : (
                         <PressableRow style={[styles.input, { flexDirection: 'row', alignItems: 'center', gap: 8 }]} onPress={() => setRecurrenceEndDate(formatLocalDate(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)))} >
                           <Feather name="calendar" size={16} color={colors.mutedForeground} />
-                          <Text style={{ color: colors.mutedForeground, fontSize: 15 }}>No end date (runs indefinitely)</Text>
+                          <Text style={{ color: colors.mutedForeground, fontSize: typography.sizes.md }}>No end date (runs indefinitely)</Text>
                         </PressableRow>
                       )}
                     </View>
@@ -1681,7 +1682,7 @@ export default function NewInvoiceScreen() {
                 ) : (
                   <>
                     <Feather name="check" size={18} color={colors.primaryForeground} />
-                    <Text style={{ color: colors.primaryForeground, fontSize: 16, fontWeight: '600' }}>{isEditing ? 'Update Invoice' : isBatchReview ? (isLastInBatch ? 'Save & Finish' : 'Save & Next') : 'Create Invoice'}</Text>
+                    <Text style={{ color: colors.primaryForeground, fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold }}>{isEditing ? 'Update Invoice' : isBatchReview ? (isLastInBatch ? 'Save & Finish' : 'Save & Next') : 'Create Invoice'}</Text>
                   </>
                 )}
               </PressableRow>
@@ -1771,8 +1772,8 @@ export default function NewInvoiceScreen() {
                   <Feather name="user-plus" size={18} color={colors.primaryForeground} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.primary }}>Quick Add Client</Text>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Create a new client without leaving this screen</Text>
+                  <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.primary }}>Quick Add Client</Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Create a new client without leaving this screen</Text>
                 </View>
                 <Feather name="chevron-right" size={20} color={colors.primary} />
               </PressableRow>
@@ -1781,7 +1782,7 @@ export default function NewInvoiceScreen() {
                 <View style={styles.emptyState}>
                   <Feather name="user" size={48} color={colors.mutedForeground} />
                   <Text style={styles.emptyStateText}>No clients found</Text>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: 'center', marginTop: 4 }}>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, textAlign: 'center', marginTop: 4 }}>
                     Use Quick Add above to create your first client
                   </Text>
                 </View>
@@ -1905,7 +1906,7 @@ export default function NewInvoiceScreen() {
                 style={{
                   flex: 1,
                   paddingVertical: 12,
-                  fontSize: 15,
+                  fontSize: typography.sizes.md,
                   color: colors.foreground,
                 }}
                 value={catalogSearch}
@@ -1944,7 +1945,7 @@ export default function NewInvoiceScreen() {
                       {catalogSearch ? 'No items match your search' : 'No catalog items found'}
                     </Text>
                     {!catalogSearch && (
-                      <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: 'center' }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
                         Add items to your catalog from the web app
                       </Text>
                     )}
@@ -1976,8 +1977,8 @@ export default function NewInvoiceScreen() {
                       borderBottomColor: colors.border,
                     }}>
                       <Text style={{
-                        fontSize: 12,
-                        fontWeight: '600',
+                        fontSize: typography.captionSmall.fontSize,
+                        fontWeight: fontWeights.semibold,
                         color: colors.mutedForeground,
                         textTransform: 'uppercase',
                         letterSpacing: 0.5,
@@ -2034,7 +2035,7 @@ export default function NewInvoiceScreen() {
                   />
                   <Text style={[
                     styles.frequencyOptionText,
-                    recurrencePattern === option.value && { color: colors.primary, fontWeight: '600' }
+                    recurrencePattern === option.value && { color: colors.primary, fontWeight: fontWeights.semibold }
                   ]}>
                     {option.label}
                   </Text>

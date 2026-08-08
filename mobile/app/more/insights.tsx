@@ -13,7 +13,7 @@ import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -90,13 +90,13 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     paddingTop: spacing.sm,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 4,
     lineHeight: 20,
@@ -124,7 +124,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   tabText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   tabTextActive: {
     color: colors.primaryForeground || colors.white,
@@ -165,8 +165,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     justifyContent: 'center',
   },
   heroStatValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -1,
     color: colors.foreground,
   },
@@ -259,7 +259,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   comparisonDiffText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   loadingContainer: {
     flex: 1,
@@ -317,11 +317,11 @@ function SimpleBarChart({
           const barHeight = maxVal > 0 ? (item.value / maxVal) * 90 : 4;
           return (
             <View key={i} style={{ alignItems: 'center', flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: themeColors.foreground }}>
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: themeColors.foreground }}>
                 {item.value >= 1000 ? `$${(item.value / 1000).toFixed(1)}k` : `$${item.value}`}
               </Text>
               <View style={{ width: '60%', height: Math.max(barHeight, 4), backgroundColor: item.color, borderRadius: radius.md }} />
-              <Text style={{ fontSize: 10, color: themeColors.mutedForeground, textAlign: 'center' }} numberOfLines={1}>{item.label}</Text>
+              <Text style={{ fontSize: typography.sizes.xs, color: themeColors.mutedForeground, textAlign: 'center' }} numberOfLines={1}>{item.label}</Text>
             </View>
           );
         })}
@@ -348,10 +348,10 @@ function DonutIndicator({
     <View style={{ backgroundColor: themeColors.card, borderRadius: radius.xl, padding: spacing.md, borderWidth: 1, borderColor: themeColors.cardBorder, ...shadows.sm, marginBottom: spacing.md, alignItems: 'center' }}>
       <View style={{ width: 100, height: 100, borderRadius: 50, borderWidth: 8, borderColor: themeColors.border, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm, overflow: 'hidden' }}>
         <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${pct}%` as any, backgroundColor: color + '30' }} />
-        <Text style={{ fontSize: 22, fontWeight: '800', color: color }}>{pct.toFixed(0)}%</Text>
+        <Text style={{ fontSize: typography.sizes['2xl'], fontWeight: fontWeights.extrabold, color: color }}>{pct.toFixed(0)}%</Text>
       </View>
-      <Text style={{ fontSize: 13, fontWeight: '600', color: themeColors.foreground }}>{label}</Text>
-      <Text style={{ fontSize: 12, color: themeColors.mutedForeground }}>{fmtAud(value)} of {fmtAud(maxValue)}</Text>
+      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: themeColors.foreground }}>{label}</Text>
+      <Text style={{ fontSize: typography.captionSmall.fontSize, color: themeColors.mutedForeground }}>{fmtAud(value)} of {fmtAud(maxValue)}</Text>
     </View>
   );
 }

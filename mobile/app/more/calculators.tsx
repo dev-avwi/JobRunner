@@ -16,7 +16,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, fontWeights } from '../../src/lib/design-tokens';
 import { useAuthStore } from '../../src/lib/store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -184,7 +184,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   calcPreview: {
     ...typography.captionSmall,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     marginTop: spacing.xs,
   },
   categoryBadge: {
@@ -195,8 +195,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     alignSelf: 'flex-start',
   },
   categoryBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
   },
   recommendedBadge: {
     paddingHorizontal: spacing.sm,
@@ -205,8 +205,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginLeft: spacing.sm,
   },
   recommendedBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
   },
   chevron: {
     marginLeft: spacing.sm,
@@ -221,7 +221,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   backButtonText: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   calcDetailCard: {
     backgroundColor: colors.card,
@@ -261,7 +261,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   formulaLabel: {
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     marginBottom: 2,
   },
   formulaText: {
@@ -287,7 +287,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   inputLabel: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
@@ -324,7 +324,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   switchLabel: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   switchHint: {
@@ -398,7 +398,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   shareButtonText: {
     ...typography.captionSmall,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   resultRow: {
     flexDirection: 'row',
@@ -418,7 +418,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   resultValue: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   resultHighlight: {
@@ -429,7 +429,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   resultHighlightText: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   segmentRow: {
@@ -452,12 +452,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   segmentButtonText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   segmentButtonTextActive: {
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   wastageRow: {
     flexDirection: 'row',
@@ -467,12 +467,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   wastageLabel: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   wastageValue: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   wastageButtons: {
@@ -496,12 +496,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   wastageButtonText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   wastageButtonTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   tileSizeButton: {
     paddingHorizontal: spacing.lg,
@@ -519,12 +519,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   tileSizeButtonText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   tileSizeButtonTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   tileSizeGrid: {
     flexDirection: 'row',
@@ -548,7 +548,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   costValue: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
 });

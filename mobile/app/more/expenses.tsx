@@ -23,7 +23,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
-import { spacing, radius, typography, sizes, pageShell, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, sizes, pageShell, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { api } from '../../src/lib/api';
 import { showToast } from '../../src/lib/toast';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
@@ -466,7 +466,7 @@ export default function ExpensesScreen() {
           {filterByJobId && (
             <PressableRow onPress={() => setFilterByJobId(null)} style={styles.jobFilterBanner} >
               <Feather name="x-circle" size={14} color={colors.primary} />
-              <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '500' }}>Show all expenses</Text>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>Show all expenses</Text>
             </PressableRow>
           )}
 
@@ -745,7 +745,7 @@ export default function ExpensesScreen() {
                     No categories yet. Create one first.
                   </Text>
                   <PressableRow style={[styles.emptyPickerButton, { backgroundColor: colors.primary }]} onPress={() => { setShowCategoryPicker(false); setShowCategoryModal(true); }} >
-                    <Text style={{ color: colors.primaryForeground, fontWeight: '600' }}>Add Category</Text>
+                    <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>Add Category</Text>
                   </PressableRow>
                 </View>
               ) : (
@@ -924,13 +924,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       paddingBottom: spacing.md,
     },
     pageTitle: {
-      fontSize: 28,
-      fontWeight: '800',
+      fontSize: typography.sizes['3xl'],
+      fontWeight: fontWeights.extrabold,
       color: colors.foreground,
       letterSpacing: -0.5,
     },
     pageSubtitle: {
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
       marginTop: spacing.xs,
       lineHeight: 20,
@@ -958,12 +958,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       marginBottom: spacing.xs,
     },
     statValue: {
-      fontSize: 16,
-      fontWeight: '700',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.bold,
       color: colors.foreground,
     },
     statLabel: {
-      fontSize: 11,
+      fontSize: typography.sizes.xs,
       color: colors.mutedForeground,
       marginTop: 1,
     },
@@ -996,12 +996,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       justifyContent: 'center',
     },
     scanBannerTitle: {
-      fontSize: 15,
-      fontWeight: '700',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.bold,
       color: colors.foreground,
     },
     scanBannerSubtitle: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
       marginTop: 2,
     },
@@ -1025,7 +1025,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
     },
     searchInput: {
       flex: 1,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
     },
     addButton: {
@@ -1057,13 +1057,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       borderColor: colors.primary,
     },
     filterChipText: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
-      fontWeight: '500',
+      fontWeight: fontWeights.medium,
     },
     filterChipTextActive: {
       color: colors.primary,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
     },
     listSection: {
       paddingHorizontal: spacing.lg,
@@ -1089,12 +1089,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       marginBottom: spacing.xs,
     },
     emptyTitle: {
-      fontSize: 17,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     emptySubtitle: {
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
       textAlign: 'center',
       lineHeight: 20,
@@ -1110,16 +1110,16 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       marginTop: spacing.sm,
     },
     emptyButtonText: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primaryForeground,
     },
     expensesList: {
       gap: spacing.xs,
     },
     dateGroupLabel: {
-      fontSize: 12,
-      fontWeight: '600',
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.mutedForeground,
       marginBottom: spacing.sm,
       marginTop: spacing.md,
@@ -1144,13 +1144,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       gap: spacing.sm,
     },
     expenseDescription: {
-      fontSize: 15,
-      fontWeight: '600',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     expenseTotal: {
-      fontSize: 16,
-      fontWeight: '700',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.bold,
     },
     categoryBadge: {
       flexDirection: 'row',
@@ -1163,8 +1163,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       alignSelf: 'flex-start',
     },
     categoryBadgeText: {
-      fontSize: 11,
-      fontWeight: '600',
+      fontSize: typography.sizes.xs,
+      fontWeight: fontWeights.semibold,
     },
     expenseMetaRow: {
       flexDirection: 'row',
@@ -1182,7 +1182,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       borderRadius: radius.full,
     },
     expenseMetaText: {
-      fontSize: 11,
+      fontSize: typography.sizes.xs,
       color: colors.mutedForeground,
     },
     deleteButton: {
@@ -1202,14 +1202,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
     },
     modalCancel: {
       ...typography.body,
-      fontWeight: '500',
+      fontWeight: fontWeights.medium,
     },
     modalTitle: {
       ...typography.cardTitle,
     },
     modalSave: {
       ...typography.body,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
     },
     modalScroll: {
       flex: 1,
@@ -1264,7 +1264,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
     },
     formLabel: {
       ...typography.caption,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       marginBottom: spacing.sm,
     },
     formInput: {
@@ -1297,7 +1297,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
     },
     scanButtonText: {
       ...typography.body,
-      fontWeight: '500',
+      fontWeight: fontWeights.medium,
     },
     emptyPicker: {
       alignItems: 'center',
@@ -1330,7 +1330,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
     },
     pickerItemText: {
       ...typography.body,
-      fontWeight: '500',
+      fontWeight: fontWeights.medium,
     },
     pickerItemSubtext: {
       ...typography.caption,

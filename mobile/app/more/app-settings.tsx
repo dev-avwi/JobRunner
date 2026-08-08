@@ -9,7 +9,7 @@ import { useOfflineStore } from '../../src/lib/offline-storage';
 import offlineStorage from '../../src/lib/offline-storage';
 import { useAuthStore } from '../../src/lib/store';
 import api from '../../src/lib/api';
-import { spacing, radius, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import { useMapsStore, MapsPreference } from '../../src/lib/maps-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -171,7 +171,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   themeOptionLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   themeOptionLabelActive: {
@@ -192,7 +192,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   statusText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   infoBox: {
     flexDirection: 'row',
@@ -230,8 +230,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     elevation: 3,
   },
   colorAvatarInitials: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.white,
   },
   colorInfo: {
@@ -310,7 +310,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   syncButtonText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   outlineButton: {
     borderWidth: 1,
@@ -386,7 +386,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   mapsOptionLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   mapsOptionLabelActive: {

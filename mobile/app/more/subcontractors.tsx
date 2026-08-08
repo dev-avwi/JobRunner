@@ -23,7 +23,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
-import { spacing } from '../../src/lib/design-tokens';
+import { spacing, typography, fontWeights } from '../../src/lib/design-tokens';
 
 interface Subcontractor {
   id: string;
@@ -548,8 +548,8 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.card,
     },
     headerContent: { flex: 1 },
-    headerTitle: { fontSize: 22, fontWeight: '700', color: colors.foreground },
-    headerSubtitle: { fontSize: 13, color: colors.mutedForeground, marginTop: 2 },
+    headerTitle: { fontSize: typography.sizes['2xl'], fontWeight: fontWeights.bold, color: colors.foreground },
+    headerSubtitle: { fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: 2 },
 
     gateBanner: {
       marginHorizontal: spacing.lg,
@@ -563,8 +563,8 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       gap: spacing.sm,
     },
-    gateBannerText: { flex: 1, fontSize: 13, color: colors.foreground },
-    gateBannerCta: { fontSize: 13, fontWeight: '600', color: colors.primary },
+    gateBannerText: { flex: 1, fontSize: typography.sizes.sm, color: colors.foreground },
+    gateBannerCta: { fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary },
 
     searchWrap: {
       marginHorizontal: spacing.lg,
@@ -581,7 +581,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     searchInput: {
       flex: 1,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
       padding: 0,
     },
@@ -590,7 +590,7 @@ const createStyles = (colors: ThemeColors) =>
     scrollContent: { paddingBottom: spacing['3xl'] },
 
     loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: spacing.md },
-    loadingText: { color: colors.mutedForeground, fontSize: 13 },
+    loadingText: { color: colors.mutedForeground, fontSize: typography.sizes.sm },
 
     emptyWrap: { paddingHorizontal: spacing['3xl'], paddingVertical: 60, alignItems: 'center' },
     emptyIcon: {
@@ -603,14 +603,14 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: spacing.lg,
     },
     emptyTitle: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       marginBottom: 6,
       textAlign: 'center',
     },
     emptyDesc: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
       textAlign: 'center',
       lineHeight: 18,
@@ -625,7 +625,7 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 8,
       marginTop: spacing.lg,
     },
-    retryButtonText: { color: colors.primaryForeground, fontSize: 13, fontWeight: '600' },
+    retryButtonText: { color: colors.primaryForeground, fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold },
 
     list: { paddingHorizontal: spacing.lg, gap: 10 },
     subCard: {
@@ -638,8 +638,8 @@ const createStyles = (colors: ThemeColors) =>
     },
     subRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     subInfo: { flex: 1, gap: 3 },
-    subName: { fontSize: 15, fontWeight: '600', color: colors.foreground },
-    subContact: { fontSize: 13, color: colors.mutedForeground },
+    subName: { fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground },
+    subContact: { fontSize: typography.sizes.sm, color: colors.mutedForeground },
     subMetaRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -647,7 +647,7 @@ const createStyles = (colors: ThemeColors) =>
       gap: 6,
       marginTop: 2,
     },
-    subMetaText: { fontSize: 12, color: colors.mutedForeground },
+    subMetaText: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground },
 
     statusBadge: {
       flexDirection: 'row',
@@ -658,7 +658,7 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 999,
     },
     statusDot: { width: 6, height: 6, borderRadius: 3 },
-    statusText: { fontSize: 11, fontWeight: '600' },
+    statusText: { fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold },
 
     subActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, justifyContent: 'flex-end' },
     iconAction: {
@@ -681,7 +681,7 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.primary,
     },
     upgradeButtonDisabled: { opacity: 0.55 },
-    upgradeButtonText: { color: colors.primaryForeground, fontSize: 13, fontWeight: '600' },
+    upgradeButtonText: { color: colors.primaryForeground, fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold },
 
     modalOverlay: {
       flex: 1,
@@ -711,8 +711,8 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: 'space-between',
       marginBottom: 6,
     },
-    modalTitle: { fontSize: 18, fontWeight: '700', color: colors.foreground },
-    modalDesc: { fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.lg, lineHeight: 18 },
+    modalTitle: { fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground },
+    modalDesc: { fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.lg, lineHeight: 18 },
 
     targetCard: {
       flexDirection: 'row',
@@ -723,15 +723,15 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 10,
       marginBottom: spacing.lg,
     },
-    targetName: { fontSize: 14, fontWeight: '600', color: colors.foreground },
-    targetContact: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+    targetName: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground },
+    targetContact: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 },
 
     formScroll: { maxHeight: 360 },
     formContent: { gap: 14, paddingBottom: spacing.xs },
     formRow: { flexDirection: 'row', gap: spacing.md },
     formCol: { flex: 1, gap: 6 },
     formField: { gap: 6 },
-    formLabel: { fontSize: 13, fontWeight: '500', color: colors.foreground },
+    formLabel: { fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.foreground },
     formInput: {
       backgroundColor: colors.card,
       borderWidth: 1,
@@ -739,11 +739,11 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 8,
       paddingHorizontal: spacing.md,
       paddingVertical: 10,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
     },
     helperText: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
       lineHeight: 16,
       marginTop: spacing.xs,
@@ -768,8 +768,8 @@ const createStyles = (colors: ThemeColors) =>
       borderWidth: 1,
       borderColor: colors.cardBorder,
     },
-    modalBtnGhostText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
+    modalBtnGhostText: { color: colors.foreground, fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold },
     modalBtnPrimary: { backgroundColor: colors.primary },
     modalBtnDisabled: { opacity: 0.6 },
-    modalBtnPrimaryText: { color: colors.primaryForeground, fontSize: 14, fontWeight: '600' },
+    modalBtnPrimaryText: { color: colors.primaryForeground, fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold },
   });

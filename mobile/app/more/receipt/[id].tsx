@@ -24,7 +24,7 @@ import * as SMS from 'expo-sms';
 import { useAuthStore } from '../../../src/lib/store';
 import { useTheme, ThemeColors } from '../../../src/lib/theme';
 import { API_URL, api } from '../../../src/lib/api';
-import { spacing, radius, shadows, typography, iconSizes } from '../../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, fontWeights } from '../../../src/lib/design-tokens';
 import { format } from 'date-fns';
 import { getEmailPreference, setEmailPreference, EmailAppPreference } from '../../../src/lib/email-preference';
 import { EmailComposeModal } from '../../../src/components/EmailComposeModal';
@@ -935,10 +935,10 @@ ${businessName}`;
                     </View>
                   )}
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 20, fontWeight: '700', color: brandColor, letterSpacing: 2 }}>RECEIPT</Text>
-                    <Text style={{ fontSize: 14, color: '#1a1a1a', fontWeight: '600', marginTop: 4 }}>{receipt.receiptNumber}</Text>
+                    <Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.bold, color: brandColor, letterSpacing: 2 }}>RECEIPT</Text>
+                    <Text style={{ fontSize: typography.button.fontSize, color: '#1a1a1a', fontWeight: fontWeights.semibold, marginTop: 4 }}>{receipt.receiptNumber}</Text>
                     <View style={{ backgroundColor: '#22c55e', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, marginTop: 6 }}>
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.white }}>PAID</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.white }}>PAID</Text>
                     </View>
                   </View>
                 </View>
@@ -947,48 +947,48 @@ ${businessName}`;
                 <View style={{ flexDirection: 'row', marginTop: 16, gap: 16 }}>
                   {includeClientInfo && client && (
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>RECEIVED FROM</Text>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: '#1a1a1a' }}>{client.name}</Text>
-                      {client.address && <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{client.address}</Text>}
-                      {client.email && <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>{client.email}</Text>}
-                      {client.phone && <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>{client.phone}</Text>}
+                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>RECEIVED FROM</Text>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: '#1a1a1a' }}>{client.name}</Text>
+                      {client.address && <Text style={{ fontSize: typography.sizes.xs, color: '#6b7280', marginTop: 2 }}>{client.address}</Text>}
+                      {client.email && <Text style={{ fontSize: typography.sizes.xs, color: '#6b7280', marginTop: 1 }}>{client.email}</Text>}
+                      {client.phone && <Text style={{ fontSize: typography.sizes.xs, color: '#6b7280', marginTop: 1 }}>{client.phone}</Text>}
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>PAYMENT DATE</Text>
-                    <Text style={{ fontSize: 13, color: '#1a1a1a' }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>PAYMENT DATE</Text>
+                    <Text style={{ fontSize: typography.sizes.sm, color: '#1a1a1a' }}>
                       {safeFormatDate(receipt.paidAt, 'd MMMM yyyy', safeFormatDate(receipt.createdAt, 'd MMMM yyyy', 'Unknown date'))}
                     </Text>
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 12 }}>METHOD</Text>
-                    <Text style={{ fontSize: 13, color: '#1a1a1a' }}>{formatPaymentMethod(receipt.paymentMethod)}</Text>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 12 }}>METHOD</Text>
+                    <Text style={{ fontSize: typography.sizes.sm, color: '#1a1a1a' }}>{formatPaymentMethod(receipt.paymentMethod)}</Text>
                   </View>
                 </View>
 
                 {/* Amount Section */}
                 <View style={{ marginTop: 20, borderWidth: 1, borderColor: '#22c55e', borderRadius: 8, padding: 16 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#1a1a1a' }}>Payment Received</Text>
+                    <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: '#1a1a1a' }}>Payment Received</Text>
                     <View style={{ backgroundColor: '#dcfce7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#16a34a' }}>Paid</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: '#16a34a' }}>Paid</Text>
                     </View>
                   </View>
                   {gst > 0 && (
                     <>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                        <Text style={{ fontSize: 12, color: '#6b7280' }}>Subtotal (excl. GST)</Text>
-                        <Text style={{ fontSize: 12, color: '#1a1a1a' }}>{formatCurrency(subtotal)}</Text>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#6b7280' }}>Subtotal (excl. GST)</Text>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#1a1a1a' }}>{formatCurrency(subtotal)}</Text>
                       </View>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#e5e7eb' }}>
-                        <Text style={{ fontSize: 12, color: '#6b7280' }}>GST (10%)</Text>
-                        <Text style={{ fontSize: 12, color: '#1a1a1a' }}>{formatCurrency(gst)}</Text>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#6b7280' }}>GST (10%)</Text>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#1a1a1a' }}>{formatCurrency(gst)}</Text>
                       </View>
                     </>
                   )}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#22c55e', marginTop: 4 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a' }}>
+                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: '#1a1a1a' }}>
                       Amount Paid {gst > 0 ? '(incl. GST)' : ''}
                     </Text>
-                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#1a1a1a' }}>{formatCurrency(receipt.amount)}</Text>
+                    <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: '#1a1a1a' }}>{formatCurrency(receipt.amount)}</Text>
                   </View>
                 </View>
 
@@ -996,23 +996,23 @@ ${businessName}`;
                 {includePaymentDetails && (
                   <View style={{ marginTop: 16, gap: 8 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#e5e7eb' }}>
-                      <Text style={{ fontSize: 12, color: '#6b7280' }}>Payment Method</Text>
-                      <Text style={{ fontSize: 12, fontWeight: '500', color: '#1a1a1a' }}>{formatPaymentMethod(receipt.paymentMethod)}</Text>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#6b7280' }}>Payment Method</Text>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: '#1a1a1a' }}>{formatPaymentMethod(receipt.paymentMethod)}</Text>
                     </View>
                     {receipt.paymentReference && (
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#e5e7eb' }}>
-                        <Text style={{ fontSize: 12, color: '#6b7280' }}>Reference</Text>
-                        <Text style={{ fontSize: 12, fontWeight: '500', color: '#1a1a1a' }}>{receipt.paymentReference}</Text>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#6b7280' }}>Reference</Text>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: '#1a1a1a' }}>{receipt.paymentReference}</Text>
                       </View>
                     )}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#e5e7eb' }}>
-                      <Text style={{ fontSize: 12, color: '#6b7280' }}>Transaction ID</Text>
-                      <Text style={{ fontSize: 12, fontWeight: '500', color: '#1a1a1a' }} numberOfLines={1}>{receipt.id.slice(0, 12)}...</Text>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#6b7280' }}>Transaction ID</Text>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: '#1a1a1a' }} numberOfLines={1}>{receipt.id.slice(0, 12)}...</Text>
                     </View>
                     {receipt.paidAt && (
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                        <Text style={{ fontSize: 12, color: '#6b7280' }}>Date & Time</Text>
-                        <Text style={{ fontSize: 12, fontWeight: '500', color: '#1a1a1a' }}>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#6b7280' }}>Date & Time</Text>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: '#1a1a1a' }}>
                           {safeFormatDate(receipt.paidAt, 'd MMM yyyy, h:mm a', 'Unknown')}
                         </Text>
                       </View>
@@ -1022,8 +1022,8 @@ ${businessName}`;
 
                 {/* Thank You */}
                 <View style={{ marginTop: 20, padding: 16, backgroundColor: `${brandColor}10`, borderRadius: 8, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: brandColor }}>Thank you for your payment!</Text>
-                  <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 4, textAlign: 'center' }}>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: brandColor }}>Thank you for your payment!</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, color: '#6b7280', marginTop: 4, textAlign: 'center' }}>
                     This receipt confirms your payment has been received and processed.
                   </Text>
                 </View>
@@ -1031,9 +1031,9 @@ ${businessName}`;
                 {/* Footer */}
                 <View style={{ marginTop: 20, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#e5e7eb', alignItems: 'center' }}>
                   {businessSettings?.abn && (
-                    <Text style={{ fontSize: 10, color: '#6b7280' }}>ABN: {businessSettings.abn}</Text>
+                    <Text style={{ fontSize: typography.sizes.xs, color: '#6b7280' }}>ABN: {businessSettings.abn}</Text>
                   )}
-                  <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Generated by JobRunner</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, color: '#6b7280', marginTop: 2 }}>Generated by JobRunner</Text>
                 </View>
               </View>
             </View>
@@ -1091,8 +1091,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 12,
   },
   receiptNumberLarge: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   paidBadgeLarge: {
@@ -1105,18 +1105,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 4,
   },
   paidBadgeLargeText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.white,
   },
   amountLarge: {
     fontSize: 36,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
   },
   amountLabel: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginTop: 4,
@@ -1136,14 +1136,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 8,
   },
   summaryDetailLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   summaryDetailValue: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: 2,
   },
@@ -1158,7 +1158,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderTopColor: colors.border,
   },
   summaryDateText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   actionsRow: {
@@ -1186,13 +1186,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     opacity: 0.5,
   },
   actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   actionButtonPrimaryText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   actionButtonTextDisabled: {
@@ -1202,8 +1202,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 20,
   },
   linkedTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 10,
   },
@@ -1230,18 +1230,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   linkedCardLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   linkedCardValue: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: 2,
   },
   detailsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 10,
   },
@@ -1337,7 +1337,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   paidBadgeText: {
     ...typography.caption,
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
   },
   section: {
@@ -1353,7 +1353,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   sectionLabel: {
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     letterSpacing: 1,
     marginBottom: spacing.sm,
   },
@@ -1368,7 +1368,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.xs,
   },
   infoLabel: {
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   paymentSummary: {
     marginHorizontal: spacing.lg,
@@ -1387,7 +1387,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   summaryTitle: {
     ...typography.subtitle,
     color: '#15803d',
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -1400,7 +1400,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   paidBadgeSmallText: {
     ...typography.captionSmall,
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
   },
   summaryRow: {
@@ -1431,12 +1431,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   totalLabel: {
     ...typography.cardTitle,
     color: '#15803d',
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   totalValue: {
     ...typography.cardTitle,
     color: '#15803d',
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   detailsGrid: {
     flexDirection: 'row',
@@ -1466,7 +1466,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   detailValueSmall: {
     ...typography.caption,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   referenceCard: {
     marginHorizontal: spacing.lg,
@@ -1508,7 +1508,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   thankYouText: {
     ...typography.cardTitle,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   thankYouSubtext: {
     ...typography.captionSmall,
@@ -1598,8 +1598,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 4,
   },
   previewModalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   previewActionButtons: {
@@ -1635,8 +1635,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: `${colors.primary}08`,
   },
   previewOptionChipText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   previewDocumentCard: {

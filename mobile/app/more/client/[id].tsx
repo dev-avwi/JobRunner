@@ -17,7 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import { getBottomNavHeight } from '../../../src/components/BottomNav';
 import { useClientsStore, useJobsStore, useQuotesStore, useInvoicesStore } from '../../../src/lib/store';
 import { useTheme, ThemeColors } from '../../../src/lib/theme';
-import { spacing, radius, shadows, typography, iconSizes, sizes } from '../../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, sizes, fontWeights } from '../../../src/lib/design-tokens';
 import api from '../../../src/lib/api';
 import { TeamAvatar } from '../../../src/components/TeamAvatar';
 import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
@@ -835,8 +835,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.md,
   },
   avatarText: {
-    fontSize: 32,
-    fontWeight: '600',
+    fontSize: typography.sizes['4xl'],
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   clientName: {
@@ -878,8 +878,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.muted,
   },
   actionButtonText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   actionButtonTextDisabled: {
@@ -898,8 +898,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     minHeight: 44,
   },
   actionButtonSecondaryText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
 
@@ -918,12 +918,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.cardBorder,
   },
   kpiValue: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   kpiLabel: {
-    fontSize: 9,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 2,
     textAlign: 'center',
@@ -949,13 +949,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.primaryLight,
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   tabTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   tabBadge: {
     backgroundColor: colors.primary,
@@ -965,8 +965,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginLeft: 2,
   },
   tabBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   tabContent: {
@@ -1008,13 +1008,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   emptyStateButtonText: {
     color: colors.primaryForeground,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.button.fontSize,
   },
 
   quoteAmount: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 4,
   },
@@ -1029,13 +1029,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.md,
   },
   outstandingText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.warning,
   },
   sectionTitle: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -1112,7 +1112,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   tagBadgeText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   jobCard: {
@@ -1152,7 +1152,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   jobTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   jobDate: {
@@ -1167,7 +1167,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   statusText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     textTransform: 'capitalize',
   },
   photosSection: {
@@ -1219,7 +1219,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   clearSignatureText: {
     ...typography.caption,
     color: colors.destructive,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   timelineCard: {
     backgroundColor: colors.card,
@@ -1250,7 +1250,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   timelineTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   timelineDate: {
@@ -1260,7 +1260,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   timelineAmount: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
 });

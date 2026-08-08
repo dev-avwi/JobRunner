@@ -18,7 +18,7 @@ import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
-import { spacing, radius, shadows } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import { 
   useBusinessTemplates, 
   BusinessTemplate, 
@@ -52,12 +52,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.lg,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -83,8 +83,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   integrationTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     marginBottom: spacing.xs,
   },
   integrationTitleWarning: {
@@ -100,7 +100,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginTop: spacing.xs,
   },
   integrationItemText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -108,7 +108,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: '#b45309',
   },
   integrationHelpText: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     marginTop: spacing.sm,
     color: '#92400e',
   },
@@ -122,12 +122,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: 'rgba(180, 83, 9, 0.1)',
   },
   setupButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
     color: '#b45309',
   },
   fallbackBadge: {
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
     color: '#b45309',
     backgroundColor: 'rgba(180, 83, 9, 0.1)',
     paddingHorizontal: spacing.sm,
@@ -153,13 +153,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     ...shadows.sm,
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   tabTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   familyCard: {
     backgroundColor: colors.card,
@@ -187,12 +187,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   familyName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   familyDescription: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -208,7 +208,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.full,
   },
   countBadgeText: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   activeBadge: {
@@ -221,8 +221,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.full,
   },
   activeBadgeText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: '#065f46',
   },
   familyContent: {
@@ -245,8 +245,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   templateName: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   templateBadges: {
@@ -262,12 +262,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.sm,
   },
   triggerBadgeText: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   templateDescription: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: spacing.xs,
   },
@@ -287,8 +287,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.md,
   },
   activateButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   createButton: {
@@ -304,7 +304,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginTop: spacing.sm,
   },
   createButtonText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.primary,
   },
   emptyState: {
@@ -312,7 +312,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: spacing.xl,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
   loadingContainer: {
@@ -332,14 +332,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.lg,
   },
   errorTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
   errorMessage: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.xl,
@@ -355,12 +355,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.lg,
   },
   retryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: spacing.md,
   },
@@ -378,8 +378,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderBottomColor: colors.border,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   modalContent: {
@@ -390,8 +390,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.lg,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
@@ -399,7 +399,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.md,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: colors.border,
@@ -426,12 +426,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   purposeChipText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.foreground,
   },
   purposeChipTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   previewContainer: {
     backgroundColor: colors.muted,
@@ -440,13 +440,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginTop: spacing.md,
   },
   previewLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.sm,
   },
   previewText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 20,
   },
@@ -461,8 +461,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginTop: spacing.xl,
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   saveButtonDisabled: {
@@ -483,14 +483,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     maxHeight: '60%',
   },
   emailClientSheetTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   emailClientSheetSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.lg,
@@ -512,8 +512,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center',
   },
   emailClientName: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     flex: 1,
   },
@@ -528,8 +528,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.muted,
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   testEmailButton: {
@@ -542,8 +542,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.md,
   },
   testEmailButtonText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   emailClientButton: {
@@ -558,8 +558,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
   },
   emailClientButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   emailClientButtons: {
@@ -990,13 +990,13 @@ export default function BusinessTemplatesScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <PressableRow onPress={() => setShowEditModal(false)}>
-              <Text style={{ color: colors.primary, fontSize: 16 }}>Cancel</Text>
+              <Text style={{ color: colors.primary, fontSize: typography.subtitle.fontSize }}>Cancel</Text>
             </PressableRow>
             <Text style={styles.modalTitle}>
               {editingTemplate ? 'Edit Template' : 'New Template'}
             </Text>
             <PressableRow onPress={handleSave} disabled={isSaving} >
-              <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>
+              <Text style={{ color: colors.primary, fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold }}>
                 {isSaving ? 'Saving...' : 'Save'}
               </Text>
             </PressableRow>

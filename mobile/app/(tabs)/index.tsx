@@ -294,7 +294,7 @@ function WeatherWidget() {
                   activeOpacity={0.7}
                 >
                   <Feather name="map-pin" size={16} color={settings.manualCity === city.name ? colors.primary : colors.mutedForeground} />
-                  <Text style={{ fontSize: typography.sizes.md, color: settings.manualCity === city.name ? colors.primary : colors.foreground, marginLeft: spacing.sm, fontWeight: settings.manualCity === city.name ? '600' : '400' }}>{city.name}</Text>
+                  <Text style={{ fontSize: typography.sizes.md, color: settings.manualCity === city.name ? colors.primary : colors.foreground, marginLeft: spacing.sm, fontWeight: settings.manualCity === city.name ? fontWeights.semibold : fontWeights.regular }}>{city.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -3464,7 +3464,7 @@ function OwnerDashboardScreen() {
                       numberOfLines={1}
                       style={[
                         styles.workerStatusBtnText,
-                        { color: isActive ? btn.color : colors.mutedForeground, fontWeight: isActive ? '700' : '500' },
+                        { color: isActive ? btn.color : colors.mutedForeground, fontWeight: isActive ? fontWeights.bold : fontWeights.medium },
                       ]}
                     >
                       {btn.label}

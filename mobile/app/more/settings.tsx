@@ -28,7 +28,7 @@ import * as Sharing from 'expo-sharing';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { API_URL, api } from '../../src/lib/api';
-import { spacing, radius, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import { useLocationStore } from '../../src/lib/location-store';
 import AppTour from '../../src/components/AppTour';
 import { Slider } from '../../src/components/ui/Slider';
@@ -182,8 +182,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   pageSubtitle: {
@@ -199,8 +199,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   saveButtonText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   subscriptionLink: {
     flexDirection: 'row',
@@ -223,7 +223,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   subscriptionLinkTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   subscriptionLinkSubtitle: {
@@ -260,7 +260,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   tabTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   planSection: {
     gap: spacing.lg,
@@ -279,8 +279,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.lg,
   },
   subscriptionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   planInfo: {
@@ -307,7 +307,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   planName: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   planDescription: {
@@ -322,12 +322,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   planPriceText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   proFeaturesTitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     letterSpacing: 0.5,
     marginBottom: spacing.md,
@@ -350,8 +350,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.sm,
   },
   proBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   upgradeButton: {
@@ -362,8 +362,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: spacing.lg,
   },
   upgradeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   manageBillingButton: {
@@ -401,7 +401,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   settingsCardTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   settingsCardSubtitle: {
@@ -416,7 +416,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   settingsInfoTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
@@ -426,8 +426,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     lineHeight: 20,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     letterSpacing: 0.5,
     marginBottom: spacing.md,
@@ -463,7 +463,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   notificationToggleTitle: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   notificationToggleSubtitle: {
@@ -484,13 +484,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
   },
   templateStatValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 2,
   },
   templateStatLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
   },
   filtersRow: {
@@ -514,13 +514,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.primary,
   },
   filterChipText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.foreground,
     textTransform: 'capitalize',
   },
   filterChipTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   templateList: {
     gap: spacing.md,
@@ -542,8 +542,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   templateName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   templateMeta: {
@@ -553,8 +553,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 4,
   },
   templateType: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
     textTransform: 'capitalize',
     backgroundColor: colors.primaryLight,
@@ -563,7 +563,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.sm,
   },
   templateTrade: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textTransform: 'capitalize',
   },
@@ -580,7 +580,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: spacing.sm,
   },
   templateTitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     marginBottom: 4,
   },
@@ -591,7 +591,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: spacing.sm,
   },
   badge: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     backgroundColor: colors.muted,
     paddingHorizontal: spacing.sm,
@@ -599,7 +599,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.sm,
   },
   templateTerms: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 4,
     fontStyle: 'italic',
@@ -623,13 +623,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.lg,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.xl,
@@ -644,8 +644,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.sm,
   },
   emptyButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   createTemplateButton: {
@@ -659,8 +659,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.lg,
   },
   createTemplateButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   modalContainer: {
@@ -677,8 +677,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderBottomColor: colors.border,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   modalContent: {
@@ -689,8 +689,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.lg + 4,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
@@ -698,7 +698,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.md + 2,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: colors.border,
@@ -725,13 +725,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.primary,
   },
   typeButtonText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     textTransform: 'capitalize',
   },
   typeButtonTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   tradeTypeContainer: {
     flexDirection: 'row',
@@ -751,17 +751,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.primary,
   },
   tradeChipText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.foreground,
     textTransform: 'capitalize',
   },
   tradeChipTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   sectionHeader: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: spacing.lg,
     marginBottom: spacing.md,
@@ -776,7 +776,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: radius.md,
     padding: spacing.sm + 2,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: colors.border,
@@ -799,7 +799,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderStyle: 'dashed',
   },
   addLineItemText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.primary,
   },
   removeLineItemButton: {
@@ -820,8 +820,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     opacity: 0.7,
   },
   modalSaveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   loadingContainer: {
@@ -860,7 +860,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.md + 2,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: colors.border,
@@ -901,8 +901,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.md,
   },
   exportButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   businessInfoRow: {
@@ -920,7 +920,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   businessInfoValue: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     textAlign: 'right',
     flex: 1,
     marginLeft: spacing.md,
@@ -2040,7 +2040,7 @@ export default function SettingsScreen() {
                   >
                     <Text style={styles.businessInfoLabel}>Active Number</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                      <Text style={[styles.businessInfoValue, { color: colors.success, fontWeight: '600' }]}>{businessSettings.dedicatedPhoneNumber}</Text>
+                      <Text style={[styles.businessInfoValue, { color: colors.success, fontWeight: fontWeights.semibold }]}>{businessSettings.dedicatedPhoneNumber}</Text>
                       <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                     </View>
                   </PressableRow>
@@ -2751,7 +2751,7 @@ export default function SettingsScreen() {
                 {!aiTierAllowed && (
                   <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#f59e0b10', borderRadius: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Feather name="lock" size={14} color="#b45309" />
-                    <Text style={{ flex: 1, fontSize: 12, color: '#b45309' }}>
+                    <Text style={{ flex: 1, fontSize: typography.captionSmall.fontSize, color: '#b45309' }}>
                       AI features require Pro, Trial, or Team. Upgrade to enable.
                     </Text>
                   </View>
@@ -2961,7 +2961,7 @@ export default function SettingsScreen() {
                       <View key={item.label} style={styles.usageBarContainer}>
                         <View style={styles.usageBarLabel}>
                           <Text style={styles.usageBarLabelText}>{item.label}</Text>
-                          <Text style={[styles.usageBarValueText, isAtLimit && { color: '#ef4444', fontWeight: '600' }]}>
+                          <Text style={[styles.usageBarValueText, isAtLimit && { color: '#ef4444', fontWeight: fontWeights.semibold }]}>
                             {item.data.used} / {isUnlimited ? '\u221E' : item.data.limit}
                           </Text>
                         </View>

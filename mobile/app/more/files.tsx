@@ -10,7 +10,7 @@ import { useTheme } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { api } from '../../src/lib/api';
 import { format } from 'date-fns';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import PhotoLibrary from '../../src/components/PhotoLibrary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -232,8 +232,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: spacing.xs,
   },
   statValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
     color: colors.foreground,
   },
@@ -241,7 +241,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     ...typography.caption,
     color: colors.mutedForeground,
     marginTop: 2,
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
   },
   sectionTitle: {
     ...typography.label,
@@ -403,7 +403,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   statusBadgeText: {
     ...typography.badge,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
   },
   expiryRow: {
@@ -435,7 +435,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   detailValue: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   actionButtonsRow: {
@@ -581,7 +581,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   modalTitle: {
     ...typography.cardTitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   modalCloseButton: {
@@ -595,7 +595,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   formLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: spacing.xs,
   },
@@ -631,12 +631,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   typeOptionText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   typeOptionTextSelected: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   uploadButton: {
     flexDirection: 'row',
@@ -652,7 +652,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   uploadButtonText: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   uploadedIndicator: {
@@ -666,7 +666,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   uploadedText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: '#22c55e',
     flex: 1,
   },
@@ -691,7 +691,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   cancelButtonText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   saveButton: {
@@ -707,7 +707,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   saveButtonText: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.primaryForeground,
   },
   complianceStatsRow: {
@@ -1128,7 +1128,7 @@ export default function FilesScreen() {
             {doc.notes && (
               <View style={[styles.detailRow, { flexDirection: 'column', alignItems: 'flex-start', gap: spacing.xs }]}>
                 <Text style={styles.detailLabel}>Notes</Text>
-                <Text style={[styles.detailValue, { fontWeight: '400' }]}>{doc.notes}</Text>
+                <Text style={[styles.detailValue, { fontWeight: fontWeights.regular }]}>{doc.notes}</Text>
               </View>
             )}
             <View style={styles.actionButtonsRow}>
@@ -1154,7 +1154,7 @@ export default function FilesScreen() {
         <PressableRow onPress={openCreateModal} >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
             <Feather name="plus" size={14} color={colors.primary} />
-            <Text style={{ ...typography.body, color: colors.primary, fontWeight: '500' }}>Add</Text>
+            <Text style={{ ...typography.body, color: colors.primary, fontWeight: fontWeights.medium }}>Add</Text>
           </View>
         </PressableRow>
       </View>

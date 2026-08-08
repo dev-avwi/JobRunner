@@ -23,7 +23,7 @@ import { useTheme } from '../../src/lib/theme';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { BottomSheetScrollView } from '../../src/components/ui/AppBottomSheet';
 import { api } from '../../src/lib/api';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
 type TabType = 'items' | 'categories' | 'lowStock' | 'purchaseOrders';
@@ -1539,7 +1539,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   statValue: {
     ...typography.subtitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   statLabel: {
@@ -1568,7 +1568,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   tabText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   activeTabText: {
@@ -1630,7 +1630,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   filterBtnText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   card: {
@@ -1661,7 +1661,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   cardTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
   },
@@ -1696,8 +1696,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     gap: spacing.xs,
   },
   cardStock: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
   },
   cardUnit: {
     ...typography.caption,
@@ -1712,7 +1712,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   cardPrice: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   categoryCard: {
@@ -1740,7 +1740,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   categoryName: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   categoryDesc: {
@@ -1753,7 +1753,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   categoryCountText: {
     ...typography.subtitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   categoryCountLabel: {
@@ -1788,7 +1788,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   lowStockBadgeText: {
     ...typography.badge,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   poCard: {
     backgroundColor: colors.card,
@@ -1812,7 +1812,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   poBadgeText: {
     ...typography.badge,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   poFooter: {
     flexDirection: 'row',
@@ -1826,7 +1826,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   poTotal: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   emptyState: {
@@ -1900,14 +1900,14 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     gap: spacing.md,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
     marginBottom: spacing.xs,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     lineHeight: 20,
     color: colors.mutedForeground,
   },
@@ -1924,8 +1924,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   pageHeaderAddText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   modalContainer: {
     flex: 1,
@@ -1949,8 +1949,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     textAlign: 'center',
   },
   modalSaveText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   modalContent: {
@@ -1959,7 +1959,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   fieldLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.sm,
     marginTop: spacing.md,
@@ -2050,7 +2050,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   pickerOptionTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   pickerCancel: {
     marginTop: spacing.md,
@@ -2060,7 +2060,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   pickerCancelText: {
     ...typography.body,
     color: colors.mutedForeground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   detailStatusRow: {
     flexDirection: 'row',
@@ -2070,8 +2070,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     gap: spacing.sm,
   },
   detailStockValue: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: typography.sizes['4xl'],
+    fontWeight: fontWeights.bold,
   },
   detailStockUnit: {
     ...typography.body,
@@ -2116,7 +2116,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   detailSectionTitle: {
     ...typography.label,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.mutedForeground,
     marginBottom: spacing.sm,
   },
@@ -2135,7 +2135,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   detailItemValue: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   maintenanceHeader: {
@@ -2184,12 +2184,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   transactionType: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   transactionQty: {
     ...typography.subtitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   transactionNotes: {
     ...typography.caption,

@@ -20,7 +20,7 @@ import { Feather } from '@expo/vector-icons';
 import { useClientsStore, useInvoicesStore, useJobsStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
-import { spacing, radius, shadows, typography, iconSizes, sizes, pageShell, usePageShell } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, sizes, pageShell, usePageShell, fontWeights } from '../../src/lib/design-tokens';
 import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable';
 import api from '../../src/lib/api';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
@@ -593,14 +593,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
     marginBottom: spacing.xs,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     lineHeight: 20,
     color: colors.mutedForeground,
   },
@@ -633,8 +633,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   newButtonText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
 
   searchBar: {
@@ -680,7 +680,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   filterPillText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   filterPillTextActive: {
@@ -698,8 +698,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   filterCountText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   filterCountTextActive: {
@@ -725,8 +725,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.primary,
   },
   tagFilterPillText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   tagFilterPillTextActive: {
@@ -786,8 +786,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   emptyStateButtonText: {
     color: colors.primaryForeground,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.button.fontSize,
   },
 
   kpiRow: {
@@ -814,12 +814,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.xs,
   },
   kpiValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   kpiTitle: {
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 2,
     textAlign: 'center',
@@ -860,8 +860,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.sm,
   },
   jobsBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   typeBadge: {
@@ -871,8 +871,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.sm,
   },
   typeBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   clientTagsRow: {
@@ -888,13 +888,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.sm,
   },
   clientTagBadgeText: {
-    fontSize: 9,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   clientTagMore: {
-    fontSize: 9,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
     alignSelf: 'center',
   },
@@ -908,7 +908,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.xs,
   },
   contactItemText: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     flex: 1,
   },
@@ -938,8 +938,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   cardActionText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   cardActionTextPrimary: {
@@ -954,13 +954,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   clientName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     lineHeight: 20,
   },

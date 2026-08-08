@@ -17,7 +17,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useClientsStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, typography, iconSizes, pageShell } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, iconSizes, pageShell, fontWeights } from '../../src/lib/design-tokens';
 import api from '../../src/lib/api';
 
 // The contact-import source tag written onto every imported client for
@@ -531,7 +531,7 @@ const createStyles = (colors: ThemeColors) =>
     primaryButtonText: {
       ...typography.bodySemibold,
       color: colors.primaryForeground,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
     },
     secondaryButton: {
       alignItems: 'center',
@@ -546,7 +546,7 @@ const createStyles = (colors: ThemeColors) =>
     secondaryButtonText: {
       ...typography.bodySemibold,
       color: colors.foreground,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
     },
     searchBar: {
       flexDirection: 'row',
@@ -582,7 +582,7 @@ const createStyles = (colors: ThemeColors) =>
     selectAllText: {
       ...typography.bodySemibold,
       color: colors.primary,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
     },
     contactRow: {
       flexDirection: 'row',
@@ -619,7 +619,7 @@ const createStyles = (colors: ThemeColors) =>
     contactName: {
       ...typography.bodySemibold,
       color: colors.foreground,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
     },
     contactMeta: {
       ...typography.caption,
@@ -673,8 +673,8 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: 3,
     },
     dupBadgeText: {
-      fontSize: 11,
-      fontWeight: '600',
+      fontSize: typography.sizes.xs,
+      fontWeight: fontWeights.semibold,
       color: '#b45309',
     },
     fieldRow: {
@@ -709,8 +709,8 @@ const createStyles = (colors: ThemeColors) =>
       borderColor: colors.primary,
     },
     actionPillText: {
-      fontSize: 13,
-      fontWeight: '600',
+      fontSize: typography.sizes.sm,
+      fontWeight: fontWeights.semibold,
       color: colors.mutedForeground,
     },
     actionPillTextActive: {

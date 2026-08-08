@@ -6,7 +6,7 @@ import { Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
@@ -237,15 +237,15 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: spacing.xs,
   },
   statValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
   },
   statLabel: {
     ...typography.caption,
     color: colors.mutedForeground,
     marginTop: 2,
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
   },
   tabContainer: {
     backgroundColor: colors.card,
@@ -272,13 +272,13 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     backgroundColor: colors.primary + '15',
   },
   tabText: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   activeTabText: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   tabBadge: {
     minWidth: 18,
@@ -515,7 +515,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   modalTitle: {
     ...typography.cardTitle,
-    fontSize: 18,
+    fontSize: typography.sizes.lg,
   },
   modalBody: {
     paddingHorizontal: spacing.lg,
@@ -535,7 +535,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   inputLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     marginBottom: spacing.xs,
     marginTop: spacing.md,
   },
@@ -573,7 +573,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   optionTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   optionDescription: {
     ...typography.caption,
@@ -611,7 +611,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   reviewValue: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   actionItem: {
     flexDirection: 'row',
@@ -1042,7 +1042,7 @@ export default function AutopilotScreen() {
                         return (
                           <PressableRow key={e.value} style={[ styles.optionCard, { borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.primary + '08' : 'transparent', flex: 0, paddingHorizontal: spacing.md, marginBottom: 0, }, ]} onPress={() => updateFormTrigger({ entityType: e.value })} >
                             <Feather name={e.icon as any} size={iconSizes.md} color={selected ? colors.primary : colors.mutedForeground} />
-                            <Text style={[styles.optionTitle, { color: selected ? colors.primary : colors.foreground, fontSize: 14 }]}>{e.label}</Text>
+                            <Text style={[styles.optionTitle, { color: selected ? colors.primary : colors.foreground, fontSize: typography.button.fontSize }]}>{e.label}</Text>
                           </PressableRow>
                         );
                       })}
@@ -1400,7 +1400,7 @@ export default function AutopilotScreen() {
           </PressableRow>
           <PressableRow onPress={() => setActiveTab('templates')} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs }} >
             <Feather name="copy" size={iconSizes.sm} color={colors.primary} />
-            <Text style={[styles.emptyCtaText, { color: colors.primary, fontSize: 13 }]}>Browse Templates</Text>
+            <Text style={[styles.emptyCtaText, { color: colors.primary, fontSize: typography.sizes.sm }]}>Browse Templates</Text>
           </PressableRow>
         </View>
       )}
@@ -1627,19 +1627,19 @@ export default function AutopilotScreen() {
                               </View>
                             )}
                           </View>
-                          <Text style={[styles.cardTitle, { marginTop: spacing.xs, fontSize: 14 }]} numberOfLines={1}>
+                          <Text style={[styles.cardTitle, { marginTop: spacing.xs, fontSize: typography.button.fontSize }]} numberOfLines={1}>
                             {entry.entityLabel}
                           </Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs }}>
-                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                               to {entry.recipientName}
                             </Text>
                             <View style={[styles.statusBadge, { backgroundColor: colors.border + '40', paddingHorizontal: spacing.sm, paddingVertical: 2 }]}>
-                              <Text style={{ fontSize: 10, color: colors.mutedForeground, fontWeight: '500' }}>
+                              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
                                 {entry.channel === 'sms' ? 'SMS' : entry.channel === 'email' ? 'Email' : entry.channel === 'both' ? 'Both' : entry.channel}
                               </Text>
                             </View>
-                            <Text style={{ fontSize: 11, color: colors.mutedForeground, marginLeft: 'auto' }}>
+                            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginLeft: 'auto' }}>
                               {timeAgo(entry.createdAt)}
                             </Text>
                           </View>

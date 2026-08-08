@@ -18,6 +18,7 @@ import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/Card';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -196,21 +197,21 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     height: 60,
   },
   appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 8,
   },
   tagline: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
   },
   inputGroup: {
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: 8,
   },
@@ -221,7 +222,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
   },
   primaryButton: {
@@ -236,8 +237,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   primaryButtonText: {
     color: colors.primaryForeground || colors.white,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   successContainer: {
     alignItems: 'center',
@@ -253,14 +254,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 20,
   },
   successText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: 12,
     lineHeight: 20,
   },
   tipText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: 24,
@@ -276,8 +277,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 8,
   },
   backText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
 });

@@ -19,7 +19,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { API_URL } from '../../src/lib/api';
-import { spacing, radius, typography, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -127,7 +127,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   severityLabel: {
     ...typography.bodySmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   severityDescription: {
@@ -169,7 +169,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   errorCardTitle: {
     ...typography.bodySmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.destructive,
     marginBottom: spacing.xs,
   },
@@ -193,7 +193,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   submitButtonText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   infoCard: {
@@ -228,7 +228,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   deviceInfoValue: {
     ...typography.bodySmall,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
 });
 

@@ -14,7 +14,7 @@ import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, iconSizes, usePageShell } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, usePageShell, fontWeights } from '../../src/lib/design-tokens';
 import { api } from '../../src/lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useContentWidth, useIsTablet } from '../../src/lib/device';
@@ -944,14 +944,14 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginBottom: spacing.lg,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
     marginBottom: spacing.xs,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     lineHeight: 20,
     color: colors.mutedForeground,
   },
@@ -987,8 +987,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   addButtonText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   kpiRow: {
     flexDirection: 'row',
@@ -1007,12 +1007,12 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   kpiLabel: {
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     marginBottom: spacing.xs,
   },
   kpiValue: {
     ...typography.subtitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -1056,7 +1056,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   tabText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   activeTabText: {
@@ -1071,9 +1071,9 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   tabBadgeText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.white,
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
   },
   viewAllButton: {
     flexDirection: 'row',
@@ -1090,7 +1090,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   viewAllText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
     flex: 1,
     textAlign: 'center',
@@ -1121,7 +1121,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   filterText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   activeFilterText: {
@@ -1140,9 +1140,9 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   filterBadgeText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
   },
   activeFilterBadgeText: {
     color: colors.white,
@@ -1173,10 +1173,10 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   gridCardTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
   },
   gridCardClient: {
     ...typography.caption,
@@ -1190,13 +1190,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   gridCardAmount: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   gridCardDate: {
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
   },
   listCard: {
     flexDirection: 'row',
@@ -1220,7 +1220,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   listCardTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
     marginRight: spacing.sm,
@@ -1233,7 +1233,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   listCardAmount: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   listCardBottomRow: {
@@ -1255,8 +1255,8 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   statusText: {
     ...typography.captionSmall,
-    fontWeight: '600',
-    fontSize: 10,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.sizes.xs,
   },
   metaRow: {
     flexDirection: 'row',
@@ -1284,9 +1284,9 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   linkedBadgeText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: '#22c55e',
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
   },
   linkedBadgeInline: {
     flexDirection: 'row',
@@ -1299,9 +1299,9 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   linkedBadgeTextInline: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: '#22c55e',
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
   },
   loadingContainer: {
     flex: 1,
@@ -1341,7 +1341,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   emptyButtonText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   sortHeaderRow: {
@@ -1373,15 +1373,15 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   sortableColumnText: {
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontWeight: '500',
-    fontSize: 11,
+    fontWeight: fontWeights.medium,
+    fontSize: typography.sizes.xs,
   },
   sortableColumnTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   sortArrow: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginLeft: 2,
   },
@@ -1439,20 +1439,20 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   listRowTitle: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
   },
   listRowClient: {
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
   },
   listRowAmount: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     minWidth: 70,
     textAlign: 'right',
   },
@@ -1472,13 +1472,13 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
   listRowStatusText: {
     ...typography.captionSmall,
-    fontWeight: '600',
-    fontSize: 9,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.sizes.xs,
   },
   listRowDate: {
     ...typography.captionSmall,
     color: colors.mutedForeground,
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
   },
   listRowLinkedBadge: {
     width: 18,

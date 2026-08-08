@@ -23,7 +23,7 @@ import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import api, { API_URL } from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 import { useUserRole } from '../../src/hooks/use-user-role';
@@ -300,8 +300,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
   filterBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
     color: colors.white,
   },
   subFilterContainer: {
@@ -321,12 +321,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   subFilterText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   subFilterTextActive: {
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -416,7 +416,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     minWidth: 0,
   },
   conversationTitleUnread: {
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   conversationTime: {
     ...typography.captionSmall,
@@ -433,7 +433,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   conversationLastMessageUnread: {
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   conversationBadges: {
     flexDirection: 'row',
@@ -481,7 +481,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   contactActionText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   chevronIcon: {
@@ -585,7 +585,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   twilioConnectedText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.success,
     flex: 1,
   },

@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
-import { spacing, radius } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import { formatCurrency } from '../../src/lib/format';
 import { showToast } from '../../src/lib/toast';
 import api, { API_URL } from '../../src/lib/api';
@@ -215,7 +215,7 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.foreground },
+    headerTitle: { fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground },
     headerRight: { width: 36 },
     segment: {
       flexDirection: 'row',
@@ -227,7 +227,7 @@ function createStyles(colors: ThemeColors) {
     },
     segmentItem: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: 'center' },
     segmentItemActive: { backgroundColor: colors.card },
-    segmentText: { fontSize: 14, fontWeight: '600', color: colors.mutedForeground },
+    segmentText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground },
     segmentTextActive: { color: colors.foreground },
     card: {
       backgroundColor: colors.card,
@@ -238,27 +238,27 @@ function createStyles(colors: ThemeColors) {
       marginBottom: spacing.sm,
     },
     cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-    cardTitle: { fontSize: 15, fontWeight: '600', color: colors.foreground },
-    cardMeta: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+    cardTitle: { fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground },
+    cardMeta: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 },
     statusPill: { borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-    statusText: { fontSize: 11, fontWeight: '700' },
+    statusText: { fontSize: typography.sizes.xs, fontWeight: fontWeights.bold },
     cardBottom: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       marginTop: spacing.sm,
     },
-    cardAmount: { fontSize: 16, fontWeight: '700', color: colors.foreground },
+    cardAmount: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground },
     pdfHint: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    pdfHintText: { fontSize: 12, color: colors.mutedForeground },
+    pdfHintText: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground },
     emptyWrap: { alignItems: 'center', paddingTop: spacing['4xl'], gap: spacing.md },
-    emptyText: { fontSize: 15, color: colors.mutedForeground },
+    emptyText: { fontSize: typography.sizes.md, color: colors.mutedForeground },
     emptyBtn: {
       backgroundColor: colors.primary,
       borderRadius: radius.md,
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm,
     },
-    emptyBtnText: { fontSize: 14, fontWeight: '700', color: colors.primaryForeground },
+    emptyBtnText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.primaryForeground },
   });
 }

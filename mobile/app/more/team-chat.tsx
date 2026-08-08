@@ -24,6 +24,7 @@ import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { promptForAttachment, uploadChatAttachment, resolveAttachmentUrl } from '../../src/lib/chat-attachments';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 interface TeamChatMessage {
   id: string;
@@ -67,12 +68,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -91,8 +92,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.warning,
   },
   pinnedFilterText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.warning,
   },
   pinnedFilterTextActive: {
@@ -124,8 +125,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   avatarSmallText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   messageBubble: {
@@ -151,8 +152,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.warning,
   },
   senderName: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
     marginBottom: 4,
   },
@@ -163,12 +164,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   pinnedBadgeText: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.warning,
   },
   messageText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     lineHeight: 20,
   },
@@ -176,7 +177,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: colors.primaryForeground,
   },
   messageTime: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginTop: 4,
     alignSelf: 'flex-end',
@@ -201,13 +202,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     opacity: 0.5,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 4,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
   },
@@ -227,7 +228,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     maxHeight: 100,
     borderWidth: 1,
@@ -284,7 +285,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 12,
   },
   actionText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
 });
@@ -609,8 +610,8 @@ export default function TeamChatScreen() {
                             numberOfLines={1}
                             style={{
                               flex: 1,
-                              fontSize: 13,
-                              fontWeight: '600',
+                              fontSize: typography.sizes.sm,
+                              fontWeight: fontWeights.semibold,
                               color: isCurrentUser ? colors.primaryForeground : colors.foreground,
                             }}
                           >
@@ -636,7 +637,7 @@ export default function TeamChatScreen() {
                       </Text>
                       {(msg as any).sendStatus === 'failed' && (
                         <PressableRow onPress={async () => { const { offlineStorage } = await import('@/lib/offline-storage'); const ok = await offlineStorage.retryFailedChatMessage((msg as any).localId || msg.id); if (ok) fetchMessages(false); }} style={{ marginTop: 4 }} >
-                          <Text style={{ color: colors.destructive, fontSize: 11, fontWeight: '600' }}>
+                          <Text style={{ color: colors.destructive, fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold }}>
                             Failed to send · tap to retry
                           </Text>
                         </PressableRow>

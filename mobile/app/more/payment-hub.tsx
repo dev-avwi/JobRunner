@@ -18,7 +18,7 @@ import { useActionSheet } from '../../src/components/ui/ActionSheet';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { api } from '../../src/lib/api';
 import { format, isAfter, isBefore, subDays, differenceInDays } from 'date-fns';
 
@@ -1044,8 +1044,8 @@ export default function PaymentHubScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
               <Feather name="zap" size={iconSizes.md} color={colors.primary} />
               <View>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>AI Payment Advisor</Text>
-                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Smart recommendations for overdue invoices</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>AI Payment Advisor</Text>
+                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>Smart recommendations for overdue invoices</Text>
               </View>
             </View>
             <PressableRow style={[styles.stripeButton, styles.stripeButtonPrimary, { opacity: aiLoading || (summary?.totalOverdueCount || 0) === 0 ? 0.5 : 1 }]} onPress={handleGetAiInsights} disabled={aiLoading || (summary?.totalOverdueCount || 0) === 0} >
@@ -1061,7 +1061,7 @@ export default function PaymentHubScreen() {
           </View>
           {aiInsights && (
             <View style={{ marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: `${colors.primary}08`, borderWidth: 1, borderColor: `${colors.primary}15` }}>
-              <Text style={{ fontSize: 13, color: colors.foreground, lineHeight: 20 }}>{aiInsights}</Text>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, lineHeight: 20 }}>{aiInsights}</Text>
             </View>
           )}
         </View>
@@ -1074,7 +1074,7 @@ export default function PaymentHubScreen() {
                   <Feather name="zap" size={iconSizes.sm} color={colors.primary} />
                   <Text style={styles.sectionTitle}>Chase Queue</Text>
                 </View>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
                   {(chaserData?.items || []).length} invoice{(chaserData?.items || []).length !== 1 ? 's' : ''} needing attention
                 </Text>
               </View>
@@ -1133,7 +1133,7 @@ export default function PaymentHubScreen() {
                       </View>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[styles.documentAmount, { fontSize: 16 }]}>{formatCurrency(item.outstanding)}</Text>
+                      <Text style={[styles.documentAmount, { fontSize: typography.subtitle.fontSize }]}>{formatCurrency(item.outstanding)}</Text>
                       {item.amountPaid > 0 && (
                         <Text style={styles.documentSubtitle}>{formatCurrency(item.amountPaid)} paid</Text>
                       )}
@@ -1143,27 +1143,27 @@ export default function PaymentHubScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm, flexWrap: 'wrap' }}>
                     {isExpanded ? (
                       <>
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginRight: spacing.xs }}>Tone:</Text>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginRight: spacing.xs }}>Tone:</Text>
                         {(['friendly', 'professional', 'firm'] as const).map(tone => (
                           <PressableRow key={tone} style={[ styles.chaserActionBtn, tone === item.recommendedTone ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.card, borderColor: colors.border }, ]} onPress={() => handlePreviewReminder(item.invoiceId, tone, item.clientName, item.invoiceNumber, item.outstanding)} disabled={isSending} >
                             {isSending ? (
                               <ActivityIndicator size="small" color={tone === item.recommendedTone ? colors.primaryForeground : colors.primary} />
                             ) : (
-                              <Text style={{ fontSize: 12, fontWeight: '500', color: tone === item.recommendedTone ? colors.primaryForeground : colors.foreground }}>
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: tone === item.recommendedTone ? colors.primaryForeground : colors.foreground }}>
                                 {tone.charAt(0).toUpperCase() + tone.slice(1)}
                               </Text>
                             )}
                           </PressableRow>
                         ))}
                         <PressableRow style={[styles.chaserActionBtn, { backgroundColor: colors.muted, borderColor: colors.muted }]} onPress={() => setToneSelector(null)} >
-                          <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Cancel</Text>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Cancel</Text>
                         </PressableRow>
                       </>
                     ) : (
                       <>
                         <PressableRow style={[styles.chaserActionBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => setToneSelector(item.invoiceId)} >
                           <Feather name="send" size={12} color={colors.primaryForeground} />
-                          <Text style={{ fontSize: 12, fontWeight: '500', color: colors.primaryForeground }}>Chase</Text>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: colors.primaryForeground }}>Chase</Text>
                         </PressableRow>
                         <PressableRow style={[styles.chaserActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push(`/more/invoice/${item.invoiceId}`)} >
                           <Feather name="eye" size={12} color={colors.foreground} />
@@ -1366,19 +1366,19 @@ export default function PaymentHubScreen() {
         snapPoints={['80%']}
       >
         <View>
-          <Text style={{ fontSize: 13, color: colors.mutedForeground, marginTop: -spacing.sm, marginBottom: spacing.md }}>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: -spacing.sm, marginBottom: spacing.md }}>
             {previewModal.tone.charAt(0).toUpperCase() + previewModal.tone.slice(1)} tone to {previewModal.clientName}
           </Text>
 
           <View style={{ backgroundColor: colors.background, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
               <Feather name="mail" size={16} color={colors.primary} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>Email to {previewModal.clientName}</Text>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Email to {previewModal.clientName}</Text>
             </View>
             <View style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.xs }}>Subject: Payment Reminder — Invoice {previewModal.invoiceNumber}</Text>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: spacing.xs }}>Subject: Payment Reminder — Invoice {previewModal.invoiceNumber}</Text>
               <View style={{ height: 1, backgroundColor: colors.border, marginBottom: spacing.sm }} />
-              <Text style={{ fontSize: 14, color: colors.foreground, lineHeight: 22 }}>{previewModal.preview}</Text>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 22 }}>{previewModal.preview}</Text>
             </View>
           </View>
 
@@ -1389,12 +1389,12 @@ export default function PaymentHubScreen() {
               ) : (
                 <>
                   <Feather name="send" size={16} color={colors.primaryForeground} />
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primaryForeground }}>Send Reminder</Text>
+                  <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Send Reminder</Text>
                 </>
               )}
             </PressableRow>
             <PressableRow style={{ paddingVertical: spacing.sm, alignItems: 'center' }} onPress={() => setPreviewModal(prev => ({ ...prev, visible: false }))} >
-              <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Cancel</Text>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Cancel</Text>
             </PressableRow>
           </View>
         </View>
@@ -1417,7 +1417,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   loadingText: {
     marginTop: spacing.md,
     color: colors.mutedForeground,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
   },
   header: {
     flexDirection: 'row',
@@ -1437,12 +1437,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   restrictedContainer: {
@@ -1461,14 +1461,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.lg,
   },
   restrictedTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
   restrictedText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     lineHeight: 21,
     color: colors.mutedForeground,
     textAlign: 'center',
@@ -1484,8 +1484,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.lg,
   },
   restrictedButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   scrollView: {
@@ -1515,8 +1515,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.xs,
   },
   kpiTitle: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   kpiIcon: {
@@ -1524,13 +1524,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.md,
   },
   kpiValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 2,
   },
   kpiSubtitle: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
   },
   tabsContainer: {
@@ -1549,8 +1549,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.primary,
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   tabTextActive: {
@@ -1567,8 +1567,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.primaryForeground,
   },
   tabBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.background,
   },
   tabBadgeTextActive: {
@@ -1587,8 +1587,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.sm,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   sectionContent: {
@@ -1633,8 +1633,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 2,
   },
   documentTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   statusBadge: {
@@ -1643,24 +1643,24 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.sm,
   },
   statusText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     textTransform: 'capitalize',
   },
   documentSubtitle: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   documentRight: {
     alignItems: 'flex-end',
   },
   documentAmount: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   documentDue: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
   },
   emptyState: {
@@ -1669,13 +1669,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginTop: spacing.md,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: spacing.xs,
   },
@@ -1687,8 +1687,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.lg,
   },
   createButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   stripeCard: {
@@ -1733,8 +1733,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.xs,
   },
   stripeCardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   stripeCardBadge: {
@@ -1743,11 +1743,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.full,
   },
   stripeCardBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
   },
   stripeCardDescription: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1761,16 +1761,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 2,
   },
   balanceLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
   },
   balanceValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
   },
   balanceValueMuted: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   stripeCardActions: {
@@ -1795,13 +1795,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.primary,
   },
   stripeButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   stripeButtonTextPrimary: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.primaryForeground,
   },
   paymentLinkButton: {
@@ -1829,8 +1829,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.primary,
   },
   filterChipText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   filterChipTextActive: {
@@ -1859,8 +1859,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     minWidth: 0,
   },
   payoutAmount: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.success,
   },
   chaserActionBtn: {

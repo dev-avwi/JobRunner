@@ -24,7 +24,7 @@ import { SheetButton } from '../../src/components/ui/SheetButton';
 import { TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -133,7 +133,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   exportButtonText: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   periodSelector: {
@@ -152,7 +152,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   periodSelectorText: {
     flex: 1,
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   periodPicker: {
@@ -179,7 +179,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   periodOptionTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   sectionTitle: {
     ...typography.label,
@@ -209,8 +209,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: spacing.sm,
   },
   heroStatValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -1,
     color: colors.foreground,
   },
@@ -329,11 +329,11 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginTop: spacing.sm,
     textTransform: 'none',
     letterSpacing: 0,
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
   },
   chartBarAmount: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginTop: 2,
   },
@@ -378,7 +378,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   clientRankText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   clientInfo: {
@@ -395,7 +395,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   clientRevenue: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.success,
   },
   quickReportsSection: {
@@ -555,7 +555,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   reportTabText: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   reportTabTextActive: {
@@ -619,7 +619,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   breakdownValue: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   bucketCard: {
@@ -647,7 +647,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   bucketAmount: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   progressBarContainer: {
     height: 8,
@@ -698,7 +698,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   workerStatValue: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   workerStatLabel: {
@@ -724,7 +724,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   utilisationPercent: {
     ...typography.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     minWidth: 48,
     textAlign: 'right',
   },
@@ -1442,9 +1442,9 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                       ].filter(s => s.value > 0).map((seg, i) => (
                         <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                           <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: seg.color }} />
-                          <Text style={{ flex: 1, fontSize: 13, color: colors.foreground }}>{seg.label}</Text>
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>{seg.value}</Text>
-                          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                          <Text style={{ flex: 1, fontSize: typography.sizes.sm, color: colors.foreground }}>{seg.label}</Text>
+                          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>{seg.value}</Text>
+                          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
                             ({summary.jobs.total > 0 ? ((seg.value / summary.jobs.total) * 100).toFixed(0) : 0}%)
                           </Text>
                         </View>
@@ -1540,7 +1540,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                         backgroundColor: payout.status === 'paid' ? colors.successLight : colors.warningLight,
                       }}>
                         <Text style={{ 
-                          fontSize: 11, fontWeight: '600', 
+                          fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, 
                           color: payout.status === 'paid' ? colors.success : colors.warning,
                           textTransform: 'capitalize',
                         }}>
@@ -1703,7 +1703,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                             {jt.jobCount} job{jt.jobCount !== 1 ? 's' : ''}  {jt.totalHours > 0 ? `${jt.totalHours}h` : ''}
                           </Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs }}>
-                            <Text style={[styles.clientMeta, { color: colors.foreground, fontWeight: '500' }]}>
+                            <Text style={[styles.clientMeta, { color: colors.foreground, fontWeight: fontWeights.medium }]}>
                               Rev: {formatCurrency(jt.totalRevenue)}
                             </Text>
                             <Text style={[styles.clientMeta, { color: colors.mutedForeground }]}>
@@ -1712,7 +1712,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                           </View>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={[styles.clientRevenue, { color: marginColor, fontWeight: '700' }]}>{jt.avgMargin.toFixed(1)}%</Text>
+                          <Text style={[styles.clientRevenue, { color: marginColor, fontWeight: fontWeights.bold }]}>{jt.avgMargin.toFixed(1)}%</Text>
                           <Text style={[styles.clientMeta, { color: jt.totalProfit >= 0 ? colors.success : colors.destructive }]}>
                             {formatCurrency(jt.totalProfit)}
                           </Text>
@@ -1723,7 +1723,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                                 size={10} 
                                 color={jt.marginChange >= 0 ? colors.success : colors.destructive} 
                               />
-                              <Text style={{ fontSize: 10, color: jt.marginChange >= 0 ? colors.success : colors.destructive }}>
+                              <Text style={{ fontSize: typography.sizes.xs, color: jt.marginChange >= 0 ? colors.success : colors.destructive }}>
                                 {Math.abs(jt.marginChange).toFixed(1)}%
                               </Text>
                             </View>
@@ -1907,7 +1907,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                                 borderRadius: radius.pill, backgroundColor: colors.success + '20',
                               }}>
                                 <Feather name="check" size={11} color={colors.success} />
-                                <Text style={{ fontSize: 11, fontWeight: '600', color: colors.success }}>Paid</Text>
+                                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.success }}>Paid</Text>
                               </View>
                             )}
                           </View>
@@ -1940,7 +1940,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                               disabled={payslipBusy || !worker.payrollPaymentId}
                               activeOpacity={0.7}
                             >
-                              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+                              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                                 {payslipBusy ? '...' : 'Payslip'}
                               </Text>
                             </TouchableOpacity>
@@ -1953,7 +1953,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                               onPress={() => openPayrollPay(worker)}
                               activeOpacity={0.7}
                             >
-                              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.success }}>Pay</Text>
+                              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.success }}>Pay</Text>
                             </TouchableOpacity>
                           ) : null}
                         </View>
@@ -1968,16 +1968,16 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                     scrollable
                   >
                     <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                      <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, marginBottom: spacing.xs }}>
+                      <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xs }}>
                         Pay Worker
                       </Text>
                       {payWorker && (
-                        <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: spacing.md }}>
+                        <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md }}>
                           {payWorker.firstName} {payWorker.lastName} · {formatCurrency(payWorker.grossPay)}
                         </Text>
                       )}
 
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Method</Text>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Method</Text>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md }}>
                         {PAYROLL_PAY_METHODS.map((m) => (
                           <TouchableOpacity
@@ -1991,14 +1991,14 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                               backgroundColor: payMethod === m.value ? colors.primary + '15' : 'transparent',
                             }}
                           >
-                            <Text style={{ fontSize: 13, fontWeight: '600', color: payMethod === m.value ? colors.primary : colors.mutedForeground }}>
+                            <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: payMethod === m.value ? colors.primary : colors.mutedForeground }}>
                               {m.label}
                             </Text>
                           </TouchableOpacity>
                         ))}
                       </View>
 
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Reference</Text>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Reference</Text>
                       <TextInput
                         style={{
                           borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
@@ -2011,7 +2011,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                         placeholderTextColor={colors.mutedForeground}
                       />
 
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: spacing.xs }}>Notes</Text>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>Notes</Text>
                       <TextInput
                         style={{
                           borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,

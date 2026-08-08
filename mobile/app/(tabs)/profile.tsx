@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useUserRole, type UserRoleType } from '../../src/hooks/use-user-role';
-import { spacing, radius, shadows, typography, iconSizes, sizes, usePageShell } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, sizes, usePageShell, fontWeights } from '../../src/lib/design-tokens';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { 
   getMorePageItemsByCategory, 
@@ -71,7 +71,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   avatarText: {
     ...typography.subtitle,
     color: colors.primary,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   profileInfo: {
     flex: 1,
@@ -93,7 +93,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   businessName: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   quickActionsContainer: {
@@ -101,7 +101,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   quickActionsLabel: {
     ...typography.label,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: colors.foreground,
@@ -134,7 +134,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   quickActionText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   categoryTabsContainer: {
@@ -162,7 +162,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   categoryTabText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   categoryTabTextActive: {
@@ -188,7 +188,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   sectionTitle: {
     ...typography.subtitle,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   sectionDescription: {
@@ -198,7 +198,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   sectionCount: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     backgroundColor: colors.muted,
     paddingHorizontal: spacing.sm,
@@ -246,7 +246,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   menuItemTitle: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   menuItemSubtitle: {
@@ -677,7 +677,7 @@ export default function MoreScreen() {
               }}>
                 <Text style={{
                   ...typography.captionSmall,
-                  fontWeight: '600',
+                  fontWeight: fontWeights.semibold,
                   color: isSubcontractor ? colors.warning : (isOwner ? colors.primary : colors.info),
                 }}>{isSubcontractor ? 'Subcontractor' : (isOwner ? 'Owner' : 'Team Member')}</Text>
               </View>
@@ -700,7 +700,7 @@ export default function MoreScreen() {
             <Feather name={pendingInviteCount > 0 ? 'mail' : 'repeat'} size={18} color={pendingInviteCount > 0 ? colors.white : colors.primaryForeground} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ ...typography.body, fontWeight: '600', color: colors.foreground }}>
+            <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>
               {pendingInviteCount > 0 ? 'Pending Invitations' : 'Switch Workspace'}
             </Text>
             <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }}>

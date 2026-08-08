@@ -20,6 +20,7 @@ import api from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { showToast } from '../../src/lib/toast';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 interface StripeConnectStatus {
   connected: boolean;
@@ -128,19 +129,19 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     paddingTop: 8,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 4,
     lineHeight: 20,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: 12,
     marginTop: 8,
@@ -168,8 +169,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: 12,
   },
   statusCardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   statusBadge: {
@@ -187,8 +188,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     backgroundColor: colors.warningLight,
   },
   statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   statusCardContent: {
     flexDirection: 'row',
@@ -197,7 +198,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   statusCardText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     lineHeight: 20,
   },
@@ -223,19 +224,19 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginRight: 12,
   },
   integrationIconText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
   },
   integrationInfo: {
     flex: 1,
   },
   integrationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   integrationSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -254,8 +255,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     backgroundColor: colors.muted,
   },
   integrationBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   integrationBadgeBuiltIn: {
     backgroundColor: colors.primaryLight,
@@ -264,8 +265,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     borderRadius: 12,
   },
   integrationBadgeBuiltInText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   integrationDetails: {
@@ -288,12 +289,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginRight: 10,
   },
   detailText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   detailSubtext: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     lineHeight: 20,
   },
@@ -315,8 +316,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     borderColor: colors.border,
   },
   actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   actionButtonTextPrimary: {
     color: colors.primaryForeground,
@@ -331,7 +332,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginTop: 4,
   },
   builtInText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.success,
   },
   comingSoonCard: {
@@ -343,13 +344,13 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     opacity: 0.8,
   },
   comingSoonTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 4,
   },
   comingSoonText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     textAlign: 'center',
   },
@@ -367,7 +368,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     gap: 8,
   },
   featureText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   warningBanner: {
@@ -381,7 +382,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   warningText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.warning,
   },
 });

@@ -20,7 +20,7 @@ import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { api } from '../../src/lib/api';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -247,7 +247,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
     },
     modalLabel: {
       ...typography.caption,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       color: colors.mutedForeground,
       marginBottom: spacing.sm,
       marginTop: spacing.md,
@@ -352,12 +352,12 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
     memberName: {
       ...typography.bodySemibold,
       color: colors.foreground,
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
     },
     memberEmail: {
       ...typography.caption,
       color: colors.mutedForeground,
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
     },
     memberRoleBadge: {
       paddingHorizontal: spacing.sm,
@@ -395,7 +395,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
     },
     sectionTitle: {
       ...typography.caption,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       color: colors.mutedForeground,
       marginBottom: spacing.sm,
       marginTop: spacing.lg,
@@ -469,7 +469,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
     },
     manageMembersText: {
       ...typography.caption,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     membersHeaderRow: {

@@ -57,7 +57,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import { api, API_URL } from '../../src/lib/api';
-import { statusColors, spacing, radius, shadows } from '../../src/lib/design-tokens';
+import { statusColors, spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
@@ -226,12 +226,12 @@ const createStyles = (colors: ThemeColors) => {
         marginLeft: spacing.md,
       },
       headerTitle: {
-        fontSize: 17,
-        fontWeight: '600',
+        fontSize: typography.sizes.lg,
+        fontWeight: fontWeights.semibold,
         color: colors.foreground,
       },
       headerSubtitle: {
-        fontSize: 13,
+        fontSize: typography.sizes.sm,
         color: colors.mutedForeground,
         marginTop: 2,
       },
@@ -263,8 +263,8 @@ const createStyles = (colors: ThemeColors) => {
         gap: spacing.xs,
       },
       filterButtonText: {
-        fontSize: 13,
-        fontWeight: '500',
+        fontSize: typography.sizes.sm,
+        fontWeight: fontWeights.medium,
         color: colors.foreground,
       },
       toggleButton: {
@@ -285,8 +285,8 @@ const createStyles = (colors: ThemeColors) => {
         backgroundColor: colors.muted,
       },
       toggleButtonText: {
-        fontSize: 13,
-        fontWeight: '500',
+        fontSize: typography.sizes.sm,
+        fontWeight: fontWeights.medium,
         color: colors.foreground,
       },
       toggleButtonTextActive: {
@@ -299,7 +299,7 @@ const createStyles = (colors: ThemeColors) => {
         marginLeft: 'auto',
       },
       legendButtonText: {
-        fontSize: 13,
+        fontSize: typography.sizes.sm,
         color: colors.mutedForeground,
       },
       filterDropdown: {
@@ -327,11 +327,11 @@ const createStyles = (colors: ThemeColors) => {
       },
       filterOptionText: {
         flex: 1,
-        fontSize: 14,
+        fontSize: typography.button.fontSize,
         color: colors.foreground,
       },
       filterOptionTextActive: {
-        fontWeight: '600',
+        fontWeight: fontWeights.semibold,
         color: colors.primary,
       },
       legendCard: {
@@ -347,8 +347,8 @@ const createStyles = (colors: ThemeColors) => {
         zIndex: 25,
       },
       legendTitle: {
-        fontSize: 12,
-        fontWeight: '600',
+        fontSize: typography.captionSmall.fontSize,
+        fontWeight: fontWeights.semibold,
         color: colors.mutedForeground,
         marginBottom: spacing.sm,
       },
@@ -364,7 +364,7 @@ const createStyles = (colors: ThemeColors) => {
         borderRadius: 6,
       },
       legendLabel: {
-        fontSize: 13,
+        fontSize: typography.sizes.sm,
         color: colors.foreground,
       },
       markerContainer: {
@@ -426,8 +426,8 @@ const createStyles = (colors: ThemeColors) => {
         elevation: 2,
       },
       teamMarkerText: {
-        fontSize: 13,
-        fontWeight: '700',
+        fontSize: typography.sizes.sm,
+        fontWeight: fontWeights.bold,
         color: colors.white,
         textShadowColor: 'rgba(0,0,0,0.15)',
         textShadowOffset: { width: 0, height: 1 },
@@ -442,13 +442,13 @@ const createStyles = (colors: ThemeColors) => {
         ...shadows.lg,
       },
       calloutTitle: {
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: typography.button.fontSize,
+        fontWeight: fontWeights.semibold,
         color: colors.foreground,
         marginBottom: spacing.xs,
       },
       calloutSubtitle: {
-        fontSize: 12,
+        fontSize: typography.captionSmall.fontSize,
         color: colors.mutedForeground,
         marginBottom: spacing.sm,
       },
@@ -460,18 +460,18 @@ const createStyles = (colors: ThemeColors) => {
         marginBottom: spacing.xs,
       },
       calloutBadgeText: {
-        fontSize: 10,
-        fontWeight: '600',
+        fontSize: typography.sizes.xs,
+        fontWeight: fontWeights.semibold,
         color: colors.white,
       },
       calloutHint: {
-        fontSize: 10,
+        fontSize: typography.sizes.xs,
         color: colors.mutedForeground,
         fontStyle: 'italic',
         marginTop: spacing.xs,
       },
       calloutDetail: {
-        fontSize: 11,
+        fontSize: typography.sizes.xs,
         color: colors.mutedForeground,
         marginTop: 2,
       },
@@ -534,13 +534,13 @@ const createStyles = (colors: ThemeColors) => {
       },
       assignModeBannerText: {
         color: colors.primaryForeground,
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: typography.button.fontSize,
+        fontWeight: fontWeights.semibold,
         flex: 1,
       },
       assignModeBannerSubtext: {
         color: 'rgba(255,255,255,0.8)',
-        fontSize: 12,
+        fontSize: typography.captionSmall.fontSize,
         marginTop: 2,
       },
       cancelButton: {
@@ -553,8 +553,8 @@ const createStyles = (colors: ThemeColors) => {
       },
       cancelButtonText: {
         color: colors.primaryForeground,
-        fontWeight: '600',
-        fontSize: 14,
+        fontWeight: fontWeights.semibold,
+        fontSize: typography.button.fontSize,
       },
       modalOverlay: {
         flex: 1,
@@ -572,14 +572,14 @@ const createStyles = (colors: ThemeColors) => {
         ...shadows.xl,
       },
       modalTitle: {
-        fontSize: 18,
-        fontWeight: '700',
+        fontSize: typography.sizes.lg,
+        fontWeight: fontWeights.bold,
         color: colors.foreground,
         textAlign: 'center',
         marginBottom: spacing.md,
       },
       modalText: {
-        fontSize: 14,
+        fontSize: typography.button.fontSize,
         color: colors.mutedForeground,
         textAlign: 'center',
         marginBottom: spacing.lg,
@@ -587,7 +587,7 @@ const createStyles = (colors: ThemeColors) => {
       },
       modalHighlight: {
         color: colors.foreground,
-        fontWeight: '600',
+        fontWeight: fontWeights.semibold,
       },
       modalButtons: {
         flexDirection: 'row',
@@ -607,8 +607,8 @@ const createStyles = (colors: ThemeColors) => {
         backgroundColor: colors.primary,
       },
       modalButtonText: {
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: typography.sizes.md,
+        fontWeight: fontWeights.semibold,
       },
       modalButtonTextCancel: {
         color: colors.foreground,
@@ -635,8 +635,8 @@ const createStyles = (colors: ThemeColors) => {
         elevation: 2,
       },
       nameLabelText: {
-        fontSize: 10,
-        fontWeight: '600',
+        fontSize: typography.sizes.xs,
+        fontWeight: fontWeights.semibold,
         color: colors.foreground,
         textAlign: 'center',
       },
@@ -1636,10 +1636,10 @@ export default function MapScreen() {
           }}>
             <Feather name="map" size={40} color={colors.mutedForeground} />
           </View>
-          <Text style={{ fontSize: 20, fontWeight: '600', color: colors.foreground, textAlign: 'center' }}>
+          <Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>
             Map Access Restricted
           </Text>
-          <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center', lineHeight: 20 }}>
+          <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center', lineHeight: 20 }}>
             Team tracking is available for managers and owners.{'\n'}You can view your assigned jobs on the Jobs screen.
           </Text>
           <TouchableOpacity
@@ -1653,7 +1653,7 @@ export default function MapScreen() {
             onPress={() => router.push('/(tabs)/jobs')}
             activeOpacity={0.8}
           >
-            <Text style={{ color: colors.primaryForeground, fontWeight: '600' }}>View My Jobs</Text>
+            <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>View My Jobs</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1676,10 +1676,10 @@ export default function MapScreen() {
       }}>
         <Feather name="map-pin" size={36} color={colors.mutedForeground} />
       </View>
-      <Text style={{ fontSize: 18, fontWeight: '600', color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm }}>
+      <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm }}>
         Map Unavailable
       </Text>
-      <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center', lineHeight: 20, marginBottom: spacing.lg }}>
+      <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center', lineHeight: 20, marginBottom: spacing.lg }}>
         The map couldn't load. You can still view your jobs from the Jobs screen.
       </Text>
       <TouchableOpacity
@@ -1692,7 +1692,7 @@ export default function MapScreen() {
         onPress={() => router.push('/(tabs)/jobs')}
         activeOpacity={0.8}
       >
-        <Text style={{ color: colors.primaryForeground, fontWeight: '600' }}>View Jobs</Text>
+        <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>View Jobs</Text>
       </TouchableOpacity>
     </View>
   );
@@ -1765,7 +1765,7 @@ export default function MapScreen() {
                     borderWidth: 2,
                     borderColor: colors.white,
                   }}>
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: colors.primaryForeground }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.primaryForeground }}>
                       {routeJobs.findIndex(j => j.id === job.id) + 1}
                     </Text>
                   </View>
@@ -1865,7 +1865,7 @@ export default function MapScreen() {
                     </View>
                   )}
                   {member.isSubcontractor && member.activeJobName && (
-                    <Text style={[styles.calloutDetail, { color: colors.foreground, fontWeight: '500' }]}>
+                    <Text style={[styles.calloutDetail, { color: colors.foreground, fontWeight: fontWeights.medium }]}>
                       On job: {member.activeJobName}
                     </Text>
                   )}
@@ -1957,7 +1957,7 @@ export default function MapScreen() {
                     borderRadius: 3,
                     backgroundColor: '#22C55E',
                   }} />
-                  <Text style={{ fontSize: 10, fontWeight: '600', color: '#22C55E' }}>LIVE</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: '#22C55E' }}>LIVE</Text>
                 </View>
               )}
             </View>
@@ -2014,7 +2014,7 @@ export default function MapScreen() {
             ) : (
               <Feather name="radio" size={16} color={colors.primaryForeground} />
             )}
-            <Text style={{ flex: 1, fontWeight: '600', fontSize: 13, color: colors.primaryForeground }}>
+            <Text style={{ flex: 1, fontWeight: fontWeights.semibold, fontSize: typography.sizes.sm, color: colors.primaryForeground }}>
               Share my location with the team
             </Text>
             <Feather name="chevron-right" size={16} color={colors.primaryForeground} />
@@ -2044,7 +2044,7 @@ export default function MapScreen() {
                 }}
               />
             )}
-            <Text style={{ flex: 1, fontWeight: '600', fontSize: 13, color: colors.foreground }}>
+            <Text style={{ flex: 1, fontWeight: fontWeights.semibold, fontSize: typography.sizes.sm, color: colors.foreground }}>
               {locShareStatus === 'starting'
                 ? 'Starting location sharing…'
                 : locShareStatus === 'paused'
@@ -2057,7 +2057,7 @@ export default function MapScreen() {
               disabled={locShareBusy}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={{ fontWeight: '700', fontSize: 13, color: colors.destructive }}>Stop</Text>
+              <Text style={{ fontWeight: fontWeights.bold, fontSize: typography.sizes.sm, color: colors.destructive }}>Stop</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -2159,7 +2159,7 @@ export default function MapScreen() {
                     justifyContent: 'center',
                     paddingHorizontal: 3,
                   }}>
-                    <Text style={{ fontSize: 9, fontWeight: '700', color: colors.destructiveForeground }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.destructiveForeground }}>
                       {unreadAlerts.length > 9 ? '9+' : unreadAlerts.length}
                     </Text>
                   </View>
@@ -2277,9 +2277,9 @@ export default function MapScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                 <Feather name="bell" size={14} color={colors.foreground} />
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground }}>Activity</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>Activity</Text>
                 <View style={{ backgroundColor: colors.destructive, borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1, marginLeft: 2 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: colors.destructiveForeground }}>{unreadAlerts.length}</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.destructiveForeground }}>{unreadAlerts.length}</Text>
                 </View>
               </View>
               <TouchableOpacity 
@@ -2298,7 +2298,7 @@ export default function MapScreen() {
                 return (
                   <View key={type} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${config.color}12`, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 }}>
                     <Feather name={config.icon} size={10} color={config.color} />
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: config.color }}>{count}</Text>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: config.color }}>{count}</Text>
                   </View>
                 );
               })}
@@ -2339,12 +2339,12 @@ export default function MapScreen() {
                       <Feather name={config.icon} size={12} color={config.color} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 12, color: colors.foreground, lineHeight: 16 }} numberOfLines={2}>
-                        <Text style={{ fontWeight: '600' }}>{firstName}</Text>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground, lineHeight: 16 }} numberOfLines={2}>
+                        <Text style={{ fontWeight: fontWeights.semibold }}>{firstName}</Text>
                         <Text style={{ color: colors.mutedForeground }}> {actionText} </Text>
-                        <Text style={{ fontWeight: '500' }}>{alert.jobTitle || 'job site'}</Text>
+                        <Text style={{ fontWeight: fontWeights.medium }}>{alert.jobTitle || 'job site'}</Text>
                         {alert.alertType === 'departure' && alert.dwellSeconds && alert.dwellSeconds > 0 && (
-                          <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>
+                          <Text style={{ color: colors.mutedForeground, fontSize: typography.sizes.xs }}>
                             {` · ${(() => {
                               const s = alert.dwellSeconds!;
                               const h = Math.floor(s / 3600);
@@ -2354,10 +2354,10 @@ export default function MapScreen() {
                           </Text>
                         )}
                         {alert.count > 1 && (
-                          <Text style={{ color: colors.mutedForeground, fontSize: 11 }}> ({alert.count}x)</Text>
+                          <Text style={{ color: colors.mutedForeground, fontSize: typography.sizes.xs }}> ({alert.count}x)</Text>
                         )}
                       </Text>
-                      <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 2 }}>
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 2 }}>
                         {formatAlertTime(alert.latestTime)}
                         {alert.address ? ` \u00B7 ${alert.address.split(',')[0]}` : ''}
                       </Text>
@@ -2375,7 +2375,7 @@ export default function MapScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>Mark All Read</Text>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Mark All Read</Text>
             </TouchableOpacity>
           </View>
         );
@@ -2484,7 +2484,7 @@ export default function MapScreen() {
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: colors.white }}>{initials}</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.white }}>{initials}</Text>
                     </View>
                     {/* Activity indicator dot */}
                     <View style={{
@@ -2500,10 +2500,10 @@ export default function MapScreen() {
                     }} />
                   </View>
                   <View>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }} numberOfLines={1}>
+                    <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
                       {firstName}
                     </Text>
-                    <Text style={{ fontSize: 10, color: colors.mutedForeground, fontWeight: '500' }}>
+                    <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
                       {isDriving && speed && speed > 0
                         ? `${Math.round(speed * 3.6)} km/h`
                         : isWorking 
@@ -2535,8 +2535,8 @@ export default function MapScreen() {
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={{
               marginTop: spacing.lg,
-              fontSize: 16,
-              fontWeight: '600',
+              fontSize: typography.subtitle.fontSize,
+              fontWeight: fontWeights.semibold,
               color: colors.foreground,
             }}>
               Loading team...
@@ -2633,8 +2633,8 @@ export default function MapScreen() {
                 borderBottomColor: colors.border,
               }}>
                 <Text style={{
-                  fontSize: 18,
-                  fontWeight: '700',
+                  fontSize: typography.sizes.lg,
+                  fontWeight: fontWeights.bold,
                   color: colors.foreground,
                   marginBottom: spacing.xs,
                 }}>
@@ -2642,7 +2642,7 @@ export default function MapScreen() {
                 </Text>
                 {selectedJob.clientName && (
                   <Text style={{
-                    fontSize: 14,
+                    fontSize: typography.button.fontSize,
                     color: colors.mutedForeground,
                     marginBottom: spacing.xs,
                   }}>
@@ -2651,7 +2651,7 @@ export default function MapScreen() {
                 )}
                 {selectedJob.address && (
                   <Text style={{
-                    fontSize: 13,
+                    fontSize: typography.sizes.sm,
                     color: colors.mutedForeground,
                   }} numberOfLines={2}>
                     {selectedJob.address}
@@ -2669,7 +2669,7 @@ export default function MapScreen() {
                     borderRadius: radius.sm,
                     backgroundColor: getMarkerColor(selectedJob.status),
                   }}>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: colors.white }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.white }}>
                       {STATUS_LABELS[selectedJob.status]}
                     </Text>
                   </View>
@@ -2680,7 +2680,7 @@ export default function MapScreen() {
                       borderRadius: radius.sm,
                       backgroundColor: colors.primary,
                     }}>
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: colors.primaryForeground }}>
+                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
                         In Route
                       </Text>
                     </View>
@@ -2714,10 +2714,10 @@ export default function MapScreen() {
                   <Feather name="file-text" size={20} color={colors.primaryForeground} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
+                  <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                     View Job
                   </Text>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                     See full job details and journey
                   </Text>
                 </View>
@@ -2749,10 +2749,10 @@ export default function MapScreen() {
                   <Feather name="plus-circle" size={20} color={colors.successForeground} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
+                  <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                     {selectedJob && isJobInRoute(selectedJob.id) ? 'Already in Route' : 'Add to Route'}
                   </Text>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                     Plan multi-stop navigation
                   </Text>
                 </View>
@@ -2782,10 +2782,10 @@ export default function MapScreen() {
                   <Feather name="navigation" size={20} color={colors.infoForeground} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
+                  <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                     Get Directions
                   </Text>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                     Open in Maps app
                   </Text>
                 </View>
@@ -2803,7 +2803,7 @@ export default function MapScreen() {
               onPress={() => setShowJobActionSheet(false)}
               activeOpacity={0.7}
             >
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.mutedForeground }}>
+              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
                 Cancel
               </Text>
             </TouchableOpacity>
@@ -2849,10 +2849,10 @@ export default function MapScreen() {
                 <Feather name="navigation" size={18} color={colors.primary} />
               </View>
               <View>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+                <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                   Route: {routeJobs.length} stop{routeJobs.length !== 1 ? 's' : ''}
                 </Text>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                   {routeTotals
                     ? `${routeTotals.minutes} min · ${routeTotals.km.toFixed(1)} km`
                     : `Tap to ${showRoutePanel ? 'collapse' : 'expand'}`}
@@ -2870,7 +2870,7 @@ export default function MapScreen() {
                 onPress={handleStartRoute}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primaryForeground }}>Start</Text>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Start</Text>
               </TouchableOpacity>
               <View style={{
                 width: 32,
@@ -2921,16 +2921,16 @@ export default function MapScreen() {
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}>
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryForeground }}>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: colors.primaryForeground }}>
                           {index + 1}
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }} numberOfLines={1}>
+                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }} numberOfLines={1}>
                           {job.title}
                         </Text>
                         {job.address && (
-                          <Text style={{ fontSize: 11, color: colors.mutedForeground }} numberOfLines={1}>
+                          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }} numberOfLines={1}>
                             {job.address}
                           </Text>
                         )}
@@ -2954,11 +2954,11 @@ export default function MapScreen() {
                       }}>
                         <Feather name="corner-down-right" size={12} color={colors.mutedForeground} />
                         <Feather name="clock" size={11} color={colors.mutedForeground} />
-                        <Text style={{ fontSize: 11, fontWeight: '500', color: colors.mutedForeground }}>
+                        <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.medium, color: colors.mutedForeground }}>
                           {leg.durationMinutes} min
                         </Text>
                         {typeof leg.distanceKm === 'number' && (
-                          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
                             · {leg.distanceKm.toFixed(1)} km
                           </Text>
                         )}
@@ -2993,7 +2993,7 @@ export default function MapScreen() {
                   activeOpacity={0.7}
                 >
                   <Feather name="trash-2" size={14} color={colors.destructive} />
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.destructive }}>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.destructive }}>
                     Clear
                   </Text>
                 </TouchableOpacity>
@@ -3021,7 +3021,7 @@ export default function MapScreen() {
                   ) : (
                     <>
                       <Feather name="zap" size={14} color={colors.primary} />
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }}>
                         Optimize
                       </Text>
                     </>
@@ -3043,7 +3043,7 @@ export default function MapScreen() {
                   activeOpacity={0.7}
                 >
                   <Feather name="navigation" size={14} color={colors.primaryForeground} />
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primaryForeground }}>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
                     Start
                   </Text>
                 </TouchableOpacity>

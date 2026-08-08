@@ -7,6 +7,7 @@ import { useNotificationsStore } from '../../src/lib/notifications-store';
 import { formatDistanceToNow } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
@@ -24,8 +25,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   markAllButton: {
@@ -35,8 +36,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     backgroundColor: colors.primaryLight,
   },
   markAllText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   emptyState: {
@@ -54,13 +55,13 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     maxWidth: 280,
@@ -93,19 +94,19 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     flex: 1,
   },
   notificationTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 4,
   },
   notificationMessage: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     lineHeight: 20,
     marginBottom: 6,
   },
   notificationTime: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   notificationActions: {
@@ -126,8 +127,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     backgroundColor: colors.border,
   },
   actionText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   dismissText: {
@@ -148,9 +149,9 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginTop: 8,
   },
   settingsText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
 });
 

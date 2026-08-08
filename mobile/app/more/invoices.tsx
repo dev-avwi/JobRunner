@@ -19,7 +19,7 @@ import { useInvoicesStore, useClientsStore, useAuthStore } from '../../src/lib/s
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { api, API_URL } from '../../src/lib/api';
-import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
 import { EmailComposeModal } from '../../src/components/EmailComposeModal';
@@ -614,7 +614,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   newButtonText: {
     color: colors.primaryForeground,
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   kpiGrid: {
@@ -650,8 +650,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.xs,
   },
   kpiValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
 
@@ -698,7 +698,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   filterPillText: {
     ...typography.captionSmall,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   filterPillTextActive: {
@@ -716,8 +716,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   filterCountText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   filterCountTextActive: {
@@ -830,8 +830,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   
   // Quote/Invoice number - 15px semibold
   cardNumber: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   
@@ -842,7 +842,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 4, // gap-1
   },
   cardClientText: {
-    fontSize: 14, // text-sm
+    fontSize: typography.button.fontSize, // text-sm
     color: colors.mutedForeground,
     flex: 1,
   },
@@ -856,8 +856,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   
   // Amount - 18px bold, primary/trade color
   cardAmount: {
-    fontSize: 18, // text-lg
-    fontWeight: '700',
+    fontSize: typography.sizes.lg, // text-lg
+    fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   
@@ -888,8 +888,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   
@@ -902,8 +902,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   
   // Job title
   cardJobTitle: {
-    fontSize: 14, // text-sm
-    fontWeight: '500', // font-medium
+    fontSize: typography.button.fontSize, // text-sm
+    fontWeight: fontWeights.medium, // font-medium
     color: colors.foreground,
   },
   
@@ -920,7 +920,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 4, // gap-1
   },
   cardDateText: {
-    fontSize: 12, // text-xs
+    fontSize: typography.captionSmall.fontSize, // text-xs
     color: colors.mutedForeground,
   },
   
@@ -935,8 +935,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 4,
   },
   recurringBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.info,
   },
 });

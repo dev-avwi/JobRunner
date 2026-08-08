@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { useAuthStore } from '../../src/lib/store';
-import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import { Slider } from '../../src/components/ui/Slider';
 import {
   useAdvancedThemeStore,
@@ -138,8 +138,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   logoButtonText: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
-    fontSize: 14,
+    fontWeight: fontWeights.medium,
+    fontSize: typography.button.fontSize,
   },
   logoButtonTextPrimary: {
     color: colors.primaryForeground,
@@ -176,8 +176,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   modeOptionText: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
-    fontSize: 14,
+    fontWeight: fontWeights.medium,
+    fontSize: typography.button.fontSize,
   },
   modeOptionTextActive: {
     color: colors.primaryForeground,
@@ -205,7 +205,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   themePresetName: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   themePresetDesc: {
     ...typography.caption,
@@ -238,9 +238,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   inputLabel: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     marginBottom: spacing.sm,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
   },
   customColorRow: {
     flexDirection: 'row',
@@ -274,8 +274,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   applyButtonText: {
     color: colors.primaryForeground,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.button.fontSize,
   },
   sliderRow: {
     flexDirection: 'row',
@@ -287,14 +287,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   sliderLabel: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
-    fontSize: 14,
+    fontWeight: fontWeights.medium,
+    fontSize: typography.button.fontSize,
   },
   sliderValue: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.button.fontSize,
   },
   optionGrid: {
     flexDirection: 'row',
@@ -317,8 +317,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   optionChipText: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
-    fontSize: 13,
+    fontWeight: fontWeights.medium,
+    fontSize: typography.sizes.sm,
   },
   optionChipTextActive: {
     color: colors.primaryForeground,
@@ -363,8 +363,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   previewButtonText: {
     color: colors.primaryForeground,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.button.fontSize,
   },
   previewBadge: {
     paddingVertical: 4,
@@ -374,8 +374,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginTop: spacing.sm,
   },
   previewBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   infoRow: {
     flexDirection: 'row',
@@ -407,7 +407,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   resetButtonText: {
     ...typography.body,
     color: colors.destructive,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
 });
 

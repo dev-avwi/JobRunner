@@ -13,7 +13,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import { useLocationStore } from '../../src/lib/location-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -113,7 +113,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   optionalBadgeText: {
     ...typography.caption,
     color: colors.success,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   paragraph: {
     ...typography.body,
@@ -141,7 +141,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   privacyLink: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   buttonContainer: {
     marginTop: spacing.lg,
@@ -159,7 +159,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   primaryButtonText: {
     ...typography.subtitle,
     color: colors.primaryForeground,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   secondaryButton: {
     backgroundColor: 'transparent',
@@ -174,7 +174,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   secondaryButtonText: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   skipButton: {
     padding: spacing.md,

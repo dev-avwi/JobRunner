@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import notificationService from '../../src/lib/notifications';
 
 const NOTIFICATIONS_SEEN_KEY = 'notifications_permission_seen';
@@ -297,7 +297,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   primaryButtonText: {
     ...typography.subtitle,
     color: colors.primaryForeground,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   skipButton: {
     padding: spacing.md,

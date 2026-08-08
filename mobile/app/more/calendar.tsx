@@ -15,7 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { useJobsStore, useClientsStore } from '../../src/lib/store';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, usePageShell } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, usePageShell, typography, fontWeights } from '../../src/lib/design-tokens';
 import { useIsTablet } from '../../src/lib/device';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -62,12 +62,12 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     flex: 1,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -97,8 +97,8 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
   },
   scheduleButtonText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -120,8 +120,8 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     backgroundColor: colors.primary,
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   tabTextActive: {
@@ -147,12 +147,12 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     alignItems: 'center',
   },
   dateRangeText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   jobsCountText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -182,13 +182,13 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     borderColor: colors.primary,
   },
   weekDayName: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     marginBottom: 4,
   },
   weekDayNumber: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   weekDayTextActive: {
@@ -221,7 +221,7 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     flex: 1,
     textAlign: 'center',
     fontSize: isTabletDevice ? 14 : 12,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   monthGrid: {
@@ -252,16 +252,16 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
   },
   monthDayNumber: {
     fontSize: isTabletDevice ? 16 : 14,
-    fontWeight: isTabletDevice ? '500' : undefined,
+    fontWeight: isTabletDevice ? fontWeights.medium : undefined,
     color: colors.foreground,
     marginBottom: isTabletDevice ? spacing.xs : 2,
   },
   monthDayNumberToday: {
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   monthDayNumberSelected: {
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   monthJobIndicator: {
     flexDirection: 'row',
@@ -296,8 +296,8 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     gap: spacing.sm,
   },
   selectedDayTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   todayBadge: {
@@ -307,8 +307,8 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     borderRadius: radius.lg,
   },
   todayBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   noJobsCard: {
@@ -321,9 +321,9 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     gap: spacing.sm,
   },
   noJobsText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   jobCard: {
     backgroundColor: colors.card,
@@ -351,16 +351,16 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     gap: 4,
   },
   jobTime: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   jobCardContent: {
     gap: 4,
   },
   jobTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   jobDetailRow: {
@@ -369,7 +369,7 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     gap: spacing.xs,
   },
   jobDetailText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     flex: 1,
   },
@@ -381,18 +381,18 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     marginBottom: spacing.xl,
   },
   todayViewDate: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['4xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   todayViewWeekday: {
-    fontSize: 18,
+    fontSize: typography.sizes.lg,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     marginTop: spacing.xs,
   },
   todayViewSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: spacing.sm,
   },
@@ -403,14 +403,14 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     marginBottom: spacing.md,
   },
   todayJobsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   todayJobsCount: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     backgroundColor: colors.primaryLight,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 4,
@@ -435,13 +435,13 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     flex: 1,
   },
   conflictBannerTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.destructive,
     marginBottom: 2,
   },
   conflictBannerText: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.destructive,
   },
   conflictDot: {
@@ -465,8 +465,8 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     marginTop: spacing.xs,
   },
   conflictJobBadgeText: {
-    fontSize: 11,
-    fontWeight: '500' as const,
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.destructive,
   },
 });
@@ -783,12 +783,12 @@ export default function CalendarScreen() {
                   <>
                   {earlyLateJobs.length > 0 && (
                     <View style={{ marginBottom: spacing.md }}>
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.xs }}>Outside Hours</Text>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: spacing.xs }}>Outside Hours</Text>
                       {earlyLateJobs.map(job => (
                         <PressableRow key={`early-${job.id}`} onPress={() => router.push(`/job/${job.id}`)} style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.xs, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, }} >
                           <Feather name="clock" size={14} color={colors.mutedForeground} />
-                          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>{formatTime(job.scheduledAt)}</Text>
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, flex: 1 }} numberOfLines={1}>{job.title}</Text>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>{formatTime(job.scheduledAt)}</Text>
+                          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }} numberOfLines={1}>{job.title}</Text>
                           <StatusBadge status={job.status} size="sm" />
                         </PressableRow>
                       ))}
@@ -802,7 +802,7 @@ export default function CalendarScreen() {
                       return (
                         <View key={hour} style={{ position: 'absolute', top: yPos, left: 0, right: 0, height: HOUR_HEIGHT, flexDirection: 'row' }}>
                           <View style={{ width: 48, alignItems: 'flex-end', paddingRight: 8, paddingTop: 0 }}>
-                            <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: '500' }}>{h} {ampm}</Text>
+                            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>{h} {ampm}</Text>
                           </View>
                           <View style={{ flex: 1, borderTopWidth: 1, borderTopColor: colors.border }} />
                         </View>
@@ -828,19 +828,19 @@ export default function CalendarScreen() {
                       return (
                         <PressableRow key={job.id} onPress={() => router.push(`/job/${job.id}`)} style={{ position: 'absolute', top: pos.top + 1, left: 58, right: 10, height: Math.max(pos.height - 2, 32), backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: accentColor, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 4, justifyContent: 'center', zIndex: 5, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.cardBorder, }} >
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={{ fontSize: 11, fontWeight: '700', color: accentColor }}>
+                            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: accentColor }}>
                               {formatTime(job.scheduledAt)}
                             </Text>
-                            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.foreground, flex: 1, letterSpacing: -0.2 }} numberOfLines={1}>{job.title}</Text>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1, letterSpacing: -0.2 }} numberOfLines={1}>{job.title}</Text>
                             {isConflict && <Feather name="alert-triangle" size={10} color={colors.destructive} />}
                           </View>
                           {pos.height > 40 && getClientName(job.clientId) && (
-                            <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>{getClientName(job.clientId)}</Text>
+                            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>{getClientName(job.clientId)}</Text>
                           )}
                           {pos.height > 56 && job.address && (
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
                               <Feather name="map-pin" size={9} color={colors.mutedForeground} />
-                              <Text style={{ fontSize: 10, color: colors.mutedForeground }} numberOfLines={1}>{job.address}</Text>
+                              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }} numberOfLines={1}>{job.address}</Text>
                             </View>
                           )}
                         </PressableRow>

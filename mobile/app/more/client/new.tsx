@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useClientsStore } from '../../../src/lib/store';
 import { useTheme, ThemeColors } from '../../../src/lib/theme';
 import { getBottomNavHeight } from '../../../src/components/BottomNav';
+import { typography, fontWeights } from '../../../src/lib/design-tokens';
 
 const CLIENT_TYPES = ['Residential', 'Commercial', 'Strata', 'Government'];
 
@@ -43,8 +44,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   saveHeaderButton: {
@@ -59,8 +60,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -77,15 +78,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 8,
   },
   inputLabelText: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   input: {
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: colors.border,
@@ -114,13 +115,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.primary,
   },
   pickerOptionText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   pickerOptionTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   saveButton: {
     flexDirection: 'row',
@@ -136,12 +137,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     opacity: 0.7,
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   inputHint: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 4,
     marginLeft: 4,

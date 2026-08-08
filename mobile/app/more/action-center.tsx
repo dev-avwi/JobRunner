@@ -4,7 +4,7 @@ import { Alert } from '@/lib/alert';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, colorWithOpacity } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, typographySizes, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, typographySizes, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { api } from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -135,15 +135,15 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: spacing.xs,
   },
   statValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
   },
   statLabel: {
     ...typography.caption,
     color: colors.mutedForeground,
     marginTop: 2,
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -203,8 +203,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     borderRadius: radius.pill,
   },
   priorityText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
   },
   actionTitle: {
@@ -231,7 +231,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   metricText: {
     ...typography.caption,
     color: colors.mutedForeground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   ctaButton: {
     flexDirection: 'row',
@@ -328,11 +328,11 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   modalTitle: {
     fontSize: typographySizes.lg,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   modalSelectAll: {
     fontSize: typographySizes.sm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   batchSubtitle: {
     fontSize: typographySizes.sm,
@@ -366,7 +366,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   batchJobTitle: {
     fontSize: typographySizes.md,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   batchJobClient: {
     fontSize: typographySizes.sm,
@@ -379,7 +379,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   batchStatusText: {
     fontSize: typographySizes.xs,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   batchFooter: {
     flexDirection: 'row',
@@ -403,7 +403,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   batchCreateText: {
     fontSize: typographySizes.md,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.white,
   },
 });

@@ -13,7 +13,7 @@ import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
-import { spacing, radius, typography, iconSizes, sizes } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, iconSizes, sizes, fontWeights } from '../../src/lib/design-tokens';
 import { useJobsStore, useClientsStore, useQuotesStore, useInvoicesStore } from '../../src/lib/store';
 
 interface SearchResult {
@@ -44,7 +44,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   backText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginLeft: spacing.xs,
   },
@@ -66,7 +66,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginLeft: spacing.md,
     marginRight: spacing.md,
     color: colors.foreground,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
   },
   results: {
     flex: 1,
@@ -115,8 +115,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: radius.md,
   },
   resultTypeText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
     textTransform: 'capitalize',
   },

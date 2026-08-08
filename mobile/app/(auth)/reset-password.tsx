@@ -18,6 +18,7 @@ import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/Card';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 export default function ResetPasswordScreen() {
   const params = useLocalSearchParams();
@@ -301,21 +302,21 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     height: 60,
   },
   appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 8,
   },
   tagline: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
   },
   inputGroup: {
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: 8,
   },
@@ -331,7 +332,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
   },
   eyeButton: {
@@ -348,7 +349,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 8,
   },
   requirementText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   requirementMet: {
@@ -361,7 +362,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 16,
   },
   matchText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
   },
   matchSuccess: {
     color: '#22c55e',
@@ -384,8 +385,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   primaryButtonText: {
     color: colors.primaryForeground || colors.white,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   successContainer: {
     alignItems: 'center',
@@ -410,8 +411,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 8,
   },
   backText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
 });

@@ -12,7 +12,7 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { formatCurrency } from '../../src/lib/format';
 import api from '../../src/lib/api';
 
@@ -279,9 +279,9 @@ function createStyles(colors: ThemeColors) {
       paddingTop: spacing.sm,
     },
     chartCol: { flex: 1, alignItems: 'center', gap: spacing.xs },
-    chartValue: { fontSize: 11, fontWeight: '700', color: colors.foreground },
+    chartValue: { fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.foreground },
     chartBar: { width: '52%', borderRadius: radius.md, minHeight: 4 },
-    chartLabel: { fontSize: 10, color: colors.mutedForeground, textAlign: 'center' },
+    chartLabel: { fontSize: typography.sizes.xs, color: colors.mutedForeground, textAlign: 'center' },
 
     bizRow: {
       flexDirection: 'row',
@@ -299,7 +299,7 @@ function createStyles(colors: ThemeColors) {
     },
     bizName: { ...typography.bodySemibold, color: colors.foreground },
     bizMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2, marginBottom: spacing.xs },
-    bizMeta: { fontSize: 12, color: colors.mutedForeground },
+    bizMeta: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground },
     bizDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.mutedForeground },
     bizBarTrack: {
       height: 6,
@@ -308,7 +308,7 @@ function createStyles(colors: ThemeColors) {
       overflow: 'hidden',
     },
     bizBarFill: { height: 6, borderRadius: radius.pill },
-    bizAmount: { ...typography.bodySemibold, fontWeight: '700', color: colors.foreground },
+    bizAmount: { ...typography.bodySemibold, fontWeight: fontWeights.bold, color: colors.foreground },
 
     emptyCard: {
       backgroundColor: colors.card,
@@ -330,6 +330,6 @@ function createStyles(colors: ThemeColors) {
       marginBottom: spacing.xs,
     },
     emptyText: { ...typography.bodySemibold, color: colors.foreground, textAlign: 'center' },
-    emptySubtext: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center' },
+    emptySubtext: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center' },
   });
 }

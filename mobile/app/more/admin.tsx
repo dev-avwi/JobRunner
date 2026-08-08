@@ -20,6 +20,7 @@ import { Badge } from '../../src/components/ui/Badge';
 import { Skeleton } from '../../src/components/Skeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 interface AdminStats {
   kpis: {
@@ -464,7 +465,7 @@ export default function AdminDashboard() {
           All Users
         </Text>
         <Badge variant="secondary">
-          <Text style={{ fontSize: 11, fontWeight: '600', color: colors.foreground }}>{users.length}</Text>
+          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.foreground }}>{users.length}</Text>
         </Badge>
       </View>
       
@@ -517,8 +518,8 @@ export default function AdminDashboard() {
                   </View>
                   <Badge variant={getTierBadgeVariant(u.subscriptionTier)}>
                     <Text style={{ 
-                      fontSize: 10, 
-                      fontWeight: '600', 
+                      fontSize: typography.sizes.xs, 
+                      fontWeight: fontWeights.semibold, 
                       textTransform: 'uppercase',
                       color: getTierBadgeVariant(u.subscriptionTier) === 'outline' ? colors.foreground : 
                              getTierBadgeVariant(u.subscriptionTier) === 'success' ? colors.success :
@@ -600,7 +601,7 @@ export default function AdminDashboard() {
             </View>
             <PressableRow onPress={fetchHealthData} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.muted, alignSelf: 'flex-start', }} >
               <Feather name="refresh-cw" size={14} color={colors.foreground} />
-              <Text style={{ color: colors.foreground, fontWeight: '600', fontSize: 13 }}>Retry</Text>
+              <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.sizes.sm }}>Retry</Text>
             </PressableRow>
           </CardContent>
         </Card>
@@ -874,12 +875,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     marginTop: 2,
   },
   tabScrollView: {
@@ -904,12 +905,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     marginBottom: 12,
     marginTop: 20,
     textTransform: 'uppercase',
@@ -932,12 +933,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   kpiLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
   },
   kpiValue: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     marginTop: 4,
     letterSpacing: -0.5,
   },
@@ -955,12 +956,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   featureLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
   },
   featureValue: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     fontVariant: ['tabular-nums'],
   },
   subscriptionGrid: {
@@ -972,13 +973,13 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   subscriptionValue: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
   },
   subscriptionLabel: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     marginTop: 4,
   },
   demoToolButton: {
@@ -991,11 +992,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   demoToolButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
   },
   demoToolHint: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -1005,16 +1006,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   userName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     letterSpacing: -0.2,
   },
   userEmail: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     marginTop: 2,
   },
   userBusiness: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     marginTop: 4,
   },
   userHeader: {
@@ -1034,8 +1035,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   userMetaText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
   },
   healthCard: {
     flexDirection: 'row',
@@ -1050,11 +1051,11 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   healthName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
   },
   healthDetail: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     marginTop: 2,
   },
   healthBadge: {
@@ -1071,8 +1072,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   healthStatus: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     textTransform: 'capitalize',
   },
   performanceGrid: {
@@ -1088,12 +1089,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   performanceLabel: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
   },
   performanceValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     marginTop: 6,
     letterSpacing: -0.5,
   },
@@ -1122,15 +1123,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   activityLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   activityUser: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     marginTop: 2,
   },
   activityDetails: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     marginTop: 2,
   },
   activityTime: {
@@ -1140,8 +1141,8 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   activityTimeText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
   },
   emptyState: {
     alignItems: 'center',
@@ -1149,12 +1150,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyStateText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     marginTop: 8,
   },
   emptyStateSubtext: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     textAlign: 'center',
     maxWidth: 260,
   },
@@ -1173,12 +1174,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   accessDeniedTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     marginBottom: 8,
   },
   accessDeniedText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -1189,7 +1190,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   accessDeniedButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
 });

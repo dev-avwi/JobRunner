@@ -30,6 +30,7 @@ import LiveDocumentPreview from '../../../src/components/LiveDocumentPreview';
 import { getBottomNavHeight } from '../../../src/components/BottomNav';
 import { DatePicker } from '../../../src/components/ui/DatePicker';
 import { showToast } from '../../../src/lib/toast';
+import { typography, fontWeights } from '../../../src/lib/design-tokens';
 
 const formatLocalDate = (d: Date): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -66,8 +67,8 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.border,
     },
     headerTitle: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       flex: 1,
       marginLeft: 12,
@@ -79,8 +80,8 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 12,
     },
     totalBadgeText: {
-      fontSize: 13,
-      fontWeight: '600',
+      fontSize: typography.sizes.sm,
+      fontWeight: fontWeights.semibold,
       color: colors.primary,
     },
     tabContainer: {
@@ -117,8 +118,8 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.primaryDark,
     },
     tabText: {
-      fontSize: 17,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     tabTextActive: {
@@ -159,8 +160,8 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 16,
     },
     cardHeaderText: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     itemCountBadge: {
@@ -170,7 +171,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 8,
     },
     itemCountText: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
     },
     selectButton: {
@@ -184,7 +185,7 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.border,
     },
     selectPlaceholder: {
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.mutedForeground,
     },
     selectedClient: {
@@ -201,20 +202,20 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
     },
     clientAvatarText: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primary,
     },
     selectedClientText: {
-      fontSize: 15,
-      fontWeight: '500',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     inputGroup: {
       marginBottom: 16,
     },
     inputLabel: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
       marginBottom: 6,
     },
@@ -222,7 +223,7 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.background,
       borderRadius: 12,
       padding: 14,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
       borderWidth: 1,
       borderColor: colors.border,
@@ -258,18 +259,18 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
     },
     lineItemDescription: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
       marginBottom: 2,
     },
     lineItemMeta: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
     },
     lineItemTotal: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       marginRight: 8,
     },
@@ -301,8 +302,8 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.border,
     },
     addItemText: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     templateButton: {
@@ -316,8 +317,8 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.primaryLight,
     },
     templateButtonText: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.primary,
     },
     catalogButton: {
@@ -346,12 +347,12 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 6,
     },
     totalLabel: {
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
     },
     totalValue: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     grandTotalRow: {
@@ -361,13 +362,13 @@ function createStyles(colors: ThemeColors) {
       paddingTop: 12,
     },
     grandTotalLabel: {
-      fontSize: 15,
-      fontWeight: '600',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     grandTotalValue: {
-      fontSize: 16,
-      fontWeight: '700',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.bold,
       color: colors.foreground,
     },
     depositHeader: {
@@ -402,7 +403,7 @@ function createStyles(colors: ThemeColors) {
       borderTopColor: colors.border,
     },
     depositLabel: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
       marginBottom: 10,
     },
@@ -423,16 +424,16 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.primary,
     },
     depositPercentText: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     depositPercentTextSelected: {
       color: colors.primary,
     },
     depositAmount: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       marginTop: 12,
       textAlign: 'center',
@@ -455,8 +456,8 @@ function createStyles(colors: ThemeColors) {
       opacity: 0.6,
     },
     submitButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primaryForeground,
     },
     modalContainer: {
@@ -472,8 +473,8 @@ function createStyles(colors: ThemeColors) {
       borderBottomColor: colors.border,
     },
     modalTitle: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     modalContent: {
@@ -485,7 +486,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 48,
     },
     emptyStateText: {
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
       marginTop: 12,
       marginBottom: 16,
@@ -500,8 +501,8 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.primaryLight,
     },
     createClientButtonText: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.primary,
     },
     clientOption: {
@@ -521,20 +522,20 @@ function createStyles(colors: ThemeColors) {
       marginRight: 12,
     },
     clientOptionAvatarText: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primary,
     },
     clientOptionInfo: {
       flex: 1,
     },
     clientOptionName: {
-      fontSize: 15,
-      fontWeight: '500',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     clientOptionEmail: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
       marginTop: 2,
     },
@@ -549,12 +550,12 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 16,
     },
     lineTotalLabel: {
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
     },
     lineTotalValue: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     saveItemButton: {
@@ -564,8 +565,8 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
     },
     saveItemButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primaryForeground,
     },
     previewHeadingRow: {
@@ -576,8 +577,8 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 16,
     },
     previewHeadingTitle: {
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.medium,
       color: colors.mutedForeground,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -591,7 +592,7 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.border,
     },
     previewHeadingBadgeText: {
-      fontSize: 10,
+      fontSize: typography.sizes.xs,
       color: colors.mutedForeground,
     },
   });
@@ -1240,8 +1241,8 @@ export default function NewQuoteScreen() {
                 color={activeTab === 'edit' ? colors.primaryForeground : colors.foreground} 
               />
               <Text style={{
-                fontSize: 15,
-                fontWeight: '600',
+                fontSize: typography.sizes.md,
+                fontWeight: fontWeights.semibold,
                 color: activeTab === 'edit' ? colors.primaryForeground : colors.foreground,
               }}>
                 Edit
@@ -1267,8 +1268,8 @@ export default function NewQuoteScreen() {
                 color={activeTab === 'preview' ? colors.primaryForeground : colors.foreground} 
               />
               <Text style={{
-                fontSize: 15,
-                fontWeight: '600',
+                fontSize: typography.sizes.md,
+                fontWeight: fontWeights.semibold,
                 color: activeTab === 'preview' ? colors.primaryForeground : colors.foreground,
               }}>
                 Preview
@@ -1289,8 +1290,8 @@ export default function NewQuoteScreen() {
               paddingBottom: 8,
             }}>
               <Text style={{
-                fontSize: 12,
-                fontWeight: '500',
+                fontSize: typography.captionSmall.fontSize,
+                fontWeight: fontWeights.medium,
                 color: colors.mutedForeground,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
@@ -1306,8 +1307,8 @@ export default function NewQuoteScreen() {
                 borderColor: colors.border,
               }}>
                 <Text style={{
-                  fontSize: 11,
-                  fontWeight: '500',
+                  fontSize: typography.sizes.xs,
+                  fontWeight: fontWeights.medium,
                   color: colors.mutedForeground,
                 }}>
                   Updates as you type
@@ -1344,7 +1345,7 @@ export default function NewQuoteScreen() {
             {isLoadingClients && clients.length === 0 ? (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 48 }}>
                 <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={{ fontSize: 14, color: colors.mutedForeground, marginTop: 12 }}>Loading clients...</Text>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: 12 }}>Loading clients...</Text>
               </View>
             ) : (
             <ScrollView 
@@ -1567,7 +1568,7 @@ export default function NewQuoteScreen() {
                 ) : (
                   <>
                     <Feather name="check" size={18} color={colors.primaryForeground} />
-                    <Text style={{ color: colors.primaryForeground, fontSize: 16, fontWeight: '600' }}>{isEditing ? 'Update Quote' : 'Create Quote'}</Text>
+                    <Text style={{ color: colors.primaryForeground, fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold }}>{isEditing ? 'Update Quote' : 'Create Quote'}</Text>
                   </>
                 )}
               </PressableRow>
@@ -1657,8 +1658,8 @@ export default function NewQuoteScreen() {
                   <Feather name="user-plus" size={18} color={colors.primaryForeground} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.primary }}>Quick Add Client</Text>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Create a new client without leaving this screen</Text>
+                  <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.primary }}>Quick Add Client</Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Create a new client without leaving this screen</Text>
                 </View>
                 <Feather name="chevron-right" size={20} color={colors.primary} />
               </PressableRow>
@@ -1667,7 +1668,7 @@ export default function NewQuoteScreen() {
                 <View style={styles.emptyState}>
                   <Feather name="user" size={48} color={colors.mutedForeground} />
                   <Text style={styles.emptyStateText}>No clients found</Text>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: 'center', marginTop: 4 }}>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, textAlign: 'center', marginTop: 4 }}>
                     Use Quick Add above to create your first client
                   </Text>
                 </View>
@@ -1778,7 +1779,7 @@ export default function NewQuoteScreen() {
             </PressableRow>
           </View>
           <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
-            <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 16 }}>
+            <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginBottom: 16 }}>
               Describe the job, add photos, or use voice input. AI will generate quote line items with realistic pricing.
             </Text>
             <View style={styles.inputGroup}>
@@ -1797,15 +1798,15 @@ export default function NewQuoteScreen() {
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
               <PressableRow style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.muted, borderRadius: 10, paddingVertical: 12, borderWidth: 1, borderColor: colors.border, }} onPress={() => handlePickAIPhoto('camera')} >
                 <Feather name="camera" size={18} color={colors.foreground} />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>Camera</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>Camera</Text>
               </PressableRow>
               <PressableRow style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.muted, borderRadius: 10, paddingVertical: 12, borderWidth: 1, borderColor: colors.border, }} onPress={() => handlePickAIPhoto('gallery')} >
                 <Feather name="image" size={18} color={colors.foreground} />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>Gallery</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>Gallery</Text>
               </PressableRow>
               <PressableRow style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: showVoiceRecorder ? colors.primaryLight : colors.muted, borderRadius: 10, paddingVertical: 12, borderWidth: 1, borderColor: showVoiceRecorder ? colors.primary : colors.border, }} onPress={() => setShowVoiceRecorder(!showVoiceRecorder)} >
                 <Feather name="mic" size={18} color={showVoiceRecorder ? colors.primary : colors.foreground} />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: showVoiceRecorder ? colors.primary : colors.foreground }}>Voice</Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: showVoiceRecorder ? colors.primary : colors.foreground }}>Voice</Text>
               </PressableRow>
             </View>
 
@@ -1893,7 +1894,7 @@ export default function NewQuoteScreen() {
                 style={{
                   flex: 1,
                   paddingVertical: 12,
-                  fontSize: 15,
+                  fontSize: typography.sizes.md,
                   color: colors.foreground,
                 }}
                 value={catalogSearch}
@@ -1932,7 +1933,7 @@ export default function NewQuoteScreen() {
                       {catalogSearch ? 'No items match your search' : 'No catalog items found'}
                     </Text>
                     {!catalogSearch && (
-                      <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: 'center' }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
                         Add items to your catalog from the web app
                       </Text>
                     )}
@@ -1964,8 +1965,8 @@ export default function NewQuoteScreen() {
                       borderBottomColor: colors.border,
                     }}>
                       <Text style={{
-                        fontSize: 12,
-                        fontWeight: '600',
+                        fontSize: typography.captionSmall.fontSize,
+                        fontWeight: fontWeights.semibold,
                         color: colors.mutedForeground,
                         textTransform: 'uppercase',
                         letterSpacing: 0.5,
@@ -2023,7 +2024,7 @@ export default function NewQuoteScreen() {
                 style={{
                   flex: 1,
                   paddingVertical: 12,
-                  fontSize: 15,
+                  fontSize: typography.sizes.md,
                   color: colors.foreground,
                 }}
                 value={quoteTemplateSearch}
@@ -2063,7 +2064,7 @@ export default function NewQuoteScreen() {
                       {quoteTemplateSearch ? 'No templates match your search' : 'No quote templates found'}
                     </Text>
                     {!quoteTemplateSearch && (
-                      <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: 'center' }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
                         Create templates in the web app
                       </Text>
                     )}
@@ -2089,8 +2090,8 @@ export default function NewQuoteScreen() {
                     borderBottomColor: colors.border,
                   }}>
                     <Text style={{
-                      fontSize: 12,
-                      fontWeight: '600',
+                      fontSize: typography.captionSmall.fontSize,
+                      fontWeight: fontWeights.semibold,
                       color: colors.mutedForeground,
                       textTransform: 'uppercase',
                       letterSpacing: 0.5,

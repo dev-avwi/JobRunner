@@ -25,6 +25,7 @@ import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import api from '../../src/lib/api';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
 import { useUserRole } from '../../src/hooks/use-user-role';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
 
@@ -53,8 +54,8 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
     },
     headerTitle: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     headerRight: {
@@ -70,8 +71,8 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 20,
     },
     sectionTitle: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       marginBottom: 8,
     },
@@ -81,7 +82,7 @@ function createStyles(colors: ThemeColors) {
       borderWidth: 1,
       borderColor: colors.border,
       padding: 14,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
     },
     textArea: {
@@ -100,7 +101,7 @@ function createStyles(colors: ThemeColors) {
       minHeight: 52,
     },
     selectorPlaceholder: {
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.mutedForeground,
     },
     selectedItem: {
@@ -121,12 +122,12 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
     },
     selectedItemName: {
-      fontSize: 15,
-      fontWeight: '500',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     selectedItemDetail: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
     },
     addressInput: {
@@ -144,7 +145,7 @@ function createStyles(colors: ThemeColors) {
     addressField: {
       flex: 1,
       paddingVertical: 14,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
     },
     statusDisplay: {
@@ -158,7 +159,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 5,
     },
     statusText: {
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
     },
     scheduleRow: {
@@ -172,7 +173,7 @@ function createStyles(colors: ThemeColors) {
       marginTop: 8,
     },
     clearScheduleText: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.destructive,
     },
     actionsContainer: {
@@ -192,8 +193,8 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 12,
     },
     saveButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: typography.subtitle.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.primaryForeground,
     },
     modalOverlay: {
@@ -214,8 +215,8 @@ function createStyles(colors: ThemeColors) {
       borderBottomColor: colors.border,
     },
     modalTitle: {
-      fontSize: 17,
-      fontWeight: '600',
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     modalSearch: {
@@ -223,7 +224,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 10,
       margin: 16,
       padding: 12,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
       borderWidth: 1,
       borderColor: colors.border,
@@ -249,12 +250,12 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
     },
     clientItemName: {
-      fontSize: 15,
-      fontWeight: '500',
+      fontSize: typography.sizes.md,
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     clientItemEmail: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
       marginTop: 2,
     },
@@ -274,7 +275,7 @@ function createStyles(colors: ThemeColors) {
     },
     statusItemText: {
       flex: 1,
-      fontSize: 15,
+      fontSize: typography.sizes.md,
       color: colors.foreground,
     },
     emptyList: {
@@ -282,7 +283,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 32,
     },
     emptyListText: {
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.mutedForeground,
     },
     suggestionsCard: {
@@ -300,12 +301,12 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 10,
     },
     suggestionsTitle: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
       color: colors.success,
     },
     suggestionsLabel: {
-      fontSize: 12,
+      fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
       marginBottom: 6,
     },
@@ -323,7 +324,7 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.border,
     },
     suggestionChipText: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.foreground,
     },
     suggestionsLoading: {
@@ -333,7 +334,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 8,
     },
     suggestionsLoadingText: {
-      fontSize: 13,
+      fontSize: typography.sizes.sm,
       color: colors.mutedForeground,
     },
     addressSuggestionsContainer: {
@@ -355,7 +356,7 @@ function createStyles(colors: ThemeColors) {
     },
     addressSuggestionText: {
       flex: 1,
-      fontSize: 14,
+      fontSize: typography.button.fontSize,
       color: colors.foreground,
     },
     addressLoadingRow: {
@@ -964,14 +965,14 @@ export default function CreateJobScreen() {
                 <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                   <Feather name="lock" size={28} color={colors.mutedForeground} />
                 </View>
-                <Text style={{ fontSize: 18, fontWeight: '600', color: colors.foreground, marginBottom: 8, textAlign: 'center' }}>
+                <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 8, textAlign: 'center' }}>
                   Not available
                 </Text>
-                <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center', marginBottom: 24 }}>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center', marginBottom: 24 }}>
                   You don't have permission to create jobs. Ask your business owner if you need access.
                 </Text>
                 <PressableRow style={{ paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10, backgroundColor: colors.primary }} onPress={() => router.back()}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.primaryForeground }}>Go Back</Text>
+                  <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Go Back</Text>
                 </PressableRow>
               </>
             )}
@@ -1146,7 +1147,7 @@ export default function CreateJobScreen() {
                 {selectedTeamMember ? (
                   <View style={styles.selectedItem}>
                     <View style={[styles.clientAvatar, { backgroundColor: (selectedTeamMember.themeColor || colors.primary) + '20' }]}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: selectedTeamMember.themeColor || colors.primary }}>
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: selectedTeamMember.themeColor || colors.primary }}>
                         {getTeamMemberDisplayName(selectedTeamMember).charAt(0).toUpperCase()}
                       </Text>
                     </View>
@@ -1225,8 +1226,8 @@ export default function CreateJobScreen() {
                     <Feather name="repeat" size={18} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground, marginBottom: 2 }}>Make this recurring</Text>
-                    <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                    <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 2 }}>Make this recurring</Text>
+                    <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
                       Automatically create jobs on a schedule
                     </Text>
                   </View>
@@ -1245,11 +1246,11 @@ export default function CreateJobScreen() {
               {isRecurring && (
                 <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
                   <View style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 6 }}>Frequency</Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 6 }}>Frequency</Text>
                     <PressableRow style={styles.selector} onPress={() => setShowRecurrenceOptions(true)} >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <Feather name="repeat" size={16} color={colors.primary} />
-                        <Text style={{ fontSize: 15, fontWeight: '500', color: colors.foreground }}>
+                        <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.medium, color: colors.foreground }}>
                           {RECURRENCE_OPTIONS.find(o => o.value === recurrencePattern)?.label || 'Select frequency'}
                         </Text>
                       </View>
@@ -1258,7 +1259,7 @@ export default function CreateJobScreen() {
                   </View>
 
                   <View style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 6 }}>End Date (Optional)</Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 6 }}>End Date (Optional)</Text>
                     <View style={{ position: 'relative' }}>
                       <Feather name="calendar" size={16} color={colors.mutedForeground} style={{ position: 'absolute', left: 14, top: 16, zIndex: 1 }} />
                       <TextInput
@@ -1273,7 +1274,7 @@ export default function CreateJobScreen() {
 
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primaryLight, padding: 12, borderRadius: 10 }}>
                     <Feather name="info" size={14} color={colors.primary} />
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.primary }}>
+                    <Text style={{ flex: 1, fontSize: typography.sizes.sm, color: colors.primary }}>
                       Next job will be created on{' '}
                       {new Date(calculateNextRecurrenceDate(
                         scheduledAt ? scheduledAt.toISOString() : new Date().toISOString(),
@@ -1352,7 +1353,7 @@ export default function CreateJobScreen() {
               {PRIORITY_OPTIONS.map((option) => (
                 <PressableRow key={option.value} style={[ styles.statusItem, priority === option.value && styles.statusItemSelected, ]} onPress={() => { setPriority(option.value); setShowPriorityPicker(false); }} >
                   <Feather name={option.icon as any} size={18} color={option.color} />
-                  <Text style={[styles.statusItemText, { color: option.color, fontWeight: priority === option.value ? '600' : '400' }]}>
+                  <Text style={[styles.statusItemText, { color: option.color, fontWeight: priority === option.value ? fontWeights.semibold : fontWeights.regular }]}>
                     {option.label}
                   </Text>
                   {priority === option.value && (
@@ -1386,7 +1387,7 @@ export default function CreateJobScreen() {
                   <View style={styles.clientItemContent}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                       <View style={[styles.clientAvatar, { backgroundColor: (member.themeColor || colors.primary) + '20' }]}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: member.themeColor || colors.primary }}>
+                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: member.themeColor || colors.primary }}>
                           {getTeamMemberDisplayName(member).charAt(0).toUpperCase()}
                         </Text>
                       </View>
@@ -1521,7 +1522,7 @@ export default function CreateJobScreen() {
                   />
                   <Text style={[
                     styles.statusItemText,
-                    recurrencePattern === option.value && { color: colors.primary, fontWeight: '600' }
+                    recurrencePattern === option.value && { color: colors.primary, fontWeight: fontWeights.semibold }
                   ]}>
                     {option.label}
                   </Text>

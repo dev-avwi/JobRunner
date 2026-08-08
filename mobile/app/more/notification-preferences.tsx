@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, typography, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import haptics from '../../src/lib/haptics';
 import apiClient from '../../src/lib/api';
 
@@ -139,7 +139,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   headerTitle: {
     fontSize: typography.sizes.lg,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   headerSubtitle: {
@@ -161,7 +161,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   masterToggleLabel: {
     fontSize: typography.sizes.md,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   masterToggleDesc: {
@@ -175,7 +175,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: typography.sizes.sm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -212,7 +212,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   prefLabel: {
     fontSize: typography.sizes.md,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   prefDesc: {

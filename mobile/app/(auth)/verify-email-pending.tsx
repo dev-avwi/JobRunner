@@ -16,6 +16,7 @@ import { Mail, RefreshCw, ArrowLeft, CheckCircle, Edit3, ExternalLink, LifeBuoy,
 import api from '../../src/lib/api';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 const RESEND_COOLDOWN_SEC = 30;
 
@@ -230,22 +231,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.primary + '40',
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 10,
     textAlign: 'center',
     letterSpacing: -0.3,
   },
   description: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: 4,
   },
   email: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     textAlign: 'center',
     marginBottom: 8,
@@ -258,12 +259,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 16,
   },
   editText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     textDecorationLine: 'underline',
   },
   instructions: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     textAlign: 'center',
     lineHeight: 19,
@@ -283,9 +284,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.success + '40',
   },
   successText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.success,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   errorMessage: {
     flexDirection: 'row',
@@ -302,12 +303,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   errorMessageText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.destructive,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   spamHint: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: 16,
@@ -326,9 +327,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 12,
   },
   primaryButtonText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.primaryForeground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   resendButton: {
     flexDirection: 'row',
@@ -347,9 +348,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   resendText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   supportLink: {
     flexDirection: 'row',
@@ -360,7 +361,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 4,
   },
   supportText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     textDecorationLine: 'underline',
   },
@@ -371,7 +372,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 12,
   },
   backText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
 });

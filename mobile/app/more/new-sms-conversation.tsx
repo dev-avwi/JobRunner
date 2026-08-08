@@ -17,7 +17,7 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import api from '../../src/lib/api';
-import { spacing, radius, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import { getAvatarColor as getAvatarColorShared } from '../../src/lib/avatar-colors';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 
@@ -71,12 +71,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -100,7 +100,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   smsBannerText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   searchContainer: {
@@ -118,12 +118,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     height: 42,
     marginLeft: 10,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginHorizontal: spacing.lg,
     marginTop: 20,
@@ -149,25 +149,25 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginRight: spacing.lg,
   },
   clientAvatarText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.white,
   },
   clientInfo: {
     flex: 1,
   },
   clientName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   clientCompany: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 1,
   },
   clientPhone: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -196,13 +196,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginTop: 8,
@@ -214,7 +214,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 48,
   },
   noPhoneBadge: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.destructive,
     marginTop: 2,
   },
@@ -244,12 +244,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   composeHeaderTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   composeHeaderSubtitle: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -259,8 +259,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   templatesLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.md,
   },
@@ -279,8 +279,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.primary,
   },
   templateChipText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     lineHeight: 18,
   },
@@ -294,8 +294,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginBottom: spacing.xl,
   },
   messageInputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.sm,
   },
@@ -306,14 +306,14 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     minHeight: 100,
     textAlignVertical: 'top',
     marginBottom: spacing.md,
   },
   charCount: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginBottom: spacing.lg,
     textAlign: 'right',
@@ -340,8 +340,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.success || '#22c55e',
   },
   sendButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.white,
   },
 });

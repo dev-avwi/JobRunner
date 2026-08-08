@@ -19,7 +19,7 @@ import { Stack, router } from 'expo-router';
 import { asHref } from '../../src/lib/nav';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import api from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 import { useUserRole } from '../../src/hooks/use-user-role';
@@ -518,7 +518,7 @@ export default function PhoneNumbersPage() {
 
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: `${colors.info}10`, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.lg, gap: spacing.xs, borderWidth: 1, borderColor: `${colors.info}30` }}>
             <Feather name="lock" size={14} color={colors.info} />
-            <Text style={{ fontSize: 12, color: colors.info, flex: 1, lineHeight: 17 }}>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.info, flex: 1, lineHeight: 17 }}>
               These numbers are managed by the business owner. You have view-only access.
             </Text>
           </View>
@@ -533,15 +533,15 @@ export default function PhoneNumbersPage() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
                       <Feather name="phone" size={16} color={colors.primary} />
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.foreground }}>{num}</Text>
+                      <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>{num}</Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${statusColor}15`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusColor }} />
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: statusColor }}>{statusLabel}</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: statusColor }}>{statusLabel}</Text>
                     </View>
                   </View>
                   {!!cfg.label && (
-                    <Text style={{ fontSize: 13, color: colors.mutedForeground, marginTop: spacing.xs }}>{cfg.label}</Text>
+                    <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: spacing.xs }}>{cfg.label}</Text>
                   )}
                 </View>
               );
@@ -550,13 +550,13 @@ export default function PhoneNumbersPage() {
             <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginBottom: spacing.md }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                 <Feather name="phone" size={16} color={colors.primary} />
-                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.foreground }}>{formatPhone(currentNumber)}</Text>
+                <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>{formatPhone(currentNumber)}</Text>
               </View>
             </View>
           ) : (
             <View style={{ alignItems: 'center', paddingVertical: spacing['2xl'], gap: spacing.sm }}>
               <Feather name="phone-off" size={32} color={colors.mutedForeground} />
-              <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center' }}>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
                 No dedicated number set up for this business yet.
               </Text>
             </View>
@@ -577,7 +577,7 @@ export default function PhoneNumbersPage() {
 
         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: `${colors.info}10`, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.md, gap: spacing.xs, borderWidth: 1, borderColor: `${colors.info}30` }}>
           <Feather name="info" size={14} color={colors.info} />
-          <Text style={{ fontSize: 12, color: colors.info, flex: 1, lineHeight: 17 }}>
+          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.info, flex: 1, lineHeight: 17 }}>
             Each dedicated number is $9.99/mo and includes two-way SMS with clients and AI Receptionist calls.
           </Text>
         </View>
@@ -595,11 +595,11 @@ export default function PhoneNumbersPage() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 4 }}>
             <Feather name="users" size={14} color={colors.foreground} />
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground }}>
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
               Team SMS attribution
             </Text>
           </View>
-          <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 17, marginBottom: spacing.md }}>
+          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 17, marginBottom: spacing.md }}>
             When several workers reply from one shared business number, choose how clients see who sent each message.
           </Text>
 
@@ -635,10 +635,10 @@ export default function PhoneNumbersPage() {
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 2 }}>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 2 }}>
                     {opt.title}
                   </Text>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 17 }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 17 }}>
                     {opt.desc}
                   </Text>
                 </View>
@@ -662,10 +662,10 @@ export default function PhoneNumbersPage() {
           >
             <Feather name="clock" size={14} color={colors.mutedForeground} style={{ marginTop: 2 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 2 }}>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 2 }}>
                 Per-worker numbers — coming soon
               </Text>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 17 }}>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 17 }}>
                 Give each worker their own dedicated SMS number, with replies routed back to the right person automatically.
               </Text>
             </View>
@@ -675,11 +675,11 @@ export default function PhoneNumbersPage() {
         {aiConfigs.length > 0 ? (
           <>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm, gap: spacing.sm }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground }}>
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
                 Your Numbers ({aiConfigs.length}/{MAX_NUMBERS})
               </Text>
               {aiConfigs.length < MAX_NUMBERS && (
-                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                   {MAX_NUMBERS - aiConfigs.length} slot{MAX_NUMBERS - aiConfigs.length !== 1 ? 's' : ''} available
                 </Text>
               )}
@@ -697,7 +697,7 @@ export default function PhoneNumbersPage() {
                   {editingLabel === cfg.id ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                       <TextInput
-                        style={{ fontSize: 12, color: colors.foreground, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.xs, paddingVertical: 2, minWidth: 100 }}
+                        style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.xs, paddingVertical: 2, minWidth: 100 }}
                         value={labelText}
                         onChangeText={setLabelText}
                         placeholder="Label"
@@ -714,7 +714,7 @@ export default function PhoneNumbersPage() {
                     </View>
                   ) : (
                     <PressableRow onPress={() => { setEditingLabel(cfg.id); setLabelText(cfg.label || ''); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} >
-                      <Text style={{ fontSize: 12, color: colors.primary }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary }}>
                         {cfg.label || 'Add Label'}
                       </Text>
                       <Feather name="edit-2" size={11} color={colors.primary} />
@@ -751,8 +751,8 @@ export default function PhoneNumbersPage() {
 
             {aiConfigs.length < MAX_NUMBERS && (
               <>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.foreground, marginTop: spacing.lg, marginBottom: spacing.sm }}>Add Another Number</Text>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: spacing.md }}>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, marginTop: spacing.lg, marginBottom: spacing.sm }}>Add Another Number</Text>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: spacing.md }}>
                   You can add up to {MAX_NUMBERS} dedicated numbers, each with its own AI Receptionist configuration.
                 </Text>
               </>
@@ -791,7 +791,7 @@ export default function PhoneNumbersPage() {
 
             <PressableRow style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: `${colors.destructive}06`, borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: `${colors.destructive}15`, marginTop: spacing.md, marginBottom: spacing.lg }} onPress={handleRelease} >
               <Feather name="rotate-ccw" size={14} color={colors.destructive} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.destructive }}>Revert to Shared Number</Text>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.destructive }}>Revert to Shared Number</Text>
             </PressableRow>
           </>
         ) : (
@@ -799,12 +799,12 @@ export default function PhoneNumbersPage() {
             <View style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginBottom: spacing.lg }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.mutedForeground }} />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.mutedForeground }}>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
                   Using Shared Number
                 </Text>
               </View>
-              <Text style={{ fontSize: 22, fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>0485 013 993</Text>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 18 }}>
+              <Text style={{ fontSize: typography.sizes['2xl'], fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: 4 }}>0485 013 993</Text>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 18 }}>
                 You're on the shared JobRunner platform number. Get a dedicated number below so clients see your own business number.
               </Text>
             </View>
@@ -815,12 +815,12 @@ export default function PhoneNumbersPage() {
           <View style={{ backgroundColor: `${colors.primary}08`, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: `${colors.primary}25`, marginBottom: spacing.lg }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
               <Feather name="rotate-ccw" size={14} color={colors.primary} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>Previously Owned Number</Text>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Previously Owned Number</Text>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.primary, marginBottom: spacing.xs }}>
+            <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.primary, marginBottom: spacing.xs }}>
               {formatPhone(lastOwnedNumber)}
             </Text>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 18, marginBottom: spacing.md }}>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 18, marginBottom: spacing.md }}>
               Want this number back? Tap below to re-acquire it if it's still available.
             </Text>
             <PressableRow style={{ backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: spacing.xs }} onPress={handleReacquireLastNumber} disabled={reacquiring} >
@@ -829,7 +829,7 @@ export default function PhoneNumbersPage() {
               ) : (
                 <Feather name="phone" size={14} color={colors.primaryForeground} />
               )}
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryForeground }}>
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
                 {reacquiring ? 'Re-acquiring...' : 'Get This Number Back'}
               </Text>
             </PressableRow>
@@ -850,14 +850,14 @@ export default function PhoneNumbersPage() {
                 <View key={pr.id} style={{ backgroundColor: `${sc.color}08`, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: `${sc.color}25`, marginBottom: spacing.lg }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
                     <Feather name={pr.status === 'completed' ? 'check-circle' : 'phone-forwarded'} size={14} color={sc.color} />
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+                    <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                       {pr.status === 'completed' ? 'Number Ported Successfully' : `Port Request — ${sc.label}`}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground, marginBottom: spacing.xs }}>
+                  <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xs }}>
                     {formatPhone(pr.phoneNumber)}
                   </Text>
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 18 }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 18 }}>
                     Carrier: {pr.currentCarrier}
                   </Text>
 
@@ -867,7 +867,7 @@ export default function PhoneNumbersPage() {
                       return (
                         <View key={step} style={{ flex: 1, alignItems: 'center' }}>
                           <View style={{ width: '100%', height: 4, borderRadius: 2, backgroundColor: stepDone ? sc.color : `${colors.muted}80`, marginBottom: 4 }} />
-                          <Text style={{ fontSize: 10, color: stepDone ? sc.color : colors.mutedForeground, textTransform: 'capitalize' }}>
+                          <Text style={{ fontSize: typography.sizes.xs, color: stepDone ? sc.color : colors.mutedForeground, textTransform: 'capitalize' }}>
                             {step}
                           </Text>
                         </View>
@@ -876,25 +876,25 @@ export default function PhoneNumbersPage() {
                   </View>
 
                   {pr.status === 'completed' && pr.completedAt && (
-                    <Text style={{ fontSize: 11, color: colors.success, marginTop: spacing.sm, fontWeight: '500' }}>
+                    <Text style={{ fontSize: typography.sizes.xs, color: colors.success, marginTop: spacing.sm, fontWeight: fontWeights.medium }}>
                       Ported on {new Date(pr.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })} — Number is now active on your account.
                     </Text>
                   )}
                   {pr.status !== 'completed' && pr.estimatedCompletionDate && (
-                    <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: spacing.sm }}>
+                    <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.sm }}>
                       Estimated completion: {new Date(pr.estimatedCompletionDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </Text>
                   )}
                   {pr.adminNotes && (
                     <View style={{ backgroundColor: `${colors.muted}50`, borderRadius: radius.sm, padding: spacing.sm, marginTop: spacing.sm }}>
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{pr.adminNotes}</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{pr.adminNotes}</Text>
                     </View>
                   )}
 
                   {pr.status !== 'completed' && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: `${colors.info}10`, borderRadius: radius.sm, padding: spacing.sm, marginTop: spacing.sm, gap: spacing.xs }}>
                       <Feather name="info" size={12} color={colors.info} />
-                      <Text style={{ fontSize: 11, color: colors.info, flex: 1, lineHeight: 16 }}>
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.info, flex: 1, lineHeight: 16 }}>
                         AU number ports typically take 5–10 business days. We'll update the status as it progresses.
                       </Text>
                     </View>
@@ -909,11 +909,11 @@ export default function PhoneNumbersPage() {
                   <View key={pr.id} style={{ backgroundColor: `${colors.destructive}08`, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: `${colors.destructive}25`, marginBottom: spacing.sm }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
                       <Feather name="x-circle" size={14} color={colors.destructive} />
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.destructive }}>Port Failed</Text>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.destructive }}>Port Failed</Text>
                     </View>
-                    <Text style={{ fontSize: 14, color: colors.foreground }}>{formatPhone(pr.phoneNumber)}</Text>
+                    <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>{formatPhone(pr.phoneNumber)}</Text>
                     {pr.adminNotes && (
-                      <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: spacing.xs }}>{pr.adminNotes}</Text>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xs }}>{pr.adminNotes}</Text>
                     )}
                   </View>
                 ))}
@@ -925,26 +925,26 @@ export default function PhoneNumbersPage() {
                 <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
                   <Feather name="phone-forwarded" size={16} color={colors.primary} />
                 </View>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>Port My Number</Text>
-                <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: 'center' }}>Keep your existing number</Text>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Port My Number</Text>
+                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, textAlign: 'center' }}>Keep your existing number</Text>
               </PressableRow>
               <PressableRow style={{ flex: 1, backgroundColor: !showPortForm ? `${colors.primary}15` : colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: !showPortForm ? colors.primary : colors.border, alignItems: 'center', gap: spacing.xs }} onPress={() => setShowPortForm(false)} >
                 <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
                   <Feather name="plus" size={16} color={colors.primary} />
                 </View>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>Get New Number</Text>
-                <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: 'center' }}>Search Australian numbers</Text>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Get New Number</Text>
+                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, textAlign: 'center' }}>Search Australian numbers</Text>
               </PressableRow>
             </View>
 
             {showPortForm ? (
               <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginBottom: spacing.lg }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.foreground, marginBottom: spacing.xs }}>Port Your Existing Number</Text>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 18, marginBottom: spacing.md }}>
+                <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xs }}>Port Your Existing Number</Text>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 18, marginBottom: spacing.md }}>
                   Bring your current business number to JobRunner. Your clients keep calling the same number — and our AI can answer it.
                 </Text>
 
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>Phone Number</Text>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 4 }}>Phone Number</Text>
                 <TextInput
                   style={[styles.searchInput, { marginBottom: spacing.sm }]}
                   placeholder="e.g. 0412 345 678"
@@ -954,7 +954,7 @@ export default function PhoneNumbersPage() {
                   keyboardType="phone-pad"
                 />
 
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>Current Carrier / Provider</Text>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 4 }}>Current Carrier / Provider</Text>
                 <TextInput
                   style={[styles.searchInput, { marginBottom: spacing.sm }]}
                   placeholder="e.g. Telstra, Optus, Vodafone"
@@ -963,7 +963,7 @@ export default function PhoneNumbersPage() {
                   onChangeText={setPortCarrier}
                 />
 
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>Account Number</Text>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 4 }}>Account Number</Text>
                 <TextInput
                   style={[styles.searchInput, { marginBottom: spacing.md }]}
                   placeholder="Your carrier account number"
@@ -981,14 +981,14 @@ export default function PhoneNumbersPage() {
                   }}>
                     {portLoaAgreed && <Feather name="check" size={14} color={colors.primaryForeground} />}
                   </View>
-                  <Text style={{ fontSize: 12, color: colors.foreground, flex: 1, lineHeight: 18 }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground, flex: 1, lineHeight: 18 }}>
                     I authorise JobRunner to submit a porting request on my behalf (Letter of Authorisation). I confirm I am the authorised account holder for this number.
                   </Text>
                 </PressableRow>
 
                 <View style={{ backgroundColor: `${colors.info}10`, borderRadius: radius.sm, padding: spacing.sm, marginBottom: spacing.md, flexDirection: 'row', gap: spacing.xs }}>
                   <Feather name="clock" size={12} color={colors.info} style={{ marginTop: 2 }} />
-                  <Text style={{ fontSize: 11, color: colors.info, flex: 1, lineHeight: 16 }}>
+                  <Text style={{ fontSize: typography.sizes.xs, color: colors.info, flex: 1, lineHeight: 16 }}>
                     Australian number ports typically take 5–10 business days. Your number will continue working with your current carrier during this time.
                   </Text>
                 </View>
@@ -999,7 +999,7 @@ export default function PhoneNumbersPage() {
                   ) : (
                     <Feather name="send" size={14} color={(portPhone && portCarrier && portAccount && portLoaAgreed) ? colors.primaryForeground : colors.mutedForeground} />
                   )}
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: (portPhone && portCarrier && portAccount && portLoaAgreed) ? colors.primaryForeground : colors.mutedForeground }}>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: (portPhone && portCarrier && portAccount && portLoaAgreed) ? colors.primaryForeground : colors.mutedForeground }}>
                     {submittingPort ? 'Submitting...' : 'Submit Port Request'}
                   </Text>
                 </PressableRow>
@@ -1111,7 +1111,7 @@ export default function PhoneNumbersPage() {
         >
         <View style={{ flex: 1, backgroundColor: colors.background, padding: spacing.lg, paddingTop: spacing.xl }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xl }}>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: colors.foreground }}>Revert to Shared</Text>
+            <Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.bold, color: colors.foreground }}>Revert to Shared</Text>
             <PressableRow onPress={() => setShowReleaseModal(false)} >
               <Feather name="x" size={24} color={colors.mutedForeground} />
             </PressableRow>
@@ -1120,9 +1120,9 @@ export default function PhoneNumbersPage() {
           <View style={{ backgroundColor: `${colors.primary}10`, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
               <Feather name="info" size={18} color={colors.primary} />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>Your number will be archived</Text>
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Your number will be archived</Text>
             </View>
-            <Text style={{ fontSize: 13, color: colors.foreground, lineHeight: 20 }}>
+            <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, lineHeight: 20 }}>
               Reverting {formatPhone(currentNumber || '')} means:{'\n'}
               {'\n'}{'\u2022'} You'll go back to the shared JobRunner number
               {'\n'}{'\u2022'} Your AI Receptionist will be paused if active
@@ -1131,7 +1131,7 @@ export default function PhoneNumbersPage() {
             </Text>
           </View>
 
-          <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: '600', marginBottom: spacing.sm }}>
+          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.semibold, marginBottom: spacing.sm }}>
             Type REVERT to confirm
           </Text>
           <TextInput
@@ -1141,8 +1141,8 @@ export default function PhoneNumbersPage() {
               borderWidth: 1,
               borderColor: releaseConfirmText === 'REVERT' ? colors.primary : colors.border,
               padding: spacing.md,
-              fontSize: 16,
-              fontWeight: '600',
+              fontSize: typography.subtitle.fontSize,
+              fontWeight: fontWeights.semibold,
               color: colors.foreground,
               letterSpacing: 2,
               textAlign: 'center',
@@ -1160,7 +1160,7 @@ export default function PhoneNumbersPage() {
             {releasing ? (
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
-              <Text style={{ fontSize: 15, fontWeight: '700', color: releaseConfirmText === 'REVERT' ? colors.white : colors.mutedForeground }}>
+              <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.bold, color: releaseConfirmText === 'REVERT' ? colors.white : colors.mutedForeground }}>
                 Revert to Shared
               </Text>
             )}
@@ -1181,13 +1181,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: spacing.md,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: spacing.xs,
   },
   pageSubtitle: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
     lineHeight: 22,
     marginBottom: spacing.lg,
@@ -1220,8 +1220,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.success,
   },
   activeLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.success,
   },
   currentNumberRow: {
@@ -1239,13 +1239,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   currentNumberText: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     letterSpacing: 0.5,
   },
   currentNumberDesc: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1267,8 +1267,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: `${colors.destructive}10`,
   },
   actionButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
   },
   searchCard: {
     backgroundColor: colors.card,
@@ -1279,8 +1279,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.lg,
   },
   searchLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: spacing.xs,
   },
@@ -1295,7 +1295,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     padding: spacing.sm,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   searchButton: {
@@ -1308,8 +1308,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 12,
   },
   searchButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   loadingContainer: {
@@ -1318,20 +1318,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.sm,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
   resultsSection: {
     marginBottom: spacing.md,
   },
   resultsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 4,
   },
   resultsSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginBottom: spacing.md,
   },
@@ -1355,13 +1355,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   numberText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     letterSpacing: 0.5,
   },
   numberLocation: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1379,8 +1379,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 8,
   },
   capText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
   },
   selectButton: {
     backgroundColor: `${colors.primary}15`,
@@ -1389,8 +1389,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 6,
   },
   selectButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   emptyContainer: {
@@ -1399,12 +1399,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.sm,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   emptyDesc: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     lineHeight: 20,

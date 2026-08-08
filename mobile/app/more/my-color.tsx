@@ -16,6 +16,7 @@ import { useAuthStore } from '../../src/lib/store';
 import { invalidateTeamColors, type MemberColor } from '../../src/lib/team-colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 interface ColorOption {
   color: string;
@@ -191,10 +192,10 @@ const createStyles = (colors: any, bottomNavHeight: number) =>
       justifyContent: 'center',
     },
     currentInfo: { flex: 1 },
-    currentTitle: { fontSize: 16, fontWeight: '700', color: colors.foreground, marginBottom: 2 },
-    currentSub: { fontSize: 13, color: colors.mutedForeground, lineHeight: 18 },
-    sectionLabel: { fontSize: 15, fontWeight: '700', color: colors.foreground, marginBottom: 4 },
-    sectionHint: { fontSize: 13, color: colors.mutedForeground, lineHeight: 18, marginBottom: 16 },
+    currentTitle: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: 2 },
+    currentSub: { fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 18 },
+    sectionLabel: { fontSize: typography.sizes.md, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: 4 },
+    sectionHint: { fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 18, marginBottom: 16 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, columnGap: 12 },
     swatchWrap: { width: '22%' },
     swatchPress: { width: '100%', alignItems: 'center' },
@@ -207,9 +208,9 @@ const createStyles = (colors: any, bottomNavHeight: number) =>
     },
     swatchDim: { opacity: 0.35 },
     swatchMine: { borderWidth: 3, borderColor: colors.foreground },
-    swatchInitials: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+    swatchInitials: { fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: '#FFFFFF' },
     swatchCaption: {
-      fontSize: 11,
+      fontSize: typography.sizes.xs,
       color: colors.mutedForeground,
       marginTop: 6,
       width: '100%',

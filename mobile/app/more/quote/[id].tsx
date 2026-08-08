@@ -30,6 +30,7 @@ import { getBottomNavHeight } from '../../../src/components/BottomNav';
 import { showToast } from '../../../src/lib/toast';
 import { Button } from '../../../src/components/ui/Button';
 import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
+import { typography, fontWeights } from '../../../src/lib/design-tokens';
 
 interface LinkedInvoice {
   id: string;
@@ -1789,7 +1790,7 @@ ${businessName}`;
         contentPadding={0}>
         <View style={{ flex: 1, backgroundColor: colors.background }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.foreground }}>Edit History</Text>
+            <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground }}>Edit History</Text>
             <TouchableOpacity onPress={() => setShowVersionHistory(false)}>
               <Feather name="x" size={24} color={colors.foreground} />
             </TouchableOpacity>
@@ -1802,8 +1803,8 @@ ${businessName}`;
             ) : versionHistory.length === 0 ? (
               <View style={{ alignItems: 'center', padding: 40 }}>
                 <Feather name="clock" size={40} color={colors.mutedForeground} />
-                <Text style={{ fontSize: 16, color: colors.mutedForeground, marginTop: 12 }}>No edit history yet</Text>
-                <Text style={{ fontSize: 14, color: colors.mutedForeground, marginTop: 4, textAlign: 'center' }}>
+                <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.mutedForeground, marginTop: 12 }}>No edit history yet</Text>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: 4, textAlign: 'center' }}>
                   Changes will be recorded here when you edit the quote
                 </Text>
               </View>
@@ -1815,27 +1816,27 @@ ${businessName}`;
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary }}>v{version.versionNumber}</Text>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: colors.primary }}>v{version.versionNumber}</Text>
                         </View>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                           {version.editedBy || 'Unknown'}
                         </Text>
                       </View>
-                      <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                         {version.createdAt ? formatDate(version.createdAt) : ''}
                       </Text>
                     </View>
                     {version.changeNote && (
-                      <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 8, fontStyle: 'italic' }}>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: 8, fontStyle: 'italic' }}>
                         {version.changeNote}
                       </Text>
                     )}
                     <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
-                      <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 4 }}>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: 4 }}>
                         Total: {formatCurrency(snapshot.total)}
                       </Text>
                       {snapshot.lineItems && snapshot.lineItems.length > 0 && (
-                        <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                           {snapshot.lineItems.length} item{snapshot.lineItems.length !== 1 ? 's' : ''}: {snapshot.lineItems.map((li: any) => li.description).join(', ')}
                         </Text>
                       )}
@@ -2157,7 +2158,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.background,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.mutedForeground,
   },
   headerButton: {
@@ -2179,8 +2180,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 20,
   },
   quoteNumber: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     letterSpacing: 0.5,
   },
@@ -2190,24 +2191,24 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 20,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
   },
   totalAmount: {
     fontSize: 40,
-    fontWeight: '800',
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -1,
   },
   totalLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 6,
     textTransform: 'uppercase' as const,
     letterSpacing: 1,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   quickActions: {
     flexDirection: 'row',
@@ -2235,14 +2236,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   quickActionText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     textAlign: 'center',
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -2279,13 +2280,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   linkedDocLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginBottom: 2,
   },
   linkedDocTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   linkedDocStatus: {
@@ -2294,8 +2295,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 20,
   },
   linkedDocStatusText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
   },
   infoRow: {
     flexDirection: 'row',
@@ -2307,17 +2308,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   clientName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginBottom: 2,
   },
   infoText: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   lineItem: {
@@ -2334,7 +2335,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   lineItemDescription: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 20,
   },
@@ -2345,12 +2346,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginLeft: 26,
   },
   lineItemQty: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   lineItemTotal: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   amountRow: {
@@ -2360,11 +2361,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: 8,
   },
   amountLabel: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
   },
   amountValue: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
   },
   divider: {
@@ -2373,13 +2374,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginVertical: 8,
   },
   totalLabel2: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   totalValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   depositRow: {
@@ -2394,17 +2395,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.warning + '30',
   },
   depositLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.warningDark,
   },
   depositValue: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.bold,
     color: colors.warningDark,
   },
   notesText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 22,
   },
@@ -2427,8 +2428,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: 16,
   },
   primaryButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.bold,
     color: colors.primaryForeground,
     letterSpacing: 0.2,
   },
@@ -2444,8 +2445,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: 16,
   },
   secondaryButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   actionButtonsContainer: {
@@ -2466,8 +2467,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderBottomColor: colors.border,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   modalContent: {
@@ -2487,17 +2488,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   sendInfoLabel: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   sendInfoValue: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: 8,
   },
@@ -2506,7 +2507,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
     borderRadius: 12,
     padding: 14,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     backgroundColor: colors.card,
     minHeight: 120,
@@ -2521,8 +2522,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 24,
   },
   previewTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 12,
   },
@@ -2532,17 +2533,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: 6,
   },
   previewLabel: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
   previewValue: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   previewTotal: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   sendButton: {
@@ -2555,8 +2556,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: 16,
   },
   sendButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   buttonDisabled: {
@@ -2595,12 +2596,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 4,
   },
   emptyStateText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   emptyStateSubtext: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     textAlign: 'center' as const,
     lineHeight: 18,
@@ -2615,7 +2616,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
   },
   acceptanceText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     lineHeight: 20,
     marginBottom: 16,
@@ -2641,9 +2642,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'center' as const,
   },
   signaturePlaceholderText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
-    fontWeight: '500' as const,
+    fontWeight: fontWeights.medium,
     letterSpacing: 0.2,
   },
   acceptedCard: {
@@ -2658,8 +2659,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 16,
   },
   acceptedTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.bold,
     color: colors.success,
   },
   signatureImageContainer: {
@@ -2671,19 +2672,19 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
   },
   signatureLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.successDark,
     marginBottom: 10,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
-    fontWeight: '600' as const,
+    fontWeight: fontWeights.semibold,
   },
   signatureImage: {
     width: '100%' as const,
     height: 80,
   },
   acceptedInfo: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.successDark,
     marginTop: 4,
   },
@@ -2696,13 +2697,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     alignItems: 'center',
   },
   thankYouText: {
-    fontSize: 15,
-    fontWeight: '500' as const,
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
     marginBottom: 6,
   },
   abnFooter: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     letterSpacing: 0.2,
   },
@@ -2723,8 +2724,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 16,
   },
   templateModalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   templateOption: {
@@ -2744,12 +2745,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   templateOptionName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   templateOptionDesc: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -2781,8 +2782,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: 8,
   },
   previewModalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   shareSheetContent: {
@@ -2801,14 +2802,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: 16,
   },
   shareSheetTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
     marginBottom: 4,
   },
   shareSheetSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: 20,
@@ -2836,8 +2837,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   shareOptionText: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   shareSheetCancel: {
@@ -2849,8 +2850,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
   },
   shareSheetCancelText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   previewOptionsRow: {
@@ -2879,9 +2880,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: `${colors.primary}10`,
   },
   previewOptionChipText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
-    fontWeight: '500' as const,
+    fontWeight: fontWeights.medium,
   },
   pdfOptionsCard: {
     backgroundColor: colors.card,
@@ -2892,8 +2893,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
   },
   pdfOptionsTitle: {
-    fontSize: 13,
-    fontWeight: '600' as const,
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: 6,
     textTransform: 'uppercase' as const,
@@ -2916,7 +2917,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: `${colors.primary}10`,
   },
   pdfOptionText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
 });

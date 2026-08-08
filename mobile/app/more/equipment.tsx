@@ -21,7 +21,7 @@ import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { BottomSheetScrollView } from '../../src/components/ui/AppBottomSheet';
 import { api } from '../../src/lib/api';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -1134,7 +1134,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   filterText: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   activeFilterText: {
@@ -1184,8 +1184,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: spacing.xs,
   },
   statValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: fontWeights.bold,
     letterSpacing: -0.5,
     color: colors.foreground,
   },
@@ -1193,7 +1193,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     ...typography.caption,
     color: colors.mutedForeground,
     marginTop: 2,
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
   },
   sectionLabel: {
     ...typography.label,
@@ -1379,7 +1379,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   fieldLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     marginBottom: spacing.sm,
     marginTop: spacing.md,
@@ -1470,7 +1470,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   pickerOptionTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   pickerCancel: {
     marginTop: spacing.md,
@@ -1480,7 +1480,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   pickerCancelText: {
     ...typography.body,
     color: colors.mutedForeground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   detailStatusRow: {
     flexDirection: 'row',
@@ -1490,8 +1490,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     gap: spacing.sm,
   },
   detailPrice: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: typography.sizes.xl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   detailSection: {
@@ -1500,7 +1500,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   detailSectionTitle: {
     ...typography.label,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     color: colors.mutedForeground,
     marginBottom: spacing.sm,
   },
@@ -1519,7 +1519,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   detailItemValue: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   detailActions: {
@@ -1571,7 +1571,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   addMaintenanceBtnText: {
     ...typography.captionSmall,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   noMaintenanceContainer: {
@@ -1604,7 +1604,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   maintenanceCardTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     flex: 1,
   },
@@ -1647,7 +1647,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   maintenanceNextDueText: {
     ...typography.captionSmall,
     color: '#f59e0b',
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   categoryModalActions: {
     flexDirection: 'row',

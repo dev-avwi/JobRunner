@@ -21,6 +21,7 @@ import { TradeTypeSelector } from '../../src/components/TradeTypeSelector';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
@@ -39,12 +40,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: 32,
   },
   emailDisplay: {
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.mutedForeground,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -61,15 +62,15 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginBottom: 8,
   },
   inputLabelText: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   input: {
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: colors.border,
@@ -79,7 +80,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     color: colors.mutedForeground,
   },
   inputNote: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 4,
     marginLeft: 4,
@@ -98,8 +99,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     opacity: 0.7,
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
 });

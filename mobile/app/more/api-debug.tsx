@@ -14,7 +14,7 @@ import Constants from 'expo-constants';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, typography, shadows } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, shadows, fontWeights } from '../../src/lib/design-tokens';
 import { API_URL } from '../../src/lib/api';
 import {
   isIAPAvailable,
@@ -64,7 +64,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   value: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     flex: 1,
     textAlign: 'right',
   },
@@ -82,7 +82,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   actionButtonText: {
     ...typography.body,
     color: colors.primaryForeground,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   warningBanner: {
     backgroundColor: '#FEF3C7',

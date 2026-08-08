@@ -22,6 +22,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { useAuthStore } from '../../src/lib/store';
 import api from '../../src/lib/api';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 const DISMISSED_NOTIFICATIONS_KEY = 'jobrunner_dismissed_notifications';
 
@@ -187,7 +188,7 @@ function EntityLink({
   return (
     <PressableRow onPress={handlePress} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: `${colors.primary}30`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginRight: 8, marginBottom: 8, }} >
       <Feather name={getIcon()} size={14} color={colors.primary} style={{ marginRight: 6 }} />
-      <Text style={{ fontSize: 13, fontWeight: '500', color: colors.primary }}>
+      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.primary }}>
         {item.label}
       </Text>
       {item.status && (
@@ -198,13 +199,13 @@ function EntityLink({
           borderRadius: 4,
           marginLeft: 6,
         }}>
-          <Text style={{ fontSize: 10, fontWeight: '600', color: getStatusColor() }}>
+          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: getStatusColor() }}>
             {item.status}
           </Text>
         </View>
       )}
       {item.amount !== undefined && (
-        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary, marginLeft: 6 }}>
+        <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary, marginLeft: 6 }}>
           ${(item.amount / 100).toFixed(2)}
         </Text>
       )}
@@ -235,7 +236,7 @@ function ActionConfirmation({
       padding: 12,
       marginTop: 12,
     }}>
-      <Text style={{ fontSize: 14, fontWeight: '500', color: colors.success, marginBottom: 10 }}>
+      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.success, marginBottom: 10 }}>
         {action.message || 'Confirm this action?'}
       </Text>
       <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -245,13 +246,13 @@ function ActionConfirmation({
           ) : (
             <Feather name="check" size={14} color={colors.successForeground} style={{ marginRight: 6 }} />
           )}
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.successForeground }}>
+          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.successForeground }}>
             Yes, do it
           </Text>
         </PressableRow>
         <PressableRow onPress={onCancel} disabled={isPending} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.muted, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, opacity: isPending ? 0.7 : 1, }} >
           <Feather name="x" size={14} color={colors.foreground} style={{ marginRight: 6 }} />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
             Cancel
           </Text>
         </PressableRow>
@@ -275,7 +276,7 @@ function SuggestedFollowups({
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
       {followups.map((followup, index) => (
         <PressableRow key={index} onPress={() => onPress(followup)} style={{ backgroundColor: colors.muted, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8, marginBottom: 8, }} >
-          <Text style={{ fontSize: 12, color: colors.foreground }}>{followup}</Text>
+          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }}>{followup}</Text>
         </PressableRow>
       ))}
     </View>
@@ -793,13 +794,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 24,
   },
   heroGreeting: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.extrabold,
     color: colors.foreground,
     letterSpacing: -0.5,
   },
   heroSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 4,
     lineHeight: 20,
@@ -828,8 +829,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   quickActionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   chatHeaderCard: {
@@ -850,8 +851,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   chatHeaderText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
   },
   section: {
@@ -864,8 +865,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   suggestionsGrid: {
@@ -883,7 +884,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: `${colors.primary}20`,
   },
   suggestionText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 20,
   },
@@ -894,7 +895,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 12,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
   emptyState: {
@@ -902,7 +903,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
   },
   chatSection: {
@@ -929,13 +930,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginRight: 32,
   },
   chatBubbleLabel: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
     marginBottom: 4,
   },
   chatBubbleText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     lineHeight: 20,
   },
@@ -959,7 +960,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 15,
+    fontSize: typography.sizes.md,
     color: colors.foreground,
     maxHeight: 100,
     borderWidth: 1,
@@ -1007,13 +1008,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   notificationTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 2,
   },
   notificationMessage: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     lineHeight: 18,
   },
@@ -1028,8 +1029,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 10,
   },
   notificationBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.white,
   },
 });

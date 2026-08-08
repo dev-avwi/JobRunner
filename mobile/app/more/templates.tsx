@@ -21,7 +21,7 @@ import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { API_URL } from '../../src/lib/api';
-import { spacing, radius, shadows } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import LiveDocumentPreview from '../../src/components/LiveDocumentPreview';
 import { TemplateId, DOCUMENT_TEMPLATES, TemplateCustomization, DOCUMENT_ACCENT_COLOR } from '../../src/lib/document-templates';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -122,12 +122,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -142,8 +142,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   createButtonText: {
     color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   statsRow: {
     flexDirection: 'row',
@@ -159,8 +159,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.border,
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.xxl,
+    fontWeight: fontWeights.bold,
     color: colors.foreground,
     marginBottom: 4,
   },
@@ -170,7 +170,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: 4,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
   },
   filtersRow: {
@@ -194,13 +194,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   filterChipText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.foreground,
     textTransform: 'capitalize',
   },
   filterChipTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   emptyState: {
     alignItems: 'center',
@@ -221,13 +221,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.lg,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.xl,
@@ -242,8 +242,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: spacing.sm,
   },
   emptyButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   templateList: {
@@ -266,8 +266,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   templateName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   templateMeta: {
@@ -277,8 +277,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginTop: 4,
   },
   templateType: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
     textTransform: 'capitalize',
     backgroundColor: colors.primaryLight,
@@ -287,7 +287,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.sm,
   },
   templateTrade: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     textTransform: 'capitalize',
   },
@@ -304,16 +304,16 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginTop: spacing.sm,
   },
   templateTitle: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     marginBottom: 4,
   },
   templateItemsCount: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   templateTerms: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 4,
     fontStyle: 'italic',
@@ -325,7 +325,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginTop: spacing.sm,
   },
   badge: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.mutedForeground,
     backgroundColor: colors.muted,
     paddingHorizontal: spacing.sm,
@@ -336,7 +336,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.primary,
     backgroundColor: colors.primaryLight,
     paddingHorizontal: spacing.sm,
@@ -344,8 +344,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.sm,
   },
   createdByYouBadgeText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
   modalContainer: {
@@ -362,8 +362,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderBottomColor: colors.border,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: typography.sizes.lg,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   tabsContainer: {
@@ -388,13 +388,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     ...shadows.sm,
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
   },
   tabTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   modalContent: {
     flex: 1,
@@ -413,8 +413,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.lg + 4,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
@@ -422,7 +422,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.md + 2,
-    fontSize: 16,
+    fontSize: typography.subtitle.fontSize,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: colors.border,
@@ -449,13 +449,13 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   typeButtonText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     textTransform: 'capitalize',
   },
   typeButtonTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   tradeTypeScroll: {
     marginBottom: spacing.lg,
@@ -478,17 +478,17 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   tradeChipText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.foreground,
     textTransform: 'capitalize',
   },
   tradeChipTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   sectionHeader: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginTop: spacing.lg,
     marginBottom: spacing.md,
@@ -511,12 +511,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     justifyContent: 'space-between',
   },
   styleName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   styleDescription: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
     marginTop: 4,
   },
@@ -537,7 +537,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.md,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: colors.border,
@@ -568,7 +568,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.sm,
   },
   switchLabel: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
   },
   switchTrack: {
@@ -600,7 +600,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.card,
     borderRadius: radius.md,
     padding: spacing.sm + 2,
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: colors.border,
@@ -623,7 +623,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderStyle: 'dashed',
   },
   addLineItemText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.primary,
   },
   removeLineItemButton: {
@@ -644,8 +644,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     opacity: 0.7,
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   loadingContainer: {
@@ -661,8 +661,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.full,
   },
   previewTotalText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   stylePresetsSection: {
@@ -675,8 +675,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     marginBottom: spacing.md,
   },
   stylePresetsSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   viewAllButton: {
@@ -687,9 +687,9 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingVertical: spacing.xs,
   },
   viewAllButtonText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   stylePresetCard: {
     backgroundColor: colors.card,
@@ -712,8 +712,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flex: 1,
   },
   stylePresetName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 4,
   },
@@ -729,8 +729,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderRadius: radius.sm,
   },
   defaultBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
     color: colors.primary,
   },
   colorSwatches: {
@@ -758,7 +758,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     gap: 4,
   },
   stylePresetDetailText: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   previewSection: {
@@ -781,7 +781,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     paddingHorizontal: spacing.lg,
   },
   emptyStylePresetsText: {
-    fontSize: 14,
+    fontSize: typography.button.fontSize,
     color: colors.mutedForeground,
     textAlign: 'center',
   },
@@ -803,12 +803,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.primaryLight,
   },
   customizeSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   customizeSectionSubtitle: {
-    fontSize: 12,
+    fontSize: typography.captionSmall.fontSize,
     color: colors.mutedForeground,
   },
   customizeCard: {
@@ -839,21 +839,21 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   templateStyleButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
     textAlign: 'center',
   },
   templateStyleButtonTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   customizeOptionRow: {
     marginBottom: spacing.md,
   },
   customizeOptionLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
     marginBottom: spacing.sm,
   },
@@ -875,12 +875,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderColor: colors.primary,
   },
   customizePickerOptionText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   customizePickerOptionTextActive: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   customizeSwitchRow: {
     flexDirection: 'row',
@@ -937,8 +937,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.muted,
   },
   saveCustomizationButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.primaryForeground,
   },
   saveCustomizationButtonTextDisabled: {
@@ -968,12 +968,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     backgroundColor: colors.primaryLight,
   },
   templateListHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   templateListHeaderSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -1848,10 +1848,10 @@ export default function TemplatesScreen() {
             borderRadius: radius.lg,
             marginTop: spacing.md
           }}>
-            <Text style={{ fontSize: 14, color: colors.primary, fontWeight: '500', marginBottom: 4 }}>
+            <Text style={{ fontSize: typography.button.fontSize, color: colors.primary, fontWeight: fontWeights.medium, marginBottom: 4 }}>
               Job Template
             </Text>
-            <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
               Job templates save the default title and description for quick job creation. 
               They don't include pricing as jobs get quoted separately.
             </Text>
@@ -1880,10 +1880,10 @@ export default function TemplatesScreen() {
       return (
         <View style={[styles.previewContainer, { justifyContent: 'center', alignItems: 'center', padding: spacing.xl }]}>
           <Feather name="briefcase" size={48} color={colors.warning} style={{ marginBottom: spacing.lg }} />
-          <Text style={{ fontSize: 18, fontWeight: '600', color: colors.foreground, marginBottom: spacing.sm, textAlign: 'center' }}>
+          <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.sm, textAlign: 'center' }}>
             Job Template Preview
           </Text>
-          <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center', marginBottom: spacing.lg }}>
+          <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center', marginBottom: spacing.lg }}>
             Job templates don't generate documents. They provide quick defaults for creating new jobs.
           </Text>
           <View style={{ 
@@ -1894,12 +1894,12 @@ export default function TemplatesScreen() {
             borderWidth: 1,
             borderColor: colors.border
           }}>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 4 }}>Title</Text>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: spacing.md }}>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 4 }}>Title</Text>
+            <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.md }}>
               {newTemplate.defaults.title || 'Untitled Job'}
             </Text>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 4 }}>Description</Text>
-            <Text style={{ fontSize: 14, color: colors.foreground }}>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 4 }}>Description</Text>
+            <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>
               {newTemplate.defaults.description || 'No description set'}
             </Text>
           </View>
@@ -2412,7 +2412,7 @@ export default function TemplatesScreen() {
                   flex: 1,
                   marginLeft: spacing.xs,
                   color: colors.foreground,
-                  fontSize: 14,
+                  fontSize: typography.button.fontSize,
                 }}
                 placeholder="Search templates..."
                 placeholderTextColor={colors.mutedForeground}
@@ -2552,7 +2552,7 @@ export default function TemplatesScreen() {
                   onPress={() => setShowAllTemplates(!showAllTemplates)}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600' }}>
+                  <Text style={{ color: colors.primary, fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold }}>
                     {showAllTemplates ? 'Show Less' : `View All (${filteredTemplates.length})`}
                   </Text>
                   <Feather 

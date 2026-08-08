@@ -18,7 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
-import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 
@@ -208,7 +208,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
     },
     filterText: {
       ...typography.caption,
-      fontWeight: '500',
+      fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
     activeFilterText: {
@@ -357,7 +357,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
     },
     actionButtonText: {
       ...typography.caption,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     actionButtonTextPrimary: {
@@ -489,7 +489,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
     },
     modalLabel: {
       ...typography.caption,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       color: colors.mutedForeground,
       marginBottom: spacing.sm,
       marginTop: spacing.md,
@@ -539,7 +539,7 @@ function createStyles(colors: ThemeColors, bottomNavHeight: number = 0) {
     },
     modalOptionTextSelected: {
       color: colors.primary,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
     },
     modalSaveButton: {
       flexDirection: 'row',

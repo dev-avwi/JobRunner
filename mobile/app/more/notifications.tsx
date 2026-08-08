@@ -7,6 +7,7 @@ import { useNotificationsStore } from '../../src/lib/notifications-store';
 import * as Notifications from 'expo-notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { typography, fontWeights } from '../../src/lib/design-tokens';
 
 const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
@@ -18,8 +19,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     paddingBottom: bottomNavHeight,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -53,12 +54,12 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     flex: 1,
   },
   settingTitle: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   settingSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     marginTop: 2,
   },
@@ -68,7 +69,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     marginHorizontal: 12,
   },
   infoText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
     textAlign: 'center',
     marginTop: 8,
@@ -86,8 +87,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
   inboxButtonText: {
     color: colors.primaryForeground,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: fontWeights.semibold,
   },
   statusCard: {
     backgroundColor: colors.card,
@@ -111,13 +112,13 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     flex: 1,
   },
   statusTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
     marginBottom: 2,
   },
   statusSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.mutedForeground,
   },
   fixButton: {
@@ -127,8 +128,8 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     backgroundColor: colors.primaryLight,
   },
   fixButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.primary,
   },
 });

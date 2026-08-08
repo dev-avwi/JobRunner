@@ -16,7 +16,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, shadows, typography, iconSizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import AppTour from '../../src/components/AppTour';
 import * as Clipboard from 'expo-clipboard';
 import * as Device from 'expo-device';
@@ -289,7 +289,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   categoryTitle: {
     flex: 1,
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     color: colors.foreground,
   },
   categoryItems: {
@@ -358,7 +358,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   contactTitle: {
     ...typography.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
   contactSubtitle: {
@@ -411,7 +411,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   copyDebugText: {
     ...typography.bodySmall,
-    fontWeight: '600' as const,
+    fontWeight: fontWeights.semibold,
   },
 });
 

@@ -18,7 +18,7 @@ import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { spacing, radius, typography } from '../../src/lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import { validateABN, formatABN } from '../../src/lib/format';
 import { SignaturePad } from '../../src/components/SignaturePad';
 import { TradeTypeSelector } from '../../src/components/TradeTypeSelector';
@@ -82,7 +82,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   brandingLinkTitle: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   brandingLinkSubtitle: {
     ...typography.caption,
@@ -101,7 +101,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   inputLabelText: {
     ...typography.body,
     color: colors.foreground,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   input: {
     backgroundColor: colors.card,
@@ -137,8 +137,8 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   saveButtonText: {
     color: colors.primaryForeground,
-    fontWeight: '600',
-    fontSize: 16,
+    fontWeight: fontWeights.semibold,
+    fontSize: typography.subtitle.fontSize,
   },
 });
 
@@ -311,7 +311,7 @@ export default function BusinessSettingsScreen() {
               maxLength={14}
             />
             {form.abn && !validateABN(form.abn).valid ? (
-              <Text style={{ color: colors.destructive, fontSize: 12, marginTop: 4 }}>
+              <Text style={{ color: colors.destructive, fontSize: typography.captionSmall.fontSize, marginTop: 4 }}>
                 {validateABN(form.abn).error}
               </Text>
             ) : (
@@ -374,7 +374,7 @@ export default function BusinessSettingsScreen() {
                 {addressSuggestions.slice(0, 5).map((suggestion, index) => (
                   <PressableRow key={index} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderBottomWidth: index < Math.min(addressSuggestions.length, 5) - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: colors.border }} onPress={() => handleAddressSelect(suggestion)} >
                     <Feather name="map-pin" size={14} color={colors.mutedForeground} style={{ marginRight: spacing.sm }} />
-                    <Text style={{ flex: 1, fontSize: 14, color: colors.foreground }} numberOfLines={2}>{suggestion.description}</Text>
+                    <Text style={{ flex: 1, fontSize: typography.button.fontSize, color: colors.foreground }} numberOfLines={2}>{suggestion.description}</Text>
                   </PressableRow>
                 ))}
               </View>
@@ -397,11 +397,11 @@ export default function BusinessSettingsScreen() {
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                 <PressableRow style={[styles.input, { flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.sm }]} onPress={() => setShowSignaturePad(true)} >
                   <Feather name="edit-2" size={16} color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontWeight: '500' }}>Change</Text>
+                  <Text style={{ color: colors.primary, fontWeight: fontWeights.medium }}>Change</Text>
                 </PressableRow>
                 <PressableRow style={[styles.input, { flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.sm }]} onPress={() => setForm({ ...form, defaultSignature: '' })} >
                   <Feather name="trash-2" size={16} color={colors.destructive} />
-                  <Text style={{ color: colors.destructive, fontWeight: '500' }}>Clear</Text>
+                  <Text style={{ color: colors.destructive, fontWeight: fontWeights.medium }}>Clear</Text>
                 </PressableRow>
               </View>
             </View>

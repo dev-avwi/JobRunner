@@ -11,7 +11,7 @@ import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { BottomSheetScrollView } from '../../src/components/ui/AppBottomSheet';
 import { api } from '../../src/lib/api';
-import { spacing, radius, shadows, typography, pageShell, componentStyles, iconSizes, typographySizes, sizes } from '../../src/lib/design-tokens';
+import { spacing, radius, shadows, typography, pageShell, componentStyles, iconSizes, typographySizes, sizes, fontWeights } from '../../src/lib/design-tokens';
 import { JobLinkField } from '../../src/components/JobLinkField';
 
 type TabKey = 'incidents' | 'emergency' | 'jsa' | 'environments' | 'signage' | 'hazard_reports' | 'ppe' | 'training';
@@ -101,88 +101,88 @@ const REPORTED_TO_ROLES = [
 const createStyles = (colors: ThemeColors, isDark: boolean, bottomNavHeight: number = 0) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   heroSection: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  pageTitle: { fontSize: 28, fontWeight: '800', color: colors.foreground, letterSpacing: -0.5 },
-  pageSubtitle: { fontSize: 14, color: colors.mutedForeground, marginTop: spacing.xs, lineHeight: 20 },
+  pageTitle: { fontSize: typography.sizes['3xl'], fontWeight: fontWeights.extrabold, color: colors.foreground, letterSpacing: -0.5 },
+  pageSubtitle: { fontSize: typography.button.fontSize, color: colors.mutedForeground, marginTop: spacing.xs, lineHeight: 20 },
   heroTitleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
   heroTitleText: { flex: 1 },
   heroAddButton: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.md, marginTop: 4, ...shadows.sm },
-  heroAddText: { fontSize: 13, fontWeight: '700', color: colors.primaryForeground },
+  heroAddText: { fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.primaryForeground },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   statCard: { flex: 1, backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, ...shadows.sm },
   signRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
   statIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  statValue: { fontSize: 16, fontWeight: '700', color: colors.foreground },
-  statLabel: { fontSize: 11, color: colors.mutedForeground, marginTop: 1 },
+  statValue: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground },
+  statLabel: { fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 1 },
   actionBanner: { backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.md, marginTop: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
   actionBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   actionBannerIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  actionBannerTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.foreground },
+  actionBannerTitle: { flex: 1, fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.foreground },
   actionItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 7, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  actionItemText: { flex: 1, fontSize: 13, color: colors.foreground },
-  actionMoreText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
+  actionItemText: { flex: 1, fontSize: typography.sizes.sm, color: colors.foreground },
+  actionMoreText: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
   complianceBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.md, marginTop: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
-  complianceBannerText: { fontSize: 14, fontWeight: '500', color: colors.success },
+  complianceBannerText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.success },
   stickyBar: { backgroundColor: colors.background, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   filterChip: { paddingHorizontal: spacing.sm, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', gap: 5 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary, ...shadows.sm },
-  filterChipText: { fontSize: 13, color: colors.mutedForeground, fontWeight: '500' },
-  filterChipTextActive: { color: colors.primaryForeground, fontWeight: '700' },
+  filterChipText: { fontSize: typography.sizes.sm, color: colors.mutedForeground, fontWeight: fontWeights.medium },
+  filterChipTextActive: { color: colors.primaryForeground, fontWeight: fontWeights.bold },
   chipCount: { minWidth: 18, paddingHorizontal: 5, paddingVertical: 1, borderRadius: radius.full, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   chipCountActive: { backgroundColor: colorWithOpacity(colors.primaryForeground, 0.25) },
-  chipCountText: { fontSize: 10, fontWeight: '700', color: colors.mutedForeground },
+  chipCountText: { fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground },
   chipCountTextActive: { color: colors.primaryForeground },
   catHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, flexWrap: 'wrap', paddingHorizontal: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.sm },
   catHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },
-  catTitle: { fontSize: 18, fontWeight: '700', color: colors.foreground, flexShrink: 1 },
+  catTitle: { fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, flexShrink: 1 },
   catCountBadge: { minWidth: 22, paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.full, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
-  catCountText: { fontSize: 12, fontWeight: '700', color: colors.mutedForeground },
+  catCountText: { fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: colors.mutedForeground },
   catAddButton: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.md, ...shadows.sm },
-  catAddText: { fontSize: 13, fontWeight: '700', color: colors.primaryForeground },
+  catAddText: { fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.primaryForeground },
   viewJobRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   linkedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colorWithOpacity(colors.primary, 0.12), paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
-  linkedBadgeText: { fontSize: 10, fontWeight: '700', color: colors.primary },
-  viewJobText: { flex: 1, fontSize: 12, fontWeight: '600', color: colors.primary },
+  linkedBadgeText: { fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.primary },
+  viewJobText: { flex: 1, fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.primary },
   listSection: { paddingHorizontal: spacing.lg, paddingBottom: bottomNavHeight },
   card: { backgroundColor: colors.card, borderRadius: radius['2xl'], padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.cardBorder, ...shadows.sm },
-  cardTitle: { fontSize: 15, fontWeight: '600', color: colors.foreground },
-  cardSubtext: { fontSize: 12, color: colors.mutedForeground, marginTop: 2, lineHeight: 17 },
-  cardMeta: { fontSize: 12, lineHeight: 17 },
+  cardTitle: { fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground },
+  cardSubtext: { fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2, lineHeight: 17 },
+  cardMeta: { fontSize: typography.captionSmall.fontSize, lineHeight: 17 },
   badge: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full, marginRight: spacing.xs, marginBottom: 4 },
-  badgeText: { fontSize: 11, fontWeight: '600' },
+  badgeText: { fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl * 2, paddingHorizontal: spacing.lg, gap: spacing.sm },
   emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: colors.foreground },
-  emptyDesc: { fontSize: 14, color: colors.mutedForeground, textAlign: 'center' as const, lineHeight: 20 },
+  emptyTitle: { fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground },
+  emptyDesc: { fontSize: typography.button.fontSize, color: colors.mutedForeground, textAlign: 'center' as const, lineHeight: 20 },
   emptyButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.lg, marginTop: spacing.md, ...shadows.sm },
-  emptyButtonText: { fontSize: 14, fontWeight: '600', color: colors.primaryForeground },
+  emptyButtonText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground },
   fab: { position: 'absolute', bottom: spacing.xl, right: spacing.lg, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', ...shadows.lg },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.muted, paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
-  metaChipText: { fontSize: 11, color: colors.mutedForeground },
+  metaChipText: { fontSize: typography.sizes.xs, color: colors.mutedForeground },
   stepCard: { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderRadius: radius.lg, padding: spacing.sm, marginBottom: spacing.sm },
   stepHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
   hazardBadge: { backgroundColor: colorWithOpacity(colors.destructive, 0.12), paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: radius.sm, marginRight: spacing.xs, marginBottom: 4 },
-  hazardBadgeText: { fontSize: 10, color: colors.destructive, fontWeight: '600' },
+  hazardBadgeText: { fontSize: typography.sizes.xs, color: colors.destructive, fontWeight: fontWeights.semibold },
   ppeBadge: { backgroundColor: colorWithOpacity(colors.info, 0.12), paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: radius.sm, marginRight: spacing.xs, marginBottom: 4 },
-  ppeBadgeText: { fontSize: 10, color: colors.info, fontWeight: '600' },
+  ppeBadgeText: { fontSize: typography.sizes.xs, color: colors.info, fontWeight: fontWeights.semibold },
   checkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs + 2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  sectionTitle: { fontSize: 14, fontWeight: '600', color: colors.foreground, marginBottom: spacing.sm, marginTop: spacing.sm },
+  sectionTitle: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.sm, marginTop: spacing.sm },
   modalContainer: { flex: 1, backgroundColor: colors.background },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalTitle: { ...typography.subtitle, color: colors.foreground },
   modalBody: { padding: spacing.md },
-  inputLabel: { fontSize: 13, fontWeight: '500', color: colors.foreground, marginBottom: spacing.xs },
-  input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, fontSize: 15, color: colors.foreground, marginBottom: spacing.md },
+  inputLabel: { fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.foreground, marginBottom: spacing.xs },
+  input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, fontSize: typography.sizes.md, color: colors.foreground, marginBottom: spacing.md },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
   optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
   optionChip: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
   optionChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  optionChipText: { fontSize: 12, color: colors.foreground },
+  optionChipText: { fontSize: typography.captionSmall.fontSize, color: colors.foreground },
   optionChipTextActive: { color: colors.primaryForeground },
   chipButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.lg, borderWidth: 1 },
-  saveButton: { fontSize: 16, fontWeight: '600' },
+  saveButton: { fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold },
 });
 
 export default function WhsHubScreen() {
@@ -566,25 +566,25 @@ export default function WhsHubScreen() {
           {info.assemblyPoint && (
             <View style={styles.row}>
               <Feather name="map-pin" size={14} color={whsConfig.emergencyAccent} />
-              <Text style={{ fontSize: 13, color: colors.foreground }}>Assembly: {info.assemblyPoint}</Text>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground }}>Assembly: {info.assemblyPoint}</Text>
             </View>
           )}
           {info.firstAidLocation && (
             <View style={styles.row}>
               <Feather name="plus-circle" size={14} color={whsConfig.firstAidKit} />
-              <Text style={{ fontSize: 13, color: colors.foreground }}>First Aid: {info.firstAidLocation}</Text>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground }}>First Aid: {info.firstAidLocation}</Text>
             </View>
           )}
           {info.firstAidOfficer && (
             <View style={styles.row}>
               <Feather name="user" size={14} color={whsConfig.firstAider} />
-              <Text style={{ fontSize: 13, color: colors.foreground }}>First Aid Officer: {info.firstAidOfficer} {info.firstAidOfficerPhone ? `(${info.firstAidOfficerPhone})` : ''}</Text>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground }}>First Aid Officer: {info.firstAidOfficer} {info.firstAidOfficerPhone ? `(${info.firstAidOfficerPhone})` : ''}</Text>
             </View>
           )}
           {info.nearestHospital && (
             <View style={styles.row}>
               <Feather name="activity" size={14} color={whsConfig.hospital} />
-              <Text style={{ fontSize: 13, color: colors.foreground }}>Hospital: {info.nearestHospital}</Text>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground }}>Hospital: {info.nearestHospital}</Text>
             </View>
           )}
           <View style={[styles.row, { marginTop: spacing.xs }]}>
@@ -633,19 +633,19 @@ export default function WhsHubScreen() {
         </View>
         {doc.steps && doc.steps.length > 0 && (
           <View style={{ marginTop: spacing.sm }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.mutedForeground, marginBottom: 4 }}>STEPS ({doc.steps.length})</Text>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 4 }}>STEPS ({doc.steps.length})</Text>
             {doc.steps.map((step: any, i: number) => {
               const riskColor = whsConfig.riskColor(step.riskLevel);
               return (
                 <View key={step.id || i} style={styles.stepCard}>
                   <View style={styles.stepHeader}>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.foreground }}>Step {i + 1}: {step.taskDescription}</Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Step {i + 1}: {step.taskDescription}</Text>
                     <View style={[styles.badge, { backgroundColor: riskColor + '20', marginBottom: 0 }]}>
                       <Text style={[styles.badgeText, { color: riskColor }]}>{step.riskLevel}</Text>
                     </View>
                   </View>
-                  <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Hazards: {step.hazards}</Text>
-                  <Text style={{ fontSize: 11, color: colors.foreground, marginTop: 2 }}>Controls: {step.controlMeasures}</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>Hazards: {step.hazards}</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, color: colors.foreground, marginTop: 2 }}>Controls: {step.controlMeasures}</Text>
                 </View>
               );
             })}
@@ -684,7 +684,7 @@ export default function WhsHubScreen() {
           </View>
           {env.hazards?.length > 0 && (
             <View style={{ marginTop: spacing.xs }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.mutedForeground }}>HAZARDS</Text>
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>HAZARDS</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
                 {env.hazards.map((h: string, i: number) => (
                   <View key={i} style={styles.hazardBadge}><Text style={styles.hazardBadgeText}>{h}</Text></View>
@@ -694,7 +694,7 @@ export default function WhsHubScreen() {
           )}
           {env.requiredPpe?.length > 0 && (
             <View style={{ marginTop: spacing.xs }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.mutedForeground }}>PPE REQUIRED</Text>
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>PPE REQUIRED</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
                 {env.requiredPpe.map((p: string, i: number) => (
                   <View key={i} style={styles.ppeBadge}><Text style={styles.ppeBadgeText}>{p}</Text></View>
@@ -734,8 +734,8 @@ export default function WhsHubScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: spacing.sm }}>
               <Feather name={sign.isInstalled ? 'check-circle' : 'circle'} size={20} color={sign.isInstalled ? colors.success : colors.mutedForeground} />
               <View>
-                <Text style={[{ fontSize: 14, color: colors.foreground }, sign.isInstalled && { textDecorationLine: 'line-through', color: colors.mutedForeground }]}>{sign.signType}</Text>
-                {sign.location && <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{sign.location}</Text>}
+                <Text style={[{ fontSize: typography.button.fontSize, color: colors.foreground }, sign.isInstalled && { textDecorationLine: 'line-through', color: colors.mutedForeground }]}>{sign.signType}</Text>
+                {sign.location && <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{sign.location}</Text>}
               </View>
             </View>
             <TouchableOpacity onPress={() => deleteItem('/api/whs/safety-signage', sign.id)}>
@@ -753,11 +753,11 @@ export default function WhsHubScreen() {
         <KeyboardAvoidingView style={styles.modalContainer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowIncidentForm(false)}>
-              <Text style={{ fontSize: 16, color: colors.primary }}>Cancel</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary }}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Report Incident</Text>
             <TouchableOpacity onPress={submitIncident}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>Submit</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Submit</Text>
             </TouchableOpacity>
           </View>
           <BottomSheetScrollView style={styles.modalBody}>
@@ -785,7 +785,7 @@ export default function WhsHubScreen() {
             <View style={[styles.optionRow, { marginBottom: spacing.md }]}>
               {SEVERITIES.map(s => (
                 <TouchableOpacity key={s.value} style={[styles.optionChip, incidentForm.severity === s.value && { backgroundColor: s.color + '30', borderColor: s.color }]} onPress={() => setIncidentForm(p => ({ ...p, severity: s.value }))}>
-                  <Text style={[styles.optionChipText, incidentForm.severity === s.value && { color: s.color, fontWeight: '600' }]}>{s.label}</Text>
+                  <Text style={[styles.optionChipText, incidentForm.severity === s.value && { color: s.color, fontWeight: fontWeights.semibold }]}>{s.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -807,7 +807,7 @@ export default function WhsHubScreen() {
 
             <TouchableOpacity style={[styles.row, { marginBottom: spacing.xl }]} onPress={() => setIncidentForm(p => ({ ...p, isNotifiable: !p.isNotifiable }))}>
               <Feather name={incidentForm.isNotifiable ? 'check-square' : 'square'} size={20} color={incidentForm.isNotifiable ? colors.primary : colors.mutedForeground} />
-              <Text style={{ fontSize: 14, color: colors.foreground }}>This is a notifiable incident</Text>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>This is a notifiable incident</Text>
             </TouchableOpacity>
           </BottomSheetScrollView>
         </KeyboardAvoidingView>
@@ -826,11 +826,11 @@ export default function WhsHubScreen() {
         <KeyboardAvoidingView style={styles.modalContainer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowEmergencyForm(false)}>
-              <Text style={{ fontSize: 16, color: colors.primary }}>Cancel</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary }}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Emergency Plan</Text>
             <TouchableOpacity onPress={submitEmergency}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>Save</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Save</Text>
             </TouchableOpacity>
           </View>
           <BottomSheetScrollView style={styles.modalBody}>
@@ -880,11 +880,11 @@ export default function WhsHubScreen() {
         <KeyboardAvoidingView style={styles.modalContainer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowJsaForm(false)}>
-              <Text style={{ fontSize: 16, color: colors.primary }}>Cancel</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary }}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>New JSA</Text>
             <TouchableOpacity onPress={submitJsa}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>Create</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Create</Text>
             </TouchableOpacity>
           </View>
           <BottomSheetScrollView style={styles.modalBody}>
@@ -907,7 +907,7 @@ export default function WhsHubScreen() {
             {jsaForm.steps.map((step, i) => (
               <View key={i} style={styles.stepCard}>
                 <View style={styles.stepHeader}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>Step {i + 1}</Text>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Step {i + 1}</Text>
                   {jsaForm.steps.length > 1 && (
                     <TouchableOpacity onPress={() => setJsaForm(p => ({ ...p, steps: p.steps.filter((_, idx) => idx !== i) }))}>
                       <Feather name="trash-2" size={16} color={colors.mutedForeground} />
@@ -922,7 +922,7 @@ export default function WhsHubScreen() {
                     const riskColor = whsConfig.riskColor(level);
                     return (
                       <TouchableOpacity key={level} style={[styles.optionChip, step.riskLevel === level && { backgroundColor: riskColor + '30', borderColor: riskColor }]} onPress={() => { const s = [...jsaForm.steps]; s[i] = { ...s[i], riskLevel: level }; setJsaForm(p => ({ ...p, steps: s })); }}>
-                        <Text style={[styles.optionChipText, step.riskLevel === level && { color: riskColor, fontWeight: '600' }]}>{level}</Text>
+                        <Text style={[styles.optionChipText, step.riskLevel === level && { color: riskColor, fontWeight: fontWeights.semibold }]}>{level}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -930,7 +930,7 @@ export default function WhsHubScreen() {
               </View>
             ))}
             <TouchableOpacity style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', marginTop: spacing.sm, borderStyle: 'dashed' }} onPress={() => setJsaForm(p => ({ ...p, steps: [...p.steps, { taskDescription: '', hazards: '', riskLevel: 'medium', controlMeasures: '', responsiblePerson: '' }] }))}>
-              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>+ Add Step</Text>
+              <Text style={{ color: colors.foreground, fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold }}>+ Add Step</Text>
             </TouchableOpacity>
           </BottomSheetScrollView>
         </KeyboardAvoidingView>
@@ -950,11 +950,11 @@ export default function WhsHubScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => { setShowEnvForm(false); setSelectedEnvType(''); }}>
-              <Text style={{ fontSize: 16, color: colors.primary }}>Cancel</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary }}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Add Environment</Text>
             <TouchableOpacity onPress={addEnvironment}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: selectedEnvType ? colors.primary : colors.mutedForeground }}>Add</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: selectedEnvType ? colors.primary : colors.mutedForeground }}>Add</Text>
             </TouchableOpacity>
           </View>
           <BottomSheetScrollView style={styles.modalBody}>
@@ -962,7 +962,7 @@ export default function WhsHubScreen() {
             <View style={{ gap: spacing.xs }}>
               {envTypes.map((t: any) => (
                 <TouchableOpacity key={t.type} style={[styles.card, selectedEnvType === t.type && { borderWidth: 2, borderColor: colors.primary }]} onPress={() => setSelectedEnvType(t.type)}>
-                  <Text style={[styles.cardTitle, { fontSize: 14 }]}>{t.label}</Text>
+                  <Text style={[styles.cardTitle, { fontSize: typography.button.fontSize }]}>{t.label}</Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
                     {t.defaultHazards.slice(0, 3).map((h: string, i: number) => (
                       <View key={i} style={styles.hazardBadge}><Text style={styles.hazardBadgeText}>{h}</Text></View>
@@ -998,11 +998,11 @@ export default function WhsHubScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowSignForm(false)}>
-              <Text style={{ fontSize: 16, color: colors.primary }}>Cancel</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary }}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Add Sign</Text>
             <TouchableOpacity onPress={addSign}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>Add</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Add</Text>
             </TouchableOpacity>
           </View>
           <BottomSheetScrollView style={styles.modalBody}>
@@ -1018,7 +1018,7 @@ export default function WhsHubScreen() {
                       <TouchableOpacity key={s} style={[styles.checkRow, signForm.signType === s && { backgroundColor: colors.primary + '10' }]} onPress={() => setSignForm(p => ({ ...p, signType: s }))}>
                         <View style={styles.row}>
                           <Feather name={signForm.signType === s ? 'check-circle' : 'circle'} size={18} color={signForm.signType === s ? colors.primary : colors.mutedForeground} />
-                          <Text style={{ fontSize: 14, color: colors.foreground }}>{s}</Text>
+                          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>{s}</Text>
                         </View>
                       </TouchableOpacity>
                     ))}
@@ -1171,7 +1171,7 @@ export default function WhsHubScreen() {
               {RISK_LEVELS.map(r => (
                 <TouchableOpacity key={r.value} onPress={() => setHazardForm(p => ({ ...p, riskLevel: r.value }))}
                   style={[styles.chipButton, { borderColor: hazardForm.riskLevel === r.value ? colors.primary : colors.cardBorder, backgroundColor: hazardForm.riskLevel === r.value ? colors.primaryLight : colors.card }]}>
-                  <Text style={{ color: hazardForm.riskLevel === r.value ? colors.primary : colors.foreground, fontSize: 13 }}>{r.label}</Text>
+                  <Text style={{ color: hazardForm.riskLevel === r.value ? colors.primary : colors.foreground, fontSize: typography.sizes.sm }}>{r.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -1284,7 +1284,7 @@ export default function WhsHubScreen() {
               <Text style={styles.inputLabel}>PPE Items — tick what is worn correctly</Text>
               {PPE_ITEMS.map(item => (
                 <TouchableOpacity key={item.key} style={styles.checkRow} onPress={() => setPpeForm({ ...ppeForm, [item.key]: !ppeForm[item.key] })}>
-                  <Text style={{ color: colors.foreground, fontSize: 14 }}>{item.label}</Text>
+                  <Text style={{ color: colors.foreground, fontSize: typography.button.fontSize }}>{item.label}</Text>
                   <Feather name={ppeForm[item.key] ? 'check-square' : 'square'} size={20} color={ppeForm[item.key] ? colors.primary : colors.mutedForeground} />
                 </TouchableOpacity>
               ))}
@@ -1330,7 +1330,7 @@ export default function WhsHubScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{r.workerName}</Text>
-              <Text style={[styles.cardMeta, { color: colors.primary, fontWeight: '600' }]}>{r.courseCode} — {r.courseName}</Text>
+              <Text style={[styles.cardMeta, { color: colors.primary, fontWeight: fontWeights.semibold }]}>{r.courseCode} — {r.courseName}</Text>
               <Text style={[styles.cardSubtext]}>
                 {r.rtoName ? `${r.rtoName} | ` : ''}Completed: {r.completionDate}
                 {r.expiryDate ? ` | Expires: ${r.expiryDate}` : ''}
@@ -1476,7 +1476,7 @@ export default function WhsHubScreen() {
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md }}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>Loading safety data...</Text>
+          <Text style={{ color: colors.mutedForeground, fontSize: typography.button.fontSize }}>Loading safety data...</Text>
         </View>
       ) : (
         <>
