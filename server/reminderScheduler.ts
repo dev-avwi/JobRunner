@@ -6,8 +6,8 @@ import { processTimeBasedAutomations } from './automationService';
 import { runDailyBillingReminders } from './billingReminderService';
 import { notifyInstallmentDue } from './notifications';
 import { getProductionBaseUrl } from './urlHelper';
-import { jobs, quotes, invoices, smsAutomationRules, smsAutomationLogs, paymentSchedules, paymentInstallments, automationSettings, invoiceReminderLogs, complianceDocuments } from '@shared/schema';
-import { and, or, eq, lt, isNull, gte, lte, not } from 'drizzle-orm';
+import { jobs, quotes, invoices, smsAutomationRules, smsAutomationLogs, paymentSchedules, paymentInstallments, automationSettings, invoiceReminderLogs, complianceDocuments, trainingRecords, notifications } from '@shared/schema';
+import { and, or, eq, lt, isNull, gte, lte, not, inArray } from 'drizzle-orm';
 import { getErrorMessage } from "./lib/errors";
 
 let reminderInterval: NodeJS.Timeout | null = null;
@@ -1036,6 +1036,117 @@ async function processComplianceExpiry(): Promise<void> {
     }
   } catch (error) {
     console.error('[Scheduler] Error processing compliance expiry alerts:', error);
+  }
+
+  await processTrainingRecordExpiry();
+}
+
+// Training certificates (bulk-uploaded into training_records) also carry an
+// expiry date, but were never covered by the compliance expiry pass above.
+// Same daily scheduler, same notification style; deduped per record per
+// urgency stage (info/important/urgent) via an explicit existing-notification
+// check, since notifications has no unique constraint to rely on.
+async function processTrainingRecordExpiry(): Promise<void> {
+  console.log('[Scheduler] Processing training certificate expiry alerts...');
+
+  try {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    // trainingRecords.expiryDate is text yyyy-mm-dd, so compare lexicographically
+    const thirtyDaysStr = thirtyDaysFromNow.toISOString().slice(0, 10);
+
+    const expiringRecords = await db.select().from(trainingRecords)
+      .where(
+        and(
+          not(isNull(trainingRecords.expiryDate)),
+          lte(trainingRecords.expiryDate, thirtyDaysStr)
+        )
+      )
+      .orderBy(trainingRecords.expiryDate);
+
+    if (expiringRecords.length === 0) {
+      console.log('[Scheduler] No expiring training certificates found');
+      return;
+    }
+
+    // Dedupe: fetch prior training-record expiry notifications for these records
+    const recordIds = expiringRecords.map(r => r.id);
+    const priorNotifications = await db.select({
+      relatedId: notifications.relatedId,
+      priority: notifications.priority,
+    }).from(notifications)
+      .where(
+        and(
+          eq(notifications.type, 'compliance_expiry'),
+          eq(notifications.relatedType, 'training_record'),
+          inArray(notifications.relatedId, recordIds)
+        )
+      );
+    const alreadyNotified = new Set(priorNotifications.map(n => `${n.relatedId}:${n.priority}`));
+
+    let notificationsCreated = 0;
+
+    for (const record of expiringRecords) {
+      const expiryDate = new Date(`${record.expiryDate}T00:00:00`);
+      if (isNaN(expiryDate.getTime())) continue;
+      const daysUntil = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      const isExpired = daysUntil <= 0;
+      const isUrgent = daysUntil <= 7;
+
+      // Stop re-alerting once a cert has been expired for more than 30 days
+      if (isExpired && daysUntil < -30) continue;
+
+      const certLabel = `${record.courseName}${record.workerName ? ` — ${record.workerName}` : ''}`;
+      let title: string;
+      let message: string;
+      let priority: string;
+
+      if (isExpired) {
+        title = `Training Certificate EXPIRED: ${certLabel}`;
+        message = `The training certificate "${record.courseName}"${record.certificateNumber ? ` (#${record.certificateNumber})` : ''} for ${record.workerName} expired on ${expiryDate.toLocaleDateString('en-AU')}. Arrange renewal training immediately to stay compliant.`;
+        priority = 'urgent';
+      } else if (isUrgent) {
+        title = `Training Certificate expiring in ${daysUntil} day${daysUntil === 1 ? '' : 's'}: ${certLabel}`;
+        message = `The training certificate "${record.courseName}"${record.certificateNumber ? ` (#${record.certificateNumber})` : ''} for ${record.workerName} expires on ${expiryDate.toLocaleDateString('en-AU')}. Book renewal training soon to avoid compliance issues.`;
+        priority = 'important';
+      } else {
+        title = `Training Certificate expiring in ${daysUntil} days: ${certLabel}`;
+        message = `The training certificate "${record.courseName}"${record.certificateNumber ? ` (#${record.certificateNumber})` : ''} for ${record.workerName} expires on ${expiryDate.toLocaleDateString('en-AU')}. Consider booking renewal training.`;
+        priority = 'info';
+      }
+
+      // Dedupe per record per urgency stage — escalations (30d → 7d → expired)
+      // still notify, but the same stage never repeats.
+      if (alreadyNotified.has(`${record.id}:${priority}`)) continue;
+
+      try {
+        await storage.createNotification({
+          userId: record.userId,
+          type: 'compliance_expiry',
+          title,
+          message,
+          relatedId: record.id,
+          relatedType: 'training_record',
+          priority,
+          actionUrl: '/whs',
+          actionLabel: 'View Training Records',
+        });
+        alreadyNotified.add(`${record.id}:${priority}`);
+        notificationsCreated++;
+      } catch (notifError: any) {
+        console.error(`[Scheduler] Error creating training expiry notification for record ${record.id}:`, notifError);
+      }
+    }
+
+    if (notificationsCreated > 0) {
+      console.log(`[Scheduler] Created ${notificationsCreated} training certificate expiry notifications`);
+    } else {
+      console.log('[Scheduler] No new training certificate expiry notifications needed');
+    }
+  } catch (error) {
+    console.error('[Scheduler] Error processing training certificate expiry alerts:', error);
   }
 }
 
