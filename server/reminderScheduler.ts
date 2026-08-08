@@ -934,7 +934,9 @@ export function startQuoteFollowUpScheduler(): void {
   console.log(`[Scheduler] Quote follow-up scheduler running every ${QUOTE_FOLLOWUP_INTERVAL_MS / 60000} minutes`);
 }
 
-async function processComplianceExpiry(): Promise<void> {
+// `scopeOwnerIds` (tests only) restricts the pass to specific business owners
+// so automated tests never touch real users' records or create their alerts.
+export async function processComplianceExpiry(scopeOwnerIds?: string[]): Promise<void> {
   console.log('[Scheduler] Processing compliance document expiry alerts...');
   
   try {
@@ -946,7 +948,8 @@ async function processComplianceExpiry(): Promise<void> {
       .where(
         and(
           lte(complianceDocuments.expiryDate, thirtyDaysFromNow),
-          not(isNull(complianceDocuments.expiryDate))
+          not(isNull(complianceDocuments.expiryDate)),
+          ...(scopeOwnerIds ? [inArray(complianceDocuments.businessOwnerId, scopeOwnerIds)] : [])
         )
       )
       .orderBy(complianceDocuments.expiryDate);
@@ -1057,7 +1060,7 @@ async function processComplianceExpiry(): Promise<void> {
     console.error('[Scheduler] Error processing compliance expiry alerts:', error);
   }
 
-  await processTrainingRecordExpiry();
+  await processTrainingRecordExpiry(scopeOwnerIds);
 }
 
 // Training certificates (bulk-uploaded into training_records) also carry an
@@ -1065,7 +1068,8 @@ async function processComplianceExpiry(): Promise<void> {
 // Same daily scheduler, same notification style; deduped per record per
 // urgency stage (info/important/urgent) via an explicit existing-notification
 // check, since notifications has no unique constraint to rely on.
-async function processTrainingRecordExpiry(): Promise<void> {
+// `scopeOwnerIds` (tests only) restricts the pass to specific users.
+export async function processTrainingRecordExpiry(scopeOwnerIds?: string[]): Promise<void> {
   console.log('[Scheduler] Processing training certificate expiry alerts...');
 
   try {
@@ -1079,7 +1083,8 @@ async function processTrainingRecordExpiry(): Promise<void> {
       .where(
         and(
           not(isNull(trainingRecords.expiryDate)),
-          lte(trainingRecords.expiryDate, thirtyDaysStr)
+          lte(trainingRecords.expiryDate, thirtyDaysStr),
+          ...(scopeOwnerIds ? [inArray(trainingRecords.userId, scopeOwnerIds)] : [])
         )
       )
       .orderBy(trainingRecords.expiryDate);
