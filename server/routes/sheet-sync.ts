@@ -9,6 +9,7 @@ import { requireAuth } from "./middleware";
 import { ownerOnly, getUserContext } from "../permissions";
 import {
   isSheetSyncConfigured,
+  isGoogleAuthError,
   getSheetsAuthorizationUrl,
   handleSheetsOAuthCallback,
   disconnectSheets,
@@ -42,8 +43,18 @@ export function registerSheetSyncRoutes(app: Express) {
       res.set('Cache-Control', 'no-store');
       const userContext = await getUserContext(req.userId);
       const settings = await storage.getBusinessSettings(userContext.effectiveUserId);
+      // A Google Sheets-targeted sync whose last run failed on an auth error
+      // (revoked/expired grant — the token refresh path also flips
+      // googleSheetsConnected off for permanent failures) needs the owner to
+      // reconnect; surface that prominently in Settings.
+      const target = settings?.sheetSyncTarget || 'google_sheets';
+      const needsReconnect =
+        target === 'google_sheets' &&
+        settings?.sheetSyncLastStatus === 'error' &&
+        (!settings?.googleSheetsConnected || isGoogleAuthError(settings?.sheetSyncLastError));
       res.json({
         configured: isSheetSyncConfigured(),
+        needsReconnect,
         enabled: settings?.sheetSyncEnabled || false,
         target: settings?.sheetSyncTarget || 'google_sheets',
         frequency: settings?.sheetSyncFrequency || 'daily',

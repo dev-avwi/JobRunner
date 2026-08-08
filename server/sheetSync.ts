@@ -61,6 +61,25 @@ export function isSheetSyncConfigured(): boolean {
   return !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
 }
 
+// Detects sync failures caused by a broken Google authorization (revoked
+// token, expired grant, insufficient permission) as opposed to transient or
+// data errors. Used by the status endpoint to drive a "Reconnect Google"
+// call-to-action in Settings.
+export function isGoogleAuthError(message: string | null | undefined): boolean {
+  if (!message) return false;
+  const m = message.toLowerCase();
+  return (
+    m.includes('invalid_grant') ||
+    m.includes('revoked') ||
+    m.includes('reconnect') ||
+    m.includes('unauthorized') ||
+    m.includes('invalid credentials') ||
+    m.includes('insufficient permission') ||
+    m.includes('authorization incomplete') ||
+    m.includes('is not connected')
+  );
+}
+
 function getOAuth2Client(): any {
   if (!isSheetSyncConfigured()) {
     throw new Error('Google Sheets credentials not configured');
@@ -110,12 +129,23 @@ export async function handleSheetsOAuthCallback(code: string, userId: string): P
       console.warn(`[SheetSync] Could not fetch user email: ${getErrorMessage(e)}`);
     }
 
+    // A successful (re)connect resolves any prior auth-caused sync failure —
+    // clear the stale error so Settings stops prompting to reconnect, and the
+    // existing schedule (sheetSyncEnabled/frequency untouched) simply resumes
+    // on its next due run.
+    const existingSettings = await storage.getBusinessSettings(userId);
+    const clearStaleError =
+      existingSettings?.sheetSyncLastStatus === 'error' && isGoogleAuthError(existingSettings?.sheetSyncLastError)
+        ? { sheetSyncLastStatus: null, sheetSyncLastError: null }
+        : {};
+
     const updated = await storage.updateBusinessSettings(userId, {
       googleSheetsConnected: true,
       googleSheetsAccessToken: sealToken(tokens.access_token),
       googleSheetsRefreshToken: sealToken(tokens.refresh_token),
       googleSheetsTokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
       googleSheetsEmail: email || null,
+      ...clearStaleError,
     });
     if (!updated) return { success: false, error: 'Failed to save Google Sheets connection' };
     console.log(`[SheetSync] Google Sheets connected for user ${userId}: ${email}`);

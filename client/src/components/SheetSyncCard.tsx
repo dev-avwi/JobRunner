@@ -27,6 +27,7 @@ import {
 
 interface SheetSyncStatus {
   configured: boolean;
+  needsReconnect?: boolean;
   enabled: boolean;
   target: 'google_sheets' | 'excel_email';
   frequency: 'daily' | 'weekly';
@@ -173,6 +174,34 @@ export function SheetSyncCard() {
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* Google auth broken — prominent reconnect prompt */}
+        {status.needsReconnect && (
+          <div
+            className="rounded-md border border-destructive/50 bg-destructive/10 p-3 space-y-2"
+            data-testid="alert-sheets-reconnect"
+          >
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
+              <div className="text-sm">
+                <p className="font-medium text-destructive">Google Sheet stopped accepting updates</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  JobRunner lost access to your Google account (this happens after a password change or if access was removed).
+                  Reconnect to resume your scheduled sync — your other settings are kept.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => connectGoogle.mutate()}
+              disabled={connectGoogle.isPending || !status.configured}
+              data-testid="button-sheets-reconnect"
+            >
+              {connectGoogle.isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+              Reconnect Google
+            </Button>
+          </div>
+        )}
+
         {/* One-way messaging */}
         <div className="flex items-start gap-2 rounded-md border bg-muted/50 p-3 text-xs text-muted-foreground" data-testid="text-one-way-note">
           <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
