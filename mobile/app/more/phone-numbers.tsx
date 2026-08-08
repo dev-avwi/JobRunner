@@ -379,7 +379,7 @@ export default function PhoneNumbersPage() {
                 await fetchBusinessSettings();
                 Alert.alert(
                   'Number Activated!',
-                  `${formatPhone(number.phoneNumber)} is now your dedicated business number.\n\nYou've upgraded from the shared JobRunner number (0485 013 993). Your clients will now see your own number when you send SMS.\n\nYou can also set up an AI Receptionist on this number.`,
+                  `${formatPhone(number.phoneNumber)} is now your dedicated business number.\n\nYour clients will see this number when you send SMS.\n\nYou can also set up an AI Receptionist on this number.`,
                   [
                     { text: 'Set Up AI Receptionist', onPress: () => router.replace(asHref('/more/ai-receptionist')) },
                     { text: 'Go to Chat Hub', onPress: () => router.replace('/more/chat-hub') },
@@ -793,21 +793,21 @@ export default function PhoneNumbersPage() {
 
             <PressableRow style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: `${colors.destructive}06`, borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: `${colors.destructive}15`, marginTop: spacing.md, marginBottom: spacing.lg }} onPress={handleRelease} >
               <Feather name="rotate-ccw" size={14} color={colors.destructive} />
-              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.destructive }}>Revert to Shared Number</Text>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.destructive }}>Release This Number</Text>
             </PressableRow>
           </>
         ) : (
           <>
             <View style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginBottom: spacing.lg }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.mutedForeground }} />
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.warning }} />
                 <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
-                  Using Shared Number
+                  No Business Number
                 </Text>
               </View>
-              <Text style={{ fontSize: typography.sizes['2xl'], fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: 4 }}>0485 013 993</Text>
+              <Text style={{ fontSize: typography.sizes['2xl'], fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: 4 }}>Not set up yet</Text>
               <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 18 }}>
-                You're on the shared JobRunner platform number. Get a dedicated number below so clients see your own business number.
+                SMS and AI Receptionist need your own dedicated business number. Buy one below so clients always see your number, never a shared one.
               </Text>
             </View>
           </>

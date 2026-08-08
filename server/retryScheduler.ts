@@ -62,9 +62,23 @@ async function processFailedSmsMessages() {
       if (claimed.length === 0) continue;
 
       try {
+        // Business SMS must only ever send from the business's own dedicated
+        // number - never the shared platform number.
+        const { storage } = await import("./storage");
+        const settings = await storage.getBusinessSettings(msg.businessOwnerId);
+        if (!settings?.dedicatedPhoneNumber) {
+          await db.update(smsMessages).set({
+            status: 'failed',
+            errorMessage: 'No dedicated business number configured',
+            nextRetryAt: null,
+            retryCount: MAX_RETRY_ATTEMPTS,
+          }).where(eq(smsMessages.id, msg.id));
+          continue;
+        }
         const result = await sendSMS({
           to: msg.clientPhone,
           message: msg.body,
+          fromNumber: settings.dedicatedPhoneNumber,
         });
 
         if (result.success) {

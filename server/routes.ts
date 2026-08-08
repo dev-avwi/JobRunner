@@ -9533,12 +9533,25 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(400).json({ error: "Invalid phone number format. Please provide a valid phone number." });
       }
 
+      // Business-branded test SMS must come from the business's own dedicated
+      // number - never the shared platform number.
+      if (!settings?.dedicatedPhoneNumber) {
+        return res.status(402).json({
+          error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+          code: 'DEDICATED_NUMBER_REQUIRED',
+        });
+      }
+
       const { sendSMS } = await import('./twilioClient');
       const businessName = settings?.businessName || 'JobRunner';
-      await sendSMS({
+      const testResult = await sendSMS({
         to: phoneClean,
         message: `Test SMS from ${businessName} via JobRunner. Your SMS integration is working correctly!`,
+        fromNumber: settings.dedicatedPhoneNumber,
       });
+      if (!testResult.success) {
+        return res.status(502).json({ error: testResult.error || 'Test SMS failed to send.' });
+      }
 
       res.json({ success: true, message: `Test SMS sent to ${phoneClean}` });
     } catch (error: any) {
@@ -35708,13 +35721,15 @@ Respond with JSON in this format:
       const settings = await storage.getBusinessSettings(businessOwnerId);
       const dedicatedNumber = settings?.dedicatedPhoneNumber || null;
       
-      // Return comprehensive status for UI
+      // Return comprehensive status for UI.
+      // NOTE: only the business's own dedicated number is ever exposed/reported.
+      // The shared platform number must never appear as the business's sender.
       res.json({
         configured: availability.configured,
-        connected: availability.connected,
-        hasPhoneNumber: availability.hasPhoneNumber || !!dedicatedNumber,
-        enabled: basicStatus.enabled,
-        phoneNumber: dedicatedNumber || basicStatus.phoneNumber,
+        connected: availability.connected && !!dedicatedNumber,
+        hasPhoneNumber: !!dedicatedNumber,
+        enabled: basicStatus.enabled && !!dedicatedNumber,
+        phoneNumber: dedicatedNumber,
         dedicatedPhoneNumber: dedicatedNumber,
         hasDedicatedNumber: !!dedicatedNumber,
         // Provide setup instructions when not configured
@@ -36226,7 +36241,7 @@ Respond with JSON in this format:
       res.json({
         success: true,
         archivedNumber,
-        message: 'Reverted to shared number. Your dedicated number has been archived and can be re-applied anytime.',
+        message: 'Number released. SMS is paused until you purchase a new dedicated number - it can be re-applied anytime.',
       });
     } catch (error: any) {
       console.error('Error archiving phone number:', error);
@@ -36812,12 +36827,22 @@ Respond with JSON in this format:
         }
       }
       
-      // Verify Twilio is configured (shared platform number or dedicated number required)
+      // Verify Twilio is configured
       const { checkTwilioAvailability } = await import('./twilioClient');
       const twilioStatus = await checkTwilioAvailability();
-      if (!twilioStatus.connected || !twilioStatus.hasPhoneNumber) {
+      if (!twilioStatus.connected) {
         return res.status(503).json({ 
           error: 'SMS service is not available. Please check Twilio configuration.',
+        });
+      }
+      
+      // Business SMS must come from the business's OWN dedicated number.
+      // Never allow sending from the shared platform number.
+      const senderSettings = await storage.getBusinessSettings(businessOwnerId);
+      if (!senderSettings?.dedicatedPhoneNumber) {
+        return res.status(402).json({ 
+          error: 'Your business needs its own dedicated phone number to send SMS. Purchase one in Phone Numbers.',
+          code: 'DEDICATED_NUMBER_REQUIRED',
         });
       }
       
@@ -36832,6 +36857,13 @@ Respond with JSON in this format:
         senderUserId: userId,
         mediaUrls: validatedMediaUrls.length > 0 ? validatedMediaUrls : undefined,
       });
+      
+      if ((smsMessage as any)?.status === 'failed') {
+        return res.status(502).json({
+          error: (smsMessage as any)?.errorMessage || 'SMS failed to send.',
+          message: smsMessage,
+        });
+      }
       
       res.json(smsMessage);
     } catch (error: any) {

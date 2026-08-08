@@ -7370,7 +7370,7 @@ export default function JobDetailScreen() {
                 Send via JobRunner
               </Text>
               <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
-                SMS & Email from +61 485 013 993
+                SMS & Email from your business number
               </Text>
             </TouchableOpacity>
           )}

@@ -82,6 +82,7 @@ interface TwilioStatus {
   configured?: boolean;
   connected?: boolean;
   hasPhoneNumber?: boolean;
+  hasDedicatedNumber?: boolean;
   phoneNumber: string | null;
 }
 
@@ -564,6 +565,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.white,
   },
   twilioConnectedBanner: {
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.successLight,
@@ -737,7 +739,9 @@ export default function ChatHubScreen() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const twilioConnected = twilioStatus?.connected === true || twilioStatus?.enabled === true || (twilioStatus?.configured === true && twilioStatus?.hasPhoneNumber === true);
+  // Only treat SMS as connected when the business has its OWN dedicated number.
+  // The shared platform number is never a valid business sender.
+  const twilioConnected = twilioStatus?.hasDedicatedNumber === true || (!!twilioStatus?.phoneNumber && twilioStatus?.hasPhoneNumber === true);
 
   const jobSmsMap = useMemo(() => {
     const byJobId = new Map<string, SmsConversation>();

@@ -689,7 +689,7 @@ export default function AIReceptionist() {
               </div>
               <h2 className="text-xl font-semibold mb-2">Dedicated Number Required</h2>
               <p className="text-muted-foreground mb-2 max-w-sm">
-                You're currently using the shared JobRunner number (0485 013 993).
+                Your business doesn't have its own phone number yet.
               </p>
               <p className="text-muted-foreground mb-6 max-w-sm">
                 To set up an AI Receptionist, you need your own dedicated phone number first. Your AI will answer calls and take messages on that number.

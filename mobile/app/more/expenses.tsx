@@ -166,6 +166,7 @@ export default function ExpensesScreen() {
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showJobPicker, setShowJobPicker] = useState(false);
+  const [jobPickerSearch, setJobPickerSearch] = useState('');
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -767,27 +768,47 @@ export default function ExpensesScreen() {
 
         <AppBottomSheet
         visible={showJobPicker}
-        onDismiss={() => setShowJobPicker(false)}
+        onDismiss={() => { setShowJobPicker(false); setJobPickerSearch(''); }}
         snapPoints={['90%']}
         scrollable={false}
         contentPadding={0}>
           <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
-              <PressableRow onPress={() => setShowJobPicker(false)}>
+              <PressableRow onPress={() => { setShowJobPicker(false); setJobPickerSearch(''); }}>
                 <Text style={[styles.modalCancel, { color: colors.primary }]}>Done</Text>
               </PressableRow>
               <Text style={[styles.modalTitle, { color: colors.foreground }]}>Select Job</Text>
               <View style={{ width: 20 }} />
             </View>
-            <ScrollView>
-              <PressableRow style={[ styles.pickerItem, { borderBottomColor: colors.border }, !formJobId && { backgroundColor: colors.primaryLight }, ]} onPress={() => { setFormJobId(''); setShowJobPicker(false); }} >
+            <View style={[styles.pickerSearchWrap, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+              <Feather name="search" size={16} color={colors.mutedForeground} />
+              <TextInput
+                style={[styles.pickerSearchInput, { color: colors.foreground }]}
+                placeholder="Search jobs or clients..."
+                placeholderTextColor={colors.mutedForeground}
+                value={jobPickerSearch}
+                onChangeText={setJobPickerSearch}
+                autoCorrect={false}
+              />
+              {jobPickerSearch.length > 0 && (
+                <PressableRow onPress={() => setJobPickerSearch('')}>
+                  <Feather name="x" size={16} color={colors.mutedForeground} />
+                </PressableRow>
+              )}
+            </View>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <PressableRow style={[ styles.pickerItem, { borderBottomColor: colors.border }, !formJobId && { backgroundColor: colors.primaryLight }, ]} onPress={() => { setFormJobId(''); setShowJobPicker(false); setJobPickerSearch(''); }} >
                 <View style={styles.pickerItemContent}>
                   <Feather name="minus-circle" size={16} color={!formJobId ? colors.primary : colors.mutedForeground} />
                   <Text style={[styles.pickerItemText, { color: colors.foreground }]}>No Job</Text>
                 </View>
                 {!formJobId && <Feather name="check" size={18} color={colors.primary} />}
               </PressableRow>
-              {jobs.map((job) => (
+              {jobs.filter((job) => {
+                const q = jobPickerSearch.trim().toLowerCase();
+                if (!q) return true;
+                return job.title?.toLowerCase().includes(q) || job.clientName?.toLowerCase().includes(q);
+              }).map((job) => (
                 <PressableRow key={job.id} style={[ styles.pickerItem, { borderBottomColor: colors.border }, formJobId === job.id && { backgroundColor: colors.primaryLight }, ]} onPress={() => { setFormJobId(job.id); setShowJobPicker(false); }} >
                   <View style={styles.pickerItemContent}>
                     <Feather name="briefcase" size={16} color={formJobId === job.id ? colors.primary : colors.mutedForeground} />
@@ -976,6 +997,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       marginBottom: spacing.sm,
     },
     scanBanner: {
+      alignSelf: 'stretch',
       marginHorizontal: spacing.lg,
       backgroundColor: colors.primaryLight,
       borderWidth: 1,
@@ -1191,6 +1213,25 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
     },
     modalContainer: {
       flex: 1,
+    },
+    pickerSearchWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginHorizontal: spacing.lg,
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderWidth: 1,
+      borderRadius: radius.xl,
+    },
+    pickerSearchInput: {
+      flex: 1,
+      ...typography.body,
+      letterSpacing: 0,
+      textAlign: 'left',
+      paddingVertical: 0,
     },
     modalHeader: {
       flexDirection: 'row',

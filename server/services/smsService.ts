@@ -142,22 +142,39 @@ async function sendSmsPlatform(
   const formattedTo = formatPhoneNumber(to);
   const validMediaUrls = mediaUrls?.slice(0, 10) || [];
 
+  // Business SMS must ALWAYS come from the business's own dedicated number.
+  // The shared platform number is never used as a sender for business messaging:
+  // multiple businesses texting the same customer from one number is confusing
+  // and looks unprofessional. Businesses without a number must purchase one.
   let fromNumber: string | undefined;
   let alphanumericSenderId: string | undefined;
-  if (businessOwnerId) {
-    try {
-      const settings = await storage.getBusinessSettings(businessOwnerId);
-      if (settings?.dedicatedPhoneNumber) {
-        fromNumber = settings.dedicatedPhoneNumber;
-        console.log(`[SMS] Using dedicated number ${fromNumber} for business owner ${businessOwnerId}`);
-      } else {
-        console.log(`[SMS] No dedicated number for business owner ${businessOwnerId}, using shared platform number`);
-      }
-    } catch (err) {
-      console.error(`[SMS] Error fetching business settings for ${businessOwnerId}:`, err);
+  if (!businessOwnerId) {
+    console.error(`[SMS] Refusing to send business SMS without a businessOwnerId (shared platform number is not allowed as sender)`);
+    return {
+      success: false,
+      notConfigured: true,
+      error: 'No business phone number configured. Purchase a dedicated number to send SMS.',
+    };
+  }
+  try {
+    const settings = await storage.getBusinessSettings(businessOwnerId);
+    if (settings?.dedicatedPhoneNumber) {
+      fromNumber = settings.dedicatedPhoneNumber;
+      console.log(`[SMS] Using dedicated number ${fromNumber} for business owner ${businessOwnerId}`);
+    } else {
+      console.warn(`[SMS] Business owner ${businessOwnerId} has no dedicated number - refusing to send from shared platform number`);
+      return {
+        success: false,
+        notConfigured: true,
+        error: 'No business phone number configured. Purchase a dedicated number to send SMS.',
+      };
     }
-  } else {
-    console.log(`[SMS] No businessOwnerId provided, using shared platform number`);
+  } catch (err) {
+    console.error(`[SMS] Error fetching business settings for ${businessOwnerId}:`, err);
+    return {
+      success: false,
+      error: 'Could not verify business phone number. Please try again.',
+    };
   }
 
   return sendSMS({

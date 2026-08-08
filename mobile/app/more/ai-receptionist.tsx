@@ -955,7 +955,7 @@ export default function AIReceptionistScreen() {
                 Dedicated Number Required
               </Text>
               <Text style={{ ...typography.caption, color: colors.mutedForeground, textAlign: 'center', lineHeight: 18, marginBottom: spacing.xs }}>
-                You're currently using the shared JobRunner number ({SHARED_PLATFORM_NUMBER}).
+                Your business doesn't have its own phone number yet.
               </Text>
               <Text style={{ ...typography.caption, color: colors.mutedForeground, textAlign: 'center', lineHeight: 18, marginBottom: spacing.lg }}>
                 To set up an AI Receptionist, you need your own dedicated phone number first. Your AI will answer calls and take messages on that number.

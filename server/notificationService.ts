@@ -171,7 +171,7 @@ export async function notifyQuoteReady(
     try {
       const smsResult = options.businessOwnerId
         ? await sendCustomerReply(clientPhone, smsTemplates.quoteReady(clientName, businessName, quoteNumber, options.businessPhone), options.businessOwnerId)
-        : await sendSMS({ to: clientPhone, message: smsTemplates.quoteReady(clientName, businessName, quoteNumber, options.businessPhone) });
+        : { success: false, error: 'No business phone number configured. Purchase a dedicated number to send SMS.' };
       result.smsSent = smsResult.success;
       if (!smsResult.success) {
         result.smsError = smsResult.error;
@@ -244,7 +244,7 @@ export async function notifyInvoiceSent(
     try {
       const smsResult = options.businessOwnerId
         ? await sendCustomerReply(clientPhone, smsTemplates.invoiceSent(clientName, businessName, invoiceNumber, invoiceTotal, options.businessPhone), options.businessOwnerId)
-        : await sendSMS({ to: clientPhone, message: smsTemplates.invoiceSent(clientName, businessName, invoiceNumber, invoiceTotal, options.businessPhone) });
+        : { success: false, error: 'No business phone number configured. Purchase a dedicated number to send SMS.' };
       result.smsSent = smsResult.success;
       if (!smsResult.success) result.smsError = smsResult.error;
     } catch (error: unknown) {
@@ -302,7 +302,7 @@ export async function notifyPaymentReceived(
     try {
       const smsResult = options.businessOwnerId
         ? await sendCustomerReply(clientPhone, smsTemplates.paymentReceived(clientName, amount, businessName, undefined, options.businessPhone), options.businessOwnerId)
-        : await sendSMS({ to: clientPhone, message: smsTemplates.paymentReceived(clientName, amount, businessName, undefined, options.businessPhone) });
+        : { success: false, error: 'No business phone number configured. Purchase a dedicated number to send SMS.' };
       result.smsSent = smsResult.success;
       if (!smsResult.success) result.smsError = smsResult.error;
     } catch (error: unknown) {
@@ -361,7 +361,7 @@ export async function notifyJobScheduled(
     try {
       const smsResult = options.businessOwnerId
         ? await sendCustomerReply(clientPhone, smsTemplates.jobScheduled(clientName, businessName, jobDate, options.businessPhone), options.businessOwnerId)
-        : await sendSMS({ to: clientPhone, message: smsTemplates.jobScheduled(clientName, businessName, jobDate, options.businessPhone) });
+        : { success: false, error: 'No business phone number configured. Purchase a dedicated number to send SMS.' };
       result.smsSent = smsResult.success;
       if (!smsResult.success) result.smsError = smsResult.error;
     } catch (error: unknown) {
