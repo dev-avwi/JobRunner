@@ -497,6 +497,60 @@ export async function runSheetSync(userId: string, opts?: { manual?: boolean }):
   }
 }
 
+// ── Token health check (Task #338) ──────────────────────────────────────────
+// Detects a broken Google authorization (revoked access, changed password)
+// within ~an hour instead of waiting for the next scheduled sync to fail.
+// Piggybacks on the 30-min scheduler poll and reuses getUserAccessToken's
+// proactive-refresh logic: a healthy, unexpired access token is returned from
+// storage with NO Google API call, so healthy connections add zero quota
+// pressure — a refresh only happens when the token is near expiry anyway.
+
+export async function checkSheetSyncAuthHealth(userId: string): Promise<void> {
+  const settings = await storage.getBusinessSettings(userId);
+  if (!settings?.sheetSyncEnabled) return;
+  if ((settings.sheetSyncTarget || 'google_sheets') !== 'google_sheets') return;
+  // Already flagged as broken (Settings banner + bell already fired, or the
+  // connection was wiped) — don't re-check or re-notify every 30 minutes.
+  const alreadyFlagged =
+    !settings.googleSheetsConnected ||
+    (settings.sheetSyncLastStatus === 'error' && isGoogleAuthError(settings.sheetSyncLastError));
+  if (alreadyFlagged) return;
+
+  try {
+    await getUserAccessToken(userId);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error) || 'Unknown authorization error';
+    // Transient refresh failures (network, Google 5xx) are not the owner's
+    // problem — leave them for the real sync to retry. Only surface genuine
+    // authorization breakage.
+    if (!isGoogleAuthError(message)) {
+      console.warn(`[SheetSync] Auth health check transient failure for user ${userId}: ${message}`);
+      return;
+    }
+    console.warn(`[SheetSync] Auth health check detected broken Google authorization for user ${userId}: ${message}`);
+    // Record the auth error so the status endpoint's needsReconnect flag (and
+    // the Settings "Reconnect Google" banner) fire immediately. Deliberately
+    // does NOT touch sheetSyncLastRunAt so the sync schedule is unaffected.
+    await storage.updateBusinessSettings(userId, {
+      sheetSyncLastStatus: 'error',
+      sheetSyncLastError: message.slice(0, 500),
+    }).catch(() => {});
+    try {
+      await storage.createNotification({
+        userId,
+        type: 'sheet_sync_failed',
+        title: 'Google Sheets connection needs attention',
+        message: `JobRunner can no longer access your Google account, so your scheduled spreadsheet export will fail: ${message.slice(0, 200)}. Reconnect Google in Settings → Data.`,
+        priority: 'important',
+        actionUrl: '/settings?tab=data',
+        actionLabel: 'Open Settings',
+      });
+    } catch (e) {
+      console.error('[SheetSync] Failed to create auth health notification:', e);
+    }
+  }
+}
+
 // ── Scheduler entry point ───────────────────────────────────────────────────
 
 const FREQUENCY_MS: Record<string, number> = {
@@ -511,7 +565,7 @@ const DUE_TOLERANCE_MS = 25 * 60 * 1000;
 export async function processDueSheetSyncs(): Promise<void> {
   const { pool } = await import('./storage');
   const result = await pool.query(
-    `SELECT user_id, sheet_sync_frequency, sheet_sync_last_run_at
+    `SELECT user_id, sheet_sync_frequency, sheet_sync_last_run_at, sheet_sync_target
      FROM business_settings
      WHERE sheet_sync_enabled = true`
   );
@@ -523,6 +577,15 @@ export async function processDueSheetSyncs(): Promise<void> {
         await runSheetSync(row.user_id);
       } catch (e) {
         console.error(`[SheetSync] Scheduled sync crashed for user ${row.user_id}:`, e);
+      }
+    } else if ((row.sheet_sync_target || 'google_sheets') === 'google_sheets') {
+      // Not due for a full sync — cheaply verify the Google authorization is
+      // still alive so a revoked connection surfaces within ~an hour, not at
+      // the next daily/weekly run.
+      try {
+        await checkSheetSyncAuthHealth(row.user_id);
+      } catch (e) {
+        console.error(`[SheetSync] Auth health check crashed for user ${row.user_id}:`, e);
       }
     }
   }

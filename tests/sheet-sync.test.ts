@@ -11,7 +11,7 @@
  *   BASE_URL=http://localhost:5000 tsx tests/sheet-sync.test.ts
  */
 
-import { sealToken, openToken, buildExportSheets, SHEET_SYNC_DATA_TYPES } from '../server/sheetSync';
+import { sealToken, openToken, buildExportSheets, isGoogleAuthError, SHEET_SYNC_DATA_TYPES } from '../server/sheetSync';
 import { storage } from '../server/storage';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
@@ -63,6 +63,69 @@ console.log('Due-time logic:');
   check('7-day-old weekly sync is due', isDue(now - 7 * DAY, WEEK, now));
   check('weekly boundary: due exactly at tolerance edge', isDue(now - (WEEK - TOL), WEEK, now));
   check('weekly boundary: 1ms inside tolerance edge is not due', !isDue(now - (WEEK - TOL - 1), WEEK, now));
+}
+
+// ── Auth health check (Task #338, storage stubbed) ─────────────────────────
+async function authHealthChecks() {
+  console.log('Auth health check:');
+  const { checkSheetSyncAuthHealth } = await import('../server/sheetSync');
+
+  const origGetSettings = storage.getBusinessSettings;
+  const origUpdateSettings = storage.updateBusinessSettings;
+  const origCreateNotification = storage.createNotification;
+
+  let updates: any[] = [];
+  let notifications: any[] = [];
+  (storage as any).updateBusinessSettings = async (_id: string, u: any) => { updates.push(u); return u; };
+  (storage as any).createNotification = async (n: any) => { notifications.push(n); return n; };
+  const reset = () => { updates = []; notifications = []; };
+
+  try {
+    // Disabled sync → no-op
+    reset();
+    (storage as any).getBusinessSettings = async () => ({ sheetSyncEnabled: false });
+    await checkSheetSyncAuthHealth('u1');
+    check('disabled sync is a no-op', updates.length === 0 && notifications.length === 0);
+
+    // Excel email target → no-op
+    reset();
+    (storage as any).getBusinessSettings = async () => ({ sheetSyncEnabled: true, sheetSyncTarget: 'excel_email', googleSheetsConnected: true });
+    await checkSheetSyncAuthHealth('u1');
+    check('excel_email target is a no-op', updates.length === 0 && notifications.length === 0);
+
+    // Already flagged auth error → no re-notify
+    reset();
+    (storage as any).getBusinessSettings = async () => ({
+      sheetSyncEnabled: true, sheetSyncTarget: 'google_sheets', googleSheetsConnected: true,
+      sheetSyncLastStatus: 'error', sheetSyncLastError: 'Google Sheets access was revoked. Please reconnect in Settings.',
+    });
+    await checkSheetSyncAuthHealth('u1');
+    check('already-flagged auth error is not re-notified', updates.length === 0 && notifications.length === 0);
+
+    // Disconnected → no-op (banner already shows via googleConnected=false)
+    reset();
+    (storage as any).getBusinessSettings = async () => ({ sheetSyncEnabled: true, googleSheetsConnected: false });
+    await checkSheetSyncAuthHealth('u1');
+    check('disconnected Google is not re-notified', updates.length === 0 && notifications.length === 0);
+
+    // Unusable refresh token (legacy plaintext) → auth error path: flags
+    // sheetSyncLastStatus=error with an auth-recognisable message + notifies.
+    reset();
+    (storage as any).getBusinessSettings = async () => ({
+      sheetSyncEnabled: true, sheetSyncTarget: 'google_sheets', googleSheetsConnected: true,
+      googleSheetsRefreshToken: 'plaintext-legacy-token', sheetSyncLastStatus: 'success',
+    });
+    await checkSheetSyncAuthHealth('u1');
+    const errorUpdate = updates.find((u) => u.sheetSyncLastStatus === 'error');
+    check('broken auth flags sheetSyncLastStatus=error', !!errorUpdate);
+    check('flagged error is auth-recognisable (needsReconnect fires)', !!errorUpdate && isGoogleAuthError(errorUpdate.sheetSyncLastError));
+    check('broken auth creates a bell notification', notifications.length === 1 && notifications[0].type === 'sheet_sync_failed');
+    check('health check never touches sheetSyncLastRunAt', updates.every((u) => !('sheetSyncLastRunAt' in u)));
+  } finally {
+    (storage as any).getBusinessSettings = origGetSettings;
+    (storage as any).updateBusinessSettings = origUpdateSettings;
+    (storage as any).createNotification = origCreateNotification;
+  }
 }
 
 // ── buildExportSheets output shapes (storage stubbed — pure unit tests) ─────
@@ -179,7 +242,12 @@ async function apiChecks() {
   await fetch(`${BASE_URL}/api/sheet-sync/settings`, { method: 'POST', headers: auth, body: JSON.stringify({ enabled: false, target: 'google_sheets', frequency: 'daily', dataTypes: ['clients', 'jobs', 'invoices', 'payments'] }) });
 }
 
-exportShapeChecks()
+authHealthChecks()
+  .catch((e) => {
+    failed++;
+    console.error('Auth health checks crashed:', e);
+  })
+  .then(() => exportShapeChecks())
   .catch((e) => {
     failed++;
     console.error('Export shape checks crashed:', e);
